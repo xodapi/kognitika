@@ -1,0 +1,80 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  password      String?
+  image         String?
+  
+  level         Int       @default(1)
+  experience    Int       @default(0)
+  rating        Int       @default(1000)
+  streakDays    Int       @default(0)
+  lastPlayedAt  DateTime?
+
+  sessions      GameSession[]
+  achievements  UserAchievement[]
+  messages      Message[]
+  createdAt     DateTime  @default(now())
+}
+
+enum GameType {
+  SCHULTE
+  NUMERICAL_ANALYSIS
+  LOGICAL_SEQUENCE
+  SITUATIONAL_JUDGMENT
+  STROOP
+  N_BACK
+}
+
+model GameSession {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  gameType      GameType
+  score         Int
+  timeMs        Int
+  isCompleted   Boolean  @default(false)
+  
+  metadata      Json     
+  
+  createdAt     DateTime @default(now())
+}
+
+model Achievement {
+  id            String   @id @default(cuid())
+  code          String   @unique
+  title         String
+  description   String
+  iconUrl       String
+  users         UserAchievement[]
+}
+
+model UserAchievement {
+  id            String   @id @default(cuid())
+  userId        String
+  achievementId String
+  user          User     @relation(fields: [userId], references: [id])
+  achievement   Achievement @relation(fields: [achievementId], references: [id])
+  unlockedAt    DateTime @default(now())
+
+  @@unique([userId, achievementId])
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  content   String
+  room      String   @default("global")
+  createdAt DateTime @default(now())
+}
