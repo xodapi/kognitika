@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { emitEvent } from './useEventBus';
 
-const COLORS = [
-  { text: 'КРАСНЫЙ', color: 'hsl(var(--destructive))', id: 'red' },
-  { text: 'СИНИЙ', color: 'hsl(var(--primary))', id: 'blue' },
-  { text: 'ЗЕЛЕНЫЙ', color: 'hsl(142, 71%, 45%)', id: 'green' }, // using standard green
-  { text: 'ЖЕЛТЫЙ', color: 'hsl(47, 95%, 52%)', id: 'yellow' } // using standard yellow
+export const STROOP_COLORS = [
+  { text: 'КРАСНЫЙ', color: 'hsl(var(--destructive))', id: 'red', textColor: '#ef4444' },
+  { text: 'СИНИЙ', color: 'hsl(var(--primary))', id: 'blue', textColor: '#3b82f6' },
+  { text: 'ЗЕЛЕНЫЙ', color: 'hsl(142, 71%, 45%)', id: 'green', textColor: '#22c55e' },
+  { text: 'ЖЕЛТЫЙ', color: 'hsl(47, 95%, 52%)', id: 'yellow', textColor: '#eab308' }
 ];
 
 export interface StroopQuestion {
@@ -12,48 +13,79 @@ export interface StroopQuestion {
   word: string;
   textColor: string;
   correctAnswerId: string;
+  isCongruent: boolean;
 }
 
-function generateQuestion(): StroopQuestion {
-  // 50% chance the word matches the color, 50% chance it doesn't
-  const isMatch = Math.random() > 0.5;
-  const wordObj = COLORS[Math.floor(Math.random() * COLORS.length)];
-  let colorObj = wordObj;
-  
-  if (!isMatch) {
-    const others = COLORS.filter(c => c.id !== wordObj.id);
-    colorObj = others[Math.floor(Math.random() * others.length)];
-  }
-
-  return {
-    id: Math.random().toString(36).substring(7),
-    word: wordObj.text,
-    textColor: colorObj.color,
-    correctAnswerId: colorObj.id
-  };
+export interface StroopState {
+  question: StroopQuestion | null;
+  score: number;
+  errors: number;
+  isActive: boolean;
+  isFinished: boolean;
+  timeLeftMs: number;
+  averageReactionTime: number;
 }
 
 export function useStroopEngine() {
-  const [question, setQuestion] = useState<StroopQuestion | null>(null);
-  const [score, setScore] = useState(0);
-  const [errors, setErrors] = useState(0);
-  const [isActive, setIsActive] = useState(false);
-  const [isFinished, setIsFinished] = useState(false);
-  const [timeLeftMs, setTimeLeftMs] = useState(60000); 
+  const [state, setState] = useState<StroopState>({
+    question: null,
+    score: 0,
+    errors: 0,
+    isActive: false,
+    isFinished: false,
+    timeLeftMs: 60000,
+    averageReactionTime: 0
+  });
+
   const [reactionTimes, setReactionTimes] = useState<number[]>([]);
-  
   const timerRef = useRef<number | null>(null);
   const lastTickRef = useRef<number>(0);
   const questionStartTimeRef = useRef<number>(0);
+  const seedRef = useRef<number | undefined>(undefined);
 
-  const startGame = useCallback(() => {
-    setQuestion(generateQuestion());
-    setScore(0);
-    setErrors(0);
+  const seededRandom = () => {
+    if (seedRef.current !== undefined) {
+      seedRef.current = (seedRef.current * 9301 + 49297) % 233280;
+      return seedRef.current / 233280;
+    }
+    return Math.random();
+  };
+
+  const generateQuestion = useCallback((): StroopQuestion => {
+    const isCongruent = seededRandom() > 0.5;
+    const wordIdx = Math.floor(seededRandom() * STROOP_COLORS.length);
+    const wordObj = STROOP_COLORS[wordIdx];
+    let colorObj = wordObj;
+    
+    if (!isCongruent) {
+      const others = STROOP_COLORS.filter((_, i) => i !== wordIdx);
+      colorObj = others[Math.floor(seededRandom() * others.length)];
+    }
+
+    return {
+      id: seededRandom().toString(36).substring(7),
+      word: wordObj.text,
+      textColor: colorObj.textColor,
+      correctAnswerId: colorObj.id,
+      isCongruent
+    };
+  }, []);
+
+  const startGame = useCallback((seed?: number) => {
+    seedRef.current = seed;
+    const firstQ = generateQuestion();
+    
+    setState({
+      question: firstQ,
+      score: 0,
+      errors: 0,
+      isActive: true,
+      isFinished: false,
+      timeLeftMs: 60000,
+      averageReactionTime: 0
+    });
     setReactionTimes([]);
-    setIsActive(true);
-    setIsFinished(false);
-    setTimeLeftMs(60000);
+
     lastTickRef.current = performance.now();
     questionStartTimeRef.current = performance.now();
 
@@ -64,39 +96,81 @@ export function useStroopEngine() {
       const delta = now - lastTickRef.current;
       lastTickRef.current = now;
 
-      setTimeLeftMs(prev => {
-        const next = Math.max(0, prev - delta);
+      setState(prev => {
+        if (!prev.isActive || prev.isFinished) return prev;
+        const next = Math.max(0, prev.timeLeftMs - delta);
         if (next === 0) {
-           setIsActive(false);
-           setIsFinished(true);
-           if (timerRef.current) cancelAnimationFrame(timerRef.current);
+           return { ...prev, timeLeftMs: 0, isActive: false, isFinished: true };
         }
-        return next;
+        return { ...prev, timeLeftMs: next };
       });
       
-      if (isActive) {
-        timerRef.current = requestAnimationFrame(updateTime);
-      }
+      timerRef.current = requestAnimationFrame(updateTime);
     };
     timerRef.current = requestAnimationFrame(updateTime);
-  }, [isActive]);
+  }, [generateQuestion]);
+
+  // Handle completion event via effect to ensure state is flushed
+  useEffect(() => {
+    if (state.isFinished && !state.isActive && state.timeLeftMs === 0) {
+      emitEvent('TRAINING_COMPLETE', {
+        type: 'STROOP',
+        score: state.score,
+        errors: state.errors,
+        timeMs: 60000,
+        level: 1,
+        metadata: { avgReactionTime: state.averageReactionTime }
+      });
+    }
+  }, [state.isFinished, state.isActive, state.timeLeftMs, state.score, state.errors, state.averageReactionTime]);
 
   const answerQuestion = useCallback((answerId: string) => {
-    if (!question || !isActive) return;
-
-    const reactionTime = performance.now() - questionStartTimeRef.current;
-
-    if (answerId === question.correctAnswerId) {
-      setScore(s => s + 1);
-      setReactionTimes(rt => [...rt, reactionTime]);
-    } else {
-      setErrors(e => e + 1);
-    }
+    const now = performance.now();
+    const reactionTime = now - questionStartTimeRef.current;
     
-    // Generate next
-    setQuestion(generateQuestion());
-    questionStartTimeRef.current = performance.now();
-  }, [question, isActive]);
+    setState(s => {
+      if (!s.question || !s.isActive || s.isFinished) return s;
+
+      const isCorrect = answerId === s.question.correctAnswerId;
+
+      emitEvent('CELL_CLICK', {
+        num: 0,
+        isCorrect,
+        reactionTimeMs: reactionTime
+      });
+
+      if (!isCorrect) {
+        emitEvent('MISTAKE_MADE', {
+          expected: s.question.correctAnswerId,
+          actual: answerId,
+          isCongruent: s.question.isCongruent
+        });
+      }
+
+      const newReactionTimes = isCorrect ? [...reactionTimes, reactionTime] : reactionTimes;
+      // We'll update reactionTimes in a separate call or handle in the same state if possible
+      // To keep it simple and reactive:
+      const newAvg = newReactionTimes.length 
+        ? newReactionTimes.reduce((a, b) => a + b, 0) / newReactionTimes.length 
+        : s.averageReactionTime;
+
+      questionStartTimeRef.current = now;
+
+      return {
+        ...s,
+        score: isCorrect ? s.score + 1 : s.score,
+        errors: isCorrect ? s.errors : s.errors + 1,
+        question: generateQuestion(),
+        averageReactionTime: newAvg
+      };
+    });
+    
+    // Also sync the local reactionTimes state for the next update
+    setReactionTimes(rt => {
+       const isCorrect = state.question?.correctAnswerId === answerId;
+       return isCorrect ? [...rt, reactionTime] : rt;
+    });
+  }, [generateQuestion, reactionTimes, state.question]);
 
   useEffect(() => {
     return () => {
@@ -104,14 +178,10 @@ export function useStroopEngine() {
     };
   }, []);
 
-  const averageReactionTime = reactionTimes.length 
-    ? reactionTimes.reduce((a, b) => a + b, 0) / reactionTimes.length 
-    : 0;
-
   return { 
-    state: { question, score, errors, isActive, isFinished, timeLeftMs, averageReactionTime }, 
+    state, 
     startGame, 
     answerQuestion,
-    colors: COLORS 
+    colors: STROOP_COLORS 
   };
 }

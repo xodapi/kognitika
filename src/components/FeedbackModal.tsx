@@ -18,6 +18,7 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
   const [type, setType] = useState<FeedbackType>('idea');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [trackingNum, setTrackingNum] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,26 +26,29 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
 
     setIsSubmitting(true);
     try {
-      const feedbackRef = doc(collection(db, 'feedback'));
-      await setDoc(feedbackRef, {
-        userId: user.id,
-        userName: user.name,
-        email: user.email,
-        content: content,
-        type: type,
-        createdAt: serverTimestamp(),
-        status: 'new'
+      const response = await fetch('/api/feedback', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({ type, content })
       });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+         throw new Error(data.error || 'Failed to submit');
+      }
       
+      setTrackingNum(data.trackingNum);
       setIsSuccess(true);
-      setTimeout(() => {
-        setIsSuccess(false);
-        setContent('');
-        onClose();
-      }, 2000);
+      
+      // Clear content but stay on success screen long enough
+      setContent('');
     } catch (error) {
       console.error('Error submitting feedback:', error);
-      // In a real app, show a toast here
+      alert('Ошибка при отправке: ' + (error instanceof Error ? error.message : 'Неизвестная ошибка'));
     } finally {
       setIsSubmitting(false);
     }
@@ -86,9 +90,20 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
                    <div className="w-16 h-16 bg-primary/20 text-primary rounded-full flex items-center justify-center mb-4">
                       <CheckCircle2 className="w-8 h-8" />
                    </div>
-                   <h3 className="text-xl font-bold mb-2">Получено!</h3>
-                   <p className="text-sm text-muted-foreground">Спасибо за ваш вклад в развитие проекта.</p>
-                </div>
+                    <h3 className="text-xl font-bold mb-2">Получено!</h3>
+                    <p className="text-sm text-muted-foreground mb-4">Спасибо за ваш вклад в развитие проекта.</p>
+                    <div className="bg-primary/10 border border-primary/20 rounded-xl px-4 py-2 mb-8">
+                       <p className="text-[10px] text-primary font-black uppercase tracking-widest mb-1">Номер обращения</p>
+                       <p className="text-lg font-mono font-bold text-foreground">{trackingNum}</p>
+                    </div>
+                    <button 
+                      type="button"
+                      onClick={() => { setIsSuccess(false); onClose(); }}
+                      className="px-8 py-3 bg-secondary text-foreground rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-secondary/80 transition-all w-full"
+                    >
+                      Закрыть
+                    </button>
+                 </div>
               ) : (
                 <form onSubmit={handleSubmit} className="space-y-6">
                   <div>

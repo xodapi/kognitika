@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useStroopEngine } from '../hooks/useStroopEngine';
 import { useAuth } from '../hooks/useAuth';
 

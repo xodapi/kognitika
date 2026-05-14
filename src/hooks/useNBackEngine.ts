@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { emitEvent } from './useEventBus';
 
 const LETTERS = ['А', 'Б', 'В', 'Г', 'Д', 'Е', 'Ж', 'З', 'К', 'Л'];
-const N_BACK = 2; // Fixed to 2-back
 const ROUNDS = 20;
 
 export interface NBackState {
@@ -11,11 +11,12 @@ export interface NBackState {
   round: number;
   isActive: boolean;
   isFinished: boolean;
-  isMatch: boolean | null; // was the current one actually a match?
+  isMatch: boolean | null;
   showFeedback: 'correct' | 'wrong' | null;
+  nBack: number;
 }
 
-export function useNBackEngine() {
+export function useNBackEngine(nBack: number = 2) {
   const [state, setState] = useState<NBackState>({
     currentStimulus: null,
     score: 0,
@@ -24,37 +25,55 @@ export function useNBackEngine() {
     isActive: false,
     isFinished: false,
     isMatch: null,
-    showFeedback: null
+    showFeedback: null,
+    nBack
   });
 
   const sequenceRef = useRef<string[]>([]);
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const feedbackTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const userHasAnsweredRef = useRef<boolean>(false);
+  const seedRef = useRef<number | undefined>(undefined);
+
+  const seededRandom = () => {
+    if (seedRef.current !== undefined) {
+      seedRef.current = (seedRef.current * 9301 + 49297) % 233280;
+      return seedRef.current / 233280;
+    }
+    return Math.random();
+  };
 
   const nextRound = useCallback(() => {
     setState(prev => {
-      // If we missed a match in the previous round
+      if (prev.round >= ROUNDS) {
+        emitEvent('TRAINING_COMPLETE', {
+           type: 'NBACK',
+           score: prev.score,
+           errors: prev.errors,
+           level: prev.nBack,
+           timeMs: ROUNDS * 2500
+        });
+        return { ...prev, isActive: false, isFinished: true, currentStimulus: null };
+      }
+
       let newErrors = prev.errors;
+      // Missed match detection
       if (prev.isActive && prev.isMatch && !userHasAnsweredRef.current && prev.round > 0) {
         newErrors += 1;
+        emitEvent('MISTAKE_MADE', {
+           expected: 'match_click',
+           actual: 'missed_click',
+           round: prev.round
+        });
       }
 
-      if (prev.round >= ROUNDS) {
-        return { ...prev, errors: newErrors, isActive: false, isFinished: true, currentStimulus: null };
-      }
-
-      // Generate next
       const seq = sequenceRef.current;
-      const willMatch = seq.length >= N_BACK && Math.random() < 0.35; // 35% chance to force a match
+      const willMatch = seq.length >= prev.nBack && seededRandom() < 0.35;
       let nextLetter = '';
 
       if (willMatch) {
-         nextLetter = seq[seq.length - N_BACK];
+         nextLetter = seq[seq.length - prev.nBack];
       } else {
-         nextLetter = LETTERS[Math.floor(Math.random() * LETTERS.length)];
-         // Ensure it doesn't accidentally match if we don't want it to
-         if (seq.length >= N_BACK && nextLetter === seq[seq.length - N_BACK]) {
+         nextLetter = LETTERS[Math.floor(seededRandom() * LETTERS.length)];
+         if (seq.length >= prev.nBack && nextLetter === seq[seq.length - prev.nBack]) {
            nextLetter = LETTERS.find(l => l !== nextLetter) || LETTERS[0];
          }
       }
@@ -71,15 +90,10 @@ export function useNBackEngine() {
         showFeedback: null
       };
     });
+  }, []);
 
-    if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    if (state.round < ROUNDS) {
-       // Proceed to next automatically after 2.5 seconds
-       timeoutRef.current = setTimeout(nextRound, 2500);
-    }
-  }, [state.round]);
-
-  const startGame = useCallback(() => {
+  const startGame = useCallback((seed?: number) => {
+    seedRef.current = seed;
     sequenceRef.current = [];
     userHasAnsweredRef.current = false;
     setState({
@@ -90,20 +104,38 @@ export function useNBackEngine() {
       isActive: true,
       isFinished: false,
       isMatch: null,
-      showFeedback: null
+      showFeedback: null,
+      nBack
     });
-    // Kick off first round
-    if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    timeoutRef.current = setTimeout(nextRound, 500);
-  }, [nextRound]);
+  }, [nBack]);
+
+
+  // Timer logic
+  useEffect(() => {
+    if (state.isActive && !state.isFinished) {
+      const interval = state.round === 0 ? 500 : 2500;
+      const timer = setTimeout(nextRound, interval);
+      return () => clearTimeout(timer);
+    }
+  }, [state.isActive, state.isFinished, state.round, nextRound]);
 
   const answerMatch = useCallback(() => {
-    if (!state.isActive || !state.currentStimulus || userHasAnsweredRef.current) return;
-    
-    userHasAnsweredRef.current = true;
-    
     setState(prev => {
-      let isCorrect = prev.isMatch === true;
+      if (!prev.isActive || !prev.currentStimulus || userHasAnsweredRef.current) return prev;
+      
+      userHasAnsweredRef.current = true;
+      const isCorrect = prev.isMatch === true;
+      
+      emitEvent('CELL_CLICK', { num: 0, isCorrect, reactionTimeMs: 0 });
+
+      if (!isCorrect) {
+        emitEvent('MISTAKE_MADE', {
+           expected: 'no_match',
+           actual: 'match_click',
+           round: prev.round
+        });
+      }
+
       return {
         ...prev,
         score: isCorrect ? prev.score + 1 : prev.score,
@@ -111,20 +143,6 @@ export function useNBackEngine() {
         showFeedback: isCorrect ? 'correct' : 'wrong'
       };
     });
-
-    if (feedbackTimeoutRef.current) clearTimeout(feedbackTimeoutRef.current);
-    feedbackTimeoutRef.current = setTimeout(() => {
-      setState(p => ({ ...p, showFeedback: null }));
-    }, 500);
-
-  }, [state.isActive, state.currentStimulus]);
-
-
-  useEffect(() => {
-    return () => {
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
-      if (feedbackTimeoutRef.current) clearTimeout(feedbackTimeoutRef.current);
-    };
   }, []);
 
   return { state, startGame, answerMatch };

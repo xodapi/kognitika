@@ -4,7 +4,6 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 model User {
@@ -12,27 +11,86 @@ model User {
   name          String?
   email         String?   @unique
   password      String?
+  brainId       String?   @unique
+  pseudonym     String?
   image         String?
   
   level         Int       @default(1)
   experience    Int       @default(0)
   rating        Int       @default(1000)
+  bonuses       Int       @default(0)
   streakDays    Int       @default(0)
   lastPlayedAt  DateTime?
 
+  role          String    @default("USER")
+  createdAt     DateTime  @default(now())
+
   sessions      GameSession[]
   achievements  UserAchievement[]
+  xpEvents      XpEvent[]
+  feedback      Feedback[]
   messages      Message[]
-  createdAt     DateTime  @default(now())
+  ideas         Idea[]
+  ideaVotes     IdeaVote[]
+
+  @@index([brainId])
+  @@index([pseudonym])
+}
+
+model XpEvent {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  amount    Int
+  reason    String
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model LeaderboardEntry {
+  id        String   @id @default(cuid())
+  pseudonym String   @unique
+  xp        Int
+  rank      Int
+  updatedAt DateTime @updatedAt
+
+  @@index([xp(sort: Desc)])
+}
+
+model Feedback {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type          String
+  content       String
+  trackingNum   String   @unique
+  status        String   @default("new")
+  adminResponse String?
+  createdAt     DateTime @default(now())
 }
 
 enum GameType {
   SCHULTE
+  SCHULTE_GORBOV
   NUMERICAL_ANALYSIS
   LOGICAL_SEQUENCE
   SITUATIONAL_JUDGMENT
   STROOP
   N_BACK
+  OBJECTIVE_FILTER
+  PROFILING_RICE
+  ANOMALY_DETECTOR
+  DIALOGUE_2_1
+  SPEED_TYPING
+  SPATIAL_CONCEALMENT
+  TOPOLOGY_MEMORY
+  COLLISION_DETECTOR
+  ASYNC_DISPATCHER
+  NOISE_REDUCTION
+  LANGUAGE_SCANNER
+  DECRYPTOR
+  REALITY_CHECK
 }
 
 model GameSession {
@@ -48,6 +106,28 @@ model GameSession {
   metadata      Json     
   
   createdAt     DateTime @default(now())
+}
+
+model Idea {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id])
+  title         String
+  description   String
+  status        String   @default("open") // open, planned, implemented, rejected
+  votes         IdeaVote[]
+  createdAt     DateTime @default(now())
+}
+
+model IdeaVote {
+  id        String   @id @default(cuid())
+  ideaId    String
+  userId    String
+  idea      Idea     @relation(fields: [ideaId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([ideaId, userId])
 }
 
 model Achievement {

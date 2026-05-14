@@ -3,15 +3,18 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTheme } from 'next-themes';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Moon, Sun, Code2, Play, LayoutDashboard, LogIn, LogOut, 
-  Calculator, Train, Cog, Grid3x3, Palette, BrainCircuit, 
+  Calculator, Cog, Grid3x3, BrainCircuit, 
   Users, Menu, X, Info, MessageSquare, Lock, Trophy, 
-  ExternalLink, ChevronRight, Settings, Heart
+  ExternalLink, ChevronRight, Settings, Heart, Lightbulb, Palette,
+  GitBranch, Filter, Cpu, VolumeX, Leaf, Search
 } from 'lucide-react';
+import { SpeedTyping } from './components/SpeedTyping';
+import { SpatialConcealment } from './components/SpatialConcealment';
 import { SchulteGrid } from './components/SchulteGrid';
 import { Dashboard } from './components/Dashboard';
 import { NumericalAnalysis } from './components/NumericalAnalysis';
@@ -25,20 +28,43 @@ import { SymbolChat } from './components/SymbolChat';
 import { FeedbackModal } from './components/FeedbackModal';
 
 import { AdminPanel } from './components/AdminPanel';
+import { IdeasWall } from './components/IdeasWall';
+import { ObjectiveFilter } from './components/ObjectiveFilter';
+import { ProfilingRICE } from './components/ProfilingRICE';
+import { AnomalyDetector } from './components/AnomalyDetector';
+import { DialogueArchitecture } from './components/DialogueArchitecture';
+import { LeaderboardView } from './components/LeaderboardView';
+import { TopologyMemory } from './components/TopologyMemory';
+import { CollisionDetector } from './components/CollisionDetector';
+import { AsyncDispatcher } from './components/AsyncDispatcher';
+import { NoiseReduction } from './components/NoiseReduction';
+import { LanguageScanner } from './components/LanguageScanner';
+import { Decryptor } from './components/Decryptor';
+import { RealityCheck } from './components/RealityCheck';
+import { DonateButton } from './components/DonateButton';
 
-type Tab = 'dashboard' | 'schulte' | 'numerical' | 'logical' | 'stroop' | 'nback' | 'situational' | 'admin';
+type Tab = 'dashboard' | 'schulte' | 'numerical' | 'logical' | 'stroop' | 'nback' | 'situational' | 'typing' | 'spatial' | 'admin' | 'ideas' | 'objective' | 'profiling' | 'anomaly' | 'dialogue' | 'leaderboard' | 'topology' | 'collision' | 'dispatcher' | 'noise' | 'scanner' | 'decryptor' | 'reality';
 
 function AppContent() {
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
+  const [isDonateOpen, setIsDonateOpen] = useState(false);
   const [isChatEnabled, setIsChatEnabled] = useState(false);
-  const { user, logout } = useAuth();
-  const isAdmin = user?.email === 'serghow4@gmail.com';
+  const { user, logout, token } = useAuth();
+  const isAdmin = (user as any)?.role === 'ADMIN';
+
+  useEffect(() => {
+    if (window.location.pathname === '/leaderboard') {
+      setActiveTab('leaderboard');
+    } else if (window.location.pathname === '/admin') {
+      setActiveTab('admin');
+    }
+  }, []);
 
   return (
-    <div className="h-screen flex flex-col font-sans transition-colors duration-300 bg-background text-foreground overflow-hidden">
+    <div className="min-h-screen flex flex-col font-sans transition-colors duration-300 bg-background text-foreground relative">
       {/* Background Gradients */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden -z-10">
         <div className="absolute top-[10%] left-[5%] w-[40%] h-[40%] bg-primary/5 rounded-full blur-[120px] animate-pulse"></div>
@@ -60,7 +86,7 @@ function AppContent() {
             </div>
             <div className="min-w-0">
               <h1 className="text-lg sm:text-xl font-black tracking-tighter text-foreground uppercase">Когнитика</h1>
-              <p className="text-[9px] text-primary font-bold uppercase tracking-[0.2em] hidden sm:block">Neuro Pulse AI</p>
+              <p className="text-[9px] text-primary font-bold uppercase tracking-[0.2em] hidden sm:block">Система когнитивного развития</p>
             </div>
           </div>
         </div>
@@ -71,6 +97,12 @@ function AppContent() {
             className={`flex items-center gap-2 px-4 py-2 text-xs font-bold uppercase tracking-wider transition-all rounded-lg ${activeTab === 'dashboard' ? 'bg-primary text-primary-foreground shadow-md' : 'text-muted-foreground hover:text-foreground hover:bg-secondary'}`}
           >
             <LayoutDashboard className="w-4 h-4" /> Обзор
+          </button>
+          <button 
+            onClick={() => setActiveTab('leaderboard')} 
+            className={`flex items-center gap-2 px-4 py-2 text-xs font-bold uppercase tracking-wider transition-all rounded-lg ${activeTab === 'leaderboard' ? 'bg-primary text-primary-foreground shadow-md' : 'text-muted-foreground hover:text-foreground hover:bg-secondary'}`}
+          >
+            <Trophy className="w-4 h-4" /> Рейтинг
           </button>
           <div className="w-px h-4 bg-border mx-1"></div>
           <button 
@@ -103,6 +135,18 @@ function AppContent() {
           >
             <BrainCircuit className="w-4 h-4" /> Память
           </button>
+          <button 
+            onClick={() => setActiveTab('typing')} 
+            className={`flex items-center gap-2 px-4 py-2 text-xs font-bold uppercase tracking-wider transition-all rounded-lg ${activeTab === 'typing' ? 'bg-primary text-primary-foreground shadow-md' : 'text-muted-foreground hover:text-foreground hover:bg-secondary'}`}
+          >
+            <Play className="w-4 h-4" /> Печать
+          </button>
+          <button 
+            onClick={() => setActiveTab('spatial')} 
+            className={`flex items-center gap-2 px-4 py-2 text-xs font-bold uppercase tracking-wider transition-all rounded-lg ${activeTab === 'spatial' ? 'bg-primary text-primary-foreground shadow-md' : 'text-muted-foreground hover:text-foreground hover:bg-secondary'}`}
+          >
+            <Grid3x3 className="w-4 h-4" /> Пространство
+          </button>
         </nav>
 
         <div className="flex items-center gap-2 sm:gap-4 shrink-0">
@@ -125,11 +169,13 @@ function AppContent() {
               className="flex items-center gap-2 pl-2 pr-1 py-1 bg-secondary rounded-full border border-border hover:border-primary/30 transition-all group"
             >
               <div className="text-right hidden md:block px-1">
-                <p className="text-[10px] font-bold leading-none transition-colors group-hover:text-primary">{user.name}</p>
+                <p className="text-[10px] font-bold leading-none transition-colors group-hover:text-primary">
+                  {user.pseudonym || user.name || 'Аноним'}
+                </p>
                 <p className="text-[8px] text-primary uppercase font-black tracking-tighter">LVL {user.level || 1}</p>
               </div>
-              <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-xs ring-2 ring-primary/10">
-                {user.name?.[0]?.toUpperCase() || 'U'}
+              <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-xs ring-2 ring-primary/10 uppercase">
+                {(user.pseudonym || user.name || 'A')[0]}
               </div>
             </button>
           ) : (
@@ -144,198 +190,210 @@ function AppContent() {
       <AnimatePresence>
         {isMobileMenuOpen && (
           <>
-            <motion.div 
-               initial={{ opacity: 0 }} 
-               animate={{ opacity: 1 }} 
-               exit={{ opacity: 0 }}
-               onClick={() => setIsMobileMenuOpen(false)}
-               className="fixed inset-0 bg-background/80 backdrop-blur-sm z-[100]"
+            <motion.div
+              key="backdrop"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-background/80 backdrop-blur-md z-[50] lg:hidden"
+              onClick={() => setIsMobileMenuOpen(false)}
             />
-            <motion.div 
-               initial={{ x: '-100%' }} 
-               animate={{ x: 0 }} 
-               exit={{ x: '-100%' }}
-               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-               className="fixed top-0 left-0 bottom-0 w-[85%] max-w-xs bg-card border-r border-border shadow-2xl z-[101] flex flex-col"
+            <motion.div
+              key="sidebar"
+              initial={{ x: '-100%', opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: '-100%', opacity: 0 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="fixed inset-y-0 left-0 w-[280px] bg-card/60 backdrop-blur-2xl border-r border-white/10 z-[51] lg:hidden flex flex-col p-6 shadow-2xl"
             >
-              <div className="p-6 border-b border-border flex justify-between items-center bg-secondary/30">
-                <div className="flex items-center gap-2">
-                   <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white shadow-lg shadow-primary/20">
-                      <div className="w-4 h-4 border-2 border-current rotate-45"></div>
-                   </div>
-                   <span className="font-black uppercase tracking-tighter text-sm">Центр Управления</span>
-                </div>
-                <button onClick={() => setIsMobileMenuOpen(false)} className="p-1.5 hover:bg-secondary rounded-full transition-colors">
-                  <X className="w-5 h-5" />
-                </button>
+            <div className="p-6 border-b border-border flex justify-between items-center bg-secondary/30">
+              <div className="flex items-center gap-2">
+                 <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white shadow-lg shadow-primary/20">
+                    <div className="w-4 h-4 border-2 border-current rotate-45"></div>
+                 </div>
+                 <span className="font-black uppercase tracking-tighter text-sm">Центр Управления</span>
               </div>
+              <button onClick={() => setIsMobileMenuOpen(false)} className="p-1.5 hover:bg-secondary rounded-full transition-colors">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
 
-              <div className="flex-1 overflow-y-auto p-4 space-y-6">
-                {/* User Section */}
-                {user ? (
-                  <div className="bg-secondary/50 rounded-2xl p-4 border border-border shadow-inner">
-                     <div className="flex items-center gap-3 mb-4">
-                        <div className="w-12 h-12 rounded-2xl bg-primary flex items-center justify-center text-white font-black text-xl shadow-lg shadow-primary/20">
-                           {user.name?.[0]?.toUpperCase()}
-                        </div>
-                        <div className="min-w-0">
-                           <p className="font-bold text-base truncate">{user.name}</p>
-                           <p className="text-[10px] text-muted-foreground uppercase font-medium">{user.email}</p>
-                        </div>
-                     </div>
-                     <div className="grid grid-cols-2 gap-2">
-                        <div className="bg-background rounded-xl p-2 text-center border border-border">
-                           <p className="text-[8px] text-muted-foreground uppercase font-bold">Уровень</p>
-                           <p className="text-sm font-black text-primary">{user.level || 1}</p>
-                        </div>
-                        <div className="bg-background rounded-xl p-2 text-center border border-border">
-                           <p className="text-[8px] text-muted-foreground uppercase font-bold">Рейтинг</p>
-                           <p className="text-sm font-black">{user.rating || 0}</p>
-                        </div>
-                     </div>
-                  </div>
-                ) : (
-                  <div className="bg-primary/10 border border-primary/20 rounded-2xl p-6 text-center">
-                    <Trophy className="w-8 h-8 text-primary mx-auto mb-3 opacity-50" />
-                    <p className="text-xs font-bold uppercase tracking-widest mb-4">Войдите для сохранения прогресса</p>
-                    <button onClick={() => { setIsAuthOpen(true); setIsMobileMenuOpen(false); }} className="w-full py-2.5 bg-primary text-white rounded-xl font-bold text-xs uppercase tracking-widest shadow-md">
-                      Авторизация
-                    </button>
-                  </div>
-                )}
-
-                {/* Mobile Navigation */}
-                <div className="space-y-1">
-                   {isAdmin && (
-                     <button 
-                        onClick={() => { setActiveTab('admin'); setIsMobileMenuOpen(false); }}
-                        className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-black transition-all mb-4 border ${activeTab === 'admin' ? 'bg-primary text-white border-primary shadow-lg shadow-primary/20' : 'bg-primary/5 text-primary border-primary/20 hover:bg-primary/10'}`}
-                     >
-                        <div className="flex items-center gap-3">
-                           <Settings className="w-4 h-4" /> ПУЛЬТ УПРАВЛЕНИЯ
-                        </div>
-                        <ChevronRight className="w-4 h-4" />
-                     </button>
-                   )}
-                   <p className="text-[10px] font-black text-muted-foreground uppercase px-3 mb-3 tracking-widest">Когнитивные тесты</p>
-                   {[
-                     { id: 'dashboard', icon: LayoutDashboard, label: 'Рабочий стол' },
-                     { id: 'schulte', icon: Play, label: 'Таблицы Шульте' },
-                     { id: 'numerical', icon: Calculator, label: 'Анализ чисел' },
-                     { id: 'logical', icon: Grid3x3, label: 'Системная логика' },
-                     { id: 'stroop', icon: Palette, label: 'Эффект Струпа' },
-                     { id: 'nback', icon: BrainCircuit, label: 'N-назад (Память)' },
-                     { id: 'situational', icon: Users, label: 'Ситуации' },
-                   ].map((item) => (
-                     <button 
-                        key={item.id}
-                        onClick={() => { setActiveTab(item.id as Tab); setIsMobileMenuOpen(false); }}
-                        className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-bold transition-all ${activeTab === item.id ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'hover:bg-secondary text-muted-foreground hover:text-foreground'}`}
-                     >
-                        <div className="flex items-center gap-3">
-                           <item.icon className="w-4 h-4" /> {item.label}
-                        </div>
-                        {activeTab === item.id && <ChevronRight className="w-4 h-4" />}
-                     </button>
-                   ))}
-                   
-                   {/* Coming Soon Trajectory Items */}
-                   <div className="pt-2 opacity-40">
-                      {[
-                        { label: 'Скоростная печать', icon: Play },
-                        { label: 'Пространство', icon: Grid3x3 }
-                      ].map((item, i) => (
-                        <div key={i} className="w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-bold text-muted-foreground grayscale">
-                           <div className="flex items-center gap-3">
-                              <Lock className="w-4 h-4" /> {item.label}
-                           </div>
-                           <span className="text-[8px] bg-muted px-1.5 py-0.5 rounded uppercase font-black">Скрыто</span>
-                        </div>
-                      ))}
+            <div className="flex-1 overflow-y-auto p-4 space-y-6">
+              {/* User Section */}
+              {user ? (
+                <div className="bg-secondary/50 rounded-2xl p-4 border border-border shadow-inner">
+                   <div className="flex items-center gap-3 mb-4">
+                      <div className="w-12 h-12 rounded-2xl bg-primary flex items-center justify-center text-white font-black text-xl shadow-lg shadow-primary/20 uppercase">
+                         {(user.pseudonym || user.name || 'A')[0]}
+                      </div>
+                      <div className="min-w-0">
+                         <p className="font-bold text-base truncate">{user.pseudonym || user.name || 'Аноним'}</p>
+                         <p className="text-[10px] text-muted-foreground uppercase font-medium">{user.email || 'Anonymous Session'}</p>
+                      </div>
                    </div>
-                </div>
-
-                {/* Settings & System */}
-                <div className="pt-4 border-t border-border">
-                   <p className="text-[10px] font-black text-muted-foreground uppercase px-3 mb-3 tracking-widest">Персонализация</p>
-                   <div className="bg-secondary/30 rounded-2xl p-2 border border-border">
-                      <button 
-                         onClick={() => { setIsFeedbackOpen(true); setIsMobileMenuOpen(false); }}
-                         className="w-full flex items-center justify-between px-3 py-3 rounded-xl hover:bg-secondary transition-all"
-                      >
-                        <div className="flex items-center gap-3">
-                           <div className="p-1.5 rounded-lg bg-primary/20 text-primary">
-                              <MessageSquare className="w-4 h-4" />
-                           </div>
-                           <span className="text-sm font-bold">Обратная связь</span>
-                        </div>
-                        <ChevronRight className="w-4 h-4 text-muted-foreground" />
-                      </button>
-                      <button 
-                         onClick={() => setIsChatEnabled(!isChatEnabled)}
-                         className="w-full flex items-center justify-between px-3 py-3 rounded-xl hover:bg-secondary transition-all"
-                      >
-                        <div className="flex items-center gap-3">
-                           <div className={`p-1.5 rounded-lg ${isChatEnabled ? 'bg-primary/20 text-primary' : 'bg-muted text-muted-foreground'}`}>
-                              <MessageSquare className="w-4 h-4" />
-                           </div>
-                           <span className="text-sm font-bold">Интерактивный чат</span>
-                        </div>
-                        <div className={`w-10 h-5 rounded-full relative transition-all duration-300 ${isChatEnabled ? 'bg-primary' : 'bg-muted-foreground/30'}`}>
-                           <div className={`absolute top-1 w-3 h-3 rounded-full bg-white shadow-sm transition-all duration-300 ${isChatEnabled ? 'right-1' : 'left-1'}`} />
-                        </div>
-                      </button>
-                      <div className="px-3 py-2">
-                         <p className="text-[9px] text-muted-foreground uppercase font-bold mb-2">Цветовая схема</p>
-                         <ThemeToggle />
+                   <div className="grid grid-cols-2 gap-2">
+                      <div className="bg-background rounded-xl p-2 text-center border border-border">
+                         <p className="text-[8px] text-muted-foreground uppercase font-bold">Уровень</p>
+                         <p className="text-sm font-black text-primary">{user.level || 1}</p>
+                      </div>
+                      <div className="bg-background rounded-xl p-2 text-center border border-border">
+                         <p className="text-[8px] text-muted-foreground uppercase font-bold">Рейтинг</p>
+                         <p className="text-sm font-black">{user.rating || 0}</p>
                       </div>
                    </div>
                 </div>
-
-                {/* About & Credits */}
-                <div className="pt-4 border-t border-border">
-                   <div className="bg-background border border-border rounded-2xl p-4 shadow-sm">
-                      <div className="flex items-center gap-2 mb-2 text-primary">
-                         <Info className="w-4 h-4" />
-                         <span className="text-[10px] font-black uppercase tracking-wider">Metatext</span>
-                      </div>
-                      <p className="text-[10px] leading-relaxed text-muted-foreground font-medium">
-                        Создано <span className="text-foreground font-black">Gemini AI</span> по заданию <span className="text-foreground font-black">Богорад Сергея Борисовича</span>.
-                      </p>
-                      <div className="flex justify-between items-center mt-3 pt-3 border-t border-border/50">
-                        <a href="https://syntog.ru" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-[10px] text-primary hover:underline font-black uppercase tracking-tight">
-                          syntog.ru <ExternalLink className="w-2.5 h-2.5" />
-                        </a>
-                        <div className="flex items-center gap-1 text-[9px] text-muted-foreground font-bold italic">
-                           2026 Edition <Heart className="w-2 h-2 text-primary fill-primary" />
-                        </div>
-                      </div>
-                   </div>
-                </div>
-              </div>
-
-              {user && (
-                <div className="p-4 border-t border-border bg-secondary/10">
-                  <button onClick={() => { logout(); setIsMobileMenuOpen(false); }} className="w-full flex items-center justify-center gap-2 px-4 py-3 text-destructive hover:bg-destructive/10 rounded-xl transition-all font-black text-xs uppercase tracking-widest border border-transparent hover:border-destructive/20">
-                    <LogOut className="w-4 h-4" /> Завершить сеанс
+              ) : (
+                <div className="bg-primary/10 border border-primary/20 rounded-2xl p-6 text-center">
+                  <Trophy className="w-8 h-8 text-primary mx-auto mb-3 opacity-50" />
+                  <p className="text-xs font-bold uppercase tracking-widest mb-4">Войдите для сохранения прогресса</p>
+                  <button onClick={() => { setIsAuthOpen(true); setIsMobileMenuOpen(false); }} className="w-full py-2.5 bg-primary text-white rounded-xl font-bold text-xs uppercase tracking-widest shadow-md">
+                    Авторизация
                   </button>
                 </div>
               )}
+
+              {/* Mobile Navigation */}
+              <div className="space-y-1">
+                 <p className="text-[10px] font-black text-muted-foreground uppercase px-3 mb-3 tracking-widest">Когнитивные тесты</p>
+                 {[
+                   { id: 'dashboard', icon: LayoutDashboard, label: 'Рабочий стол' },
+                   { id: 'leaderboard', icon: Trophy, label: 'Рейтинг лидеров' },
+                   { id: 'schulte', icon: Play, label: 'Таблицы Шульте' },
+                   { id: 'numerical', icon: Calculator, label: 'Анализ чисел' },
+                   { id: 'logical', icon: Grid3x3, label: 'Системная логика' },
+                   { id: 'stroop', icon: Palette, label: 'Эффект Струпа' },
+                   { id: 'nback', icon: BrainCircuit, label: 'N-назад (Память)' },
+                   { id: 'situational', icon: Users, label: 'Ситуации' },
+                   { id: 'typing', icon: Play, label: 'Скоростная печать' },
+                   { id: 'spatial', icon: Grid3x3, label: 'Пространство' },
+                   { id: 'topology', icon: GitBranch, label: 'Архитектура контекста' },
+                   { id: 'collision', icon: Filter, label: 'Детектор коллизий' },
+                   { id: 'dispatcher', icon: Cpu, label: 'Асинхр. диспетчер' },
+                   { id: 'noise', icon: VolumeX, label: 'Редукция шума' },
+                   { id: 'scanner', icon: Search, label: 'Смысловой сканер' },
+                   { id: 'ideas', icon: Lightbulb, label: 'Предложения' },
+                 ].map((item) => (
+                   <button 
+                      key={item.id}
+                      onClick={() => { setActiveTab(item.id as Tab); setIsMobileMenuOpen(false); }}
+                      className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-bold transition-all ${activeTab === item.id ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'hover:bg-secondary text-muted-foreground hover:text-foreground'}`}
+                   >
+                      <div className="flex items-center gap-3">
+                         <item.icon className="w-4 h-4" /> {item.label}
+                      </div>
+                      {activeTab === item.id && <ChevronRight className="w-4 h-4" />}
+                   </button>
+                 ))}
+              </div>
+
+              {/* Settings & System */}
+              <div className="pt-4 border-t border-border">
+                 <p className="text-[10px] font-black text-muted-foreground uppercase px-3 mb-3 tracking-widest">Персонализация</p>
+                 <div className="bg-secondary/30 rounded-2xl p-2 border border-border">
+                    <button 
+                       onClick={() => { setIsFeedbackOpen(true); setIsMobileMenuOpen(false); }}
+                       className="w-full flex items-center justify-between px-3 py-3 rounded-xl hover:bg-secondary transition-all"
+                    >
+                      <div className="flex items-center gap-3">
+                         <div className="p-1.5 rounded-lg bg-primary/20 text-primary">
+                            <MessageSquare className="w-4 h-4" />
+                         </div>
+                         <span className="text-sm font-bold">Обратная связь</span>
+                      </div>
+                      <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                    </button>
+                    <button 
+                       onClick={() => setIsChatEnabled(!isChatEnabled)}
+                       className="w-full flex items-center justify-between px-3 py-3 rounded-xl hover:bg-secondary transition-all"
+                    >
+                      <div className="flex items-center gap-3">
+                         <div className={`p-1.5 rounded-lg ${isChatEnabled ? 'bg-primary/20 text-primary' : 'bg-muted text-muted-foreground'}`}>
+                            <MessageSquare className="w-4 h-4" />
+                         </div>
+                         <span className="text-sm font-bold">Интерактивный чат</span>
+                      </div>
+                      <div className={`w-10 h-5 rounded-full relative transition-all duration-300 ${isChatEnabled ? 'bg-primary' : 'bg-muted-foreground/30'}`}>
+                         <div className={`absolute top-1 w-3 h-3 rounded-full bg-white shadow-sm transition-all duration-300 ${isChatEnabled ? 'right-1' : 'left-1'}`} />
+                      </div>
+                    </button>
+                    <button 
+                       onClick={() => { setIsDonateOpen(true); setIsMobileMenuOpen(false); }}
+                       className="w-full flex items-center justify-between px-3 py-3 rounded-xl hover:bg-secondary transition-all"
+                    >
+                      <div className="flex items-center gap-3">
+                         <div className="p-1.5 rounded-lg bg-rose-500/20 text-rose-500">
+                            <Heart className="w-4 h-4" />
+                         </div>
+                         <span className="text-sm font-bold">Поддержать проект</span>
+                      </div>
+                      <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                    </button>
+                    <div className="px-3 py-2">
+                       <p className="text-[9px] text-muted-foreground uppercase font-bold mb-2">Цветовая схема</p>
+                       <ThemeToggle />
+                    </div>
+                 </div>
+              </div>
+
+              {/* About & Credits */}
+              <div className="pt-4 border-t border-border">
+                 <div className="bg-background border border-border rounded-2xl p-4 shadow-sm">
+                    <div className="flex items-center gap-2 mb-2 text-primary">
+                       <Info className="w-4 h-4" />
+                       <span className="text-[10px] font-black uppercase tracking-wider">Metatext</span>
+                    </div>
+                    <p className="text-[10px] leading-relaxed text-muted-foreground font-medium">
+                      Создано <span className="text-foreground font-black">Gemini AI</span> по заданию <span className="text-foreground font-black">Богорад Сергея Борисовича</span>.
+                    </p>
+                    <div className="flex justify-between items-center mt-3 pt-3 border-t border-border/50">
+                      <a href="https://syntog.ru" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-[10px] text-primary hover:underline font-black uppercase tracking-tight">
+                        syntog.ru <ExternalLink className="w-2.5 h-2.5" />
+                      </a>
+                      <div className="flex items-center gap-1 text-[9px] text-muted-foreground font-bold italic">
+                         2026 Edition <Heart className="w-2 h-2 text-primary fill-primary" />
+                      </div>
+                    </div>
+                 </div>
+              </div>
+            </div>
+
+            {user && (
+              <div className="p-4 border-t border-border bg-secondary/10">
+                <button onClick={() => { logout(); setIsMobileMenuOpen(false); }} className="w-full flex items-center justify-center gap-2 px-4 py-3 text-destructive hover:bg-destructive/10 rounded-xl transition-all font-black text-xs uppercase tracking-widest border border-transparent hover:border-destructive/20">
+                  <LogOut className="w-4 h-4" /> Завершить сеанс
+                </button>
+              </div>
+            )}
             </motion.div>
           </>
         )}
       </AnimatePresence>
 
-      <main className="flex-1 w-full max-w-[1400px] mx-auto grid grid-cols-1 lg:grid-cols-12 gap-4 min-h-0 relative z-10 overflow-y-auto lg:overflow-visible pb-24 lg:pb-6 px-4 md:px-8 mt-4 hide-scrollbar">
+      <main className="flex-1 w-full max-w-[1400px] mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 relative z-10 pb-32 lg:pb-10 px-4 md:px-8 mt-4">
          <div className="lg:col-span-9 h-full">
-            {activeTab === 'dashboard' && <Dashboard />}
+            {activeTab === 'dashboard' && <Dashboard onStartGame={(game) => setActiveTab(game as Tab)} />}
             {activeTab === 'schulte' && <SchulteGrid />}
             {activeTab === 'numerical' && <NumericalAnalysis />}
             {activeTab === 'logical' && <LogicalMatrix />}
             {activeTab === 'stroop' && <StroopTest />}
             {activeTab === 'nback' && <NBackTest />}
             {activeTab === 'situational' && <SituationalJudgmentTest />}
-            {activeTab === 'admin' && <AdminPanel />}
+            {activeTab === 'typing' && <SpeedTyping />}
+            {activeTab === 'spatial' && <SpatialConcealment />}
+            {activeTab === 'objective' && <ObjectiveFilter />}
+            {activeTab === 'profiling' && <ProfilingRICE />}
+            {activeTab === 'anomaly' && <AnomalyDetector />}
+            {activeTab === 'dialogue' && <DialogueArchitecture />}
+            {activeTab === 'admin' && <AdminPanel token={token} />}
+            {activeTab === 'ideas' && <IdeasWall token={token} />}
+            {activeTab === 'leaderboard' && <LeaderboardView />}
+            {activeTab === 'topology' && <TopologyMemory />}
+            {activeTab === 'collision' && <CollisionDetector />}
+            {activeTab === 'dispatcher' && <AsyncDispatcher />}
+            {activeTab === 'noise' && <NoiseReduction level={1} />}
+            {activeTab === 'scanner' && <LanguageScanner />}
+            {activeTab === 'decryptor' && <Decryptor />}
+            {activeTab === 'reality' && <RealityCheck onFinish={() => setActiveTab('dashboard')} />}
          </div>
          
          {/* Adaptive Chat Position */}
@@ -380,6 +438,7 @@ function AppContent() {
 
       <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />
       <FeedbackModal isOpen={isFeedbackOpen} onClose={() => setIsFeedbackOpen(false)} />
+      <DonateButton isOpen={isDonateOpen} onClose={() => setIsDonateOpen(false)} />
     </div>
   );
 }
@@ -405,6 +464,9 @@ function ThemeToggle() {
        </button>
        <button onClick={() => setTheme('matrix')} className={`p-1.5 rounded-md transition-all ${theme === 'matrix' ? 'bg-background text-primary shadow-sm ring-1 ring-border' : 'text-muted-foreground hover:bg-background/50'}`} title="Матрица">
          <Code2 className="w-3.5 h-3.5" />
+       </button>
+       <button onClick={() => setTheme('nature')} className={`p-1.5 rounded-md transition-all ${theme === 'nature' ? 'bg-background text-primary shadow-sm ring-1 ring-border' : 'text-muted-foreground hover:bg-background/50'}`} title="Позитив">
+         <Leaf className="w-3.5 h-3.5" />
        </button>
     </div>
   )

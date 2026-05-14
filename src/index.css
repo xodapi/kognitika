@@ -35,26 +35,26 @@
 
 @layer base {
   :root, [data-theme='dark'] {
-    --background: 220 33% 3%;
+    --background: 240 10% 4%; /* Obsidian Black */
     --foreground: 240 5% 96%;
-    --card: 240 6% 10%;
+    --card: 240 10% 6%;
     --card-foreground: 240 5% 96%;
-    --popover: 240 6% 10%;
+    --popover: 240 10% 6%;
     --popover-foreground: 240 5% 96%;
-    --primary: 158 72% 52%; 
-    --primary-foreground: 240 6% 10%;
-    --secondary: 240 4% 16%;
+    --primary: 260 90% 70%; /* Neon Violet / Electric Blue Mix */
+    --primary-foreground: 240 10% 4%;
+    --secondary: 240 10% 10%;
     --secondary-foreground: 240 5% 96%;
-    --muted: 240 4% 16%;
+    --muted: 240 10% 10%;
     --muted-foreground: 240 5% 65%;
-    --accent: 158 72% 52%;
-    --accent-foreground: 240 6% 10%;
+    --accent: 260 90% 70%;
+    --accent-foreground: 240 10% 4%;
     --destructive: 346 87% 60%;
     --destructive-foreground: 210 40% 98%;
-    --border: 240 4% 16%;
-    --input: 240 4% 16%;
-    --ring: 158 72% 52%;
-    --radius: 1rem;
+    --border: 240 10% 12%;
+    --input: 240 10% 12%;
+    --ring: 260 90% 70%;
+    --radius: 1.5rem;
   }
 
   [data-theme='light'] {
@@ -147,6 +147,29 @@
     --input: 20 10% 18%;
     --ring: 35 90% 50%;
     --radius: 0.2rem;
+  }
+
+  [data-theme='nature'] {
+    --background: 140 20% 98%;
+    --foreground: 140 40% 10%;
+    --card: 140 20% 100%;
+    --card-foreground: 140 40% 10%;
+    --popover: 140 20% 100%;
+    --popover-foreground: 140 40% 10%;
+    --primary: 142 76% 36%; /* Vibrant Green */
+    --primary-foreground: 140 20% 98%;
+    --secondary: 140 20% 92%;
+    --secondary-foreground: 140 40% 10%;
+    --muted: 140 20% 90%;
+    --muted-foreground: 140 10% 40%;
+    --accent: 142 76% 36%;
+    --accent-foreground: 140 20% 98%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 140 20% 88%;
+    --input: 140 20% 88%;
+    --ring: 142 76% 36%;
+    --radius: 1.25rem;
   }
 }
 

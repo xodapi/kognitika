@@ -1,13 +1,22 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
-import { motion } from 'motion/react';
-import { Trophy, Zap, Target, Star, Lock, Activity, Award, Flame } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
+import { Trophy, Zap, Target, Star, Lock, Activity, Award, Flame, CheckCircle2, MessageSquare, Lightbulb, Shield, ArrowUpRight } from 'lucide-react';
+import { IdeasWall } from './IdeasWall';
+import { AdminPanel } from './AdminPanel';
+import { TrainingGallery } from './TrainingGallery';
+import { BrainIdBadge } from './BrainIdBadge';
 
-export function Dashboard() {
-  const { user, token } = useAuth();
+export function Dashboard({ onStartGame }: { onStartGame: (game: string) => void }) {
+  const { user, token, refreshUser } = useAuth();
+// ... [rest of logic]
   const [data, setData] = useState<any[]>([]);
   const [leaderboard, setLeaderboard] = useState<any[]>([]);
+  const [dailyTasks, setDailyTasks] = useState<any[]>([]);
+  const [levelProgress, setLevelProgress] = useState(0);
+  const [userRole, setUserRole] = useState<string>('USER');
+  const [activeTab, setActiveTab] = useState<'training' | 'ideas' | 'admin'>('training');
 
   useEffect(() => {
      // Fetch leaderboard
@@ -20,6 +29,18 @@ export function Dashboard() {
 
      if (!token) return;
 
+     // Fetch daily status
+     fetch('/api/dashboard/status', {
+        headers: { 'Authorization': `Bearer ${token}` }
+     })
+     .then(res => res.json())
+     .then(resData => {
+        if (resData.dailyTasks) setDailyTasks(resData.dailyTasks);
+        if (resData.levelProgress !== undefined) setLevelProgress(resData.levelProgress);
+        if (resData.role) setUserRole(resData.role);
+     })
+     .catch(console.error);
+
      // Fetch user progress
      fetch('/api/progress', {
         headers: { 'Authorization': `Bearer ${token}` }
@@ -27,7 +48,7 @@ export function Dashboard() {
      .then(res => res.json())
      .then(resData => {
           if (Array.isArray(resData)) {
-             const schulteData = resData.filter(d => d.gameType === 'SCHULTE');
+             const schulteData = resData.filter(d => d.gameType === 'SCHULTE' || d.gameType === 'SCHULTE_GORBOV');
              const chartData = schulteData.map((d: any) => {
                 const dt = new Date(d.createdAt);
                 const m = dt.toLocaleString('ru', { month: 'short' });
@@ -43,181 +64,241 @@ export function Dashboard() {
   }, [token]);
 
   const milestones = [
-    { title: 'Базовая концентрация', level: 1, type: 'completed', icon: Award },
-    { title: 'Скоростной анализ', level: 5, type: 'active', icon: Zap },
-    { title: 'Системное мышление', level: 10, type: 'locked', icon: Star },
-    { title: 'Когнитивный поток', level: 25, type: 'locked', icon: Target },
-    { title: 'Мастер Интеллекта', level: 50, type: 'locked', icon: Trophy },
+    { title: 'Базовая концентрация', level: 1, icon: Award },
+    { title: 'Скоростной анализ', level: 5, icon: Zap },
+    { title: 'Системное мышление', level: 10, icon: Star },
+    { title: 'Когнитивный поток', level: 25, icon: Target },
+    { title: 'Мастер Интеллекта', level: 50, icon: Trophy },
   ];
 
   return (
-    <div className="space-y-4 h-full flex flex-col pb-8">
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-        {/* Profile Card */}
-        <div className="lg:col-span-4 bg-card/40 border border-border rounded-3xl p-6 relative overflow-hidden group">
-           <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-              <Activity className="w-24 h-24 text-primary" />
-           </div>
-           <h3 className="text-[10px] text-primary uppercase font-black tracking-widest mb-4">Статус оператора</h3>
-           <div className="flex items-center gap-4 mb-6">
-              <div className="w-16 h-16 rounded-2xl bg-primary flex items-center justify-center text-white text-3xl font-black shadow-lg shadow-primary/20 ring-4 ring-primary/10">
-                 {user?.name?.[0]?.toUpperCase() || 'G'}
-              </div>
+    <div className="space-y-8 flex flex-col pb-12">
+      {/* Navigation Tabs - Decluttered: Only Training and Admin */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2 bg-card/30 p-1.5 border border-border rounded-2xl w-fit">
+          <button 
+            onClick={() => setActiveTab('training')}
+            className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'training' ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20' : 'text-muted-foreground hover:text-foreground'}`}
+          >
+            <Activity className="w-4 h-4" />
+            Тренировки
+          </button>
+          {userRole === 'ADMIN' && (
+            <button 
+              onClick={() => setActiveTab('admin')}
+              className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'admin' ? 'bg-destructive text-destructive-foreground shadow-lg shadow-destructive/20' : 'text-muted-foreground hover:text-destructive'}`}
+            >
+              <Shield className="w-4 h-4" />
+              Админ
+            </button>
+          )}
+        </div>
+
+        {user?.brainId && <BrainIdBadge brainId={user.brainId} pseudonym={user.pseudonym || 'Anonymous'} />}
+      </div>
+
+       <AnimatePresence mode="wait">
+        {activeTab === 'training' && (
+          <motion.div
+            key="training"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="space-y-8"
+          >
+            {/* Welcome Header */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
               <div>
-                 <div className="text-2xl font-black tracking-tighter truncate max-w-[200px]">{user?.name || 'Гость'}</div>
-                 <div className="flex items-center gap-2 text-xs text-muted-foreground font-medium">
-                    <span className="flex items-center gap-1 text-primary"><Flame className="w-3 h-3 fill-current" /> 12 ДНЕЙ</span>
-                    <span>•</span>
-                    <span>ПОСЛЕДНИЙ ВХОД СЕГОДНЯ</span>
-                 </div>
+                <h1 className="text-3xl font-black tracking-tight mb-2">Привет, {user?.pseudonym || user?.name || 'Мастер'}!</h1>
+                <p className="text-muted-foreground text-sm flex items-center gap-2">
+                  <Activity className="w-4 h-4 text-primary" />
+                  Ваш прогресс за сегодня: <span className="text-foreground font-bold">{dailyTasks.filter(t => t.completed).length}/{dailyTasks.length} задач</span>
+                </p>
               </div>
-           </div>
 
-           <div className="grid grid-cols-2 gap-3 mb-6">
-              <div className="bg-secondary/50 rounded-2xl p-4 border border-border/50 text-center shadow-inner">
-                 <p className="text-[10px] text-muted-foreground uppercase font-bold mb-1">УРОВЕНЬ</p>
-                 <p className="text-2xl font-black text-primary">{user?.level || 1}</p>
-              </div>
-              <div className="bg-secondary/50 rounded-2xl p-4 border border-border/50 text-center shadow-inner">
-                 <p className="text-[10px] text-muted-foreground uppercase font-bold mb-1">РЕЙТИНГ</p>
-                 <p className="text-2xl font-black">{user?.rating || 0}</p>
-              </div>
-           </div>
-
-           <div className="space-y-2">
-              <div className="flex justify-between text-[10px] font-black uppercase mb-1">
-                 <span className="text-muted-foreground">ПРОГРЕСС УРОВНЯ</span>
-                 <span className="text-primary">45%</span>
-              </div>
-              <div className="h-2 w-full bg-secondary rounded-full overflow-hidden">
-                 <motion.div initial={{ width: 0 }} animate={{ width: '45%' }} className="h-full bg-primary shadow-[0_0_10px_rgba(var(--primary-rgb),0.5)]" />
-              </div>
-           </div>
-        </div>
-
-        {/* Chart Card */}
-        <div className="lg:col-span-8 bg-card/20 border border-border rounded-3xl p-6 flex flex-col min-h-[350px]">
-           <div className="flex justify-between items-center mb-6">
-              <h3 className="text-[10px] text-muted-foreground uppercase font-black tracking-widest">Аналитика точности (мс)</h3>
-              <div className="flex gap-2">
-                 <span className="px-2 py-0.5 bg-primary/10 text-primary text-[8px] font-black uppercase rounded-md border border-primary/20">7 ДНЕЙ</span>
-              </div>
-           </div>
-           <div className="flex-1 w-full min-h-[250px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={data}>
-                  <style>{`
-                    .recharts-cartesian-grid-horizontal line { stroke: hsl(var(--border)); }
-                    .recharts-cartesian-axis-tick-value { font-weight: 700; }
-                  `}</style>
-                  <CartesianGrid strokeDasharray="3 3" opacity={0.1} vertical={false} />
-                  <XAxis dataKey="date" tick={{fontSize: 9, fill: 'hsl(var(--muted-foreground))'}} axisLine={false} tickLine={false} />
-                  <YAxis tick={{fontSize: 9, fill: 'hsl(var(--muted-foreground))'}} domain={['auto', 'auto']} axisLine={false} tickLine={false} width={40} />
-                  <Tooltip 
-                    cursor={{stroke: 'hsl(var(--primary))', strokeWidth: 1}} 
-                    contentStyle={{ backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))', borderRadius: '1rem', fontSize: '11px', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1)' }} 
-                  />
-                  <Line 
-                    type="monotone" 
-                    dataKey="time" 
-                    stroke="hsl(var(--primary))" 
-                    strokeWidth={3} 
-                    dot={{r: 4, fill: 'hsl(var(--background))', stroke: 'hsl(var(--primary))', strokeWidth: 2}} 
-                    activeDot={{r: 6, fill: 'hsl(var(--primary))', stroke: 'white'}} 
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-           </div>
-        </div>
-      </div>
-
-      {/* Trajectory Path */}
-      <div className="bg-card/20 border border-border rounded-3xl p-6">
-        <h3 className="text-[10px] text-muted-foreground uppercase font-black tracking-widest mb-8 text-center sm:text-left">Траектория когнитивного роста</h3>
-        <div className="relative overflow-x-auto pb-4 hide-scrollbar">
-           {/* Connecting Line */}
-           <div className="absolute top-[24px] left-[40px] right-[40px] h-1 bg-secondary rounded-full hidden md:block"></div>
-           
-           <div className="flex justify-between gap-8 md:gap-4 relative z-10 min-w-[700px] md:min-w-0">
-              {milestones.map((ms, i) => (
-                <div key={i} className="flex flex-col items-center gap-4 text-center w-full group">
-                   <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-500 shrink-0 border-2 ${
-                     ms.type === 'completed' ? 'bg-primary text-white border-primary shadow-lg shadow-primary/20 scale-110' :
-                     ms.type === 'active' ? 'bg-background border-primary text-primary animate-pulse' :
-                     'bg-secondary border-transparent text-muted-foreground opacity-50'
-                   }`}>
-                     {ms.type === 'locked' ? <Lock className="w-5 h-5" /> : <ms.icon className="w-5 h-5" />}
-                   </div>
-                   <div className="min-w-0">
-                      <p className={`text-[9px] font-black uppercase tracking-tighter ${ms.type === 'locked' ? 'text-muted-foreground' : 'text-primary'}`}>
-                        {ms.type === 'completed' ? 'Пройдено' : ms.type === 'active' ? 'В процессе' : 'Скрыто'}
-                      </p>
-                      <h4 className={`text-[11px] font-bold leading-tight mt-1 whitespace-nowrap ${ms.type === 'locked' ? 'text-muted-foreground' : 'text-foreground'}`}>{ms.title}</h4>
-                      <p className="text-[8px] text-muted-foreground uppercase mt-1 font-bold">LVL {ms.level}+</p>
-                   </div>
+              <div className="bg-primary/5 border border-primary/10 rounded-2xl p-4 flex items-center gap-4 max-w-sm">
+                <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
+                  <Lightbulb className="w-5 h-5 text-primary" />
                 </div>
-              ))}
-           </div>
-        </div>
-      </div>
-
-      {/* Leaderboard & Achievements Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 flex-1 min-h-0">
-         <div className="lg:col-span-4 bg-card/40 border border-border rounded-3xl p-6 h-full flex flex-col">
-            <h3 className="text-[10px] text-muted-foreground uppercase font-black tracking-widest mb-4">Зал славы</h3>
-            <div className="space-y-2 flex-1 overflow-y-auto max-h-[300px] lg:max-h-none pr-1 scrollbar-hide">
-               {leaderboard.length > 0 ? leaderboard.map((u, i) => (
-                 <div key={u.id} className={`flex items-center gap-3 p-3 border rounded-xl transition-all ${i === 0 ? 'bg-primary/10 border-primary/30 ring-1 ring-primary/20' : 'bg-secondary/30 border-border opacity-70 hover:opacity-100'}`}>
-                    <div className={`w-6 h-6 rounded flex items-center justify-center text-[10px] font-black ${i === 0 ? 'bg-primary text-white' : 'bg-muted text-muted-foreground'}`}>
-                       {(i+1).toString().padStart(2, '0')}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                       <p className="text-xs font-bold truncate">{u.name}</p>
-                       <p className="text-[9px] text-muted-foreground uppercase font-black">RATING {u.rating}</p>
-                    </div>
-                    {i === 0 && <Star className="w-4 h-4 text-primary fill-primary" />}
-                 </div>
-               )) : (
-                 <div className="text-center py-8 opacity-30 italic text-xs">Лидеры еще не определены</div>
-               )}
+                <div>
+                  <p className="text-[10px] text-primary uppercase font-black tracking-widest mb-0.5">Совет дня</p>
+                  <p className="text-[11px] text-muted-foreground leading-tight">
+                    В режиме Горбова не ищите число глазами, старайтесь охватить взглядом всю таблицу сразу.
+                  </p>
+                </div>
+              </div>
             </div>
-         </div>
 
-         <div className="lg:col-span-8 bg-card/40 border border-border rounded-3xl p-6">
-            <h3 className="text-[10px] text-muted-foreground uppercase font-black tracking-widest mb-6">Личные достижения</h3>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-               {[
-                 { label: 'Скороход', desc: 'Шульте < 15 сек', icon: Zap, unlocked: true },
-                 { label: 'Аналитик', desc: 'Числа: 100%', icon: Star, unlocked: true },
-                 { label: 'Магистр', desc: '30 дней тренировок', icon: Award, unlocked: false },
-                 { label: 'Легенда', desc: 'Уровень 50', icon: Trophy, unlocked: false },
-               ].map((ach, i) => (
-                 <div key={i} className={`flex flex-col items-center justify-center p-4 rounded-2xl border text-center transition-all ${ach.unlocked ? 'bg-primary/5 border-primary/20 shadow-sm' : 'bg-secondary/30 border-border opacity-40 grayscale'}`}>
-                    <div className={`w-10 h-10 rounded-2xl flex items-center justify-center mb-3 transition-transform group-hover:scale-110 ${ach.unlocked ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'bg-muted text-muted-foreground'}`}>
-                       <ach.icon className="w-5 h-5" />
-                    </div>
-                    <span className="text-[10px] font-black uppercase tracking-tight leading-tight">{ach.label}</span>
-                    <p className="text-[8px] text-muted-foreground font-bold mt-1 uppercase tracking-tighter">{ach.desc}</p>
-                 </div>
-               ))}
-            </div>
-            
-            <div className="mt-8 p-4 bg-primary/5 border border-primary/10 rounded-2xl flex items-center justify-between">
-               <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
-                     <Trophy className="w-5 h-5 text-primary" />
+            <div className="bg-primary/5 border border-primary/20 rounded-3xl p-6 flex flex-col md:flex-row items-center justify-between gap-6 overflow-hidden relative group">
+               <div className="absolute -right-20 -top-20 w-64 h-64 bg-primary/10 rounded-full blur-3xl group-hover:bg-primary/20 transition-colors" />
+               
+               <div className="flex items-center gap-6 relative z-10">
+                  <div className="w-16 h-16 rounded-2xl bg-primary flex items-center justify-center text-white shadow-xl shadow-primary/20 animate-pulse">
+                     <Trophy className="w-8 h-8 fill-current" />
                   </div>
                   <div>
-                     <p className="text-[10px] font-black uppercase text-primary">Следующее достижение</p>
-                     <p className="text-xs font-bold text-foreground">Завершить 50 тестов</p>
+                     <h2 className="text-xl font-black tracking-tight text-foreground">
+                        Центр подготовки
+                     </h2>
+                     <p className="text-sm text-muted-foreground font-medium">
+                        Выберите модуль для начала ежедневной тренировки
+                     </p>
                   </div>
                </div>
-               <div className="text-right">
-                  <p className="text-sm font-black text-foreground">32/50</p>
+
+               <div className="flex items-center gap-4 relative z-10 w-full md:w-auto overflow-x-auto pb-2 md:pb-0 scrollbar-hide">
+                  {dailyTasks.map(task => (
+                    <div key={task.id} className={`flex flex-col items-center px-4 py-2 border rounded-2xl min-w-[120px] ${task.completed ? 'bg-green-500/10 border-green-500/20' : 'bg-background/50 border-border'}`}>
+                       <span className="text-[9px] font-black uppercase text-foreground mb-1 text-center">
+                          {task.title}
+                       </span>
+                       <div className="flex items-center gap-2">
+                          <span className={`text-[8px] font-black uppercase ${task.completed ? 'text-green-500' : 'text-muted-foreground'}`}>
+                             {task.completed ? 'БОНУС ПОЛУЧЕН' : `+${task.reward} XP`}
+                          </span>
+                          {task.completed && <CheckCircle2 className="w-4 h-4 text-green-500" />}
+                       </div>
+                    </div>
+                  ))}
                </div>
             </div>
-         </div>
-      </div>
+
+            <div className="space-y-4">
+              <div className="flex items-center justify-between px-2">
+                 <h2 className="text-xs font-black uppercase tracking-widest text-muted-foreground">Библиотека симуляций</h2>
+                 <div className="flex items-center gap-2 text-[10px] text-primary font-bold uppercase">
+                    <Activity className="w-3 h-3" /> 9 Доступных модулей
+                 </div>
+              </div>
+              <TrainingGallery onStart={onStartGame} />
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+               {/* Stats & Charts */}
+               <div className="lg:col-span-8 space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                     <div className="bg-card/40 border border-border rounded-2xl p-5 flex flex-col gap-1">
+                        <div className="flex items-center justify-between">
+                           <span className="text-[10px] text-muted-foreground uppercase font-black tracking-widest">Уровень {user?.level || 1}</span>
+                           <Award className="w-4 h-4 text-primary opacity-50" />
+                        </div>
+                        <div className="text-2xl font-black text-foreground">{user?.experience || 0} <span className="text-xs text-muted-foreground">XP</span></div>
+                        <div className="w-full bg-secondary/50 h-1.5 rounded-full mt-2 overflow-hidden">
+                           <motion.div initial={{ width: 0 }} animate={{ width: `${levelProgress}%` }} className="h-full bg-primary" />
+                        </div>
+                     </div>
+                      <div className="bg-card/40 border border-border rounded-2xl p-5 flex flex-col gap-1">
+                         <div className="flex items-center justify-between">
+                            <span className="text-[10px] text-muted-foreground uppercase font-black tracking-widest">Тренировки</span>
+                            <Activity className="w-4 h-4 text-primary opacity-50" />
+                         </div>
+                         <div className="text-2xl font-black text-foreground">{user?._count?.sessions || 0}</div>
+                         <p className="text-[10px] text-muted-foreground mt-1">ВСЕГО СЕССИЙ</p>
+                      </div>
+
+                      <div className="bg-orange-500/10 border border-orange-500/20 rounded-2xl p-5 flex flex-col gap-1 relative overflow-hidden group">
+                         <div className="absolute -right-4 -bottom-4 w-16 h-16 bg-orange-500/20 rounded-full blur-2xl animate-pulse" />
+                         <div className="flex items-center justify-between relative z-10">
+                            <span className="text-[10px] text-orange-500 uppercase font-black tracking-widest">Ударный режим</span>
+                            <Flame className={`w-4 h-4 ${user?.streakDays ? 'text-orange-500 fill-orange-500' : 'text-muted-foreground'} transition-all`} />
+                         </div>
+                         <div className="text-2xl font-black text-foreground relative z-10">
+                            {user?.streakDays || 0} <span className="text-xs text-muted-foreground uppercase">дней</span>
+                         </div>
+                         <p className="text-[10px] text-muted-foreground mt-1 relative z-10">
+                            {user?.streakDays ? 'ВАШ РЕКОРД В ПУТИ' : 'НАЧНИТЕ СЕГОДНЯ'}
+                         </p>
+                      </div>
+
+                      <div className="bg-primary/10 border border-primary/20 rounded-2xl p-5 flex flex-col gap-1 relative overflow-hidden group">
+                         <div className="absolute -right-4 -bottom-4 w-16 h-16 bg-primary/20 rounded-full blur-2xl" />
+                         <div className="flex items-center justify-between relative z-10">
+                            <span className="text-[10px] text-primary uppercase font-black tracking-widest">Следующая цель</span>
+                            <Target className="w-4 h-4 text-primary" />
+                         </div>
+                         <div className="text-xl font-black text-foreground relative z-10">
+                            {data.length > 0 && Math.min(...data.map(d => d.time)) < 30000 
+                              ? 'Выйти из 25с' 
+                              : 'Выйти из 30с'}
+                         </div>
+                         <p className="text-[10px] text-muted-foreground mt-1 relative z-10">ПРОФ. СТАНДАРТ</p>
+                      </div>
+                  </div>
+
+                  <div className="bg-card/40 border border-border rounded-3xl p-6 h-[320px]">
+                     <div className="flex items-center justify-between mb-6">
+                        <h3 className="text-xs font-black uppercase tracking-widest text-muted-foreground">Динамика Шульте</h3>
+                     </div>
+                     <div className="h-[220px] w-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                           <LineChart data={data}>
+                              <CartesianGrid strokeDasharray="3 3" stroke="#ffffff05" vertical={false} />
+                              <XAxis dataKey="date" stroke="#888888" fontSize={10} tickLine={false} axisLine={false} />
+                              <YAxis stroke="#888888" fontSize={10} tickLine={false} axisLine={false} tickFormatter={(v) => `${(v/1000).toFixed(0)}s`} />
+                              <Tooltip contentStyle={{ backgroundColor: '#18181b', border: '1px solid #27272a', borderRadius: '12px', fontSize: '10px' }} />
+                              <Line type="monotone" dataKey="time" stroke="#3b82f6" strokeWidth={3} dot={{ fill: '#3b82f6', r: 4 }} activeDot={{ r: 6 }} />
+                           </LineChart>
+                        </ResponsiveContainer>
+                     </div>
+                  </div>
+               </div>
+
+               {/* Right Sidebar */}
+               <div className="lg:col-span-4 space-y-6">
+                  <div className="bg-card/40 border border-border rounded-3xl p-6">
+                     <h3 className="text-xs font-black uppercase tracking-widest text-muted-foreground mb-6">Ваш Путь</h3>
+                     <div className="space-y-6">
+                        {milestones.map((m, i) => (
+                           <div key={i} className="flex items-center gap-4 relative">
+                              <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border-2 ${m.level <= (user?.level || 1) ? 'bg-primary/10 border-primary text-primary' : 'bg-card border-border text-muted-foreground'}`}>
+                                 <m.icon className="w-5 h-5" />
+                              </div>
+                              <div>
+                                 <p className={`text-xs font-black uppercase tracking-wide ${m.level <= (user?.level || 1) ? 'text-foreground' : 'text-muted-foreground'}`}>{m.title}</p>
+                                 <p className="text-[10px] text-muted-foreground uppercase font-bold">Уровень {m.level}</p>
+                              </div>
+                              {m.level > (user?.level || 1) && <Lock className="w-3 h-3 text-muted-foreground/30 ml-auto" />}
+                           </div>
+                        ))}
+                     </div>
+                  </div>
+
+                   <div className="bg-card/40 border border-border rounded-3xl p-6">
+                      <div className="flex items-center justify-between mb-4">
+                         <h3 className="text-xs font-black uppercase tracking-widest text-muted-foreground">Лидеры</h3>
+                         <button onClick={() => onStartGame('leaderboard')} className="text-[9px] font-black uppercase text-primary hover:underline flex items-center gap-1">
+                            Весь список <ArrowUpRight className="w-2.5 h-2.5" />
+                         </button>
+                      </div>
+                     <div className="space-y-3">
+                        {leaderboard.slice(0, 5).map((u, i) => (
+                           <div key={i} className="flex items-center justify-between p-2 rounded-xl">
+                              <div className="flex items-center gap-3">
+                                 <span className="text-[10px] font-black text-muted-foreground">{i + 1}</span>
+                                 <span className="text-xs font-bold text-foreground">{u.name || 'Машинист'}</span>
+                              </div>
+                              <div className="text-[10px] font-black text-primary">{u.experience} XP</div>
+                           </div>
+                        ))}
+                     </div>
+                  </div>
+               </div>
+            </div>
+          </motion.div>
+        )}
+
+        {activeTab === 'ideas' && (
+          <motion.div key="ideas" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
+            <IdeasWall token={token} />
+          </motion.div>
+        )}
+
+        {activeTab === 'admin' && (
+          <motion.div key="admin" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}>
+            <AdminPanel token={token} />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
