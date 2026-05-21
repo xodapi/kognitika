@@ -14,6 +14,7 @@
     "validate": "vitest run src/tests/schulte-core.test.ts src/tests/typing-core.test.ts src/tests/spatial-core.test.ts src/tests/nback-core.test.ts src/tests/stroop-core.test.ts src/tests/logical-core.test.ts src/tests/numerical-core.test.ts src/tests/topology-core.test.ts src/tests/collision-core.test.ts src/tests/dispatcher-core.test.ts src/tests/noise-reduction.test.ts src/tests/puzzle-logic.test.ts src/tests/logic-verification.test.ts src/tests/reproducibility.test.ts src/tests/content-db.test.ts"
   },
   "dependencies": {
+    "@prisma/adapter-pg": "^7.2.0",
     "@prisma/client": "^7.2.0",
     "@types/cors": "^2.8.19",
     "bcryptjs": "^3.0.2",
@@ -21,15 +22,20 @@
     "cors": "^2.8.6",
     "dotenv": "^17.2.3",
     "express": "^4.21.2",
+    "express-rate-limit": "^8.5.2",
     "firebase": "^10.14.0",
     "jsonwebtoken": "^9.0.3",
     "lucide-react": "^0.546.0",
     "motion": "^12.23.24",
     "next-themes": "^0.4.6",
     "nodemailer": "^6.10.0",
+    "pg": "^8.14.0",
     "react": "^19.0.1",
     "react-dom": "^19.0.1",
+    "react-router-dom": "^7.15.1",
     "recharts": "^3.8.1",
+    "socket.io": "^4.8.3",
+    "socket.io-client": "^4.8.3",
     "tailwind-merge": "^3.5.0",
     "use-sound": "^5.0.0",
     "uuid": "^14.0.0",
@@ -47,6 +53,7 @@
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^22.14.0",
     "@types/nodemailer": "^6.4.17",
+    "@types/pg": "^8.11.11",
     "@types/uuid": "^10.0.0",
     "@vitejs/plugin-react": "^5.0.4",
     "autoprefixer": "^10.4.21",
@@ -55,7 +62,7 @@
     "tailwindcss": "^4.1.14",
     "tsx": "^4.21.0",
     "typescript": "~5.8.2",
-    "vite": "^6.2.3",
+    "vite": "^7.3.3",
     "vitest": "^3.2.4"
   }
 }

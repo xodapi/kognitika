@@ -76,7 +76,9 @@ function generateChaosStyle(modifications: any, timeMs: number, cellId: number) 
 
 export function SchulteGrid() {
   const [distraction, setDistraction] = useState<'none' | 'audio' | 'visual' | 'chaos'>('none');
-  const { state, startGame, stopGame, resetGame, clickCell, setSettings, applyDifficultySuggestion } = useSchulteEngine(5, 'classic', distraction);
+  const isAIAdaptationEnabled = false; // AI Adaptation disabled as per user request
+
+  const { state, startGame, stopGame, resetGame, clickCell, setSettings, applyDifficultySuggestion } = useSchulteEngine(5, 'classic', distraction, isAIAdaptationEnabled);
   const [isHardcore, setIsHardcore] = useState(false);
   const [showBriefing, setShowBriefing] = useState(false);
   const [bonusAwarded, setBonusAwarded] = useState(0);
@@ -145,7 +147,7 @@ export function SchulteGrid() {
 
   // Adaptive Difficulty Engine
   useEffect(() => {
-    if (state.isActive && state.clickHistory.length >= 3) {
+    if (isAIAdaptationEnabled && state.isActive && state.clickHistory.length >= 3) {
       const last3 = state.clickHistory.slice(-3);
       const avgLast3 = last3.reduce((a, b) => a + b.reactionTimeMs, 0) / 3;
       
@@ -161,11 +163,11 @@ export function SchulteGrid() {
         }
       }
     }
-  }, [state.isActive, state.clickHistory.length, state.modifications.chaosIntervalMs, size, mode, setSettings]);
+  }, [isAIAdaptationEnabled, state.isActive, state.clickHistory.length, state.modifications.chaosIntervalMs, size, mode, setSettings]);
 
   // Real-time Adaptive UI based on stability
   useEffect(() => {
-    if (state.isActive && currentLevel === 'adaptive' && currentStability.stability > 0) {
+    if (isAIAdaptationEnabled && state.isActive && currentLevel === 'adaptive' && currentStability.stability > 0) {
       // If stability is low (variance > 400ms), reduce noise to help focus
       if (currentStability.stability > 400) {
         if (state.modifications.colorNoise !== 'none' || state.modifications.distortion) {
@@ -179,7 +181,7 @@ export function SchulteGrid() {
         }
       }
     }
-  }, [state.isActive, currentLevel, currentStability.stability, state.modifications.colorNoise, state.modifications.distortion, size, mode, setSettings]);
+  }, [isAIAdaptationEnabled, state.isActive, currentLevel, currentStability.stability, state.modifications.colorNoise, state.modifications.distortion, size, mode, setSettings]);
 
   const isGorbov = mode === 'gorbov';
   const targetTime = isGorbov ? 60 : (size === 5 ? 25 : 45);
@@ -330,6 +332,9 @@ export function SchulteGrid() {
                    <div className={`absolute top-1 w-3 h-3 rounded-full bg-white transition-all ${isHardcore ? 'left-6' : 'left-1'}`} />
                  </button>
               </div>
+
+              {/* AI Адаптация toggle removed as per user request */}
+
             </div>
 
             <motion.button 
@@ -466,9 +471,9 @@ export function SchulteGrid() {
                     <span className="text-sm font-mono font-black text-primary">{targetTime}s</span>
                   </div>
                   <div className="h-px bg-border/50 w-full" />
-                  <div className="flex justify-between items-center">
+                  <div className="flex justify-between items-center opacity-30">
                     <span className="text-[10px] text-muted-foreground uppercase font-black">Адаптивность</span>
-                    <span className="text-[10px] text-green-500 font-black uppercase">Активна</span>
+                    <span className="text-[10px] text-muted-foreground font-black uppercase">Выключена</span>
                   </div>
                   <div className="h-px bg-border/50 w-full" />
                   <div className="flex justify-between items-center">
@@ -526,33 +531,7 @@ export function SchulteGrid() {
                </div>
             </div>
 
-            {state.lastSuggestion && (
-              <motion.div 
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="w-full max-w-2xl bg-primary/10 border border-primary/20 rounded-[2rem] p-8 mb-10 flex flex-col sm:flex-row items-center gap-6"
-              >
-                <div className="w-16 h-16 rounded-2xl bg-primary flex items-center justify-center text-primary-foreground shadow-lg flex-shrink-0">
-                  <Star className="w-8 h-8" />
-                </div>
-                <div className="flex-1 text-center sm:text-left">
-                  <p className="text-[10px] text-primary font-black uppercase tracking-widest mb-1">Рекомендация ИИ</p>
-                  <p className="text-sm font-bold text-foreground mb-3">{state.lastSuggestion.message}</p>
-                  <div className="flex flex-wrap gap-2 justify-center sm:justify-start">
-                    <span className="text-[9px] bg-background/50 px-2 py-1 rounded-md border border-border">Сетка: {state.lastSuggestion.nextGridSize}x{state.lastSuggestion.nextGridSize}</span>
-                    <span className="text-[9px] bg-background/50 px-2 py-1 rounded-md border border-border">Шум: {Math.round(state.lastSuggestion.noiseLevel * 100)}%</span>
-                  </div>
-                </div>
-                <button 
-                  onClick={() => {
-                    applyDifficultySuggestion(state.lastSuggestion);
-                  }}
-                  className="px-6 py-3 bg-primary text-primary-foreground text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-primary/90 transition-all shadow-md"
-                >
-                  Применить
-                </button>
-              </motion.div>
-            )}
+            {/* AI Recommendation card removed as per user request */}
 
             <div className="w-full bg-background/50 border border-border rounded-[2.5rem] p-8 mb-10 overflow-hidden shadow-inner grid grid-cols-1 lg:grid-cols-2 gap-8">
                 <div>
@@ -742,7 +721,7 @@ export function SchulteGrid() {
              </div>
              <div className="text-center">
                 <p className="text-[10px] text-muted-foreground uppercase font-black tracking-[0.3em] mb-2">Оперативный Контроль</p>
-                <p className="text-[10px] text-muted-foreground/60 leading-relaxed uppercase tracking-tighter">Система ведет запись нейронной активности и паттернов внимания.</p>
+                <p className="text-[10px] text-muted-foreground/60 leading-relaxed uppercase tracking-tighter">Система ведет запись когнитивной активности и паттернов внимания.</p>
              </div>
           </div>
           <motion.button 

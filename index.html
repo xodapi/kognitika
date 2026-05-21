@@ -4,8 +4,11 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="Когнитика — профессиональная платформа для тренировки внимания, памяти и скорости реакции. Развивайте когнитивные функции с помощью проверенных методик." />
+    <meta name="keywords" content="когнитивные тренажеры, развитие памяти, тренировка внимания, таблицы шульте, н-назад, тест струпа" />
     <meta property="og:title" content="Когнитика — Тренажер внимания и памяти" />
     <meta property="og:description" content="Развивайте внимание и память с помощью профессиональных когнитивных тестов." />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://kognitika.ru/" />
     <!-- <link rel="manifest" href="/manifest.json" /> -->
     <title>Когнитика — Тренажер внимания и памяти</title>
   </head>
@@ -18,7 +21,6 @@
         if (!window.location.search.includes('retry=1')) {
           const url = new URL(window.location.href);
           url.searchParams.set('retry', '1');
-          // Очистка кеша перед ретраем
           if ('serviceWorker' in navigator) {
             navigator.serviceWorker.getRegistrations().then(regs => {
               for(let reg of regs) reg.unregister();
@@ -29,7 +31,6 @@
           }
         }
       }
-      // Авто-детект белого экрана (если через 5 сек root всё еще пуст)
       setTimeout(() => {
         const root = document.getElementById('root');
         if (root && root.innerHTML === '' && !window.location.search.includes('retry=1')) {
@@ -37,30 +38,15 @@
         }
       }, 5000);
     </script>
-    <!-- PWA Disabled temporarily to resolve White Screen issues -->
     <script>
-      // Kill Switch for any existing Service Workers
       if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.getRegistrations().then(registrations => {
+        navigator.serviceWorker.getRegistrations().then(function(registrations) {
           for(let registration of registrations) {
-            registration.unregister().then(success => {
-              if(success) console.log('[PWA] ServiceWorker killed successfully');
-            });
+            registration.unregister();
+            console.log('[PWA] ServiceWorker unregistered');
           }
         });
       }
-      
-      /* SW Registration disabled
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js?v=2.2.1').then(reg => {
-            console.log('[PWA] ServiceWorker registration successful');
-          }).catch(err => {
-            console.log('[PWA] ServiceWorker registration failed: ', err);
-          });
-        });
-      }
-      */
     </script>
   </body>
 </html>

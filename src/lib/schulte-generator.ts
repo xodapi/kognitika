@@ -20,12 +20,36 @@ export const generateExpectedSequence = (size: number, mode: GameMode): CellValu
     for (let i = 1; i <= total; i++) seq.push({ id: 0, num: i, color: 'black' });
   } else if (mode === 'reverse') {
     for (let i = total; i >= 1; i--) seq.push({ id: 0, num: i, color: 'black' });
-  } else if (mode === 'gorbov') {
+  } else if (mode === 'gorbov' || mode === 'gorbov_v1') {
     const blackCount = Math.ceil(total / 2);
     const redCount = Math.floor(total / 2);
     let b = 1, r = redCount;
     while (b <= blackCount || r >= 1) {
       if (b <= blackCount) { seq.push({ id: 0, num: b, color: 'black' }); b++; }
+      if (r >= 1) { seq.push({ id: 0, num: r, color: 'red' }); r--; }
+    }
+  } else if (mode === 'gorbov_v2') {
+    const blackCount = Math.ceil(total / 2);
+    const redCount = Math.floor(total / 2);
+    let b = 1, r = 1;
+    while (b <= blackCount || r <= redCount) {
+      if (b <= blackCount) { seq.push({ id: 0, num: b, color: 'black' }); b++; }
+      if (r <= redCount) { seq.push({ id: 0, num: r, color: 'red' }); r++; }
+    }
+  } else if (mode === 'gorbov_v3') {
+    const blackCount = Math.ceil(total / 2);
+    const redCount = Math.floor(total / 2);
+    let b = blackCount, r = 1;
+    while (b >= 1 || r <= redCount) {
+      if (b >= 1) { seq.push({ id: 0, num: b, color: 'black' }); b--; }
+      if (r <= redCount) { seq.push({ id: 0, num: r, color: 'red' }); r++; }
+    }
+  } else if (mode === 'gorbov_v4') {
+    const blackCount = Math.ceil(total / 2);
+    const redCount = Math.floor(total / 2);
+    let b = blackCount, r = redCount;
+    while (b >= 1 || r >= 1) {
+      if (b >= 1) { seq.push({ id: 0, num: b, color: 'black' }); b--; }
       if (r >= 1) { seq.push({ id: 0, num: r, color: 'red' }); r--; }
     }
   } else {
@@ -43,7 +67,7 @@ export const generateGrid = (size: number, mode: GameMode, seed?: number): CellV
   
   const random = () => rng ? rng.next() : Math.random();
 
-  if (mode === 'gorbov') {
+  if (mode === 'gorbov' || mode.startsWith('gorbov_')) {
     const blackCount = Math.ceil(total / 2);
     const redCount = Math.floor(total / 2);
     for (let i = 1; i <= blackCount; i++) cells.push({ id: i, num: i, color: 'black' });

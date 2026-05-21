@@ -79,66 +79,40 @@ export async function getDifficultySuggestion(avgTime: number, stability: number
  * High-performance typing analytics.
  */
 export async function getTypingStats(chars: number, ms: number, errors: number): Promise<TypingStats> {
-  try {
-    const wasm = await import('../../../packages/analytics-kernel/pkg/analytics_kernel');
-    return wasm.calculate_typing_stats(chars, ms, errors);
-  } catch (error) {
-    const minutes = ms / 60000;
-    const cpm = minutes > 0 ? chars / minutes : 0;
-    return {
-      cpm,
-      wpm: cpm / 5,
-      accuracy: Math.max(0, chars > 0 ? ((chars - errors) / chars) * 100 : 100),
-      errors
-    };
-  }
+  const minutes = ms / 60000;
+  const cpm = minutes > 0 ? chars / minutes : 0;
+  return {
+    cpm,
+    wpm: cpm / 5,
+    accuracy: Math.max(0, chars > 0 ? ((chars - errors) / chars) * 100 : 100),
+    errors
+  };
 }
 
 /**
  * Stroop effect analytics.
  */
 export async function getStroopMetrics(congruentAvgMs: number, incongruentAvgMs: number, errors: number, total: number): Promise<StroopMetrics> {
-  try {
-    const wasm = await import('../../../packages/analytics-kernel/pkg/analytics_kernel');
-    const result = wasm.calculate_stroop_metrics(congruentAvgMs, incongruentAvgMs, errors, total);
-    return {
-      interferenceMs: result.interference_ms,
-      accuracy: result.accuracy,
-      cognitiveControlScore: result.cognitive_control_score
-    };
-  } catch (error) {
-    const interference = incongruentAvgMs - congruentAvgMs;
-    const accuracy = total > 0 ? ((total - errors) / total) * 100 : 100;
-    return {
-      interferenceMs: interference,
-      accuracy,
-      cognitiveControlScore: Math.max(0, 100 - (interference / 10) - (100 - accuracy))
-    };
-  }
+  const interference = incongruentAvgMs - congruentAvgMs;
+  const accuracy = total > 0 ? ((total - errors) / total) * 100 : 100;
+  return {
+    interferenceMs: interference,
+    accuracy,
+    cognitiveControlScore: Math.max(0, 100 - (interference / 10) - (100 - accuracy))
+  };
 }
 
 /**
  * Semantic consistency analytics (Mind-Guard modules).
  */
 export async function getSemanticConsistency(correctHits: number, totalItems: number, avgTimeMs: number): Promise<SemanticMetrics> {
-  try {
-    const wasm = await import('../../../packages/analytics-kernel/pkg/analytics_kernel');
-    // @ts-ignore - The function might not be in the .d.ts but it is in the Rust source and .wasm
-    const result = wasm.calculate_semantic_consistency(correctHits, totalItems, avgTimeMs);
-    return {
-      consistencyScore: result.consistency_score,
-      detectionAccuracy: result.detection_accuracy,
-      cognitiveVigilance: result.cognitive_vigilance
-    };
-  } catch (error) {
-    const accuracy = totalItems > 0 ? (correctHits / totalItems) * 100 : 0;
-    const speedFactor = Math.min(1.0, 5000 / Math.max(1000, avgTimeMs));
-    return {
-      consistencyScore: accuracy,
-      detectionAccuracy: accuracy,
-      cognitiveVigilance: accuracy * speedFactor
-    };
-  }
+  const accuracy = totalItems > 0 ? (correctHits / totalItems) * 100 : 0;
+  const speedFactor = Math.min(1.0, 5000 / Math.max(1000, avgTimeMs));
+  return {
+    consistencyScore: accuracy,
+    detectionAccuracy: accuracy,
+    cognitiveVigilance: accuracy * speedFactor
+  };
 }
 
 /**

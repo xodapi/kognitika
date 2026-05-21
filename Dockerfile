@@ -7,22 +7,20 @@ RUN apt-get update && apt-get install -y \
     openssl \
     && rm -rf /var/lib/apt/lists/*
 
-COPY package.json pnpm-lock.yaml* ./
-# Install pnpm
-RUN npm install -g pnpm
+COPY package.json ./
 
 # Install dependencies
-RUN pnpm install
+RUN npm install --legacy-peer-deps
 
 # Copy source
 COPY . .
 
 # Generate Prisma Client
-RUN pnpm prisma generate
+RUN npx prisma generate
 
 # Build frontend
-RUN pnpm run build
+RUN npm run build
 
 EXPOSE 3006
 
-CMD ["pnpm", "start"]
+CMD ["npm", "start"]

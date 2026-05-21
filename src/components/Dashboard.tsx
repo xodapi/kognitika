@@ -2,11 +2,17 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import { motion, AnimatePresence } from 'motion/react';
-import { Trophy, Zap, Target, Star, Lock, Activity, Award, Flame, CheckCircle2, MessageSquare, Lightbulb, Shield, ArrowUpRight } from 'lucide-react';
+import { Trophy, Zap, Target, Star, Lock, Activity, Award, Flame, CheckCircle2, MessageSquare, Lightbulb, Shield, ArrowUpRight, Share2, Brain } from 'lucide-react';
 import { IdeasWall } from './IdeasWall';
 import { AdminPanel } from './AdminPanel';
 import { TrainingGallery } from './TrainingGallery';
 import { BrainIdBadge } from './BrainIdBadge';
+import { LeagueBadge } from './LeagueBadge';
+import { ShareCard } from './ShareCard';
+import { DuelsView } from './DuelsView';
+import { CognitiveProfile } from './CognitiveProfile';
+import { Wiki } from './Wiki';
+import { Sword, LayoutDashboard, BookOpen } from 'lucide-react';
 
 export function Dashboard({ onStartGame }: { onStartGame: (game: string) => void }) {
   const { user, token, refreshUser } = useAuth();
@@ -16,7 +22,8 @@ export function Dashboard({ onStartGame }: { onStartGame: (game: string) => void
   const [dailyTasks, setDailyTasks] = useState<any[]>([]);
   const [levelProgress, setLevelProgress] = useState(0);
   const [userRole, setUserRole] = useState<string>('USER');
-  const [activeTab, setActiveTab] = useState<'training' | 'ideas' | 'admin'>('training');
+  const [activeTab, setActiveTab] = useState<'training' | 'profile' | 'duels' | 'wiki' | 'ideas' | 'admin'>('training');
+  const [isShareOpen, setIsShareOpen] = useState(false);
 
   useEffect(() => {
      // Fetch leaderboard
@@ -83,6 +90,27 @@ export function Dashboard({ onStartGame }: { onStartGame: (game: string) => void
             <Activity className="w-4 h-4" />
             Тренировки
           </button>
+          <button 
+            onClick={() => setActiveTab('profile')}
+            className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'profile' ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20' : 'text-muted-foreground hover:text-foreground'}`}
+          >
+            <Brain className="w-4 h-4" />
+            Профиль
+          </button>
+          <button 
+            onClick={() => setActiveTab('duels')}
+            className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'duels' ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20' : 'text-muted-foreground hover:text-foreground'}`}
+          >
+            <Sword className="w-4 h-4" />
+            Дуэли
+          </button>
+          <button 
+            onClick={() => setActiveTab('wiki')}
+            className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'wiki' ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20' : 'text-muted-foreground hover:text-foreground'}`}
+          >
+            <BookOpen className="w-4 h-4" />
+            Знания
+          </button>
           {userRole === 'ADMIN' && (
             <button 
               onClick={() => setActiveTab('admin')}
@@ -94,7 +122,10 @@ export function Dashboard({ onStartGame }: { onStartGame: (game: string) => void
           )}
         </div>
 
-        {user?.brainId && <BrainIdBadge brainId={user.brainId} pseudonym={user.pseudonym || 'Anonymous'} />}
+        <div className="flex items-center gap-4">
+          {user?.rating !== undefined && <LeagueBadge rating={user.rating} size="md" />}
+          {user?.brainId && <BrainIdBadge brainId={user.brainId} pseudonym={user.pseudonym || 'Anonymous'} />}
+        </div>
       </div>
 
        <AnimatePresence mode="wait">
@@ -177,7 +208,14 @@ export function Dashboard({ onStartGame }: { onStartGame: (game: string) => void
                {/* Stats & Charts */}
                <div className="lg:col-span-8 space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                     <div className="bg-card/40 border border-border rounded-2xl p-5 flex flex-col gap-1">
+                     <div className="bg-card/40 border border-border rounded-2xl p-5 flex flex-col gap-1 relative group">
+                        <button 
+                          onClick={() => setIsShareOpen(true)}
+                          className="absolute top-4 right-4 p-2 bg-primary/10 text-primary rounded-xl opacity-0 group-hover:opacity-100 transition-all hover:bg-primary/20"
+                          title="Поделиться профилем"
+                        >
+                          <Share2 className="w-3.5 h-3.5" />
+                        </button>
                         <div className="flex items-center justify-between">
                            <span className="text-[10px] text-muted-foreground uppercase font-black tracking-widest">Уровень {user?.level || 1}</span>
                            <Award className="w-4 h-4 text-primary opacity-50" />
@@ -286,6 +324,36 @@ export function Dashboard({ onStartGame }: { onStartGame: (game: string) => void
             </div>
           </motion.div>
         )}
+        
+        {activeTab === 'profile' && (
+          <motion.div 
+            key="profile" 
+            initial={{ opacity: 0, scale: 0.98 }} 
+            animate={{ opacity: 1, scale: 1 }} 
+            exit={{ opacity: 0, scale: 0.98 }}
+            className="space-y-6"
+          >
+            <CognitiveProfile />
+          </motion.div>
+        )}
+
+        {activeTab === 'wiki' && (
+          <motion.div 
+            key="wiki" 
+            initial={{ opacity: 0, x: 20 }} 
+            animate={{ opacity: 1, x: 0 }} 
+            exit={{ opacity: 0, x: -20 }}
+            className="space-y-6"
+          >
+            <Wiki />
+          </motion.div>
+        )}
+
+        {activeTab === 'duels' && (
+          <motion.div key="duels" initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.98 }}>
+            <DuelsView />
+          </motion.div>
+        )}
 
         {activeTab === 'ideas' && (
           <motion.div key="ideas" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
@@ -299,6 +367,8 @@ export function Dashboard({ onStartGame }: { onStartGame: (game: string) => void
           </motion.div>
         )}
       </AnimatePresence>
+
+      <ShareCard isOpen={isShareOpen} onClose={() => setIsShareOpen(false)} />
     </div>
   );
 }

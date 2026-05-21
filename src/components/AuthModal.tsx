@@ -204,7 +204,7 @@ export function AuthModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
                   onChange={e => setName(e.target.value)} 
                   required 
                   className="w-full bg-secondary/50 border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary transition-all"
-                  placeholder="ivan_neuro"
+                  placeholder="ivan_cognitive"
                 />
               </div>
             )}

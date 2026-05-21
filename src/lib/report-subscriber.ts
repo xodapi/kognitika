@@ -1,8 +1,6 @@
 import { eventBus } from './event-bus.ts';
-import { PrismaClient } from '@prisma/client';
+import prisma from './prisma.ts';
 import nodemailer from 'nodemailer';
-
-const prisma = new PrismaClient();
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
   port: parseInt(process.env.SMTP_PORT || '465'),
@@ -27,7 +25,13 @@ eventBus.on('game:completed', async (data) => {
 
   // Check if report was already sent this week (simple metadata check or separate table)
   const user = await prisma.user.findUnique({ where: { id: userId } });
-  if (!user || !user.email) return;
+  if (!user) return;
+
+  // Brain ID пользователи не получают email-отчёты — это нормально
+  if (!user.email) {
+    console.log(`[Report] User ${user.brainId || user.id} is anonymous, skipping email report`);
+    return;
+  }
 
   const lastWeek = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
   

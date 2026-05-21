@@ -1,7 +1,5 @@
-import { PrismaClient } from '@prisma/client';
+import prisma from '../../lib/prisma.ts';
 import { generateBrainId, generatePseudonym } from '../utils/brain-id.ts';
-
-const prisma = new PrismaClient();
 
 async function migrate() {
   console.log('[Migration] Starting migration to Brain ID...');

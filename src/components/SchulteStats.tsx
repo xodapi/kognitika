@@ -79,7 +79,7 @@ export function SchulteStats({ history, size, totalTimeMs, errors }: SchulteStat
         </div>
         <div className="bg-background/40 border border-border p-4 rounded-2xl flex flex-col items-center text-center">
           <TrendingUp className={`w-4 h-4 mb-2 ${stats.drift > 20 ? 'text-destructive' : 'text-primary'}`} />
-          <span className="text-[10px] text-muted-foreground uppercase tracking-widest">Нейро-дрифт</span>
+          <span className="text-[10px] text-muted-foreground uppercase tracking-widest">Когнитивный дрейф</span>
           <span className={`text-lg font-mono font-bold ${stats.drift > 20 ? 'text-destructive' : 'text-primary'}`}>{stats.drift > 0 ? '+' : ''}{stats.drift.toFixed(0)}%</span>
         </div>
       </div>

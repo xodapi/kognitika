@@ -1,102 +1,20 @@
-# 🧠 Kognitika (Когнитика)
+<div align="center">
+<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
+</div>
 
-[![Status](https://img.shields.io/badge/Status-Active-brightgreen.svg)]()
-[![Framework](https://img.shields.io/badge/Framework-React%20%2B%20Vite-blue.svg)]()
-[![Language](https://img.shields.io/badge/Language-TypeScript%20%2B%20Rust-orange.svg)]()
-[![License](https://img.shields.io/badge/License-MIT-green.svg)]()
+# Run and deploy your AI Studio app
 
-> **Платформа высокоскоростного интеллекта и когнитивных тренировок нового поколения.**
+This contains everything you need to run your app locally.
 
-Проект представляет собой высокотехнологичную платформу для тренировки когнитивных функций (внимание, память, логика, скорость реакции) с использованием передовых архитектурных паттернов и аналитического ядра на Rust/WASM.
+View your app in AI Studio: https://ai.studio/apps/d92b6b3a-d19f-411d-9978-a0cc8e148838
 
----
+## Run Locally
 
-## 🚀 Ключевые особенности (Features)
+**Prerequisites:**  Node.js
 
-Платформа включает в себя набор научно обоснованных тренажеров, каждый из которых ориентирован на специфические когнитивные навыки:
 
-*   **Schulte Tables (Таблицы Шульте)** — Тренировка периферического зрения и концентрации.
-*   **Speed Typing** — Оценка и тренировка моторно-речевой координации.
-*   **Spatial Concealment** — Работа с пространственным вниманием.
-*   **N-Back Test** — Тренировка рабочей памяти (золотой стандарт когнитивистики).
-*   **Stroop Test (Тест Струпа)** — Развитие когнитивной гибкости и подавление интерференции.
-*   **Logical Matrix & Numerical Analysis** — Развитие аналитического мышления.
-*   **Topology Memory & Collision Detector** — Продвинутые тренажеры для оперативного мышления.
-
----
-
-## 🏗️ Архитектура «На Мировом Уровне»
-
-Проект прошел масштабный рефакторинг и использует передовые архитектурные решения:
-
-### 1. Event-Driven Core (EDA)
-Логика тренажеров полностью отделена от UI. Вся бизнес-логика вынесена в специализированные хуки (`Core-as-a-Hook`), а общение между ядром, аналитикой и интерфейсом происходит через шину событий (**EventBus**). Это обеспечивает:
-*   Высокую производительность.
-*   Возможность тестирования логики без рендеринга DOM (Headless-тесты).
-*   Детерминизм (воспроизводимость) сессий с поддержкой `seed`.
-
-### 2. Rust + WASM Analytics Kernel
-Критически важные для производительности расчеты и математический анализ сессий вынесены в ядро, написанное на **Rust** и компилируемое в **WebAssembly (WASM)**.
-*   Анализ динамики утомляемости (fatigability) через линейную регрессию.
-*   Динамический расчет сложности следующего уровня.
-
-### 3. Система «Вратарь» (Gatekeeper)
-Внедрена строгая система защиты от регрессий. Перед каждым релизом или коммитом запускается набор симулированных тестов, проходящих тренажеры за миллисекунды для проверки математической корректности.
-
----
-
-## 🛠️ Технологический Стек
-
-*   **Frontend**: React, Vite, TypeScript, TailwindCSS (с Neon/Obsidian стилизацией).
-*   **Core**: EventBus (EDA), Web Audio API (Noise Reduction).
-*   **Analytics**: Rust, WASM (`wasm-bindgen`).
-*   **PWA**: Поддержка автономной работы (Offline mode).
-
----
-
-## 🏁 Быстрый старт (Quick Start)
-
-### Требования
-*   Node.js (v18+)
-*   Rust (если планируется сборка WASM ядра)
-
-### Установка
-
-1.  Клонируйте репозиторий:
-    ```bash
-    git clone https://github.com/xodapi/kognitika.git
-    cd kognitika
-    ```
-2.  Установите зависимости:
-    ```bash
-    npm install
-    ```
-3.  Настройте переменные окружения:
-    Создайте файл `.env.local` и укажите ваш ключ для AI Studio:
-    ```env
-    GEMINI_API_KEY=your_api_key_here
-    ```
-
-### Разработка и Тестирование
-
-*   Запуск сервера разработки: `npm run dev`
-*   Запуск валидации ядра (Вратарь): `npm run validate`
-*   Запуск тестов: `npm run test`
-
----
-
-## 🗺️ Дорожная Карта (Roadmap)
-
-Вектор развития проекта направлен на социализацию и интеграцию:
-*   **Cognitive Duels**: Соревнования в реальном времени (SSE + Redis).
-*   **Global Leaderboards**: Глобальные рейтинги по ролям и профессиям.
-*   **Mobile Optimization**: Адаптация EDA-ядра для бесшовной работы в приложении **Expo** (мобильная версия).
-
----
-
-## 📄 Лицензия
-
-Проект распространяется под лицензией MIT. Подробности в файле [LICENSE](LICENSE).
-
----
-*(English version of this README is coming soon)*
+1. Install dependencies:
+   `npm install`
+2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
+3. Run the app:
+   `npm run dev`

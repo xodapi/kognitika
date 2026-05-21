@@ -1,18 +1,24 @@
-// Kill Switch Service Worker
-self.addEventListener('install', () => {
+self.addEventListener('install', function(e) {
   self.skipWaiting();
 });
 
-self.addEventListener('activate', (event) => {
-  event.waitUntil(
-    caches.keys().then((keys) => {
-      return Promise.all(keys.map((key) => caches.delete(key)));
-    }).then(() => {
+self.addEventListener('activate', function(e) {
+  e.waitUntil(
+    caches.keys().then(function(cacheNames) {
+      return Promise.all(
+        cacheNames.map(function(cacheName) {
+          console.log('[SW] Deleting cache:', cacheName);
+          return caches.delete(cacheName);
+        })
+      );
+    }).then(function() {
+      console.log('[SW] All caches deleted. Unregistering...');
       return self.registration.unregister();
-    }).then(() => {
+    }).then(function() {
       return self.clients.matchAll();
-    }).then((clients) => {
-      clients.forEach((client) => client.navigate(client.url));
+    }).then(function(clients) {
+      console.log('[SW] Reloading clients...');
+      clients.forEach(client => client.navigate(client.url));
     })
   );
 });

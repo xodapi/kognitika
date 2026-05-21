@@ -3,7 +3,7 @@ import { emitEvent } from './useEventBus';
 import { eventBus } from '../lib/event-bus';
 import { generateGrid, generateExpectedSequence } from '../lib/schulte-generator';
 
-export type GameMode = 'classic' | 'reverse' | 'gorbov' | 'colorNoise' | 'scattered' | 'peripheral' | 'hardcore';
+export type GameMode = 'classic' | 'reverse' | 'gorbov' | 'gorbov_v1' | 'gorbov_v2' | 'gorbov_v3' | 'gorbov_v4' | 'colorNoise' | 'scattered' | 'peripheral' | 'hardcore';
 export type DistractionLevel = 'none' | 'audio' | 'visual' | 'chaos';
 
 export type CellValue = {
@@ -39,7 +39,7 @@ export interface SchulteState {
 
 // Logic moved to schulte-generator.ts
 
-export function useSchulteEngine(initialSize: number = 5, mode: GameMode = 'classic', distraction: DistractionLevel = 'none') {
+export function useSchulteEngine(initialSize: number = 5, mode: GameMode = 'classic', distraction: DistractionLevel = 'none', isAIAdaptationEnabled: boolean = false) {
   const [state, setState] = useState<SchulteState>({
     grid: [],
     expectedSequence: [],
@@ -136,7 +136,7 @@ export function useSchulteEngine(initialSize: number = 5, mode: GameMode = 'clas
       if (!state.isActive) return;
 
       const expected = state.expectedSequence[state.expectedIndex];
-      const isMatch = state.mode === 'gorbov' 
+      const isMatch = (state.mode === 'gorbov' || state.mode.startsWith('gorbov_'))
         ? (cell.num === expected.num && cell.color === expected.color)
         : (cell.num === expected.num);
 
@@ -218,12 +218,12 @@ export function useSchulteEngine(initialSize: number = 5, mode: GameMode = 'clas
 
   useEffect(() => {
     const unsub = eventBus.on('DIFFICULTY_SUGGESTION', (suggestion) => {
-      if (state.isActive) {
+      if (isAIAdaptationEnabled && state.isActive) {
         applyDifficultySuggestion(suggestion);
       }
     });
     return unsub;
-  }, [state.isActive, applyDifficultySuggestion]);
+  }, [isAIAdaptationEnabled, state.isActive, applyDifficultySuggestion]);
 
   return { state, startGame, stopGame, resetGame, clickCell, setSettings, applyDifficultySuggestion };
 }

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { Trophy, Medal, Star, Target, Activity, Search, ArrowUpRight, Award, Zap } from 'lucide-react';
+import { LeagueBadge } from './LeagueBadge';
 
 interface LeaderboardUser {
   id: string;
@@ -15,12 +16,15 @@ interface LeaderboardUser {
 }
 
 export function LeaderboardView() {
+// ... [rest of states]
   const [leaderboard, setLeaderboard] = useState<LeaderboardUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [period, setPeriod] = useState<'all' | 'weekly'>('all');
 
   useEffect(() => {
-    fetch('/api/leaderboard')
+    setLoading(true);
+    fetch(`/api/leaderboard?period=${period}`)
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) {
@@ -32,7 +36,7 @@ export function LeaderboardView() {
         console.error('Leaderboard Fetch Error:', err);
         setLoading(false);
       });
-  }, []);
+  }, [period]);
 
   const filteredLeaderboard = leaderboard.filter(u => 
     (u.pseudonym || u.name || 'Аноним').toLowerCase().includes(searchQuery.toLowerCase())
@@ -61,15 +65,32 @@ export function LeaderboardView() {
           </p>
         </div>
 
-        <div className="relative group w-full md:w-64">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
-          <input 
-            type="text" 
-            placeholder="Поиск атлета..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 bg-card/50 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-          />
+        <div className="flex flex-col sm:flex-row items-center gap-4">
+          <div className="flex bg-secondary/50 p-1 rounded-xl border border-border">
+            <button 
+              onClick={() => setPeriod('all')}
+              className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${period === 'all' ? 'bg-primary text-white shadow-md' : 'text-muted-foreground hover:text-foreground'}`}
+            >
+              Весь период
+            </button>
+            <button 
+              onClick={() => setPeriod('weekly')}
+              className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${period === 'weekly' ? 'bg-primary text-white shadow-md' : 'text-muted-foreground hover:text-foreground'}`}
+            >
+              За неделю
+            </button>
+          </div>
+
+          <div className="relative group w-full md:w-64">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
+            <input 
+              type="text" 
+              placeholder="Поиск атлета..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 bg-card/50 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+            />
+          </div>
         </div>
       </div>
 
@@ -89,13 +110,13 @@ export function LeaderboardView() {
                    <div className="w-14 h-14 lg:w-16 lg:h-16 rounded-2xl bg-secondary border-2 border-border flex items-center justify-center text-muted-foreground font-black text-lg lg:text-xl shadow-lg uppercase">
                       {(top3[1].pseudonym || top3[1].name || 'A')[0]}
                    </div>
-                   <div className="mt-1 bg-slate-400 text-slate-900 text-[8px] lg:text-[10px] font-black px-2 lg:px-3 py-1 rounded-full uppercase tracking-widest shadow-sm">
-                      Серебро
+                   <div className="mt-2 scale-90">
+                      <LeagueBadge rating={top3[1].rating} size="sm" showLabel={false} />
                    </div>
                 </div>
                 <div className="mt-8 text-center w-full">
                    <p className="font-black text-base lg:text-lg truncate px-2">{top3[1].name || 'Машинист'}</p>
-                   <p className="text-[10px] text-primary uppercase font-black tracking-widest mb-3">Уровень {top3[1].level}</p>
+                   <p className="text-[10px] text-primary uppercase font-black tracking-widest mb-3"><span>Серебро</span> • Уровень {top3[1].level}</p>
                    <div className="bg-primary/10 px-3 py-1.5 lg:px-4 lg:py-2 rounded-xl border border-primary/20 inline-block">
                       <p className="text-lg lg:text-xl font-black text-foreground">{top3[1].experience} <span className="text-[10px] text-muted-foreground">XP</span></p>
                    </div>
@@ -119,13 +140,13 @@ export function LeaderboardView() {
                          <Star className="w-4 h-4 lg:w-5 lg:h-5 fill-yellow-900 text-yellow-900" />
                       </div>
                    </div>
-                   <div className="mt-1 bg-yellow-400 text-yellow-900 text-[10px] lg:text-[12px] font-black px-3 lg:px-4 py-1 lg:py-1.5 rounded-full uppercase tracking-widest shadow-lg">
-                      Чемпион
+                   <div className="mt-3">
+                      <LeagueBadge rating={top3[0].rating} size="md" showLabel={false} />
                    </div>
                 </div>
                 <div className="mt-12 lg:mt-14 text-center w-full">
                    <p className="font-black text-xl lg:text-2xl truncate px-2 mb-1">{top3[0].name || 'Машинист'}</p>
-                   <p className="text-[10px] lg:text-xs text-primary uppercase font-black tracking-[0.2em] mb-4 lg:mb-6">Уровень {top3[0].level}</p>
+                   <p className="text-[10px] lg:text-xs text-primary uppercase font-black tracking-[0.2em] mb-4 lg:mb-6"><span>Чемпион</span> • Уровень {top3[0].level}</p>
                    <div className="bg-primary text-white px-6 lg:px-8 py-2.5 lg:py-3 rounded-2xl shadow-lg shadow-primary/30 inline-block">
                       <p className="text-xl lg:text-2xl font-black">{top3[0].experience} <span className="text-[10px] lg:text-xs opacity-70">XP</span></p>
                    </div>
@@ -147,13 +168,13 @@ export function LeaderboardView() {
                    <div className="w-14 h-14 lg:w-16 lg:h-16 rounded-2xl bg-secondary border-2 border-border flex items-center justify-center text-muted-foreground font-black text-lg lg:text-xl shadow-lg">
                       {top3[2].name?.[0]?.toUpperCase() || 'M'}
                    </div>
-                   <div className="mt-1 bg-amber-700 text-white text-[8px] lg:text-[10px] font-black px-2 lg:px-3 py-1 rounded-full uppercase tracking-widest shadow-sm">
-                      Бронза
+                   <div className="mt-2 scale-90">
+                      <LeagueBadge rating={top3[2].rating} size="sm" showLabel={false} />
                    </div>
                 </div>
                 <div className="mt-8 text-center w-full">
                    <p className="font-black text-base lg:text-lg truncate px-2">{top3[2].pseudonym || top3[2].name || 'Аноним'}</p>
-                   <p className="text-[10px] text-primary uppercase font-black tracking-widest mb-3">Уровень {top3[2].level}</p>
+                   <p className="text-[10px] text-primary uppercase font-black tracking-widest mb-3"><span>Бронза</span> • Уровень {top3[2].level}</p>
                    <div className="bg-primary/10 px-3 py-1.5 lg:px-4 lg:py-2 rounded-xl border border-primary/20 inline-block">
                       <p className="text-lg lg:text-xl font-black text-foreground">{top3[2].experience} <span className="text-[10px] text-muted-foreground">XP</span></p>
                    </div>
@@ -172,6 +193,7 @@ export function LeaderboardView() {
               <tr className="border-b border-border bg-secondary/30">
                 <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground">Место</th>
                 <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground">Атлет</th>
+                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground text-center">Лига</th>
                 <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground text-center">Уровень</th>
                 <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground text-center">Сессии</th>
                 <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground text-right">Опыт (XP)</th>
@@ -191,6 +213,9 @@ export function LeaderboardView() {
                         </div>
                         <span className="text-sm font-bold">{user.pseudonym || user.name || 'Аноним'}</span>
                       </div>
+                    </td>
+                    <td className="px-6 py-4 text-center">
+                       <LeagueBadge rating={user.rating} size="sm" showLabel={false} />
                     </td>
                     <td className="px-6 py-4 text-center">
                       <span className="text-xs font-black px-2 py-1 bg-secondary rounded-md border border-border uppercase">LVL {user.level}</span>

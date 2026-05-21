@@ -19,7 +19,7 @@ export const Decryptor: React.FC = () => {
         >
           <div className="flex items-center justify-center gap-3 mb-2">
             <Layers className="w-8 h-8 text-purple-400" />
-            <h2 className="text-3xl font-bold tracking-tight">Нейро-щит: Декриптор</h2>
+            <h2 className="text-3xl font-bold tracking-tight">Когнитивный щит: Декриптор</h2>
           </div>
           <p className="text-slate-400">Изучите типы искажений реальности. Отделите факты от эмоционального шума.</p>
         </motion.div>

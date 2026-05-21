@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from '../../../../node_modules/.pnpm/zod@3.25.76/node_modules/zod';
 
 /**
  * Event Schemas (World Class Standards)

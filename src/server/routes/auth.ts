@@ -98,7 +98,8 @@ router.post('/brain', async (req, res) => {
       data: {
         brainId,
         pseudonym,
-        name: pseudonym, 
+        name: pseudonym,
+        email: null,
         experience: 100, // Начальный бонус XP
         role: 'USER',
         xpEvents: {
@@ -114,15 +115,10 @@ router.post('/brain', async (req, res) => {
     res.json({ 
       token, 
       brainId, 
-      user: { 
-        id: user.id, 
-        name: user.name, 
-        pseudonym: user.pseudonym, 
-        role: user.role,
-        experience: user.experience
-      } 
+      pseudonym: user.pseudonym
     });
   } catch (error) {
+    console.error('[Auth] Brain session error:', error);
     res.status(500).json({ error: 'Failed to initialize brain session' });
   }
 });
@@ -143,13 +139,7 @@ router.post('/restore', async (req, res) => {
     const token = jwt.sign({ id: user.id, role: user.role }, JWT_SECRET, { expiresIn: '365d' });
     res.json({ 
       token, 
-      user: { 
-        id: user.id, 
-        name: user.name, 
-        pseudonym: user.pseudonym, 
-        role: user.role,
-        experience: user.experience
-      } 
+      pseudonym: user.pseudonym
     });
   } catch (error) {
     res.status(500).json({ error: 'Failed to restore brain session' });

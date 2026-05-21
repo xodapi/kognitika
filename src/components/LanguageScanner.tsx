@@ -159,9 +159,9 @@ export const LanguageScanner: React.FC = () => {
                     <motion.div
                       initial={{ opacity: 0, backdropFilter: "blur(0px)" }}
                       animate={{ opacity: 1, backdropFilter: "blur(12px)" }}
-                      className="absolute inset-0 z-30 flex flex-col items-center justify-center p-4 bg-white/95 rounded-3xl text-center overflow-hidden"
+                      className="absolute inset-0 z-30 flex flex-col items-center justify-start p-4 bg-white/95 rounded-3xl text-center overflow-hidden"
                     >
-                      <div className="overflow-y-auto w-full max-h-full py-4 px-2 space-y-3">
+                      <div className="overflow-y-auto w-full max-h-full py-8 px-2 space-y-4 scrollbar-hide">
                         <div className={`mx-auto p-3 rounded-full w-fit ${state.lastFeedback.isCorrect ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'}`}>
                           {state.lastFeedback.isCorrect ? (
                             <CheckCircle className="w-8 h-8" />

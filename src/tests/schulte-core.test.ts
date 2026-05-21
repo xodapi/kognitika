@@ -56,7 +56,7 @@ describe('Schulte Core Architecture (Event-Driven)', () => {
       const sequence = [...result.current.state.expectedSequence];
       for (const expectedCell of sequence) {
         const gridCell = result.current.state.grid.find(c => 
-          mode === 'gorbov' 
+          (mode === 'gorbov' || mode.startsWith('gorbov_'))
             ? (c.num === expectedCell.num && c.color === expectedCell.color)
             : (c.num === expectedCell.num)
         )!;
@@ -83,8 +83,25 @@ describe('Schulte Core Architecture (Event-Driven)', () => {
     it('должен проходить таблицу Горбова-Шульте (Черно-красную)', () => {
       const { state, spy } = runFullGame(5, 'gorbov');
       expect(state.isFinished).toBe(true);
-      // В режиме Горбова 1-черное, 24-красное (или наоборот в зависимости от реализации)
       expect(state.expectedSequence.length).toBe(25); 
+      expect(spy).toHaveBeenCalled();
+    });
+
+    it('должен проходить таблицу Горбова-Шульте v2 (Прямой/Прямой)', () => {
+      const { state, spy } = runFullGame(5, 'gorbov_v2');
+      expect(state.isFinished).toBe(true);
+      expect(spy).toHaveBeenCalled();
+    });
+
+    it('должен проходить таблицу Горбова-Шульте v3 (Обратный/Прямой)', () => {
+      const { state, spy } = runFullGame(5, 'gorbov_v3');
+      expect(state.isFinished).toBe(true);
+      expect(spy).toHaveBeenCalled();
+    });
+
+    it('должен проходить таблицу Горбова-Шульте v4 (Обратный/Обратный)', () => {
+      const { state, spy } = runFullGame(5, 'gorbov_v4');
+      expect(state.isFinished).toBe(true);
       expect(spy).toHaveBeenCalled();
     });
 

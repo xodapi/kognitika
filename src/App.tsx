@@ -13,6 +13,8 @@ import {
   ExternalLink, ChevronRight, Settings, Heart, Lightbulb, Palette,
   GitBranch, Filter, Cpu, VolumeX, Leaf, Search
 } from 'lucide-react';
+import { Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom';
+
 import { SpeedTyping } from './components/SpeedTyping';
 import { SpatialConcealment } from './components/SpatialConcealment';
 import { SchulteGrid } from './components/SchulteGrid';
@@ -45,8 +47,38 @@ import { DonateButton } from './components/DonateButton';
 
 type Tab = 'dashboard' | 'schulte' | 'numerical' | 'logical' | 'stroop' | 'nback' | 'situational' | 'typing' | 'spatial' | 'admin' | 'ideas' | 'objective' | 'profiling' | 'anomaly' | 'dialogue' | 'leaderboard' | 'topology' | 'collision' | 'dispatcher' | 'noise' | 'scanner' | 'decryptor' | 'reality';
 
+const tabTitles: Record<string, string> = {
+  '/': 'Обзор',
+  '/dashboard': 'Обзор',
+  '/leaderboard': 'Рейтинг лидеров',
+  '/schulte': 'Таблицы Шульте',
+  '/numerical': 'Числовой анализ',
+  '/logical': 'Системная логика',
+  '/stroop': 'Эффект Струпа',
+  '/nback': 'N-назад (Память)',
+  '/situational': 'Ситуационный тест',
+  '/typing': 'Скоростная печать',
+  '/spatial': 'Пространство',
+  '/topology': 'Архитектура контекста',
+  '/collision': 'Детектор коллизий',
+  '/dispatcher': 'Асинхронный диспетчер',
+  '/noise': 'Редукция шума',
+  '/scanner': 'Смысловой сканер',
+  '/decryptor': 'Декриптор',
+  '/reality': 'Верификация реальности',
+  '/ideas': 'Предложения',
+  '/admin': 'Админ-панель',
+  '/objective': 'Объективный фильтр',
+  '/profiling': 'Профилирование RICE',
+  '/anomaly': 'Детектор аномалий',
+  '/dialogue': 'Архитектура диалога'
+};
+
 function AppContent() {
-  const [activeTab, setActiveTab] = useState<Tab>('dashboard');
+  const navigate = useNavigate();
+  const location = useLocation();
+  const activeTab = (location.pathname.slice(1) || 'dashboard') as Tab;
+  
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
@@ -56,12 +88,9 @@ function AppContent() {
   const isAdmin = (user as any)?.role === 'ADMIN';
 
   useEffect(() => {
-    if (window.location.pathname === '/leaderboard') {
-      setActiveTab('leaderboard');
-    } else if (window.location.pathname === '/admin') {
-      setActiveTab('admin');
-    }
-  }, []);
+    const title = tabTitles[location.pathname] || 'Когнитика';
+    document.title = `${title} | Когнитика`;
+  }, [location.pathname]);
 
   return (
     <div className="min-h-screen flex flex-col font-sans transition-colors duration-300 bg-background text-foreground relative">
@@ -93,56 +122,56 @@ function AppContent() {
 
         <nav className="hidden lg:flex items-center gap-1 bg-secondary/50 p-1 rounded-xl border border-border">
           <button 
-            onClick={() => setActiveTab('dashboard')} 
+            onClick={() => navigate('/')} 
             className={`flex items-center gap-2 px-4 py-2 text-xs font-bold uppercase tracking-wider transition-all rounded-lg ${activeTab === 'dashboard' ? 'bg-primary text-primary-foreground shadow-md' : 'text-muted-foreground hover:text-foreground hover:bg-secondary'}`}
           >
             <LayoutDashboard className="w-4 h-4" /> Обзор
           </button>
           <button 
-            onClick={() => setActiveTab('leaderboard')} 
+            onClick={() => navigate('/leaderboard')} 
             className={`flex items-center gap-2 px-4 py-2 text-xs font-bold uppercase tracking-wider transition-all rounded-lg ${activeTab === 'leaderboard' ? 'bg-primary text-primary-foreground shadow-md' : 'text-muted-foreground hover:text-foreground hover:bg-secondary'}`}
           >
             <Trophy className="w-4 h-4" /> Рейтинг
           </button>
           <div className="w-px h-4 bg-border mx-1"></div>
           <button 
-            onClick={() => setActiveTab('schulte')} 
+            onClick={() => navigate('/schulte')} 
             className={`flex items-center gap-2 px-4 py-2 text-xs font-bold uppercase tracking-wider transition-all rounded-lg ${activeTab === 'schulte' ? 'bg-primary text-primary-foreground shadow-md' : 'text-muted-foreground hover:text-foreground hover:bg-secondary'}`}
           >
             <Play className="w-4 h-4" /> Шульте
           </button>
           <button 
-            onClick={() => setActiveTab('numerical')} 
+            onClick={() => navigate('/numerical')} 
             className={`flex items-center gap-2 px-4 py-2 text-xs font-bold uppercase tracking-wider transition-all rounded-lg ${activeTab === 'numerical' ? 'bg-primary text-primary-foreground shadow-md' : 'text-muted-foreground hover:text-foreground hover:bg-secondary'}`}
           >
             <Calculator className="w-4 h-4" /> Числа
           </button>
           <button 
-            onClick={() => setActiveTab('logical')} 
+            onClick={() => navigate('/logical')} 
             className={`flex items-center gap-2 px-4 py-2 text-xs font-bold uppercase tracking-wider transition-all rounded-lg ${activeTab === 'logical' ? 'bg-primary text-primary-foreground shadow-md' : 'text-muted-foreground hover:text-foreground hover:bg-secondary'}`}
           >
             <Grid3x3 className="w-4 h-4" /> Логика
           </button>
           <button 
-            onClick={() => setActiveTab('stroop')} 
+            onClick={() => navigate('/stroop')} 
             className={`flex items-center gap-2 px-4 py-2 text-xs font-bold uppercase tracking-wider transition-all rounded-lg ${activeTab === 'stroop' ? 'bg-primary text-primary-foreground shadow-md' : 'text-muted-foreground hover:text-foreground hover:bg-secondary'}`}
           >
             <Palette className="w-4 h-4" /> Струп
           </button>
           <button 
-            onClick={() => setActiveTab('nback')} 
+            onClick={() => navigate('/nback')} 
             className={`flex items-center gap-2 px-4 py-2 text-xs font-bold uppercase tracking-wider transition-all rounded-lg ${activeTab === 'nback' ? 'bg-primary text-primary-foreground shadow-md' : 'text-muted-foreground hover:text-foreground hover:bg-secondary'}`}
           >
             <BrainCircuit className="w-4 h-4" /> Память
           </button>
           <button 
-            onClick={() => setActiveTab('typing')} 
+            onClick={() => navigate('/typing')} 
             className={`flex items-center gap-2 px-4 py-2 text-xs font-bold uppercase tracking-wider transition-all rounded-lg ${activeTab === 'typing' ? 'bg-primary text-primary-foreground shadow-md' : 'text-muted-foreground hover:text-foreground hover:bg-secondary'}`}
           >
             <Play className="w-4 h-4" /> Печать
           </button>
           <button 
-            onClick={() => setActiveTab('spatial')} 
+            onClick={() => navigate('/spatial')} 
             className={`flex items-center gap-2 px-4 py-2 text-xs font-bold uppercase tracking-wider transition-all rounded-lg ${activeTab === 'spatial' ? 'bg-primary text-primary-foreground shadow-md' : 'text-muted-foreground hover:text-foreground hover:bg-secondary'}`}
           >
             <Grid3x3 className="w-4 h-4" /> Пространство
@@ -275,7 +304,7 @@ function AppContent() {
                  ].map((item) => (
                    <button 
                       key={item.id}
-                      onClick={() => { setActiveTab(item.id as Tab); setIsMobileMenuOpen(false); }}
+                      onClick={() => { navigate(item.id === 'dashboard' ? '/' : `/${item.id}`); setIsMobileMenuOpen(false); }}
                       className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-bold transition-all ${activeTab === item.id ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'hover:bg-secondary text-muted-foreground hover:text-foreground'}`}
                    >
                       <div className="flex items-center gap-3">
@@ -371,29 +400,33 @@ function AppContent() {
 
       <main className="flex-1 w-full max-w-[1400px] mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 relative z-10 pb-32 lg:pb-10 px-4 md:px-8 mt-4">
          <div className="lg:col-span-9 h-full">
-            {activeTab === 'dashboard' && <Dashboard onStartGame={(game) => setActiveTab(game as Tab)} />}
-            {activeTab === 'schulte' && <SchulteGrid />}
-            {activeTab === 'numerical' && <NumericalAnalysis />}
-            {activeTab === 'logical' && <LogicalMatrix />}
-            {activeTab === 'stroop' && <StroopTest />}
-            {activeTab === 'nback' && <NBackTest />}
-            {activeTab === 'situational' && <SituationalJudgmentTest />}
-            {activeTab === 'typing' && <SpeedTyping />}
-            {activeTab === 'spatial' && <SpatialConcealment />}
-            {activeTab === 'objective' && <ObjectiveFilter />}
-            {activeTab === 'profiling' && <ProfilingRICE />}
-            {activeTab === 'anomaly' && <AnomalyDetector />}
-            {activeTab === 'dialogue' && <DialogueArchitecture />}
-            {activeTab === 'admin' && <AdminPanel token={token} />}
-            {activeTab === 'ideas' && <IdeasWall token={token} />}
-            {activeTab === 'leaderboard' && <LeaderboardView />}
-            {activeTab === 'topology' && <TopologyMemory />}
-            {activeTab === 'collision' && <CollisionDetector />}
-            {activeTab === 'dispatcher' && <AsyncDispatcher />}
-            {activeTab === 'noise' && <NoiseReduction level={1} />}
-            {activeTab === 'scanner' && <LanguageScanner />}
-            {activeTab === 'decryptor' && <Decryptor />}
-            {activeTab === 'reality' && <RealityCheck onFinish={() => setActiveTab('dashboard')} />}
+            <Routes>
+              <Route path="/" element={<Dashboard onStartGame={(game) => navigate(`/${game}`)} />} />
+              <Route path="/dashboard" element={<Navigate to="/" replace />} />
+              <Route path="/schulte" element={<SchulteGrid />} />
+              <Route path="/numerical" element={<NumericalAnalysis />} />
+              <Route path="/logical" element={<LogicalMatrix />} />
+              <Route path="/stroop" element={<StroopTest />} />
+              <Route path="/nback" element={<NBackTest />} />
+              <Route path="/situational" element={<SituationalJudgmentTest />} />
+              <Route path="/typing" element={<SpeedTyping />} />
+              <Route path="/spatial" element={<SpatialConcealment />} />
+              <Route path="/objective" element={<ObjectiveFilter />} />
+              <Route path="/profiling" element={<ProfilingRICE />} />
+              <Route path="/anomaly" element={<AnomalyDetector />} />
+              <Route path="/dialogue" element={<DialogueArchitecture />} />
+              <Route path="/admin" element={<AdminPanel token={token} />} />
+              <Route path="/ideas" element={<IdeasWall token={token} />} />
+              <Route path="/leaderboard" element={<LeaderboardView />} />
+              <Route path="/topology" element={<TopologyMemory />} />
+              <Route path="/collision" element={<CollisionDetector />} />
+              <Route path="/dispatcher" element={<AsyncDispatcher />} />
+              <Route path="/noise" element={<NoiseReduction level={1} />} />
+              <Route path="/scanner" element={<LanguageScanner />} />
+              <Route path="/decryptor" element={<Decryptor />} />
+              <Route path="/reality" element={<RealityCheck onFinish={() => navigate('/')} />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
          </div>
          
          {/* Adaptive Chat Position */}
@@ -417,7 +450,7 @@ function AppContent() {
          ].map((item) => (
            <button 
              key={item.id}
-             onClick={() => setActiveTab(item.id as Tab)}
+             onClick={() => navigate(item.id === 'dashboard' ? '/' : `/${item.id}`)}
              className={`p-3 rounded-2xl transition-all relative ${activeTab === item.id ? 'text-primary scale-110' : 'text-muted-foreground hover:text-foreground'}`}
            >
              <item.icon className="w-5 h-5" />

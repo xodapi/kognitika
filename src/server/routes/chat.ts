@@ -1,11 +1,10 @@
 import { Router } from 'express';
-import { PrismaClient } from '@prisma/client';
 import { EventEmitter } from 'events';
 import { v4 as uuidv4 } from 'uuid';
 import jwt from 'jsonwebtoken';
+import prisma from '../../lib/prisma.ts';
 
 const router = Router();
-const prisma = new PrismaClient();
 const chatBus = new EventEmitter();
 const JWT_SECRET = process.env.JWT_SECRET!;
 
@@ -58,14 +57,18 @@ router.post('/messages', async (req: any, res) => {
     }
 
     let userId = 'anon';
-    let resolvedName = userName || 'Гость';
+    let resolvedName = 'Гость';
     const authHeader = req.headers.authorization?.split(' ')[1];
+    
     if (authHeader) {
       try {
         const decoded: any = jwt.verify(authHeader, JWT_SECRET);
         userId = decoded.id;
-        const dbUser = await prisma.user.findUnique({ where: { id: userId }, select: { name: true } });
-        if (dbUser?.name) resolvedName = dbUser.name;
+        const dbUser = await prisma.user.findUnique({ 
+          where: { id: userId }, 
+          select: { name: true, pseudonym: true } 
+        });
+        resolvedName = dbUser?.pseudonym ?? dbUser?.name ?? 'Участник';
       } catch {}
     }
 
