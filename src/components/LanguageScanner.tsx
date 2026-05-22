@@ -27,7 +27,7 @@ export const LanguageScanner: React.FC = () => {
   // Instruction Phase
   if (state.phase === 'memorize') {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen py-6 px-4 sm:px-6 text-center bg-white">
+      <div className="flex flex-col items-center justify-center min-h-[85vh] sm:min-h-screen py-4 sm:py-6 px-4 sm:px-6 text-center bg-white">
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -71,12 +71,12 @@ export const LanguageScanner: React.FC = () => {
               const colorClass = (colors as any)[title] || 'text-slate-600 bg-slate-50';
 
               return (
-                <div key={idx} className="p-4 rounded-2xl border border-slate-100 bg-slate-50/50">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Icon className={`w-4 h-4 ${colorClass.split(' ')[0]}`} />
-                    <span className="font-black text-sm uppercase tracking-tight">{title}</span>
+                <div key={idx} className="p-3 sm:p-4 rounded-2xl border border-slate-100 bg-slate-50/50">
+                  <div className="flex items-center gap-2 mb-1.5 sm:mb-2">
+                    <Icon className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${colorClass.split(' ')[0]}`} />
+                    <span className="font-black text-xs sm:text-sm uppercase tracking-tight">{title}</span>
                   </div>
-                  <p className="text-xs text-slate-500 leading-snug font-medium">{desc}</p>
+                  <p className="text-[11px] sm:text-xs text-slate-500 leading-snug font-medium">{desc}</p>
                 </div>
               );
             })}
@@ -88,7 +88,7 @@ export const LanguageScanner: React.FC = () => {
 
           <button
             onClick={startScan}
-            className="w-full group relative flex items-center justify-center gap-3 rounded-2xl bg-emerald-500 px-8 py-5 text-xl font-black text-white shadow-xl shadow-emerald-100 transition-all hover:bg-emerald-600 active:scale-95"
+            className="w-full group relative flex items-center justify-center gap-3 rounded-xl sm:rounded-2xl bg-emerald-500 px-6 py-4 sm:px-8 sm:py-5 text-lg sm:text-xl font-black text-white shadow-xl shadow-emerald-100 transition-all hover:bg-emerald-600 active:scale-95"
           >
             <Play className="h-6 w-6 fill-current" />
             ВСЁ ПОНЯТНО, В БОЙ
@@ -100,9 +100,9 @@ export const LanguageScanner: React.FC = () => {
 
   // Active Scan Phase
   return (
-    <div className="relative flex flex-col min-h-[600px] h-full bg-slate-50 rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
+    <div className="relative flex flex-col min-h-[500px] sm:min-h-[600px] h-full bg-slate-50 rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
       {/* Header HUD */}
-      <div className="flex items-center justify-between px-6 py-4 bg-white border-b border-slate-100">
+      <div className="flex items-center justify-between px-4 py-2.5 sm:px-6 sm:py-4 bg-white border-b border-slate-100">
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2 px-3 py-1 bg-emerald-50 rounded-lg text-emerald-600 text-xs font-black uppercase tracking-wider">
             <Brain className="w-4 h-4" />
@@ -128,7 +128,7 @@ export const LanguageScanner: React.FC = () => {
       </div>
 
       {/* Main Scanner Window */}
-      <div className="flex-1 flex flex-col items-center justify-center p-6 relative">
+      <div className="flex-1 flex flex-col items-center justify-center p-4 sm:p-6 relative">
         <AnimatePresence mode="wait">
           {state.activeCard && (
             <motion.div
@@ -138,8 +138,8 @@ export const LanguageScanner: React.FC = () => {
               exit={{ opacity: 0, x: -100, rotate: -2 }}
               className="w-full max-w-xl z-10"
             >
-              <div className="relative p-8 bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100">
-                <blockquote className="text-xl sm:text-2xl font-bold text-slate-800 leading-snug mb-8 text-center italic">
+              <div className="relative p-4 sm:p-8 bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100">
+                <blockquote className="text-base sm:text-xl md:text-2xl font-bold text-slate-800 leading-snug mb-4 sm:mb-8 text-center italic">
                   "{state.activeCard.text}"
                 </blockquote>
 
@@ -153,47 +153,7 @@ export const LanguageScanner: React.FC = () => {
                   />
                 </div>
 
-                {/* Explanation Overlay */}
-                <AnimatePresence>
-                  {state.lastFeedback && (
-                    <motion.div
-                      initial={{ opacity: 0, backdropFilter: "blur(0px)" }}
-                      animate={{ opacity: 1, backdropFilter: "blur(12px)" }}
-                      className="absolute inset-0 z-30 flex flex-col items-center justify-start p-4 bg-white/95 rounded-3xl text-center overflow-hidden"
-                    >
-                      <div className="overflow-y-auto w-full max-h-full py-8 px-2 space-y-4 scrollbar-hide">
-                        <div className={`mx-auto p-3 rounded-full w-fit ${state.lastFeedback.isCorrect ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'}`}>
-                          {state.lastFeedback.isCorrect ? (
-                            <CheckCircle className="w-8 h-8" />
-                          ) : (
-                            <AlertCircle className="w-8 h-8" />
-                          )}
-                        </div>
-                        <h3 className={`text-xl font-black ${state.lastFeedback.isCorrect ? 'text-emerald-700' : 'text-rose-700'}`}>
-                          {state.lastFeedback.isCorrect ? 'ВЕРНО!' : 'ОШИБКА!'}
-                        </h3>
-                        <p className="text-slate-600 font-bold leading-snug text-sm sm:text-base">
-                          {state.lastFeedback.explanation}
-                        </p>
-                        
-                        {!state.lastFeedback.isCorrect && (
-                          <div className="mt-2 px-3 py-1.5 bg-slate-100 rounded-xl text-slate-500 text-[10px] font-black uppercase tracking-wider inline-block">
-                            Это был: {state.lastFeedback.correctRuleName}
-                          </div>
-                        )}
 
-                        <div className="pt-2">
-                           <button 
-                             onClick={() => flagCard(0)} 
-                             className="px-6 py-2 bg-slate-800 text-white rounded-xl font-black text-xs uppercase"
-                           >
-                             Понятно
-                           </button>
-                        </div>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
               </div>
             </motion.div>
           )}
@@ -201,8 +161,8 @@ export const LanguageScanner: React.FC = () => {
       </div>
 
       {/* Control Footer */}
-      <div className="px-6 py-8 bg-white border-t border-slate-100 shadow-[0_-10px_20px_rgba(0,0,0,0.02)]">
-        <div className="grid grid-cols-2 gap-3 sm:gap-4 max-w-2xl mx-auto mb-6">
+      <div className="px-4 py-4 sm:px-6 sm:py-8 bg-white border-t border-slate-100 shadow-[0_-10px_20px_rgba(0,0,0,0.02)]">
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 max-w-2xl mx-auto mb-4 sm:mb-6">
           {state.rules.map((rule) => {
             const label = rule.text.includes(':') ? rule.text.split(':')[0] : rule.text.split('—')[0];
             const icons = {
@@ -235,10 +195,10 @@ export const LanguageScanner: React.FC = () => {
                 key={rule.id}
                 onClick={() => flagCard(rule.id)}
                 disabled={!!state.lastFeedback}
-                className={`flex flex-col items-center justify-center gap-2 rounded-2xl border-2 p-4 transition-all hover:scale-[1.03] active:scale-95 disabled:opacity-30 disabled:hover:scale-100 ${colorClass}`}
+                className={`flex flex-col items-center justify-center gap-1.5 sm:gap-2 rounded-2xl border-2 p-2 sm:p-4 transition-all hover:scale-[1.03] active:scale-95 disabled:opacity-30 disabled:hover:scale-100 ${colorClass}`}
               >
-                <Icon className="h-6 w-6 sm:h-8 sm:w-8" />
-                <span className="text-sm sm:text-base font-black uppercase tracking-tight leading-tight">
+                <Icon className="h-5 w-5 sm:h-7 sm:w-7 md:h-8 md:w-8" />
+                <span className="text-[11px] sm:text-sm md:text-base font-black uppercase tracking-tight leading-tight text-center">
                   {label}
                 </span>
               </button>
@@ -250,7 +210,7 @@ export const LanguageScanner: React.FC = () => {
           <button
             onClick={() => flagCard(0)}
             disabled={!!state.lastFeedback}
-            className="flex w-full items-center justify-center gap-3 rounded-2xl border-2 border-slate-200 bg-slate-50 p-5 text-xl font-black text-slate-600 transition-all hover:bg-slate-100 hover:border-slate-300 active:scale-[0.98] disabled:opacity-30"
+            className="flex w-full items-center justify-center gap-2.5 rounded-xl sm:rounded-2xl border-2 border-slate-200 bg-slate-50 p-3.5 sm:p-5 text-base sm:text-xl font-black text-slate-600 transition-all hover:bg-slate-100 hover:border-slate-300 active:scale-[0.98] disabled:opacity-30"
           >
             <CheckCircle className="h-6 w-6 text-emerald-500" />
             НЕТ МАНИПУЛЯЦИИ
@@ -268,6 +228,51 @@ export const LanguageScanner: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Explanation Overlay */}
+      <AnimatePresence>
+        {state.lastFeedback && (
+          <motion.div
+            initial={{ opacity: 0, backdropFilter: "blur(0px)" }}
+            animate={{ opacity: 1, backdropFilter: "blur(8px)" }}
+            exit={{ opacity: 0, backdropFilter: "blur(0px)" }}
+            className="absolute inset-0 z-30 flex flex-col items-center justify-center p-4 sm:p-6 bg-white/95 rounded-3xl text-center overflow-hidden"
+          >
+            <div className="overflow-y-auto w-full max-h-full py-4 px-2 scrollbar-hide flex flex-col items-center">
+              <div className="my-auto flex flex-col items-center space-y-4 w-full">
+                <div className={`p-3 rounded-full w-fit ${state.lastFeedback.isCorrect ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'}`}>
+                  {state.lastFeedback.isCorrect ? (
+                    <CheckCircle className="w-8 h-8" />
+                  ) : (
+                    <AlertCircle className="w-8 h-8" />
+                  )}
+                </div>
+                <h3 className={`text-xl sm:text-2xl font-black tracking-tight ${state.lastFeedback.isCorrect ? 'text-emerald-700' : 'text-rose-700'}`}>
+                  {state.lastFeedback.isCorrect ? 'ВЕРНО!' : 'ОШИБКА!'}
+                </h3>
+                <p className="text-slate-600 font-semibold leading-relaxed text-sm sm:text-base max-w-md">
+                  {state.lastFeedback.explanation}
+                </p>
+                
+                {!state.lastFeedback.isCorrect && (
+                  <div className="px-3.5 py-1.5 bg-slate-100 rounded-xl text-slate-600 text-[10px] sm:text-xs font-black uppercase tracking-wider inline-block">
+                    Это был: {state.lastFeedback.correctRuleName}
+                  </div>
+                )}
+
+                <div className="pt-2">
+                   <button 
+                     onClick={() => flagCard(0)} 
+                     className="px-6 py-2.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl font-black text-xs sm:text-sm uppercase tracking-wider transition-all active:scale-95 shadow-md shadow-slate-200"
+                   >
+                     Понятно
+                   </button>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
