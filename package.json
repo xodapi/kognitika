@@ -64,5 +64,13 @@
     "typescript": "~5.8.2",
     "vite": "^7.3.3",
     "vitest": "^3.2.4"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@prisma/engines",
+      "esbuild",
+      "prisma",
+      "protobufjs"
+    ]
   }
 }
