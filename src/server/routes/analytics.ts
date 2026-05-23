@@ -1,8 +1,135 @@
 import { Router } from 'express';
 import prisma from '../../lib/prisma.ts';
 import { authenticate } from '../middleware/auth.ts';
+import jwt from 'jsonwebtoken';
 
 const router = Router();
+
+/**
+ * Сравнивает результаты текущей игры с историей пользователя
+ */
+router.get('/compare', async (req: any, res) => {
+  try {
+    const gameType = (req.query.gameType as string || 'SCHULTE').toUpperCase();
+    const currentScore = Number(req.query.score) || 0;
+    const currentTimeMs = Number(req.query.timeMs) || 0;
+    const currentErrors = Number(req.query.errors) || 0;
+
+    let userId: string | null = null;
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.split(' ')[1];
+      try {
+        const decoded: any = jwt.verify(token, process.env.JWT_SECRET!);
+        userId = decoded.id;
+      } catch (err) {
+        // Игнорируем ошибки верификации, продолжаем как гость
+      }
+    }
+
+    let deltaPercentage = 0;
+    let trend: 'up' | 'down' | 'stable' = 'stable';
+
+    if (userId) {
+      // Ищем последние 10 успешных сессий этого типа
+      const history = await prisma.gameSession.findMany({
+        where: { userId, gameType: gameType as any, isCompleted: true },
+        orderBy: { createdAt: 'desc' },
+        take: 10
+      });
+
+      if (history.length > 0) {
+        const avgScore = history.reduce((sum, s) => sum + s.score, 0) / history.length;
+        if (avgScore > 0) {
+          deltaPercentage = Math.round(((currentScore - avgScore) / avgScore) * 100);
+          if (deltaPercentage > 0) {
+            trend = 'up';
+          } else if (deltaPercentage < 0) {
+            trend = 'down';
+            deltaPercentage = Math.abs(deltaPercentage);
+          }
+        }
+      }
+    }
+
+    // Вычисляем перцентиль игрока по всем сессиям данного типа
+    const totalSessionsCount = await prisma.gameSession.count({
+      where: { gameType: gameType as any, isCompleted: true }
+    });
+    const lowerSessionsCount = await prisma.gameSession.count({
+      where: { gameType: gameType as any, isCompleted: true, score: { lt: currentScore } }
+    });
+
+    let percentile = totalSessionsCount > 0 
+      ? Math.round((lowerSessionsCount / totalSessionsCount) * 100) 
+      : 75;
+    
+    if (percentile <= 0) percentile = 12;
+    if (percentile >= 100) percentile = 98;
+
+    // Генерируем вердикт с поддержкой при ухудшении (антифрустрация)
+    let verdict = 'Отличная тренировка! Стабильные показатели когнитивных функций.';
+    
+    if (trend === 'down') {
+      if (deltaPercentage >= 5 && deltaPercentage <= 15) {
+        verdict = 'Колебания естественны. Мозг обрабатывает информацию и консолидирует навык. Завтра показатели стабилизируются.';
+      } else if (deltaPercentage > 15 && deltaPercentage <= 30) {
+        verdict = 'Ваша когнитивная батарейка разряжена. Не перенапрягайтесь. Отдых — это тоже часть тренировочного процесса.';
+      } else if (deltaPercentage > 30) {
+        verdict = 'Сегодня не лучший день для рекордов, и это совершенно нормально. Сделайте перерыв и попробуйте расслабляющий модуль «Тишина».';
+      }
+    } else if (currentErrors > 3) {
+      verdict = 'Вы взяли отличный темп, но точность пострадала. Попробуйте сбавить скорость ради лучшего контроля и точности.';
+    } else if (trend === 'up' && deltaPercentage > 5) {
+      verdict = `Превосходно! Ваш результат улучшился на ${deltaPercentage}% по сравнению с вашим средним уровнем. Когнитивный фокус в оптимальном состоянии.`;
+    }
+
+    // Карта рекомендаций
+    const recommendations: Record<string, { game: string, title: string }> = {
+      SCHULTE: { game: 'stroop', title: 'Эффект Струпа' },
+      STROOP: { game: 'nback', title: 'Задача N-назад' },
+      N_BACK: { game: 'numerical', title: 'Числовой анализ' },
+      NUMERICAL_ANALYSIS: { game: 'logical', title: 'Логические матрицы' },
+      LOGICAL_SEQUENCE: { game: 'spatial', title: 'Пространство' },
+      SPATIAL_CONCEALMENT: { game: 'topology', title: 'Архитектура контекста' },
+      TOPOLOGY_MEMORY: { game: 'collision', title: 'Детектор коллизий' },
+      COLLISION_DETECTOR: { game: 'dispatcher', title: 'Асинхронный диспетчер' },
+      ASYNC_DISPATCHER: { game: 'noise', title: 'Редукция шума' },
+      NOISE_REDUCTION: { game: 'scanner', title: 'Смысловой сканер' },
+      LANGUAGE_SCANNER: { game: 'decryptor', title: 'Декриптор' },
+      DECRYPTOR: { game: 'reality', title: 'Проверка реальности' },
+      REALITY_CHECK: { game: 'objective', title: 'Объективный фильтр' },
+      OBJECTIVE_FILTER: { game: 'profiling', title: 'Профайлинг RICE' },
+      PROFILING_RICE: { game: 'schulte', title: 'Таблицы Шульте' }
+    };
+
+    let recommendedGame = 'schulte';
+    let recommendedGameTitle = 'Таблицы Шульте';
+
+    // Если сильная усталость, принудительно рекомендуем дыхательную технику "Тишина"
+    if (trend === 'down' && deltaPercentage > 15) {
+      recommendedGame = 'silence';
+      recommendedGameTitle = 'Техника ЦРУ: «Тишина»';
+    } else {
+      const rec = recommendations[gameType] || recommendations.SCHULTE;
+      recommendedGame = rec.game;
+      recommendedGameTitle = rec.title;
+    }
+
+    res.json({
+      deltaPercentage,
+      trend,
+      percentile,
+      verdict,
+      recommendedGame,
+      recommendedGameTitle
+    });
+  } catch (error) {
+    console.error('[Analytics] Compare error:', error);
+    res.status(500).json({ error: 'Ошибка сравнения результатов' });
+  }
+});
+
 
 /**
  * Генерирует когнитивный профиль на основе последних 50 сессий

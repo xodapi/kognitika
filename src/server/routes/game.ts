@@ -93,6 +93,40 @@ router.post('/save', authenticate, async (req: any, res) => {
   }
 });
 
+router.post('/session/:id/metadata', authenticate, async (req: any, res) => {
+  try {
+    const { id } = req.params;
+    const { metadata } = req.body;
+
+    const session = await prisma.gameSession.findUnique({
+      where: { id }
+    });
+
+    if (!session) {
+      return res.status(404).json({ error: 'Session not found' });
+    }
+
+    if (session.userId !== req.user.id) {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+
+    const updatedSession = await prisma.gameSession.update({
+      where: { id },
+      data: {
+        metadata: {
+          ...(session.metadata as Record<string, any>),
+          ...metadata
+        }
+      }
+    });
+
+    res.json({ success: true, session: updatedSession });
+  } catch (error) {
+    console.error('[Game] Update session metadata error:', error);
+    res.status(500).json({ error: 'Failed to update session metadata' });
+  }
+});
+
 router.get('/leaderboard', async (req, res) => {
   try {
     const topUsers = await prisma.user.findMany({

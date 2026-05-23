@@ -35,6 +35,7 @@ import adminRoutes from './src/server/routes/admin.ts';
 import chatRoutes from './src/server/routes/chat.ts';
 import leaderboardRoutes from './src/server/routes/leaderboard.ts';
 import analyticsRoutes from './src/server/routes/analytics.ts';
+import dashboardRoutes from './src/server/routes/dashboard.ts';
 import { authenticate } from './src/server/middleware/auth.ts';
 import { privacyGuard } from './src/server/middleware/privacy.ts';
 
@@ -213,6 +214,7 @@ async function startServer() {
   app.use('/api/chat', apiLimiter, chatRoutes);
   app.use('/api/leaderboard', leaderboardRoutes);
   app.use('/api/analytics', apiLimiter, analyticsRoutes);
+  app.use('/api/dashboard', apiLimiter, dashboardRoutes);
 
   app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });

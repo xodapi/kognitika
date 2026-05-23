@@ -4,6 +4,8 @@ import { Calculator } from './Calculator';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from '../hooks/useAuth';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { useNavigate } from 'react-router-dom';
+import { PostGameInsight } from './PostGameInsight';
 
 const COLORS = ['hsl(var(--primary))', 'hsl(var(--destructive))', 'hsl(var(--accent))', '#8b5cf6'];
 
@@ -11,6 +13,8 @@ export function NumericalAnalysis() {
   const { state, startGame, stopGame, answerQuestion } = useNumericalEngine();
   const [showCalc, setShowCalc] = useState(false);
   const { token } = useAuth();
+  const navigate = useNavigate();
+
   
   // Save result on finish
   useEffect(() => {
@@ -45,18 +49,15 @@ export function NumericalAnalysis() {
 
   if (state.isFinished) {
     return (
-      <div className="col-span-12 grid grid-cols-1 md:grid-cols-12 gap-4 h-full min-h-0 relative">
-         <div className="md:col-start-4 md:col-span-6 bg-card/20 border border-border rounded-3xl p-8 flex flex-col items-center justify-center text-center">
-            <h2 className="text-[10px] text-muted-foreground uppercase tracking-widest mb-6">Тестирование завершено</h2>
-            <div className="text-6xl font-mono tabular-nums mb-2 font-bold text-primary">{state.score}<span className="text-2xl text-muted-foreground">/5</span></div>
-            <div className="text-sm font-medium mb-8 uppercase tracking-widest">Верных ответов</div>
-            
-            <div className="flex gap-4 w-full max-w-sm border-t border-border pt-6">
-               <button onClick={startGame} className="flex-1 px-4 py-3 bg-primary text-primary-foreground text-[10px] uppercase tracking-wider rounded-lg font-bold hover:bg-primary/90 transition-colors">
-                 Пройти снова
-               </button>
-            </div>
-         </div>
+      <div className="col-span-12">
+        <PostGameInsight
+          gameType="NUMERICAL_ANALYSIS"
+          score={state.score}
+          timeMs={60000 - state.timeLeftMs}
+          errors={5 - state.score}
+          onPlayAgain={startGame}
+          onBackToMenu={() => navigate('/')}
+        />
       </div>
     );
   }

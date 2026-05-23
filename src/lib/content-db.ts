@@ -21,8 +21,8 @@ export const RULE_SETS: RuleSet[] = [
   { id:'deploy_rules', category: RuleCategory.TECHNICAL, domain:'Деплой', rules:[{id:1,text:'Деплой только из ветки main'},{id:2,text:'Тесты должны пройти до деплоя'},{id:3,text:'Rollback выполняется за < 5 минут'}] },
   { id:'data_quality', category: RuleCategory.TECHNICAL, domain:'Качество данных', rules:[{id:1,text:'Дата не может быть в будущем для исторических записей'},{id:2,text:'Email должен содержать символ @'},{id:3,text:'Сумма не может быть отрицательной'}] },
   { id:'security', category: RuleCategory.TECHNICAL, domain:'Безопасность', rules:[{id:1,text:'Пароли хранятся только в хешированном виде'},{id:2,text:'Токены истекают через 24 часа'},{id:3,text:'HTTPS обязателен для всех эндпоинтов'}] },
-  { id:'manipulations', category: RuleCategory.SEMANTIC, domain:'Страж Разума: Манипуляции', rules:[{id:1,text:'Газлайтинг: Отрицание реальности и фактов'},{id:2,text:'Соломенное чучело: Подмена аргумента оппонента'},{id:3,text:'Ad Hominem: Переход на личности вместо обсуждения темы'},{id:4,text:'Ложная дилемма: Навязывание только двух вариантов выбора'}] },
-  { id:'distortions', category: RuleCategory.SEMANTIC, domain:'Страж Разума: Искажения', rules:[{id:1,text:'Emotional Loading: Использование гипербол и эмоционально окрашенных слов.'},{id:2,text:'Moral Superiority: Апелляция к морали для дискредитации оппонента.'},{id:3,text:'Vagueness: Использование размытых понятий без конкретики.'},{id:4,text:'Bias Confirmation: Подача фактов исключительно в пользу своей позиции.'}] },
+  { id:'manipulations', category: RuleCategory.SEMANTIC, domain:'Страж Разума: Манипуляции', rules:[{id:1,text:'Газлайтинг: Отрицание реальности и фактов'},{id:2,text:'Подмена тезиса: Подмена аргумента оппонента'},{id:3,text:'Переход на личности: Переход на личности вместо обсуждения темы'},{id:4,text:'Ложная дилемма: Навязывание только двух вариантов выбора'}] },
+  { id:'distortions', category: RuleCategory.SEMANTIC, domain:'Страж Разума: Искажения', rules:[{id:1,text:'Эмоциональная нагрузка: Использование гипербол и эмоционально окрашенных слов.'},{id:2,text:'Моральное превосходство: Апелляция к морали для дискредитации оппонента.'},{id:3,text:'Размытость: Использование размытых понятий без конкретики.'},{id:4,text:'Предвзятость подтверждения: Подача фактов исключительно в пользу своей позиции.'}] },
   { id:'hallucinations', category: RuleCategory.SEMANTIC, domain:'Страж Разума: Галлюцинации', rules:[{id:1,text:'Противоречие: Утверждение прямо противоположного исходному факту.'},{id:2,text:'Фабрикация: Добавление деталей, которых нет в контексте.'},{id:3,text:'Логический дрейф: Вывод ложных следствий из верных посылок.'}] }
 ];
 
@@ -95,35 +95,35 @@ export const CARDS_BY_RULESET: Record<string, ContentCard[]> = {
     {text:'Он не может рассуждать о семейных ценностях, так как сам в разводе.',isViolation:true,ruleRef:3,subtlety:'expert'},
   ],
   distortions: [
-    { id: 1, text: "Ужасающий провал команды привел к абсолютному хаосу на проекте.", isViolation: true, ruleRef: 1, subtlety: 'obvious', metadata: { fact: "Проект не завершен в срок", distortion: "Emotional Loading" } },
-    { id: 2, text: "Только безответственный человек может игнорировать этот блестящий план.", isViolation: true, ruleRef: 2, subtlety: 'obvious', metadata: { fact: "Предложен новый план", distortion: "Moral Superiority" } },
-    { id: 3, text: "Все эксперты знают, что эта технология — вчерашний день.", isViolation: true, ruleRef: 3, subtlety: 'obvious', metadata: { fact: "Существуют другие технологии", distortion: "Vagueness" } },
-    { id: 4, text: "Наш лидер совершил героический поступок, просто выполнив свою работу.", isViolation: true, ruleRef: 4, subtlety: 'obvious', metadata: { fact: "Работа выполнена", distortion: "Bias Confirmation" } },
-    { id: 5, text: "Их жалкая попытка оправдаться выглядит просто смехотворно.", isViolation: true, ruleRef: 1, subtlety: 'obvious', metadata: { fact: "Предоставлены объяснения", distortion: "Emotional Loading" } },
-    { id: 6, text: "Очевидно, что любой здравомыслящий человек согласится с моими словами.", isViolation: true, ruleRef: 2, subtlety: 'moderate', metadata: { fact: "Высказано мнение", distortion: "Moral Superiority" } },
-    { id: 7, text: "Компания тонет в долгах, хотя отчет показывает лишь небольшую задолженность.", isViolation: true, ruleRef: 1, subtlety: 'moderate', metadata: { fact: "Есть задолженность", distortion: "Emotional Loading" } },
-    { id: 8, text: "Эта инновация — настоящий прорыв, который перевернет мир навсегда.", isViolation: true, ruleRef: 3, subtlety: 'moderate', metadata: { fact: "Создан новый продукт", distortion: "Vagueness" } },
-    { id: 9, text: "Мы должны защитить наши ценности от их деструктивного влияния.", isViolation: true, ruleRef: 2, subtlety: 'moderate', metadata: { fact: "Предложены перемены", distortion: "Moral Superiority" } },
-    { id: 10, text: "Статистика ясно говорит о катастрофе, если мы не увеличим бюджет вдвое.", isViolation: true, ruleRef: 1, subtlety: 'moderate', metadata: { fact: "Предложено увеличить бюджет", distortion: "Emotional Loading" } },
-    { id: 11, text: "Его критика — это просто зависть к нашему небывалому успеху.", isViolation: true, ruleRef: 4, subtlety: 'expert', metadata: { fact: "Получена критика", distortion: "Bias Confirmation" } },
-    { id: 12, text: "Абсолютно все недовольны качеством этого сомнительного сервиса.", isViolation: true, ruleRef: 3, subtlety: 'expert', metadata: { fact: "Есть жалобы на сервис", distortion: "Vagueness" } },
-    { id: 13, text: "Эта никчемная реформа разрушит жизни миллионов людей.", isViolation: true, ruleRef: 1, subtlety: 'expert', metadata: { fact: "Запущена реформа", distortion: "Emotional Loading" } },
-    { id: 14, text: "Мы единственные, кто говорит правду в этом океане лжи.", isViolation: true, ruleRef: 2, subtlety: 'expert', metadata: { fact: "Опубликована информация", distortion: "Moral Superiority" } },
-    { id: 15, text: "Их стратегия настолько примитивна, что даже не стоит обсуждения.", isViolation: true, ruleRef: 1, subtlety: 'expert', metadata: { fact: "Представлена стратегия", distortion: "Emotional Loading" } }
+    { id: 1, text: "Ужасающий провал команды привел к абсолютному хаосу на проекте.", isViolation: true, ruleRef: 1, subtlety: 'obvious', metadata: { fact: "Проект не завершен в срок", distortion: "Эмоциональная нагрузка" } },
+    { id: 2, text: "Только безответственный человек может игнорировать этот блестящий план.", isViolation: true, ruleRef: 2, subtlety: 'obvious', metadata: { fact: "Предложен новый план", distortion: "Моральное превосходство" } },
+    { id: 3, text: "Все эксперты знают, что эта технология — вчерашний день.", isViolation: true, ruleRef: 3, subtlety: 'obvious', metadata: { fact: "Существуют другие технологии", distortion: "Размытость" } },
+    { id: 4, text: "Наш лидер совершил героический поступок, просто выполнив свою работу.", isViolation: true, ruleRef: 4, subtlety: 'obvious', metadata: { fact: "Работа выполнена", distortion: "Предвзятость подтверждения" } },
+    { id: 5, text: "Их жалкая попытка оправдаться выглядит просто смехотворно.", isViolation: true, ruleRef: 1, subtlety: 'obvious', metadata: { fact: "Предоставлены объяснения", distortion: "Эмоциональная нагрузка" } },
+    { id: 6, text: "Очевидно, что любой здравомыслящий человек согласится с моими словами.", isViolation: true, ruleRef: 2, subtlety: 'moderate', metadata: { fact: "Высказано мнение", distortion: "Моральное превосходство" } },
+    { id: 7, text: "Компания тонет в долгах, хотя отчет показывает лишь небольшую задолженность.", isViolation: true, ruleRef: 1, subtlety: 'moderate', metadata: { fact: "Есть задолженность", distortion: "Эмоциональная нагрузка" } },
+    { id: 8, text: "Эта инновация — настоящий прорыв, который перевернет мир навсегда.", isViolation: true, ruleRef: 3, subtlety: 'moderate', metadata: { fact: "Создан новый продукт", distortion: "Размытость" } },
+    { id: 9, text: "Мы должны защитить наши ценности от их деструктивного влияния.", isViolation: true, ruleRef: 2, subtlety: 'moderate', metadata: { fact: "Предложены перемены", distortion: "Моральное превосходство" } },
+    { id: 10, text: "Статистика ясно говорит о катастрофе, если мы не увеличим бюджет вдвое.", isViolation: true, ruleRef: 1, subtlety: 'moderate', metadata: { fact: "Предложено увеличить бюджет", distortion: "Эмоциональная нагрузка" } },
+    { id: 11, text: "Его критика — это просто зависть к нашему небывалому успеху.", isViolation: true, ruleRef: 4, subtlety: 'expert', metadata: { fact: "Получена критика", distortion: "Предвзятость подтверждения" } },
+    { id: 12, text: "Абсолютно все недовольны качеством этого сомнительного сервиса.", isViolation: true, ruleRef: 3, subtlety: 'expert', metadata: { fact: "Есть жалобы на сервис", distortion: "Размытость" } },
+    { id: 13, text: "Эта никчемная реформа разрушит жизни миллионов людей.", isViolation: true, ruleRef: 1, subtlety: 'expert', metadata: { fact: "Запущена реформа", distortion: "Эмоциональная нагрузка" } },
+    { id: 14, text: "Мы единственные, кто говорит правду в этом океане лжи.", isViolation: true, ruleRef: 2, subtlety: 'expert', metadata: { fact: "Опубликована информация", distortion: "Моральное превосходство" } },
+    { id: 15, text: "Их стратегия настолько примитивна, что даже не стоит обсуждения.", isViolation: true, ruleRef: 1, subtlety: 'expert', metadata: { fact: "Представлена стратегия", distortion: "Эмоциональная нагрузка" } }
   ],
   hallucinations: [
-    { id: 1, text: "Выручка выросла на 40%, хотя в исходном тексте указано 14%.", isViolation: true, ruleRef: 1, subtlety: 'obvious', metadata: { fact: "Рост 14%", error: "Contradiction" } },
+    { id: 1, text: "Выручка выросла на 40%, хотя в исходном тексте указано 14%.", isViolation: true, ruleRef: 1, subtlety: 'obvious', metadata: { fact: "Рост 14%", error: "Противоречие" } },
     { id: 2, text: "Проект завершен в марте, что соответствует данным из отчета.", isViolation: false, subtlety: 'obvious', metadata: { fact: "Завершено в марте" } },
-    { id: 3, text: "Система использует квантовые вычисления (в контексте об этом ни слова).", isViolation: true, ruleRef: 2, subtlety: 'obvious', metadata: { fact: "Обычная облачная БД", error: "Fabrication" } },
+    { id: 3, text: "Система использует квантовые вычисления (в контексте об этом ни слова).", isViolation: true, ruleRef: 2, subtlety: 'obvious', metadata: { fact: "Обычная облачная БД", error: "Фабрикация" } },
     { id: 4, text: "Пользователь удалил аккаунт, поэтому он больше не может войти.", isViolation: false, subtlety: 'obvious', metadata: { fact: "Аккаунт удален" } },
-    { id: 5, text: "Клиент доволен, так как он оставил жалобу на 3 страницы.", isViolation: true, ruleRef: 3, subtlety: 'obvious', metadata: { fact: "Клиент оставил жалобу", error: "Logic Drift" } },
-    { id: 6, text: "Сервер упал из-за перегрузки, что привело к росту FPS в 2 раза.", isViolation: true, ruleRef: 3, subtlety: 'moderate', metadata: { fact: "Сервер упал", error: "Logic Drift" } },
-    { id: 7, text: "Встреча назначена на 15:00 в Лондоне (в контексте: Париж).", isViolation: true, ruleRef: 1, subtlety: 'moderate', metadata: { fact: "Встреча в Париже", error: "Contradiction" } },
-    { id: 8, text: "Бюджет сокращен на 5 млн для найма 10 новых сотрудников.", isViolation: true, ruleRef: 3, subtlety: 'moderate', metadata: { fact: "Бюджет сокращен", error: "Logic Drift" } },
+    { id: 5, text: "Клиент доволен, так как он оставил жалобу на 3 страницы.", isViolation: true, ruleRef: 3, subtlety: 'obvious', metadata: { fact: "Клиент оставил жалобу", error: "Логический дрейф" } },
+    { id: 6, text: "Сервер упал из-за перегрузки, что привело к росту FPS в 2 раза.", isViolation: true, ruleRef: 3, subtlety: 'moderate', metadata: { fact: "Сервер упал", error: "Логический дрейф" } },
+    { id: 7, text: "Встреча назначена на 15:00 в Лондоне (в контексте: Париж).", isViolation: true, ruleRef: 1, subtlety: 'moderate', metadata: { fact: "Встреча в Париже", error: "Противоречие" } },
+    { id: 8, text: "Бюджет сокращен на 5 млн для найма 10 новых сотрудников.", isViolation: true, ruleRef: 3, subtlety: 'moderate', metadata: { fact: "Бюджет сокращен", error: "Логический дрейф" } },
     { id: 9, text: "Обновление ПО исправило баг, но добавило поддержку AI-моделей.", isViolation: false, subtlety: 'moderate', metadata: { fact: "Обновление исправило баг" } },
-    { id: 10, text: "Код написан на Rust, поэтому он потребляет больше памяти, чем Python.", isViolation: true, ruleRef: 3, subtlety: 'expert', metadata: { fact: "Код на Rust", error: "Logic Drift" } },
-    { id: 11, text: "Инфляция 2%, цены упали в три раза.", isViolation: true, ruleRef: 3, subtlety: 'expert', metadata: { fact: "Инфляция 2%", error: "Logic Drift" } },
-    { id: 12, text: "Запуск состоялся в 2024 году, хотя в контексте указан 2026.", isViolation: true, ruleRef: 1, subtlety: 'expert', metadata: { fact: "Запуск в 2026", error: "Contradiction" } }
+    { id: 10, text: "Код написан на Rust, поэтому он потребляет больше памяти, чем Python.", isViolation: true, ruleRef: 3, subtlety: 'expert', metadata: { fact: "Код на Rust", error: "Логический дрейф" } },
+    { id: 11, text: "Инфляция 2%, цены упали в три раза.", isViolation: true, ruleRef: 3, subtlety: 'expert', metadata: { fact: "Инфляция 2%", error: "Логический дрейф" } },
+    { id: 12, text: "Запуск состоялся в 2024 году, хотя в контексте указан 2026.", isViolation: true, ruleRef: 1, subtlety: 'expert', metadata: { fact: "Запуск в 2026", error: "Противоречие" } }
   ]
 };
 

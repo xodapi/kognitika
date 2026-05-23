@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Shield, Brain, CheckCircle2, XCircle } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
+import { useNavigate } from 'react-router-dom';
+import { PostGameInsight } from './PostGameInsight';
 
 interface Statement {
   id: number;
@@ -33,6 +35,8 @@ export function ObjectiveFilter() {
   const [timeMs, setTimeMs] = useState(0);
   const [lastResult, setLastResult] = useState<'correct' | 'wrong' | null>(null);
   const { token, refreshUser } = useAuth();
+  const navigate = useNavigate();
+
 
   const currentStatement = STATEMENTS[currentIndex % STATEMENTS.length];
 
@@ -112,23 +116,15 @@ export function ObjectiveFilter() {
 
   if (gameState === 'finished') {
     return (
-      <div className="col-span-12 flex flex-col items-center justify-center h-full min-h-[400px] p-8 text-center">
-        <h2 className="text-[10px] text-muted-foreground uppercase tracking-widest mb-6">Результат фильтрации</h2>
-        <div className="text-5xl font-black mb-2 text-primary">
-          {score}/10
-        </div>
-        <div className="text-[10px] text-muted-foreground uppercase font-black mb-8">
-          ВРЕМЯ: {(timeMs / 1000).toFixed(2)}s
-        </div>
-        
-        <div className="flex gap-4 w-full max-w-sm">
-          <button onClick={() => setGameState('idle')} className="flex-1 px-4 py-3 border border-border bg-card text-foreground text-[10px] uppercase tracking-wider rounded-lg font-bold hover:bg-secondary transition-colors">
-            Меню
-          </button>
-          <button onClick={startGame} className="flex-1 px-4 py-3 bg-primary text-primary-foreground text-[10px] uppercase tracking-wider rounded-lg font-bold hover:bg-primary/90 transition-colors">
-            Повторить
-          </button>
-        </div>
+      <div className="col-span-12">
+        <PostGameInsight
+          gameType="OBJECTIVE_FILTER"
+          score={score}
+          timeMs={timeMs}
+          errors={10 - score}
+          onPlayAgain={startGame}
+          onBackToMenu={() => navigate('/')}
+        />
       </div>
     );
   }

@@ -12,16 +12,17 @@ import { ShareCard } from './ShareCard';
 import { DuelsView } from './DuelsView';
 import { CognitiveProfile } from './CognitiveProfile';
 import { Wiki } from './Wiki';
+import { StreakBanner } from './StreakBanner';
 import { Sword, LayoutDashboard, BookOpen } from 'lucide-react';
 
 export function Dashboard({ onStartGame }: { onStartGame: (game: string) => void }) {
   const { user, token, refreshUser } = useAuth();
-// ... [rest of logic]
   const [data, setData] = useState<any[]>([]);
   const [leaderboard, setLeaderboard] = useState<any[]>([]);
   const [dailyTasks, setDailyTasks] = useState<any[]>([]);
   const [levelProgress, setLevelProgress] = useState(0);
   const [userRole, setUserRole] = useState<string>('USER');
+  const [streak, setStreak] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<'training' | 'profile' | 'duels' | 'wiki' | 'ideas' | 'admin'>('training');
   const [isShareOpen, setIsShareOpen] = useState(false);
 
@@ -45,6 +46,7 @@ export function Dashboard({ onStartGame }: { onStartGame: (game: string) => void
         if (resData.dailyTasks) setDailyTasks(resData.dailyTasks);
         if (resData.levelProgress !== undefined) setLevelProgress(resData.levelProgress);
         if (resData.role) setUserRole(resData.role);
+        if (resData.streak) setStreak(resData.streak);
      })
      .catch(console.error);
 
@@ -137,6 +139,9 @@ export function Dashboard({ onStartGame }: { onStartGame: (game: string) => void
             exit={{ opacity: 0, y: -20 }}
             className="space-y-8"
           >
+            {/* Streak Banner */}
+            <StreakBanner streak={streak} />
+
             {/* Welcome Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
               <div>

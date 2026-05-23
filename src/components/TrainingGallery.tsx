@@ -36,6 +36,8 @@ const MODULES: TrainingModule[] = [
   { id: 'scanner', title: 'Смысловой Сканер', description: 'Обнаружение скрытых манипуляций и логических уловок.', icon: Shield, color: 'text-blue-400', category: 'Страж Разума', domain: 'guard', level: 9 },
   { id: 'decryptor', title: 'Декриптор', description: 'Разделение фактов и эмоциональных искажений в тексте.', icon: Zap, color: 'text-purple-400', category: 'Страж Разума', domain: 'guard', level: 9 },
   { id: 'reality', title: 'Проверка Реальности', description: 'Обнаружение галлюцинаций ИИ и семантического дрейфа.', icon: Target, color: 'text-emerald-400', category: 'Страж Разума', domain: 'guard', level: 10 },
+  { id: 'silence', title: 'Техника «Тишина»', description: 'Двухминутная дыхательная сессия ЦРУ для снижения уровня стресса и кортизола.', icon: VolumeX, color: 'text-neutral-400', category: 'Страж Разума', domain: 'guard', level: 1 },
+  { id: 'filter', title: 'Ментальный фильтр', description: 'Разделение объективных фактов и субъективных когнитивных искажений.', icon: Shield, color: 'text-indigo-400', category: 'Страж Разума', domain: 'guard', level: 4 },
 
   // SOFT SKILLS
   { id: 'objective', title: 'Объективный фильтр', description: 'Отделение фактов от субъективных домыслов.', icon: Shield, color: 'text-indigo-500', category: 'Soft Skills', domain: 'base', level: 4 },

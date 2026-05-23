@@ -44,8 +44,10 @@ import { LanguageScanner } from './components/LanguageScanner';
 import { Decryptor } from './components/Decryptor';
 import { RealityCheck } from './components/RealityCheck';
 import { DonateButton } from './components/DonateButton';
+import { CiaSilence } from './components/CiaSilence';
+import { CiaTrashFilter } from './components/CiaTrashFilter';
 
-type Tab = 'dashboard' | 'schulte' | 'numerical' | 'logical' | 'stroop' | 'nback' | 'situational' | 'typing' | 'spatial' | 'admin' | 'ideas' | 'objective' | 'profiling' | 'anomaly' | 'dialogue' | 'leaderboard' | 'topology' | 'collision' | 'dispatcher' | 'noise' | 'scanner' | 'decryptor' | 'reality';
+type Tab = 'dashboard' | 'schulte' | 'numerical' | 'logical' | 'stroop' | 'nback' | 'situational' | 'typing' | 'spatial' | 'admin' | 'ideas' | 'objective' | 'profiling' | 'anomaly' | 'dialogue' | 'leaderboard' | 'topology' | 'collision' | 'dispatcher' | 'noise' | 'scanner' | 'decryptor' | 'reality' | 'silence' | 'filter';
 
 const tabTitles: Record<string, string> = {
   '/': 'Обзор',
@@ -71,7 +73,9 @@ const tabTitles: Record<string, string> = {
   '/objective': 'Объективный фильтр',
   '/profiling': 'Профилирование RICE',
   '/anomaly': 'Детектор аномалий',
-  '/dialogue': 'Архитектура диалога'
+  '/dialogue': 'Архитектура диалога',
+  '/silence': 'Техника ЦРУ: «Тишина»',
+  '/filter': 'Ментальный фильтр ЦРУ'
 };
 
 function AppContent() {
@@ -425,6 +429,8 @@ function AppContent() {
               <Route path="/scanner" element={<LanguageScanner />} />
               <Route path="/decryptor" element={<Decryptor />} />
               <Route path="/reality" element={<RealityCheck onFinish={() => navigate('/')} />} />
+              <Route path="/silence" element={<CiaSilence />} />
+              <Route path="/filter" element={<CiaTrashFilter />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
          </div>

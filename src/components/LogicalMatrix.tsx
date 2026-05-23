@@ -1,6 +1,8 @@
 import { useEffect } from 'react';
 import { useLogicalEngine, MatrixItem } from '../hooks/useLogicalEngine';
 import { useAuth } from '../hooks/useAuth';
+import { useNavigate } from 'react-router-dom';
+import { PostGameInsight } from './PostGameInsight';
 
 function RenderShape({ item }: { item: MatrixItem }) {
   const { shape, color, count, rotation } = item;
@@ -41,6 +43,7 @@ function RenderShape({ item }: { item: MatrixItem }) {
 export function LogicalMatrix() {
   const { state, startGame, answerQuestion } = useLogicalEngine();
   const { token } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
      if (state.isFinished && token) {
@@ -74,23 +77,15 @@ export function LogicalMatrix() {
 
   if (state.isFinished) {
     return (
-      <div className="col-span-12 grid grid-cols-1 md:grid-cols-12 gap-4 h-full min-h-0 relative">
-         <div className="md:col-start-4 md:col-span-6 bg-card/20 border border-border rounded-3xl p-8 flex flex-col items-center justify-center text-center">
-            <h2 className="text-[10px] text-muted-foreground uppercase tracking-widest mb-6">Синтез завершен</h2>
-            
-            <div className="text-6xl font-mono tabular-nums mb-2 font-bold text-primary">{state.score}<span className="text-2xl text-muted-foreground">/3</span></div>
-            <div className="text-sm font-medium mb-4 uppercase tracking-widest">Паттернов разгадано</div>
-            
-            <div className="text-md font-mono text-muted-foreground mb-8">
-               Время: {(state.timeMs / 1000).toFixed(1)}s
-            </div>
-            
-            <div className="flex gap-4 w-full max-w-sm border-t border-border pt-6">
-               <button onClick={startGame} className="flex-1 px-4 py-3 bg-primary text-primary-foreground text-[10px] uppercase tracking-wider rounded-lg font-bold hover:bg-primary/90 transition-colors">
-                 Новая генерация
-               </button>
-            </div>
-         </div>
+      <div className="col-span-12">
+        <PostGameInsight
+          gameType="LOGICAL_SEQUENCE"
+          score={state.score}
+          timeMs={state.timeMs}
+          errors={3 - state.score}
+          onPlayAgain={startGame}
+          onBackToMenu={() => navigate('/')}
+        />
       </div>
     );
   }

@@ -11,7 +11,7 @@
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit",
     "test": "vitest run",
-    "validate": "vitest run src/tests/schulte-core.test.ts src/tests/typing-core.test.ts src/tests/spatial-core.test.ts src/tests/nback-core.test.ts src/tests/stroop-core.test.ts src/tests/logical-core.test.ts src/tests/numerical-core.test.ts src/tests/topology-core.test.ts src/tests/collision-core.test.ts src/tests/dispatcher-core.test.ts src/tests/noise-reduction.test.ts src/tests/puzzle-logic.test.ts src/tests/logic-verification.test.ts src/tests/reproducibility.test.ts src/tests/content-db.test.ts"
+    "validate": "vitest run"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.2.0",

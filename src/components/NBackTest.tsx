@@ -1,10 +1,39 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNBackEngine } from '../hooks/useNBackEngine';
 import { useAuth } from '../hooks/useAuth';
+import { useNavigate } from 'react-router-dom';
+import { PostGameInsight } from './PostGameInsight';
+import { LuscherTest } from './LuscherTest';
 
 export function NBackTest() {
   const { state, startGame, answerMatch } = useNBackEngine();
   const { token } = useAuth();
+  const navigate = useNavigate();
+
+  const [useLuscher, setUseLuscher] = useState(false);
+  const [showPreLuscher, setShowPreLuscher] = useState(false);
+  const [preSequence, setPreSequence] = useState<number[] | null>(null);
+  const [sessionId, setSessionId] = useState<string | null>(null);
+
+  const handleStartClick = () => {
+    setSessionId(null);
+    setPreSequence(null);
+    if (useLuscher) {
+      setShowPreLuscher(true);
+    } else {
+      startGame();
+    }
+  };
+
+  const handlePlayAgain = () => {
+    setSessionId(null);
+    setPreSequence(null);
+    if (useLuscher) {
+      setShowPreLuscher(true);
+    } else {
+      startGame();
+    }
+  };
   
   // Track keyboard shortcut
   useEffect(() => {
@@ -30,11 +59,40 @@ export function NBackTest() {
            body: JSON.stringify({
               gameType: 'N_BACK',
               timeMs: 2500 * state.round, // Estimate
-              metadata: { score: state.score, errors: state.errors }
+              metadata: { 
+                score: state.score, 
+                errors: state.errors,
+                preSequence: preSequence || undefined
+              }
            })
-        }).catch(err => console.error('Failed to save session', err));
+        })
+        .then(res => {
+          if (!res.ok) throw new Error('Failed to save session');
+          return res.json();
+        })
+        .then(data => {
+          if (data.session && data.session.id) {
+            setSessionId(data.session.id);
+          }
+        })
+        .catch(err => console.error('Failed to save session', err));
      }
-  }, [state.isFinished, state.round, token, state.score, state.errors]);
+  }, [state.isFinished, state.round, token, state.score, state.errors, preSequence]);
+
+  if (showPreLuscher) {
+    return (
+      <div className="col-span-12">
+        <LuscherTest 
+          title="Цветовой тест Люшера ДО игры" 
+          onFinish={(seq) => { 
+            setPreSequence(seq); 
+            setShowPreLuscher(false); 
+            startGame(); 
+          }} 
+        />
+      </div>
+    );
+  }
 
   if (!state.isActive && !state.isFinished) {
     return (
@@ -44,10 +102,22 @@ export function NBackTest() {
             <p className="text-sm text-muted-foreground mb-4">
               Оценка рабочей памяти. Вы увидите последовательность букв.
             </p>
-            <p className="text-xs text-foreground bg-secondary/50 p-4 rounded-xl border border-border mb-8">
+            <p className="text-xs text-foreground bg-secondary/50 p-4 rounded-xl border border-border mb-6">
               Правило (2-назад): Жмите <b>Совпадение</b> или <b>Пробел</b>, если текущая буква совпадает с буквой, показанной <span className="text-primary font-bold">2 шага назад</span>.
             </p>
-            <button onClick={startGame} className="w-full max-w-[250px] px-4 py-3 bg-primary text-primary-foreground text-xs uppercase tracking-wider rounded-lg font-bold hover:bg-primary/90 transition-colors">
+
+            {/* Luscher Checkbox */}
+            <div className="flex items-center gap-3 mb-8 bg-primary/5 border border-primary/10 px-4 py-3 rounded-xl cursor-pointer select-none" onClick={() => setUseLuscher(!useLuscher)}>
+              <input 
+                type="checkbox" 
+                checked={useLuscher} 
+                onChange={() => {}} 
+                className="w-4 h-4 rounded border-border text-primary focus:ring-primary"
+              />
+              <span className="text-xs font-black uppercase text-foreground">Включить эмоциональный барометр Люшера</span>
+            </div>
+
+            <button onClick={handleStartClick} className="w-full max-w-[250px] px-4 py-3 bg-primary text-primary-foreground text-xs uppercase tracking-wider rounded-lg font-bold hover:bg-primary/90 transition-colors">
               Активировать
             </button>
         </div>
@@ -57,28 +127,17 @@ export function NBackTest() {
 
   if (state.isFinished) {
     return (
-      <div className="col-span-12 grid grid-cols-1 md:grid-cols-12 gap-4 h-full min-h-0 relative">
-         <div className="md:col-start-4 md:col-span-6 bg-card/20 border border-border rounded-3xl p-8 flex flex-col items-center justify-center text-center">
-            <h2 className="text-[10px] text-muted-foreground uppercase tracking-widest mb-6">Анализ завершен</h2>
-            
-            <div className="flex items-end justify-center gap-4 mb-8">
-              <div className="flex flex-col items-center">
-                 <div className="text-6xl font-mono tabular-nums font-bold text-primary">{state.score}</div>
-                 <div className="text-xs font-medium uppercase tracking-widest text-muted-foreground mt-2">Верных</div>
-              </div>
-              <div className="h-12 w-px bg-border mx-2"></div>
-              <div className="flex flex-col items-center">
-                 <div className="text-6xl font-mono tabular-nums font-bold text-destructive">{state.errors}</div>
-                 <div className="text-xs font-medium uppercase tracking-widest text-muted-foreground mt-2">Ошибок</div>
-              </div>
-            </div>
-
-            <div className="flex gap-4 w-full max-w-sm border-t border-border pt-6">
-               <button onClick={startGame} className="flex-1 px-4 py-3 bg-primary text-primary-foreground text-[10px] uppercase tracking-wider rounded-lg font-bold hover:bg-primary/90 transition-colors">
-                 Повторить
-               </button>
-            </div>
-         </div>
+      <div className="col-span-12">
+        <PostGameInsight
+          gameType="N_BACK"
+          score={state.score}
+          timeMs={2500 * state.round}
+          errors={state.errors}
+          preSequence={preSequence}
+          sessionId={sessionId}
+          onPlayAgain={handlePlayAgain}
+          onBackToMenu={() => navigate('/')}
+        />
       </div>
     );
   }

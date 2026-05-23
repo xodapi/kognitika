@@ -2,7 +2,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { CognitiveProfile } from '../components/CognitiveProfile';
 import { Wiki } from '../components/Wiki';
+import { MemoryRouter } from 'react-router-dom';
 import React from 'react';
+
 
 // Mock motion/react
 vi.mock('motion/react', () => ({
@@ -37,13 +39,21 @@ describe('CognitiveProfile UI', () => {
   });
 
   it('должен отображать заголовок и данные профиля', async () => {
-    render(<CognitiveProfile />);
+    render(
+      <MemoryRouter>
+        <CognitiveProfile />
+      </MemoryRouter>
+    );
     expect(await screen.findByText(/Когнитивный Профиль/i)).toBeDefined();
     expect(screen.getAllByText(/12/)).toHaveLength(2); // Sessions count and header
   });
 
   it('должен иметь кнопку экспорта', async () => {
-    render(<CognitiveProfile />);
+    render(
+      <MemoryRouter>
+        <CognitiveProfile />
+      </MemoryRouter>
+    );
     const exportBtn = await screen.findByRole('button', { name: /Скачать JSON/i });
     expect(exportBtn).toBeDefined();
   });
