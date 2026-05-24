@@ -87,7 +87,7 @@ const STATEMENTS_POOL: Statement[] = [
   }
 ];
 
-export function CiaTrashFilter() {
+export function CognitiveTrashFilter() {
   const navigate = useNavigate();
   const { token } = useAuth();
   
@@ -168,7 +168,7 @@ export function CiaTrashFilter() {
           setSessionId(data.session.id);
         }
       })
-      .catch(err => console.error('Failed to save CiaTrashFilter session:', err));
+      .catch(err => console.error('Failed to save CognitiveTrashFilter session:', err));
     }
   }, [isFinished, token, score, errors, durationMs, statements.length]);
 
@@ -233,7 +233,7 @@ export function CiaTrashFilter() {
         
         {/* Title */}
         <div className="text-center">
-          <h2 className="text-[10px] text-primary uppercase tracking-[0.2em] font-black mb-1">Ментальный фильтр ЦРУ</h2>
+          <h2 className="text-[10px] text-primary uppercase tracking-[0.2em] font-black mb-1">Когнитивный фильтр</h2>
           <h3 className="text-lg font-black text-foreground uppercase tracking-tight">Разделение фактов и когнитивного шума</h3>
         </div>
 

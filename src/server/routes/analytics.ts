@@ -109,7 +109,7 @@ router.get('/compare', async (req: any, res) => {
     // Если сильная усталость, принудительно рекомендуем дыхательную технику "Тишина"
     if (trend === 'down' && deltaPercentage > 15) {
       recommendedGame = 'silence';
-      recommendedGameTitle = 'Техника ЦРУ: «Тишина»';
+      recommendedGameTitle = 'Нейрорегуляция: «Тишина»';
     } else {
       const rec = recommendations[gameType] || recommendations.SCHULTE;
       recommendedGame = rec.game;

@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
 import { EyeOff, VolumeX, ShieldAlert } from 'lucide-react';
 
-export function CiaSilence() {
+export function NeuroSilence() {
   const navigate = useNavigate();
   const [timeLeft, setTimeLeft] = useState(120); // 2 minutes (120 seconds)
   const [breathState, setBreathState] = useState<'inhale' | 'hold' | 'exhale'>('inhale');

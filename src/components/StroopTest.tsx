@@ -130,7 +130,7 @@ export function StroopTest() {
                   onChange={() => {}} 
                   className="w-4 h-4 rounded border-border text-destructive focus:ring-destructive"
                 />
-                <span className="text-[10px] font-black uppercase text-foreground">Стресс-тест ЦРУ</span>
+                <span className="text-[10px] font-black uppercase text-foreground">Стресс-инокуляция</span>
               </div>
             </div>
 
