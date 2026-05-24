@@ -10,6 +10,8 @@ import { AttentionMap } from './AttentionMap';
 import { useSessionRecording } from '../hooks/useSessionRecording';
 import { StabilityIndicator } from './StabilityIndicator';
 import { useEventBus } from '../hooks/useEventBus';
+import { useNavigate } from 'react-router-dom';
+import { PostGameInsight } from './PostGameInsight';
 
 const PASTEL_COLORS = [
   '#fecaca', '#fed7aa', '#fef08a', '#dcfce7', '#d1fae5', '#ccfbf1', '#e0f2fe', '#e0e7ff', '#ede9fe', '#fae8ff',
@@ -85,6 +87,7 @@ export function SchulteGrid() {
   const [currentLevel, setCurrentLevel] = useState<TrainingLevel>('classic');
   const [sessionStartTime, setSessionStartTime] = useState<number | null>(null);
   const { token, refreshUser } = useAuth();
+  const navigate = useNavigate();
   
   const [currentStability, setCurrentStability] = useState({ avg: 0, stability: 0 });
   useEventBus('STABILITY_UPDATE', (data) => {
@@ -498,42 +501,32 @@ export function SchulteGrid() {
   }
 
   if (state.isFinished) {
+    const baseScore = Math.max(10, Math.floor(100000 / (state.timeMs || 10000)));
+    let multiplier = 1;
+    if (state.modifications.colorNoise !== 'none') multiplier += 0.2;
+    if (state.modifications.distortion) multiplier += 0.3;
+    if (state.modifications.inversion) multiplier += 0.5;
+    if (state.size > 5) multiplier += 0.4;
+    if (isHardcore) multiplier += 0.5;
+    const finalScore = Math.floor(baseScore * multiplier);
+
     return (
-      <div className="col-span-12 grid grid-cols-1 lg:grid-cols-12 gap-8 h-full min-h-0 relative">
+      <div className="col-span-12 grid grid-cols-1 lg:grid-cols-12 gap-8 h-full min-h-0 relative pb-10">
          <motion.div 
            initial={{ opacity: 0, y: 20 }}
            animate={{ opacity: 1, y: 0 }}
-           className="lg:col-start-3 lg:col-span-8 bg-card/40 backdrop-blur-xl border border-border rounded-[3rem] p-8 sm:p-12 flex flex-col items-center shadow-sm"
+           className="lg:col-start-2 lg:col-span-10 flex flex-col gap-8"
          >
-            <div className="flex items-center gap-4 mb-8">
-               <History className="w-5 h-5 text-primary" />
-               <h2 className="text-xs font-black text-muted-foreground uppercase tracking-[0.3em]">Результат тренировки</h2>
-            </div>
+            <PostGameInsight 
+              gameType={isGorbov ? 'SCHULTE_GORBOV' : 'SCHULTE'}
+              score={finalScore}
+              timeMs={state.timeMs}
+              errors={state.errors}
+              onPlayAgain={resetGame}
+              onBackToMenu={() => navigate('/')}
+            />
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 w-full mb-12">
-               <div className="text-center p-6 rounded-[2rem] bg-secondary/30 border border-border/50">
-                  <p className="text-[10px] text-muted-foreground uppercase font-black tracking-widest mb-2">Время</p>
-                  <p className={`text-4xl font-mono font-black tabular-nums ${state.timeMs/1000 <= targetTime ? 'text-green-500' : 'text-primary'}`}>
-                    {(state.timeMs / 1000).toFixed(2)}s
-                  </p>
-               </div>
-               <div className="text-center p-6 rounded-[2rem] bg-secondary/30 border border-border/50">
-                  <p className="text-[10px] text-muted-foreground uppercase font-black tracking-widest mb-2">Ошибки</p>
-                  <p className={`text-4xl font-mono font-black tabular-nums ${state.errors === 0 ? 'text-green-500' : 'text-destructive'}`}>
-                    {state.errors}
-                  </p>
-               </div>
-               <div className="text-center p-6 rounded-[2rem] bg-secondary/30 border border-border/50">
-                  <p className="text-[10px] text-muted-foreground uppercase font-black tracking-widest mb-2">Награда</p>
-                  <p className="text-4xl font-mono font-black tabular-nums text-yellow-500">
-                    +{bonusAwarded} <span className="text-xs font-black uppercase">XP</span>
-                  </p>
-               </div>
-            </div>
-
-            {/* AI Recommendation card removed as per user request */}
-
-            <div className="w-full bg-background/50 border border-border rounded-[2.5rem] p-8 mb-10 overflow-hidden shadow-inner grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div className="w-full bg-background/50 border border-border rounded-[2.5rem] p-8 overflow-hidden shadow-inner grid grid-cols-1 lg:grid-cols-2 gap-8">
                 <div>
                    <SchulteStats 
                      history={state.clickHistory} 
@@ -545,25 +538,6 @@ export function SchulteGrid() {
                 <div className="h-[300px] lg:h-full min-h-[250px]">
                    <ConcentrationCurve data={state.clickHistory} />
                 </div>
-            </div>
-            
-            <div className="flex gap-6 w-full max-w-md">
-               <motion.button 
-                 whileHover={{ scale: 1.05 }}
-                 whileTap={{ scale: 0.95 }}
-                 onClick={resetGame} 
-                 className="flex-1 py-4 border border-border bg-card text-foreground text-xs uppercase tracking-widest rounded-2xl font-black hover:bg-secondary transition-all"
-               >
-                 Настройки
-               </motion.button>
-               <motion.button 
-                 whileHover={{ scale: 1.05 }}
-                 whileTap={{ scale: 0.95 }}
-                 onClick={startGame} 
-                 className="flex-1 py-4 bg-primary text-primary-foreground text-xs uppercase tracking-widest rounded-2xl font-black shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all"
-               >
-                 Повторить
-               </motion.button>
             </div>
          </motion.div>
       </div>
