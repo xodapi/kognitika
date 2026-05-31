@@ -6,6 +6,9 @@ import { useAuth } from '../hooks/useAuth';
 
 export function RealityCheck({ onFinish }: { onFinish: (results: any) => void }) {
   const { user } = useAuth();
+  const userSeed = user?.id
+    ? Array.from(user.id).reduce((acc, char) => acc + char.charCodeAt(0), 0)
+    : 0;
   const { 
     currentPair, 
     progress, 
@@ -15,7 +18,7 @@ export function RealityCheck({ onFinish }: { onFinish: (results: any) => void })
     submitAnswer,
     score,
     pairsRemaining
-  } = useRealityCheckEngine(user?.id || 0, user?.level || 1);
+  } = useRealityCheckEngine(userSeed, user?.level || 1);
 
   useEffect(() => {
     startSession();

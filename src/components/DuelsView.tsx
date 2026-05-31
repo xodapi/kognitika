@@ -88,7 +88,13 @@ export const DuelsView: React.FC = () => {
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 1.05 }}
           >
-            <DuelLobby onCancel={() => setViewState('idle')} />
+            <DuelLobby
+              onMatchFound={(roomId, opponent) => {
+                setCurrentMatch({ roomId, opponent });
+                setViewState('playing');
+              }}
+              onClose={() => setViewState('idle')}
+            />
           </motion.div>
         )}
 

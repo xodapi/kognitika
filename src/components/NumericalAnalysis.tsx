@@ -39,7 +39,7 @@ export function NumericalAnalysis() {
             <p className="text-sm text-muted-foreground mb-8">
               Оценка способности быстро оперировать данными. У вас будет 60 секунд на ответ серии вопросов (вычисление долей, процентных изменений и средневзвешенных значений).
             </p>
-            <button onClick={startGame} className="w-full max-w-[250px] px-4 py-3 bg-primary text-primary-foreground text-xs uppercase tracking-wider rounded-lg font-bold hover:bg-primary/90 transition-colors">
+            <button onClick={() => startGame()} className="w-full max-w-[250px] px-4 py-3 bg-primary text-primary-foreground text-xs uppercase tracking-wider rounded-lg font-bold hover:bg-primary/90 transition-colors">
               Начать тест
             </button>
         </div>

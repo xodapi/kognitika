@@ -192,7 +192,12 @@ export function SchulteGrid() {
   useEffect(() => {
       if (state.isFinished && state.timeMs > 0 && token) {
          import('../lib/cognitive-metrics').then(async (m) => {
-           const analysis = await m.analyzeSession(state.clickHistory);
+           const analysis = await m.analyzeSession(
+             state.clickHistory.map((click) => ({
+               cell: click.cellId,
+               reactionTime: click.reactionTimeMs
+             }))
+           );
            await m.getDifficultySuggestion(analysis.averageTime, analysis.stabilityIndex);
          });
 

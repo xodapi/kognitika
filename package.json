@@ -2,6 +2,7 @@
   "name": "kognitika",
   "private": true,
   "version": "0.0.0",
+  "packageManager": "pnpm@10.22.0",
   "type": "module",
   "scripts": {
     "dev": "tsx server.ts",
@@ -54,6 +55,8 @@
     "@types/node": "^22.14.0",
     "@types/nodemailer": "^6.4.17",
     "@types/pg": "^8.11.11",
+    "@types/react": "^19.2.15",
+    "@types/react-dom": "^19.2.3",
     "@types/uuid": "^10.0.0",
     "@vitejs/plugin-react": "^5.0.4",
     "autoprefixer": "^10.4.21",
@@ -64,5 +67,13 @@
     "typescript": "~5.8.2",
     "vite": "^7.3.3",
     "vitest": "^3.2.4"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@prisma/engines",
+      "esbuild",
+      "prisma",
+      "protobufjs"
+    ]
   }
 }
