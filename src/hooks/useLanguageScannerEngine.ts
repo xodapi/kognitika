@@ -40,6 +40,8 @@ export interface LanguageScannerState {
     ruleId: number | null;
     isCorrect: boolean | null;
     selectedRuleId: number | null;
+    explanation: string;
+    correctRuleName: string;
   } | null;
   domain: string;
 }

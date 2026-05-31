@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master, "codex/**"]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: admin
+          POSTGRES_PASSWORD: adminpassword
+          POSTGRES_DB: cognitika
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U admin -d cognitika"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://admin:adminpassword@localhost:5432/cognitika?schema=public
+      JWT_SECRET: ci-only-replace-with-strong-secret
+      NODE_ENV: test
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.22.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm test
+      - run: pnpm validate
+      - run: pnpm build

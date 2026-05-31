@@ -151,7 +151,7 @@ export function useDispatcherEngine() {
       setState(prev => {
         const newStreams = prev.streams.map(s => {
           let p = s.progress + s.speed * (TICK / 1000) * 100;
-          let status = s.status;
+          let status: Stream['status'] = s.status;
           let triggerCount = s.triggerCount;
           let overflowCount = s.overflowCount;
           let missCount = s.missCount;
@@ -199,9 +199,9 @@ export function useDispatcherEngine() {
         scoreRef.current = Math.max(0, scoreRef.current - 5);
       }
 
-      const newStreams = prev.streams.map(s =>
+      const newStreams: Stream[] = prev.streams.map(s =>
         s.id === streamId
-          ? { ...s, progress: 0, status: inZone ? 'triggered' : 'idle', triggerCount: s.triggerCount + 1 }
+          ? { ...s, progress: 0, status: (inZone ? 'triggered' : 'idle') as Stream['status'], triggerCount: s.triggerCount + 1 }
           : s
       );
 

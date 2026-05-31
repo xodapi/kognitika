@@ -2,25 +2,19 @@ FROM node:22-slim
 
 WORKDIR /app
 
-# Install dependencies needed for prisma and general build
 RUN apt-get update && apt-get install -y \
     openssl \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    && corepack enable
 
-COPY package.json ./
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
 
-# Install dependencies
-RUN npm install --legacy-peer-deps
+RUN pnpm install --frozen-lockfile
 
-# Copy source
 COPY . .
 
-# Generate Prisma Client
-RUN npx prisma generate
-
-# Build frontend
-RUN npm run build
+RUN pnpm build
 
 EXPOSE 3006
 
-CMD ["npm", "start"]
+CMD ["pnpm", "start"]

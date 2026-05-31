@@ -113,7 +113,7 @@ function AppContent() {
             <Menu className="w-5 h-5" />
           </button>
           
-          <div className="flex items-center gap-2 sm:gap-3 cursor-pointer" onClick={() => setActiveTab('dashboard')}>
+          <div className="flex items-center gap-2 sm:gap-3 cursor-pointer" onClick={() => navigate('/')}>
             <div className="w-8 h-8 sm:w-10 sm:h-10 bg-primary border border-primary/50 text-white rounded-xl flex items-center justify-center shadow-lg shadow-primary/20">
               <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-current rotate-45"></div>
             </div>
