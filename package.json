@@ -10,7 +10,7 @@
     "start": "tsx server.ts",
     "preview": "vite preview",
     "clean": "rm -rf dist",
-    "lint": "tsc --noEmit",
+    "lint": "prisma generate && tsc --noEmit",
     "test": "vitest run",
     "validate": "vitest run"
   },
