@@ -34,7 +34,8 @@ import { IdeasWall } from './components/IdeasWall';
 import { ObjectiveFilter } from './components/ObjectiveFilter';
 import { ProfilingRICE } from './components/ProfilingRICE';
 import { AnomalyDetector } from './components/AnomalyDetector';
-import { DialogueArchitecture } from './components/DialogueArchitecture';
+import { SocialEQ } from './components/SocialEQ';
+import { Reframing } from './components/Reframing';
 import { LeaderboardView } from './components/LeaderboardView';
 import { TopologyMemory } from './components/TopologyMemory';
 import { CollisionDetector } from './components/CollisionDetector';
@@ -48,7 +49,7 @@ import { NeuroSilence } from './components/NeuroSilence';
 import { CognitiveTrashFilter } from './components/CognitiveTrashFilter';
 import { HypeFilter } from './components/HypeFilter';
 
-type Tab = 'dashboard' | 'schulte' | 'numerical' | 'logical' | 'stroop' | 'nback' | 'situational' | 'typing' | 'spatial' | 'admin' | 'ideas' | 'objective' | 'profiling' | 'anomaly' | 'dialogue' | 'leaderboard' | 'topology' | 'collision' | 'dispatcher' | 'noise' | 'scanner' | 'decryptor' | 'reality' | 'silence' | 'filter' | 'hype';
+type Tab = 'dashboard' | 'schulte' | 'numerical' | 'logical' | 'stroop' | 'nback' | 'situational' | 'typing' | 'spatial' | 'admin' | 'ideas' | 'objective' | 'profiling' | 'anomaly' | 'dialogue' | 'leaderboard' | 'topology' | 'collision' | 'dispatcher' | 'noise' | 'scanner' | 'decryptor' | 'reality' | 'silence' | 'filter' | 'hype' | 'reframing';
 
 const tabTitles: Record<string, string> = {
   '/': 'Обзор',
@@ -77,7 +78,8 @@ const tabTitles: Record<string, string> = {
   '/dialogue': 'Архитектура диалога',
   '/silence': 'Нейрорегуляция: «Тишина»',
   '/filter': 'Когнитивный фильтр',
-  '/hype': 'Фактчек или Хайп'
+  '/hype': 'Фактчек или Хайп',
+  '/reframing': 'Фича, а не баг'
 };
 
 function AppContent() {
@@ -307,6 +309,7 @@ function AppContent() {
                    { id: 'noise', icon: VolumeX, label: 'Редукция шума' },
                    { id: 'scanner', icon: Search, label: 'Смысловой сканер' },
                    { id: 'hype', icon: Shield, label: 'Фактчек или Хайп' },
+                   { id: 'reframing', icon: Lightbulb, label: 'Фича, а не баг' },
                    { id: 'ideas', icon: Lightbulb, label: 'Предложения' },
                  ].map((item) => (
                    <button 
@@ -421,7 +424,7 @@ function AppContent() {
               <Route path="/objective" element={<ObjectiveFilter />} />
               <Route path="/profiling" element={<ProfilingRICE />} />
               <Route path="/anomaly" element={<AnomalyDetector />} />
-              <Route path="/dialogue" element={<DialogueArchitecture />} />
+              <Route path="/dialogue" element={<SocialEQ onFinish={() => navigate('/')} />} />
               <Route path="/admin" element={<AdminPanel token={token} />} />
               <Route path="/ideas" element={<IdeasWall token={token} />} />
               <Route path="/leaderboard" element={<LeaderboardView />} />
@@ -435,6 +438,7 @@ function AppContent() {
               <Route path="/silence" element={<NeuroSilence />} />
               <Route path="/filter" element={<CognitiveTrashFilter />} />
               <Route path="/hype" element={<HypeFilter onFinish={() => navigate('/')} />} />
+              <Route path="/reframing" element={<Reframing onFinish={() => navigate('/')} />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
          </div>
