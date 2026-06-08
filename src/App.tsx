@@ -46,8 +46,9 @@ import { RealityCheck } from './components/RealityCheck';
 import { DonateButton } from './components/DonateButton';
 import { NeuroSilence } from './components/NeuroSilence';
 import { CognitiveTrashFilter } from './components/CognitiveTrashFilter';
+import { HypeFilter } from './components/HypeFilter';
 
-type Tab = 'dashboard' | 'schulte' | 'numerical' | 'logical' | 'stroop' | 'nback' | 'situational' | 'typing' | 'spatial' | 'admin' | 'ideas' | 'objective' | 'profiling' | 'anomaly' | 'dialogue' | 'leaderboard' | 'topology' | 'collision' | 'dispatcher' | 'noise' | 'scanner' | 'decryptor' | 'reality' | 'silence' | 'filter';
+type Tab = 'dashboard' | 'schulte' | 'numerical' | 'logical' | 'stroop' | 'nback' | 'situational' | 'typing' | 'spatial' | 'admin' | 'ideas' | 'objective' | 'profiling' | 'anomaly' | 'dialogue' | 'leaderboard' | 'topology' | 'collision' | 'dispatcher' | 'noise' | 'scanner' | 'decryptor' | 'reality' | 'silence' | 'filter' | 'hype';
 
 const tabTitles: Record<string, string> = {
   '/': 'Обзор',
@@ -75,7 +76,8 @@ const tabTitles: Record<string, string> = {
   '/anomaly': 'Детектор аномалий',
   '/dialogue': 'Архитектура диалога',
   '/silence': 'Нейрорегуляция: «Тишина»',
-  '/filter': 'Когнитивный фильтр'
+  '/filter': 'Когнитивный фильтр',
+  '/hype': 'Фактчек или Хайп'
 };
 
 function AppContent() {
@@ -304,6 +306,7 @@ function AppContent() {
                    { id: 'dispatcher', icon: Cpu, label: 'Асинхр. диспетчер' },
                    { id: 'noise', icon: VolumeX, label: 'Редукция шума' },
                    { id: 'scanner', icon: Search, label: 'Смысловой сканер' },
+                   { id: 'hype', icon: Shield, label: 'Фактчек или Хайп' },
                    { id: 'ideas', icon: Lightbulb, label: 'Предложения' },
                  ].map((item) => (
                    <button 
@@ -431,6 +434,7 @@ function AppContent() {
               <Route path="/reality" element={<RealityCheck onFinish={() => navigate('/')} />} />
               <Route path="/silence" element={<NeuroSilence />} />
               <Route path="/filter" element={<CognitiveTrashFilter />} />
+              <Route path="/hype" element={<HypeFilter onFinish={() => navigate('/')} />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
          </div>
