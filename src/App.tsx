@@ -38,6 +38,7 @@ import { SocialEQ } from './components/SocialEQ';
 import { Reframing } from './components/Reframing';
 import { RejectionImmunity } from './components/RejectionImmunity';
 import { Storytelling } from './components/Storytelling';
+import { DeepFocus } from './components/DeepFocus';
 import { LeaderboardView } from './components/LeaderboardView';
 import { TopologyMemory } from './components/TopologyMemory';
 import { CollisionDetector } from './components/CollisionDetector';
@@ -51,7 +52,7 @@ import { NeuroSilence } from './components/NeuroSilence';
 import { CognitiveTrashFilter } from './components/CognitiveTrashFilter';
 import { HypeFilter } from './components/HypeFilter';
 
-type Tab = 'dashboard' | 'schulte' | 'numerical' | 'logical' | 'stroop' | 'nback' | 'situational' | 'typing' | 'spatial' | 'admin' | 'ideas' | 'objective' | 'profiling' | 'anomaly' | 'dialogue' | 'leaderboard' | 'topology' | 'collision' | 'dispatcher' | 'noise' | 'scanner' | 'decryptor' | 'reality' | 'silence' | 'filter' | 'hype' | 'reframing' | 'rejection' | 'storytelling';
+type Tab = 'dashboard' | 'schulte' | 'numerical' | 'logical' | 'stroop' | 'nback' | 'situational' | 'typing' | 'spatial' | 'admin' | 'ideas' | 'objective' | 'profiling' | 'anomaly' | 'dialogue' | 'leaderboard' | 'topology' | 'collision' | 'dispatcher' | 'noise' | 'scanner' | 'decryptor' | 'reality' | 'silence' | 'filter' | 'hype' | 'reframing' | 'rejection' | 'storytelling' | 'focus';
 
 const tabTitles: Record<string, string> = {
   '/': 'Обзор',
@@ -83,7 +84,8 @@ const tabTitles: Record<string, string> = {
   '/hype': 'Фактчек или Хайп',
   '/reframing': 'Фича, а не баг',
   '/rejection': 'Иммунитет к отказам',
-  '/storytelling': 'Смысловые связи'
+  '/storytelling': 'Смысловые связи',
+  '/focus': 'Глубокий Фокус'
 };
 
 function AppContent() {
@@ -316,6 +318,7 @@ function AppContent() {
                    { id: 'reframing', icon: Lightbulb, label: 'Фича, а не баг' },
                    { id: 'rejection', icon: Shield, label: 'Иммунитет к отказам' },
                    { id: 'storytelling', icon: Network, label: 'Смысловые связи' },
+                   { id: 'focus', icon: Target, label: 'Глубокий Фокус' },
                    { id: 'ideas', icon: Lightbulb, label: 'Предложения' },
                  ].map((item) => (
                    <button 
@@ -447,6 +450,7 @@ function AppContent() {
               <Route path="/reframing" element={<Reframing onFinish={() => navigate('/')} />} />
               <Route path="/rejection" element={<RejectionImmunity onFinish={() => navigate('/')} />} />
               <Route path="/storytelling" element={<Storytelling onFinish={() => navigate('/')} />} />
+              <Route path="/focus" element={<DeepFocus onFinish={() => navigate('/')} />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
          </div>
