@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import prisma from '../../lib/prisma.ts';
 import { authenticate, isAdmin } from '../middleware/auth.ts';
+import { sanitizeAdminUserIdentity, sanitizePublicUserIdentity } from '../utils/privacy.ts';
 
 const router = Router();
 
@@ -35,14 +36,8 @@ router.get('/users', async (req, res) => {
   });
 
   res.json(users.map((user) => {
-    const displayName = user.pseudonym || user.name || `Brain ${user.id.slice(0, 8)}`;
-
     return {
-      id: user.id,
-      displayName,
-      name: displayName,
-      brainLabel: user.brainId ? `Brain ${user.brainId.slice(0, 8)}` : `User ${user.id.slice(0, 8)}`,
-      pseudonym: user.pseudonym,
+      ...sanitizeAdminUserIdentity(user),
       level: user.level,
       experience: user.experience,
       rating: user.rating,
@@ -79,10 +74,8 @@ router.get('/feedback', async (req, res) => {
       },
     });
 
-    res.json(feedback.map((item) => {
-      const displayName = item.user.pseudonym || item.user.name || `Brain ${item.user.id.slice(0, 8)}`;
-
-      return {
+    res.json(feedback.map((item) => (
+      {
         id: item.id,
         type: item.type,
         text: item.content,
@@ -90,13 +83,9 @@ router.get('/feedback', async (req, res) => {
         status: item.status,
         trackingNum: item.trackingNum,
         createdAt: item.createdAt,
-        user: {
-          name: displayName,
-          pseudonym: item.user.pseudonym,
-          brainLabel: item.user.brainId ? `Brain ${item.user.brainId.slice(0, 8)}` : `User ${item.user.id.slice(0, 8)}`,
-        },
-      };
-    }));
+        user: sanitizePublicUserIdentity(item.user),
+      }
+    )));
   } catch (error) {
     console.error('[Admin] Feedback list error:', error);
     res.status(500).json({ error: 'Failed to fetch feedback' });

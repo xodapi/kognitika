@@ -4,6 +4,7 @@ import { z } from 'zod';
 import prisma from '../../lib/prisma.ts';
 import { authenticate } from '../middleware/auth.ts';
 import { handleValidationError } from '../utils/validation.ts';
+import { sanitizePublicUserIdentity } from '../utils/privacy.ts';
 
 const router = Router();
 const JWT_SECRET = process.env.JWT_SECRET!;
@@ -23,16 +24,6 @@ function optionalUserId(req: any) {
   } catch {
     return null;
   }
-}
-
-function serializeAuthor(user: { id: string; name: string | null; pseudonym: string | null; brainId: string | null }) {
-  const name = user.pseudonym || user.name || `Brain ${user.id.slice(0, 8)}`;
-
-  return {
-    name,
-    pseudonym: user.pseudonym,
-    brainLabel: user.brainId ? `Brain ${user.brainId.slice(0, 8)}` : `User ${user.id.slice(0, 8)}`,
-  };
 }
 
 router.get('/', async (req: any, res) => {
@@ -65,7 +56,7 @@ router.get('/', async (req: any, res) => {
       description: idea.description,
       status: idea.status,
       createdAt: idea.createdAt,
-      author: serializeAuthor(idea.user),
+      author: sanitizePublicUserIdentity(idea.user),
       _count: idea._count,
       userHasVoted: Array.isArray(idea.votes) && idea.votes.length > 0,
     })));
@@ -109,7 +100,7 @@ router.post('/', authenticate, async (req: any, res) => {
       description: idea.description,
       status: idea.status,
       createdAt: idea.createdAt,
-      author: serializeAuthor(idea.user),
+      author: sanitizePublicUserIdentity(idea.user),
       _count: idea._count,
       userHasVoted: false,
     });

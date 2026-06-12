@@ -31,7 +31,7 @@ service cloud.firestore {
       allow get: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
       
       allow create: if (
-        isVerified() && 
+        isSignedIn() &&
         isValidId(feedbackId) &&
         isValidFeedback(request.resource.data) &&
         request.resource.data.userId == request.auth.uid &&
@@ -44,11 +44,11 @@ service cloud.firestore {
     }
 
     function isValidFeedback(data) {
-      return data.keys().hasAll(['userId', 'userName', 'email', 'content', 'type', 'createdAt', 'status']) &&
+      return data.keys().hasAll(['userId', 'userName', 'brainLabel', 'content', 'type', 'createdAt', 'status']) &&
              data.keys().size() == 7 &&
              data.userId is string && data.userId.size() <= 128 &&
              data.userName is string && data.userName.size() <= 100 &&
-             data.email is string && data.email.size() <= 100 &&
+             data.brainLabel is string && data.brainLabel.size() <= 100 &&
              data.content is string && data.content.size() <= 5000 &&
              data.type in ['idea', 'bug', 'improvement', 'other'] &&
              data.status in ['new', 'reviewed', 'resolved'];
