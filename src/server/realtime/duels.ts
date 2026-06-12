@@ -1,5 +1,11 @@
 import jwt from 'jsonwebtoken';
 import type { Server } from 'socket.io';
+import { generateExpectedSequence } from '../../lib/schulte-generator';
+
+const DUEL_SIZE = 5;
+const DUEL_MODE = 'classic';
+const DUEL_MIN_FINISH_MS = 3000;
+const DUEL_MAX_EVENTS_PER_SECOND = 15;
 
 interface MatchmakingUser {
   socketId: string;
@@ -13,6 +19,11 @@ interface ActiveDuel {
   userIds: string[];
   ratings: number[];
   progress: Map<string, number>;
+  acceptedClicks: Map<string, number>;
+  joinedUserIds: Set<string>;
+  firstClickAtMs: Map<string, number>;
+  eventBuckets: Map<string, { windowStartedAtMs: number; count: number }>;
+  sequence: ReturnType<typeof generateExpectedSequence>;
   isFinished: boolean;
 }
 
@@ -42,6 +53,7 @@ interface RegisterDuelHandlersOptions {
   jwtSecret: string;
   prisma: DuelPrisma;
   logger?: Pick<Console, 'log'>;
+  now?: () => number;
 }
 
 export function createDuelState(): DuelRuntimeState {
@@ -63,9 +75,33 @@ function displayNameFor(user: SocketUser) {
   return user.pseudonym || user.name || `Brain ${user.id.slice(0, 8)}`;
 }
 
+function participantIndex(duel: ActiveDuel, userId: string) {
+  return duel.userIds.findIndex((id) => id === userId);
+}
+
+function verifiedProgressFor(duel: ActiveDuel, userId: string) {
+  const acceptedClicks = duel.acceptedClicks.get(userId) || 0;
+  return Math.min(100, (acceptedClicks / duel.sequence.length) * 100);
+}
+
+function consumesDuelEvent(duel: ActiveDuel, userId: string, nowMs: number) {
+  const bucket = duel.eventBuckets.get(userId);
+  if (!bucket || nowMs - bucket.windowStartedAtMs >= 1000) {
+    duel.eventBuckets.set(userId, { windowStartedAtMs: nowMs, count: 1 });
+    return true;
+  }
+
+  if (bucket.count >= DUEL_MAX_EVENTS_PER_SECOND) {
+    return false;
+  }
+
+  bucket.count += 1;
+  return true;
+}
+
 export function registerDuelHandlers(
   io: Server,
-  { jwtSecret, prisma, logger = console }: RegisterDuelHandlersOptions,
+  { jwtSecret, prisma, logger = console, now = Date.now }: RegisterDuelHandlersOptions,
   state: DuelRuntimeState = createDuelState(),
 ) {
   io.use(async (socket, next) => {
@@ -98,8 +134,9 @@ export function registerDuelHandlers(
 
   async function resolveDuel(roomId: string, winnerId: string, loserId: string) {
     const duel = state.activeDuels.get(roomId);
-    if (!duel) return;
+    if (!duel || duel.isFinished) return;
 
+    duel.isFinished = true;
     logger.log(`[Duel] Resolving match ${roomId}: Winner=${winnerId}`);
 
     const winner = await prisma.user.findUnique({ where: { id: winnerId } });
@@ -131,6 +168,25 @@ export function registerDuelHandlers(
       ]);
 
       logger.log(`[Duel] Rating updated: ${winner.pseudonym} (+${winnerGain}), ${loser.pseudonym} (${loserLoss})`);
+    }
+
+    const winnerIndex = participantIndex(duel, winnerId);
+    const loserIndex = participantIndex(duel, loserId);
+    if (winnerIndex !== -1) {
+      io.to(duel.players[winnerIndex]).emit('duel:result', {
+        roomId,
+        result: 'win',
+        winnerId,
+        loserId,
+      });
+    }
+    if (loserIndex !== -1) {
+      io.to(duel.players[loserIndex]).emit('duel:result', {
+        roomId,
+        result: 'loss',
+        winnerId,
+        loserId,
+      });
     }
 
     state.activeDuels.delete(roomId);
@@ -173,6 +229,11 @@ export function registerDuelHandlers(
           userIds: [userId, opponent.userId],
           ratings: [rating, opponent.rating],
           progress: new Map([[userId, 0], [opponent.userId, 0]]),
+          acceptedClicks: new Map([[userId, 0], [opponent.userId, 0]]),
+          joinedUserIds: new Set(),
+          firstClickAtMs: new Map(),
+          eventBuckets: new Map(),
+          sequence: generateExpectedSequence(DUEL_SIZE, DUEL_MODE),
           isFinished: false,
         });
       } else {
@@ -196,6 +257,7 @@ export function registerDuelHandlers(
         return;
       }
 
+      duel.joinedUserIds.add(userId);
       socket.join(roomId);
       logger.log(`[Socket] User ${userId} joined room ${roomId}`);
       socket.to(roomId).emit('duel:opponent-joined', { userId });
@@ -207,7 +269,7 @@ export function registerDuelHandlers(
       const rawProgress = data?.progress;
       const duel = state.activeDuels.get(roomId);
 
-      if (!duel || duel.isFinished || !duel.players.includes(socket.id) || !duel.userIds.includes(userId)) {
+      if (!duel || duel.isFinished || !duel.players.includes(socket.id) || !duel.userIds.includes(userId) || !duel.joinedUserIds.has(userId)) {
         socket.emit('duel:error', { error: 'Room access denied' });
         return;
       }
@@ -217,14 +279,58 @@ export function registerDuelHandlers(
         return;
       }
 
-      const previousProgress = duel.progress.get(userId) || 0;
-      const progress = Math.max(previousProgress, Math.min(100, Math.max(0, rawProgress)));
+      if (!consumesDuelEvent(duel, userId, now())) {
+        socket.emit('duel:error', { error: 'Rate limit exceeded' });
+        return;
+      }
+
+      const progress = verifiedProgressFor(duel, userId);
+      duel.progress.set(userId, progress);
+      socket.to(roomId).emit('duel:opponent-progress', { progress });
+    });
+
+    socket.on('duel:cell-click', async (data) => {
+      const roomId = typeof data?.roomId === 'string' ? data.roomId : '';
+      const userId = getSocketUser(socket).id;
+      const duel = state.activeDuels.get(roomId);
+
+      if (!duel || duel.isFinished || !duel.players.includes(socket.id) || !duel.userIds.includes(userId) || !duel.joinedUserIds.has(userId)) {
+        socket.emit('duel:error', { error: 'Room access denied' });
+        return;
+      }
+
+      const nowMs = now();
+      if (!consumesDuelEvent(duel, userId, nowMs)) {
+        socket.emit('duel:error', { error: 'Rate limit exceeded' });
+        return;
+      }
+
+      const cell = data?.cell;
+      const num = typeof cell?.num === 'number' && Number.isFinite(cell.num) ? cell.num : null;
+      const color = cell?.color === 'red' || cell?.color === 'black' ? cell.color : 'black';
+      const acceptedClicks = duel.acceptedClicks.get(userId) || 0;
+      const expected = duel.sequence[acceptedClicks];
+
+      if (!expected || num !== expected.num || color !== expected.color) {
+        socket.emit('duel:error', { error: 'Invalid duel evidence' });
+        return;
+      }
+
+      const firstClickAtMs = duel.firstClickAtMs.get(userId) ?? nowMs;
+      const nextAcceptedClicks = acceptedClicks + 1;
+      if (nextAcceptedClicks >= duel.sequence.length && nowMs - firstClickAtMs < DUEL_MIN_FINISH_MS) {
+        socket.emit('duel:error', { error: 'Completion too fast' });
+        return;
+      }
+
+      duel.firstClickAtMs.set(userId, firstClickAtMs);
+      duel.acceptedClicks.set(userId, nextAcceptedClicks);
+
+      const progress = verifiedProgressFor(duel, userId);
+      duel.progress.set(userId, progress);
       socket.to(roomId).emit('duel:opponent-progress', { progress });
 
-      duel.progress.set(userId, progress);
-
       if (progress >= 100) {
-        duel.isFinished = true;
         const opponentId = duel.userIds.find((id) => id !== userId);
         if (!opponentId) return;
 

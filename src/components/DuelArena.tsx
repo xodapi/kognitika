@@ -19,6 +19,11 @@ interface DuelArenaProps {
   onClose: () => void;
 }
 
+interface DuelResult {
+  roomId: string;
+  result: 'win' | 'loss' | 'draw';
+}
+
 export const DuelArena: React.FC<DuelArenaProps> = ({ roomId, opponent, onFinish, onClose }) => {
   const { user, token } = useAuth();
   const { state, startGame, clickCell } = useSchulteEngine(5, 'classic');
@@ -38,8 +43,18 @@ export const DuelArena: React.FC<DuelArenaProps> = ({ roomId, opponent, onFinish
       setOpponentProgress(data.progress);
     });
 
+    socket.on('duel:result', (data: DuelResult) => {
+      if (data.roomId !== roomId) return;
+      setResult(data.result);
+      setGameEnded(true);
+      if (data.result === 'loss') {
+        setOpponentProgress(100);
+      }
+    });
+
     return () => {
       socket.off('duel:opponent-progress');
+      socket.off('duel:result');
     };
   }, [roomId, token]);
 
@@ -52,31 +67,6 @@ export const DuelArena: React.FC<DuelArenaProps> = ({ roomId, opponent, onFinish
       startGame();
     }
   }, [countdown, startGame]);
-
-  useEffect(() => {
-    if (state.isActive) {
-      const progress = (state.expectedIndex / state.expectedSequence.length) * 100;
-      socket.emit('duel:progress', { roomId, progress });
-    }
-  }, [state.expectedIndex, state.expectedSequence.length, state.isActive, roomId]);
-
-  useEffect(() => {
-    if (state.isFinished && !gameEnded) {
-      setGameEnded(true);
-      if (opponentProgress < 100) {
-        setResult('win');
-      } else {
-        setResult('draw');
-      }
-    }
-  }, [state.isFinished, opponentProgress, gameEnded]);
-
-  useEffect(() => {
-    if (opponentProgress >= 100 && !state.isFinished && !gameEnded) {
-      setGameEnded(true);
-      setResult('loss');
-    }
-  }, [opponentProgress, state.isFinished, gameEnded]);
 
   const myProgress = (state.expectedIndex / (state.expectedSequence.length || 1)) * 100;
 
@@ -148,7 +138,17 @@ export const DuelArena: React.FC<DuelArenaProps> = ({ roomId, opponent, onFinish
                 key={cell.id}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95, backgroundColor: 'var(--primary)', color: 'var(--primary-foreground)' }}
-                onClick={() => clickCell(cell, idx, undefined, () => {}, () => {})}
+                onClick={() => clickCell(cell, idx, undefined, () => {
+                  socket.emit('duel:cell-click', {
+                    roomId,
+                    cell: {
+                      num: cell.num,
+                      color: cell.color,
+                      cellId: cell.id,
+                      gridIndex: idx,
+                    },
+                  });
+                }, () => {})}
                 className="aspect-square bg-card border border-border flex items-center justify-center font-black text-2xl hover:border-primary transition-all shadow-sm"
               >
                 {cell.num}
@@ -169,6 +169,12 @@ export const DuelArena: React.FC<DuelArenaProps> = ({ roomId, opponent, onFinish
            </AnimatePresence>
         </div>
       </div>
+
+      {state.isFinished && !gameEnded && (
+        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-40 rounded-2xl border border-border bg-card/95 px-5 py-3 text-[10px] font-black uppercase tracking-widest text-muted-foreground shadow-xl">
+          Проверяем результат...
+        </div>
+      )}
 
       {/* Results Overlay */}
       <AnimatePresence>

@@ -25,6 +25,7 @@ interface Harness {
   io: SocketServer;
   httpServer: HttpServer;
   prisma: ReturnType<typeof createPrismaMock>;
+  advanceTime(ms: number): void;
   close(): Promise<void>;
 }
 
@@ -69,11 +70,13 @@ async function createHarness(): Promise<Harness> {
     cors: { origin: '*', methods: ['GET', 'POST'] },
   });
   const prisma = createPrismaMock();
+  let nowMs = 1_000;
 
   registerDuelHandlers(io, {
     jwtSecret: JWT_SECRET,
     prisma,
     logger: { log: vi.fn() },
+    now: () => nowMs,
   }, createDuelState());
 
   await new Promise<void>((resolve) => {
@@ -86,6 +89,9 @@ async function createHarness(): Promise<Harness> {
     io,
     httpServer,
     prisma,
+    advanceTime(ms: number) {
+      nowMs += ms;
+    },
     async close() {
       await new Promise<void>((resolve) => io.close(() => resolve()));
       if (httpServer.listening) {
@@ -141,6 +147,33 @@ async function matchTwoPlayers(alice: ClientSocket, bob: ClientSocket) {
   return aliceMatch.roomId;
 }
 
+async function joinMatchedRoom(alice: ClientSocket, bob: ClientSocket, roomId: string) {
+  const opponentJoined = waitForEvent<{ userId: string }>(alice, 'duel:opponent-joined');
+  alice.emit('duel:join', { roomId });
+  await new Promise((resolve) => setTimeout(resolve, 10));
+  bob.emit('duel:join', { roomId });
+  await expect(opponentJoined).resolves.toEqual({ userId: 'u2' });
+}
+
+async function emitAcceptedClassicClicks(
+  socket: ClientSocket,
+  observer: ClientSocket,
+  roomId: string,
+  advanceTime: (ms: number) => void,
+  count: number,
+  stepMs = 150,
+) {
+  for (let num = 1; num <= count; num += 1) {
+    const acceptedProgress = waitForEvent(observer, 'duel:opponent-progress');
+    advanceTime(stepMs);
+    socket.emit('duel:cell-click', {
+      roomId,
+      cell: { num, color: 'black', cellId: num, gridIndex: num - 1 },
+    });
+    await acceptedProgress;
+  }
+}
+
 afterEach(async () => {
   await Promise.all(harnesses.splice(0).map((harness) => harness.close()));
 });
@@ -189,17 +222,13 @@ describe('Socket.io duel trust boundary', () => {
     charlie.disconnect();
   });
 
-  it('uses server-side membership and monotonic clamped progress for matched players', async () => {
-    const { url, prisma } = await createHarness();
+  it('uses server-side membership and accepted cell-click evidence for matched players', async () => {
+    const { url, prisma, advanceTime } = await createHarness();
     const alice = await connectClient(url, 'u1');
     const bob = await connectClient(url, 'u2');
     const roomId = await matchTwoPlayers(alice, bob);
 
-    const opponentJoined = waitForEvent<{ userId: string }>(alice, 'duel:opponent-joined');
-    alice.emit('duel:join', { roomId });
-    await new Promise((resolve) => setTimeout(resolve, 10));
-    bob.emit('duel:join', { roomId });
-    await expect(opponentJoined).resolves.toEqual({ userId: 'u2' });
+    await joinMatchedRoom(alice, bob, roomId);
 
     const invalidProgress = waitForEvent<{ error: string }>(alice, 'duel:error');
     alice.emit('duel:progress', { roomId, progress: '100' });
@@ -210,17 +239,77 @@ describe('Socket.io duel trust boundary', () => {
       progressEvents.push(progress);
     });
 
-    alice.emit('duel:progress', { roomId, progress: 40, userId: 'u3', score: 999999 });
-    await waitForEvent(bob, 'duel:opponent-progress');
+    const forgedProgress = waitForEvent(bob, 'duel:opponent-progress');
+    alice.emit('duel:progress', { roomId, progress: 100, userId: 'u3', score: 999999 });
+    await forgedProgress;
+    expect(progressEvents).toEqual([0]);
+    expect(prisma.$transaction).not.toHaveBeenCalled();
 
-    alice.emit('duel:progress', { roomId, progress: 20 });
-    await waitForEvent(bob, 'duel:opponent-progress');
+    const invalidEvidence = waitForEvent<{ error: string }>(alice, 'duel:error');
+    alice.emit('duel:cell-click', {
+      roomId,
+      cell: { num: 25, color: 'black', cellId: 25, gridIndex: 24 },
+    });
+    await expect(invalidEvidence).resolves.toEqual({ error: 'Invalid duel evidence' });
 
-    alice.emit('duel:progress', { roomId, progress: 150 });
-    await waitForEvent(bob, 'duel:opponent-progress');
+    const aliceResult = waitForEvent<{ result: string; winnerId: string; loserId: string }>(alice, 'duel:result');
+    const bobResult = waitForEvent<{ result: string; winnerId: string; loserId: string }>(bob, 'duel:result');
+    await emitAcceptedClassicClicks(alice, bob, roomId, advanceTime, 25);
 
-    expect(progressEvents).toEqual([40, 40, 100]);
+    await expect(aliceResult).resolves.toEqual({ roomId, result: 'win', winnerId: 'u1', loserId: 'u2' });
+    await expect(bobResult).resolves.toEqual({ roomId, result: 'loss', winnerId: 'u1', loserId: 'u2' });
+    expect(progressEvents.at(-1)).toBe(100);
     expect(prisma.$transaction).toHaveBeenCalledOnce();
+
+    alice.disconnect();
+    bob.disconnect();
+  });
+
+  it('rejects impossible completion speed before accepting a later valid finish', async () => {
+    const { url, prisma, advanceTime } = await createHarness();
+    const alice = await connectClient(url, 'u1');
+    const bob = await connectClient(url, 'u2');
+    const roomId = await matchTwoPlayers(alice, bob);
+    await joinMatchedRoom(alice, bob, roomId);
+
+    await emitAcceptedClassicClicks(alice, bob, roomId, advanceTime, 24, 100);
+
+    const tooFast = waitForEvent<{ error: string }>(alice, 'duel:error');
+    advanceTime(100);
+    alice.emit('duel:cell-click', {
+      roomId,
+      cell: { num: 25, color: 'black', cellId: 25, gridIndex: 24 },
+    });
+    await expect(tooFast).resolves.toEqual({ error: 'Completion too fast' });
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+
+    const aliceResult = waitForEvent<{ result: string }>(alice, 'duel:result');
+    advanceTime(700);
+    alice.emit('duel:cell-click', {
+      roomId,
+      cell: { num: 25, color: 'black', cellId: 25, gridIndex: 24 },
+    });
+    await expect(aliceResult).resolves.toMatchObject({ result: 'win' });
+    expect(prisma.$transaction).toHaveBeenCalledOnce();
+
+    alice.disconnect();
+    bob.disconnect();
+  });
+
+  it('rate-limits duel event bursts from an authenticated participant', async () => {
+    const { url, prisma } = await createHarness();
+    const alice = await connectClient(url, 'u1');
+    const bob = await connectClient(url, 'u2');
+    const roomId = await matchTwoPlayers(alice, bob);
+    await joinMatchedRoom(alice, bob, roomId);
+
+    const rateLimitError = waitForEvent<{ error: string }>(alice, 'duel:error');
+    for (let i = 0; i < 16; i += 1) {
+      alice.emit('duel:progress', { roomId, progress: 10 });
+    }
+
+    await expect(rateLimitError).resolves.toEqual({ error: 'Rate limit exceeded' });
+    expect(prisma.$transaction).not.toHaveBeenCalled();
 
     alice.disconnect();
     bob.disconnect();
