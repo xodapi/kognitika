@@ -47,22 +47,22 @@ export const LanguageScanner: React.FC = () => {
                 : rule.text.split(' — ');
               const icons = {
                 'Газлайтинг': EyeOff,
-                'Подмена тезиса': BoxSelect,
-                'Переход на личности': UserX,
+                'Чучело': BoxSelect,
+                'Ad Hominem': UserX,
                 'Ложная дилемма': Split,
                 'Дилемма': Split,
-                'Эмоциональная нагрузка': AlertCircle,
-                'Моральное превосходство': Shield,
-                'Размытость': EyeOff,
-                'Предвзятость подтверждения': CheckCircle,
+                'Emotional Loading': AlertCircle,
+                'Moral Superiority': Shield,
+                'Vagueness': EyeOff,
+                'Bias Confirmation': CheckCircle,
                 'Противоречие': XCircle,
                 'Фабрикация': BoxSelect,
                 'Логический дрейф': Split
               };
               const colors = {
                 'Газлайтинг': 'text-purple-600 bg-purple-50',
-                'Подмена тезиса': 'text-amber-600 bg-amber-50',
-                'Переход на личности': 'text-rose-600 bg-rose-50',
+                'Чучело': 'text-amber-600 bg-amber-50',
+                'Ad Hominem': 'text-rose-600 bg-rose-50',
                 'Дилемма': 'text-blue-600 bg-blue-50',
                 'Ложная дилемма': 'text-blue-600 bg-blue-50',
               };
@@ -106,7 +106,7 @@ export const LanguageScanner: React.FC = () => {
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2 px-3 py-1 bg-emerald-50 rounded-lg text-emerald-600 text-xs font-black uppercase tracking-wider">
             <Brain className="w-4 h-4" />
-            АКТИВНОЕ СКАНИРОВАНИЕ
+            Active Scan
           </div>
           <div className="flex items-center gap-1.5 px-3 py-1 bg-slate-50 rounded-lg text-slate-500 text-xs font-bold tabular-nums">
             <Timer className="w-3.5 h-3.5" />
@@ -115,7 +115,7 @@ export const LanguageScanner: React.FC = () => {
         </div>
         
         <div className="flex items-center gap-2">
-          <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mr-2">ЦЕЛОСТНОСТЬ ЯДРА</div>
+          <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mr-2">Core Integrity</div>
           <div className="flex gap-1">
             {[1, 2, 3].map((heart) => (
               <div 
@@ -167,22 +167,22 @@ export const LanguageScanner: React.FC = () => {
             const label = rule.text.includes(':') ? rule.text.split(':')[0] : rule.text.split('—')[0];
             const icons = {
               'Газлайтинг': EyeOff,
-              'Подмена тезиса': BoxSelect,
-              'Переход на личности': UserX,
+              'Чучело': BoxSelect,
+              'Ad Hominem': UserX,
               'Ложная дилемма': Split,
               'Дилемма': Split,
-              'Эмоциональная нагрузка': AlertCircle,
-              'Моральное превосходство': Shield,
-              'Размытость': EyeOff,
-              'Предвзятость подтверждения': CheckCircle,
+              'Emotional Loading': AlertCircle,
+              'Moral Superiority': Shield,
+              'Vagueness': EyeOff,
+              'Bias Confirmation': CheckCircle,
               'Противоречие': XCircle,
               'Фабрикация': BoxSelect,
               'Логический дрейф': Split
             };
             const colors = {
               'Газлайтинг': 'text-purple-600 bg-purple-50 hover:bg-purple-100 border-purple-100',
-              'Подмена тезиса': 'text-amber-600 bg-amber-50 hover:bg-amber-100 border-amber-100',
-              'Переход на личности': 'text-rose-600 bg-rose-50 hover:bg-rose-100 border-rose-100',
+              'Чучело': 'text-amber-600 bg-amber-50 hover:bg-amber-100 border-amber-100',
+              'Ad Hominem': 'text-rose-600 bg-rose-50 hover:bg-rose-100 border-rose-100',
               'Дилемма': 'text-blue-600 bg-blue-50 hover:bg-blue-100 border-blue-100',
               'Ложная дилемма': 'text-blue-600 bg-blue-50 hover:bg-blue-100 border-blue-100',
             };
@@ -220,11 +220,11 @@ export const LanguageScanner: React.FC = () => {
         <div className="mt-6 flex justify-center gap-8 text-[10px] text-slate-400 uppercase font-black tracking-[0.2em]">
           <div className="flex items-center gap-1.5">
             <Info className="w-3.5 h-3.5" />
-            СЕМАНТИЧЕСКИЙ СКАНЕР V2.0
+            Semantic Scanner v2.0
           </div>
           <div className="flex items-center gap-1.5">
             <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-            СИНХРОНИЗАЦИЯ СТАБИЛЬНА
+            Sync Stable
           </div>
         </div>
       </div>
@@ -236,48 +236,44 @@ export const LanguageScanner: React.FC = () => {
             initial={{ opacity: 0, backdropFilter: "blur(0px)" }}
             animate={{ opacity: 1, backdropFilter: "blur(8px)" }}
             exit={{ opacity: 0, backdropFilter: "blur(0px)" }}
-            className="fixed md:absolute inset-0 z-[100] md:z-30 flex flex-col bg-white/98 dark:bg-slate-900/98 rounded-none md:rounded-3xl text-center overflow-hidden"
+            className="absolute inset-0 z-30 flex flex-col bg-white/95 rounded-3xl text-center overflow-y-auto p-4 sm:p-6 scrollbar-hide"
           >
-            <div className="flex-1 overflow-y-auto w-full px-4 sm:px-6 py-6 sm:py-8 flex flex-col items-center justify-between min-h-0">
-              {/* Top Spacer for vertical centering */}
-              <div className="flex-1 min-h-[8px] sm:min-h-[16px]" />
-              
-              <div className="flex flex-col items-center space-y-4 w-full max-w-md">
-                <div className={`p-2.5 sm:p-3 rounded-full w-fit ${state.lastFeedback.isCorrect ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-400' : 'bg-rose-100 text-rose-600 dark:bg-rose-950/50 dark:text-rose-400'}`}>
-                  {state.lastFeedback.isCorrect ? (
-                    <CheckCircle className="w-6 h-6 sm:w-8 h-8" />
-                  ) : (
-                    <AlertCircle className="w-6 h-6 sm:w-8 h-8" />
-                  )}
-                </div>
-                
-                <h3 className={`text-lg sm:text-2xl font-black tracking-tight ${state.lastFeedback.isCorrect ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-700 dark:text-rose-400'}`}>
-                  {state.lastFeedback.isCorrect ? 'ВЕРНО!' : 'ОШИБКА!'}
-                </h3>
-                
-                <p className="text-slate-600 dark:text-slate-300 font-semibold leading-relaxed text-xs sm:text-base max-w-md px-2">
-                  {state.lastFeedback.explanation}
-                </p>
-                
-                {!state.lastFeedback.isCorrect && (
-                  <div className="px-3.5 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-xl text-slate-600 dark:text-slate-400 text-[10px] sm:text-xs font-black uppercase tracking-wider inline-block">
-                    Это был: {state.lastFeedback.correctRuleName}
-                  </div>
+            {/* Safe Flex Spacer for vertical centering */}
+            <div className="flex-1 min-h-[8px] sm:min-h-[16px]" />
+            
+            <div className="flex flex-col items-center space-y-3 sm:space-y-4 w-full max-w-md mx-auto">
+              <div className={`p-2 sm:p-3 rounded-full w-fit ${state.lastFeedback.isCorrect ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'}`}>
+                {state.lastFeedback.isCorrect ? (
+                  <CheckCircle className="w-6 h-6 sm:w-8 sm:h-8" />
+                ) : (
+                  <AlertCircle className="w-6 h-6 sm:w-8 sm:h-8" />
                 )}
               </div>
+              <h3 className={`text-lg sm:text-2xl font-black tracking-tight ${state.lastFeedback.isCorrect ? 'text-emerald-700' : 'text-rose-700'}`}>
+                {state.lastFeedback.isCorrect ? 'ВЕРНО!' : 'ОШИБКА!'}
+              </h3>
+              <p className="text-slate-600 font-semibold leading-relaxed text-xs sm:text-base max-w-md">
+                {state.lastFeedback.explanation}
+              </p>
+              
+              {!state.lastFeedback.isCorrect && (
+                <div className="px-3.5 py-1.5 bg-slate-100 rounded-xl text-slate-600 text-[10px] sm:text-xs font-black uppercase tracking-wider inline-block">
+                  Это был: {state.lastFeedback.correctRuleName}
+                </div>
+              )}
 
-              {/* Bottom Spacer for vertical centering */}
-              <div className="flex-1 min-h-[16px] sm:min-h-[24px]" />
-
-              <div className="w-full max-w-xs pb-2">
+              <div className="pt-1 sm:pt-2">
                  <button 
                    onClick={() => flagCard(0)} 
-                   className="w-full py-3 bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-slate-200 dark:text-slate-900 text-white rounded-xl font-black text-xs sm:text-sm uppercase tracking-wider transition-all active:scale-95 shadow-md shadow-slate-200 dark:shadow-none"
+                   className="px-5 py-2 sm:px-6 sm:py-2.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl font-black text-xs sm:text-sm uppercase tracking-wider transition-all active:scale-95 shadow-md shadow-slate-200"
                  >
                    Понятно
                  </button>
               </div>
             </div>
+            
+            {/* Safe Flex Spacer for vertical centering */}
+            <div className="flex-1 min-h-[8px] sm:min-h-[16px]" />
           </motion.div>
         )}
       </AnimatePresence>

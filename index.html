@@ -14,40 +14,198 @@
   </head>
   <body>
     <div id="root"></div>
-    <script type="module" src="/src/main.tsx" onerror="handleScriptError()"></script>
     <script>
-      function handleScriptError() {
-        console.error('[FATAL] Failed to load main script bundle. Attempting recovery...');
-        if (!window.location.search.includes('retry=1')) {
-          const url = new URL(window.location.href);
-          url.searchParams.set('retry', '1');
-          if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.getRegistrations().then(regs => {
-              for(let reg of regs) reg.unregister();
-              window.location.href = url.toString();
+      (function () {
+        const RECOVERY_ID = 'kognitika-boot-recovery';
+        const TRANSIENT_PREFIXES = ['kognitika:ui:', 'kognitika:session:', 'kognitika:cache:'];
+        const IDENTITY_KEYS = ['kognitika:brainId', 'kognitika:auth:token', 'kognitika:auth:refresh'];
+        const LEGACY_IDENTITY_KEYS = ['token', 'user'];
+        const RECOVERY_TIMEOUT_MS = 7000;
+
+        function getStorage(name) {
+          try {
+            return window[name];
+          } catch (error) {
+            console.warn('[Boot Recovery] ' + name + ' is unavailable:', error);
+            return null;
+          }
+        }
+
+        function removeKeys(storage, shouldRemove) {
+          if (!storage) return;
+
+          try {
+            const keys = [];
+            for (let i = 0; i < storage.length; i += 1) {
+              const key = storage.key(i);
+              if (key && shouldRemove(key)) keys.push(key);
+            }
+            keys.forEach(function (key) {
+              storage.removeItem(key);
             });
-          } else {
-            window.location.href = url.toString();
+          } catch (error) {
+            console.warn('[Boot Recovery] Storage cleanup skipped:', error);
           }
         }
-      }
-      setTimeout(() => {
+
+        function clearTransientState() {
+          const isTransientKey = function (key) {
+            return TRANSIENT_PREFIXES.some(function (prefix) {
+              return key.indexOf(prefix) === 0;
+            });
+          };
+
+          removeKeys(getStorage('localStorage'), isTransientKey);
+          removeKeys(getStorage('sessionStorage'), isTransientKey);
+        }
+
+        function clearIdentityState() {
+          const isIdentityKey = function (key) {
+            return IDENTITY_KEYS.indexOf(key) !== -1 || LEGACY_IDENTITY_KEYS.indexOf(key) !== -1;
+          };
+
+          removeKeys(getStorage('localStorage'), isIdentityKey);
+          removeKeys(getStorage('sessionStorage'), isIdentityKey);
+        }
+
+        function clearCaches() {
+          if (!('caches' in window)) return Promise.resolve();
+
+          return caches.keys()
+            .then(function (names) {
+              return Promise.all(names.map(function (name) {
+                return caches.delete(name);
+              }));
+            })
+            .catch(function (error) {
+              console.warn('[Boot Recovery] Cache cleanup skipped:', error);
+            });
+        }
+
+        function unregisterServiceWorkers() {
+          if (!('serviceWorker' in navigator)) return Promise.resolve();
+
+          return navigator.serviceWorker.getRegistrations()
+            .then(function (registrations) {
+              return Promise.all(registrations.map(function (registration) {
+                return registration.unregister();
+              }));
+            })
+            .catch(function (error) {
+              console.warn('[Boot Recovery] Service Worker cleanup skipped:', error);
+            });
+        }
+
+        function reloadApp() {
+          window.location.reload();
+        }
+
+        function setStatus(message) {
+          const status = document.getElementById('kognitika-recovery-status');
+          if (status) status.textContent = message;
+        }
+
+        function resetAppState() {
+          setStatus('Сбрасываем временное состояние приложения...');
+          clearTransientState();
+
+          Promise.all([clearCaches(), unregisterServiceWorkers()])
+            .then(function () {
+              setStatus('Готово. Перезагружаем страницу...');
+            })
+            .finally(function () {
+              setTimeout(reloadApp, 250);
+            });
+        }
+
+        function resetIdentityState() {
+          setStatus('Сбрасываем Brain ID и токены авторизации...');
+          clearIdentityState();
+          resetAppState();
+        }
+
+        function showIdentityWarning() {
+          const warning = document.getElementById('kognitika-identity-warning');
+          const identityButton = document.getElementById('kognitika-identity-reset');
+
+          if (warning) warning.hidden = false;
+          if (identityButton) identityButton.setAttribute('disabled', 'true');
+        }
+
+        function rootMounted() {
+          const root = document.getElementById('root');
+          return Boolean(root && root.childElementCount > 0);
+        }
+
+        function showRecovery(reason) {
+          if (document.getElementById(RECOVERY_ID) || rootMounted()) return;
+
+          const style = document.createElement('style');
+          style.textContent = [
+            '#' + RECOVERY_ID + ' { position: fixed; inset: 0; z-index: 2147483647; box-sizing: border-box; min-height: 100vh; padding: 24px; display: grid; place-items: center; overflow: auto; background: #f8fafc; color: #111827; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }',
+            '#' + RECOVERY_ID + ' * { box-sizing: border-box; }',
+            '#' + RECOVERY_ID + ' .panel { width: min(100%, 560px); padding: 24px; border: 1px solid #d1d5db; border-radius: 8px; background: #ffffff; box-shadow: 0 16px 40px rgba(15, 23, 42, 0.12); }',
+            '#' + RECOVERY_ID + ' h1 { margin: 0 0 12px; font-size: 24px; line-height: 1.25; letter-spacing: 0; }',
+            '#' + RECOVERY_ID + ' p { margin: 0 0 14px; font-size: 15px; line-height: 1.55; }',
+            '#' + RECOVERY_ID + ' .muted { color: #4b5563; }',
+            '#' + RECOVERY_ID + ' .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }',
+            '#' + RECOVERY_ID + ' button { min-height: 42px; padding: 10px 14px; border: 1px solid #111827; border-radius: 6px; font: inherit; cursor: pointer; }',
+            '#' + RECOVERY_ID + ' button.primary { background: #111827; color: #ffffff; }',
+            '#' + RECOVERY_ID + ' button.secondary { background: #ffffff; color: #111827; }',
+            '#' + RECOVERY_ID + ' button:disabled { opacity: 0.55; cursor: not-allowed; }',
+            '#' + RECOVERY_ID + ' .warning { margin-top: 16px; padding: 14px; border: 1px solid #f59e0b; border-radius: 8px; background: #fffbeb; }',
+            '#' + RECOVERY_ID + ' .status { min-height: 22px; margin-top: 14px; font-size: 14px; color: #374151; }'
+          ].join('\n');
+          document.head.appendChild(style);
+
+          const recovery = document.createElement('div');
+          recovery.id = RECOVERY_ID;
+          recovery.innerHTML = [
+            '<div class="panel" role="alert" aria-live="polite">',
+            '<h1>Не удалось запустить Когнитику</h1>',
+            '<p>Приложение не смонтировалось в окне браузера. Это может быть связано с устаревшим кешем или временным состоянием на этом устройстве.</p>',
+            '<p class="muted">Ваш прогресс на сервере будет доступен после входа или восстановления Brain ID, если он был привязан к вашей сессии.</p>',
+            '<p class="muted">Обычный сброс ниже очищает только временные ключи приложения <code>kognitika:ui:</code>, <code>kognitika:session:</code>, <code>kognitika:cache:</code>, Cache Storage и регистрацию Service Worker. Brain ID, токены авторизации, а также legacy <code>token</code>/<code>user</code> не удаляются.</p>',
+            '<div class="actions">',
+            '<button class="primary" id="kognitika-app-reset" type="button">Сбросить состояние приложения</button>',
+            '<button class="secondary" id="kognitika-identity-reset" type="button">Сбросить Brain ID и токены</button>',
+            '</div>',
+            '<div class="warning" id="kognitika-identity-warning" hidden>',
+            '<p><strong>Сброс идентификации не является обычным восстановлением.</strong> Он удалит <code>kognitika:brainId</code>, <code>kognitika:auth:token</code>, <code>kognitika:auth:refresh</code> и legacy <code>token</code>/<code>user</code> на этом устройстве, затем выполнит сброс временного состояния.</p>',
+            '<button class="secondary" id="kognitika-identity-confirm" type="button">Подтвердить сброс идентификации</button>',
+            '</div>',
+            '<p class="status" id="kognitika-recovery-status">' + reason + '</p>',
+            '</div>'
+          ].join('');
+
+          document.body.appendChild(recovery);
+
+          document.getElementById('kognitika-app-reset').addEventListener('click', resetAppState);
+          document.getElementById('kognitika-identity-reset').addEventListener('click', showIdentityWarning);
+          document.getElementById('kognitika-identity-confirm').addEventListener('click', resetIdentityState);
+        }
+
+        window.handleScriptError = function () {
+          console.error('[FATAL] Failed to load main script bundle.');
+          showRecovery('Основной скрипт приложения не загрузился.');
+        };
+
+        window.setTimeout(function () {
+          showRecovery('React не смонтировал приложение за отведенное время.');
+        }, RECOVERY_TIMEOUT_MS);
+
         const root = document.getElementById('root');
-        if (root && root.innerHTML === '' && !window.location.search.includes('retry=1')) {
-          handleScriptError();
+        if (root && 'MutationObserver' in window) {
+          new MutationObserver(function () {
+            if (!rootMounted()) return;
+
+            const recovery = document.getElementById(RECOVERY_ID);
+            if (recovery) recovery.remove();
+          }).observe(root, { childList: true });
         }
-      }, 5000);
+      }());
     </script>
-    <script>
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.getRegistrations().then(function(registrations) {
-          for(let registration of registrations) {
-            registration.unregister();
-            console.log('[PWA] ServiceWorker unregistered');
-          }
-        });
-      }
-    </script>
+    <script type="module" src="/src/main.tsx" onerror="handleScriptError()"></script>
   </body>
 </html>
 

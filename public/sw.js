@@ -1,24 +1,23 @@
-self.addEventListener('install', function(e) {
+self.addEventListener('install', function() {
   self.skipWaiting();
 });
 
-self.addEventListener('activate', function(e) {
-  e.waitUntil(
+self.addEventListener('activate', function(event) {
+  event.waitUntil(
     caches.keys().then(function(cacheNames) {
       return Promise.all(
         cacheNames.map(function(cacheName) {
-          console.log('[SW] Deleting cache:', cacheName);
           return caches.delete(cacheName);
         })
       );
     }).then(function() {
-      console.log('[SW] All caches deleted. Unregistering...');
       return self.registration.unregister();
     }).then(function() {
-      return self.clients.matchAll();
+      return self.clients.matchAll({ type: 'window' });
     }).then(function(clients) {
-      console.log('[SW] Reloading clients...');
-      clients.forEach(client => client.navigate(client.url));
+      clients.forEach(function(client) {
+        client.navigate(client.url);
+      });
     })
   );
 });
