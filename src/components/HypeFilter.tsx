@@ -32,9 +32,11 @@ export function HypeFilter({ onFinish }: { onFinish: (results: any) => void }) {
     return (
       <PostGameInsight 
         gameType="HYPE_FILTER"
-        currentScore={score}
-        currentErrors={errors}
-        onNext={() => onFinish({ score, errors })}
+        score={score}
+        timeMs={0}
+        errors={errors}
+        onPlayAgain={startSession}
+        onBackToMenu={() => onFinish({ score, errors })}
       />
     );
   }

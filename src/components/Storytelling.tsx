@@ -3,7 +3,7 @@ import { useStorytellingEngine } from '../hooks/useStorytellingEngine';
 import { Card, CardHeader, CardTitle, CardContent } from './ui/card';
 import { Button } from './ui/button';
 import { Network, Play, Link as LinkIcon, AlertCircle, BookOpen } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 
 export function Storytelling({ onFinish }: { onFinish?: () => void }) {
   const {

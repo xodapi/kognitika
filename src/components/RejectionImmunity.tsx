@@ -3,7 +3,7 @@ import { useRejectionImmunityEngine } from '../hooks/useRejectionImmunityEngine'
 import { Card, CardHeader, CardTitle, CardContent } from './ui/card';
 import { Button } from './ui/button';
 import { ShieldAlert, ThumbsDown, ThumbsUp, Frown, Play, AlertOctagon } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 
 export function RejectionImmunity({ onFinish }: { onFinish?: () => void }) {
   const {

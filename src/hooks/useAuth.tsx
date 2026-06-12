@@ -1,4 +1,11 @@
 import { useState, useEffect, createContext, useContext } from 'react';
+import { z } from 'zod';
+import { storageGateway } from '../lib/storage-gateway';
+import {
+  AUTH_TOKEN_KEY,
+  LEGACY_AUTH_TOKEN_KEY,
+  LEGACY_AUTH_USER_KEY,
+} from '../lib/storage-keys';
 
 interface User {
   id: string;
@@ -15,6 +22,24 @@ interface User {
     sessions: number;
   };
 }
+
+const userSchema: z.ZodType<User> = z.object({
+  id: z.string(),
+  name: z.string(),
+  email: z.string().nullable().optional(),
+  pseudonym: z.string().nullable().optional(),
+  brainId: z.string().nullable().optional(),
+  level: z.number().optional(),
+  experience: z.number().optional(),
+  rating: z.number().optional(),
+  role: z.string().optional(),
+  streakDays: z.number().optional(),
+  _count: z.object({
+    sessions: z.number(),
+  }).optional(),
+});
+
+const authTokenSchema = z.string().min(1);
 
 interface AuthContextType {
   user: User | null;
@@ -37,11 +62,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [token, setToken] = useState<string | null>(null);
 
   useEffect(() => {
-    const t = localStorage.getItem('token');
-    const u = localStorage.getItem('user');
-    if (t && u) {
-      setToken(t);
-      setUser(JSON.parse(u));
+    storageGateway.ensureSchemaVersion();
+
+    const canonicalToken = storageGateway.get(AUTH_TOKEN_KEY, authTokenSchema);
+    const legacyToken = storageGateway.get(LEGACY_AUTH_TOKEN_KEY, authTokenSchema);
+    const legacyUser = storageGateway.get(LEGACY_AUTH_USER_KEY, userSchema);
+
+    const resolvedToken = canonicalToken.ok ? canonicalToken.value : legacyToken.ok ? legacyToken.value : null;
+    const resolvedUser = legacyUser.ok ? legacyUser.value : null;
+
+    if (legacyToken.ok && legacyToken.value && (!canonicalToken.ok || !canonicalToken.value)) {
+      storageGateway.set(AUTH_TOKEN_KEY, legacyToken.value, authTokenSchema);
+    }
+
+    if (resolvedToken && resolvedUser) {
+      setToken(resolvedToken);
+      setUser(resolvedUser);
+    } else if (!legacyUser.ok) {
+      storageGateway.remove(LEGACY_AUTH_USER_KEY);
     }
   }, []);
 
@@ -52,9 +90,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) {
-        const updatedUser = await res.json();
-        setUser(updatedUser);
-        localStorage.setItem('user', JSON.stringify(updatedUser));
+        const data = await res.json();
+        const result = userSchema.safeParse(data.user);
+        if (!result.success) return;
+
+        setUser(result.data);
+        storageGateway.set(LEGACY_AUTH_USER_KEY, result.data, userSchema);
       }
     } catch (err) {
       console.error('Failed to refresh user:', err);
@@ -62,17 +103,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const login = (t: string, u: User) => {
+    const userResult = userSchema.safeParse(u);
+    const tokenResult = authTokenSchema.safeParse(t);
+    if (!userResult.success || !tokenResult.success) return;
+
     setToken(t);
-    setUser(u);
-    localStorage.setItem('token', t);
-    localStorage.setItem('user', JSON.stringify(u));
+    setUser(userResult.data);
+    storageGateway.set(AUTH_TOKEN_KEY, tokenResult.data, authTokenSchema);
+    storageGateway.set(LEGACY_AUTH_TOKEN_KEY, tokenResult.data, authTokenSchema);
+    storageGateway.set(LEGACY_AUTH_USER_KEY, userResult.data, userSchema);
   };
 
   const logout = () => {
     setToken(null);
     setUser(null);
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    storageGateway.remove(AUTH_TOKEN_KEY);
+    storageGateway.remove(LEGACY_AUTH_TOKEN_KEY);
+    storageGateway.remove(LEGACY_AUTH_USER_KEY);
   };
 
   return (

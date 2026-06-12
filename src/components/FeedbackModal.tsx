@@ -1,8 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Send, MessageSquare, Lightbulb, Bug, Info, CheckCircle2, Zap } from 'lucide-react';
-import { collection, doc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { db } from '../lib/firebase';
 import { useAuth } from '../hooks/useAuth';
 
 interface FeedbackModalProps {
@@ -13,7 +11,7 @@ interface FeedbackModalProps {
 type FeedbackType = 'idea' | 'bug' | 'improvement' | 'other';
 
 export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   const [content, setContent] = useState('');
   const [type, setType] = useState<FeedbackType>('idea');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -22,7 +20,7 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!content.trim() || !user) return;
+    if (!content.trim() || !user || !token) return;
 
     setIsSubmitting(true);
     try {
@@ -30,7 +28,7 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({ type, content })
       });

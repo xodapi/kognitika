@@ -6,6 +6,7 @@ import {
   ResponsiveContainer 
 } from 'recharts';
 import { Download, Brain, TrendingUp, History, Info, Activity } from 'lucide-react';
+import { useAuth } from '../hooks/useAuth';
 
 interface ProfileData {
   profile: Record<string, number>;
@@ -15,13 +16,14 @@ interface ProfileData {
 }
 
 export function CognitiveProfile() {
+  const { token } = useAuth();
   const [data, setData] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
     fetch('/api/analytics/profile', {
-      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+      headers: token ? { 'Authorization': `Bearer ${token}` } : undefined
     })
       .then(res => res.json())
       .then(d => {
@@ -29,11 +31,11 @@ export function CognitiveProfile() {
         setLoading(false);
       })
       .catch(() => setLoading(false));
-  }, []);
+  }, [token]);
 
   const handleExport = async () => {
     const res = await fetch('/api/analytics/export', {
-      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+      headers: token ? { 'Authorization': `Bearer ${token}` } : undefined
     });
     const blob = await res.blob();
     const url = window.URL.createObjectURL(blob);

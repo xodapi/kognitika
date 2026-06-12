@@ -3,7 +3,7 @@ import { useReframingEngine } from '../hooks/useReframingEngine';
 import { Card, CardHeader, CardTitle, CardContent } from './ui/card';
 import { Button } from './ui/button';
 import { Lightbulb, RefreshCw, Play, CheckCircle2, XCircle } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 
 export function Reframing({ onFinish }: { onFinish?: () => void }) {
   const {

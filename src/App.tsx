@@ -11,7 +11,7 @@ import {
   Calculator, Cog, Grid3x3, BrainCircuit, 
   Users, Menu, X, Info, MessageSquare, Lock, Trophy, 
   ExternalLink, ChevronRight, Settings, Heart, Lightbulb, Palette,
-  GitBranch, Filter, Cpu, VolumeX, Leaf, Search
+  GitBranch, Filter, Cpu, VolumeX, Leaf, Search, Shield, Network, Target
 } from 'lucide-react';
 import { Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom';
 

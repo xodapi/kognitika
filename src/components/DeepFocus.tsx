@@ -3,7 +3,7 @@ import { useDeepFocusEngine } from '../hooks/useDeepFocusEngine';
 import { Card, CardHeader, CardTitle, CardContent } from './ui/card';
 import { Button } from './ui/button';
 import { Target, Play, Square, MessageCircle, Lightbulb, BellRing, Brain } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 
 export function DeepFocus({ onFinish }: { onFinish?: () => void }) {
   const [minutes, setMinutes] = useState(25);

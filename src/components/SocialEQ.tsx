@@ -3,7 +3,7 @@ import { useSocialEQEngine, DialogueOption } from '../hooks/useSocialEQEngine';
 import { Card, CardHeader, CardTitle, CardContent } from './ui/card';
 import { Button } from './ui/button';
 import { AlertCircle, UserCheck, MessageSquare, Play } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 
 export function SocialEQ({ onFinish }: { onFinish?: () => void }) {
   const {
