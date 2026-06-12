@@ -127,7 +127,21 @@ jobs:
 
           systemctl restart kognitika
 
-          health="$(curl -fsS http://127.0.0.1:3010/api/health)"
+          health=""
+          for attempt in $(seq 1 30); do
+            if health="$(curl -fsS http://127.0.0.1:3010/api/health 2>/dev/null)"; then
+              break
+            fi
+            echo "Waiting for kognitika health check ($attempt/30)..."
+            sleep 2
+          done
+
+          if [ -z "$health" ]; then
+            echo "Kognitika health check did not recover after restart" >&2
+            systemctl status kognitika --no-pager || true
+            exit 1
+          fi
+
           echo "$health"
           echo "$health" | grep -q "\"buildId\":\"$build_id\""
 
