@@ -4,6 +4,8 @@ import { TrendingUp, TrendingDown, Award, Brain, Zap, RotateCcw, Menu, ArrowRigh
 import { useAuth } from '../hooks/useAuth';
 import { LuscherTest } from './LuscherTest';
 import { EmotionalBarometer } from './EmotionalBarometer';
+import { useNavigate } from 'react-router-dom';
+import { routeForRecommendedGame } from '../lib/routes';
 
 interface PostGameInsightProps {
   gameType: string;
@@ -36,6 +38,7 @@ export function PostGameInsight({
   sessionId = null
 }: PostGameInsightProps) {
   const { token } = useAuth();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [insight, setInsight] = useState<ComparisonData | null>(null);
   const [localPostSequence, setLocalPostSequence] = useState<number[] | null>(null);
@@ -68,6 +71,11 @@ export function PostGameInsight({
         setSavingPostTest(false);
       }
     }
+  };
+
+  const handleStartRecommended = () => {
+    if (!insight?.recommendedGame) return;
+    navigate(routeForRecommendedGame(insight.recommendedGame));
   };
 
   useEffect(() => {
@@ -241,7 +249,7 @@ export function PostGameInsight({
                 </div>
               </div>
               <button 
-                onClick={onPlayAgain} // Or navigate to recommended game if implemented, for now play again
+                onClick={handleStartRecommended}
                 className="flex items-center gap-1 text-[10px] font-black uppercase tracking-widest text-primary hover:text-primary/80 transition-colors group"
               >
                 Начать рекомендованное <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
