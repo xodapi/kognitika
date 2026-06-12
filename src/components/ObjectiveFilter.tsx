@@ -60,7 +60,6 @@ export function ObjectiveFilter() {
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({
           gameType: 'OBJECTIVE_FILTER',
-          score,
           timeMs: finalTime,
           isCompleted: true,
           metadata: { totalQuestions: 10, correctAnswers: score }

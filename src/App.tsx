@@ -28,6 +28,7 @@ import { AuthProvider, useAuth } from './hooks/useAuth';
 import { AuthModal } from './components/AuthModal';
 import { SymbolChat } from './components/SymbolChat';
 import { FeedbackModal } from './components/FeedbackModal';
+import { AppErrorBoundary } from './components/AppErrorBoundary';
 
 import { AdminPanel } from './components/AdminPanel';
 import { IdeasWall } from './components/IdeasWall';
@@ -271,7 +272,9 @@ function AppContent() {
                       </div>
                       <div className="min-w-0">
                          <p className="font-bold text-base truncate">{user.pseudonym || user.name || 'Аноним'}</p>
-                         <p className="text-[10px] text-muted-foreground uppercase font-medium">{user.email || 'Anonymous Session'}</p>
+                         <p className="text-[10px] text-muted-foreground uppercase font-medium">
+                           {user.brainId ? `Brain ID ${user.brainId.slice(0, 10)}...` : 'Brain ID Session'}
+                         </p>
                       </div>
                    </div>
                    <div className="grid grid-cols-2 gap-2">
@@ -434,7 +437,7 @@ function AppContent() {
               <Route path="/profiling" element={<ProfilingRICE />} />
               <Route path="/anomaly" element={<AnomalyDetector />} />
               <Route path="/dialogue" element={<SocialEQ onFinish={() => navigate('/')} />} />
-              <Route path="/admin" element={<AdminPanel token={token} />} />
+              <Route path="/admin" element={isAdmin ? <AdminPanel token={token} /> : <Navigate to="/" replace />} />
               <Route path="/ideas" element={<IdeasWall token={token} />} />
               <Route path="/leaderboard" element={<LeaderboardView />} />
               <Route path="/topology" element={<TopologyMemory />} />
@@ -505,7 +508,9 @@ function AppContent() {
 export default function App() {
   return (
     <AuthProvider>
-      <AppContent />
+      <AppErrorBoundary>
+        <AppContent />
+      </AppErrorBoundary>
     </AuthProvider>
   );
 }

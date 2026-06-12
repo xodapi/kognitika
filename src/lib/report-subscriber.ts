@@ -66,5 +66,5 @@ eventBus.on('game:completed', async (data) => {
     `
   });
 
-  console.log(`[EDA Subscriber] Weekly report sent to ${user.email}`);
+  console.log(`[EDA Subscriber] Weekly report sent to legacy email user ${user.id}`);
 });

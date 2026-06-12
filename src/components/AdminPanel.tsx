@@ -8,7 +8,7 @@ interface Feedback {
   text: string;
   adminResponse: string | null;
   createdAt: string;
-  user: { name: string | null, email: string };
+  user: { name: string | null; brainLabel?: string; pseudonym?: string | null };
 }
 
 interface Idea {
@@ -17,7 +17,7 @@ interface Idea {
   description: string;
   status: string;
   createdAt: string;
-  author: { name: string | null, email: string };
+  author: { name: string | null; brainLabel?: string; pseudonym?: string | null };
   _count: { votes: number };
 }
 
@@ -155,7 +155,7 @@ export const AdminPanel: React.FC<{ token: string | null }> = ({ token }) => {
                           </div>
                           <div>
                              <p className="text-sm font-bold text-foreground">{f.user.name || 'Пользователь'}</p>
-                             <p className="text-[10px] text-muted-foreground font-medium">{f.user.email}</p>
+                             <p className="text-[10px] text-muted-foreground font-medium">{f.user.brainLabel || f.user.pseudonym || 'Brain ID'}</p>
                           </div>
                        </div>
                        <div className="space-y-2">
@@ -231,7 +231,9 @@ export const AdminPanel: React.FC<{ token: string | null }> = ({ token }) => {
                         </div>
                      </div>
                      <p className="text-xs text-muted-foreground leading-relaxed max-w-2xl">{idea.description}</p>
-                     <p className="text-[10px] text-muted-foreground uppercase font-bold mt-2">Автор: {idea.author.name || idea.author.email}</p>
+                     <p className="text-[10px] text-muted-foreground uppercase font-bold mt-2">
+                       Автор: {idea.author.name || idea.author.pseudonym || idea.author.brainLabel || 'Brain ID'}
+                     </p>
                   </div>
                </div>
 

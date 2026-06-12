@@ -5,6 +5,9 @@ import App from './App.tsx';
 import { ThemeProvider } from './components/ThemeProvider.tsx';
 import { BrowserRouter } from 'react-router-dom';
 import './index.css';
+import { setupGlobalErrorReporting } from './lib/client-error.ts';
+
+setupGlobalErrorReporting();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

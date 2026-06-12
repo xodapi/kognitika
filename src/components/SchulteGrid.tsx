@@ -216,8 +216,7 @@ export function SchulteGrid() {
             body: JSON.stringify({
                gameType: isGorbov ? 'SCHULTE_GORBOV' : 'SCHULTE',
                timeMs: state.timeMs,
-               score: finalScore,
-               metadata: { mode, size, distraction, errors: state.errors, modifications: state.modifications, clickHistory: state.clickHistory }
+               metadata: { score: finalScore, mode, size, distraction, errors: state.errors, modifications: state.modifications, clickHistory: state.clickHistory }
             })
          })
          .then(res => res.json())

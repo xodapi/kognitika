@@ -90,10 +90,9 @@ export function ProfilingRICE() {
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({
           gameType: 'PROFILING_RICE',
-          score: score * 100,
-          timeMs: 0,
+          timeMs: 1000,
           isCompleted: true,
-          metadata: { scenariosCompleted: currentIndex + 1 }
+          metadata: { score: score * 100, scenariosCompleted: currentIndex + 1 }
         })
       })
       .then(() => refreshUser())

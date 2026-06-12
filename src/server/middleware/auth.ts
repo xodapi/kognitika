@@ -15,12 +15,10 @@ export const authenticate = (req: any, res: any, next: any) => {
 };
 
 export const isAdmin = (req: any, res: any, next: any) => {
-  // Проверка роли из токена или по email (если email в .env)
   const user = req.user;
-  const isEmailAdmin = user?.email === process.env.ADMIN_EMAIL;
   const isRoleAdmin = user?.role === 'ADMIN';
 
-  if (!isEmailAdmin && !isRoleAdmin) {
+  if (!isRoleAdmin) {
     return res.status(403).json({ error: 'Access denied' });
   }
   next();

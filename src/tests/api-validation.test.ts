@@ -1,39 +1,19 @@
 import { describe, it, expect } from 'vitest';
-import { magicLinkSchema, loginSchema, registerSchema } from '../server/schemas/auth.ts';
+import { resumeSchema } from '../server/schemas/auth.ts';
 import { saveGameSchema } from '../server/schemas/game.ts';
+import { computeServerScore } from '../server/services/game-score.ts';
 
 describe('API Validation Schemas', () => {
   describe('Auth Schemas', () => {
-    it('magicLinkSchema должен требовать корректный email', () => {
-      const invalid = magicLinkSchema.safeParse({ email: 'invalid-email' });
+    it('resumeSchema должен требовать Brain ID', () => {
+      const invalid = resumeSchema.safeParse({ brainId: '' });
       expect(invalid.success).toBe(false);
       if (!invalid.success) {
-        // Тестируем то самое свойство .issues, из-за которого была ошибка
-        expect(invalid.error.issues[0].message).toBe('Некорректный email');
+        expect(invalid.error.issues[0].message).toBe('ID сессии обязателен');
       }
 
-      const valid = magicLinkSchema.safeParse({ email: 'test@example.com' });
+      const valid = resumeSchema.safeParse({ brainId: 'BR-SYNTHETIC-001' });
       expect(valid.success).toBe(true);
-    });
-
-    it('loginSchema должен проверять длину пароля', () => {
-      const invalid = loginSchema.safeParse({ email: 'test@example.com', password: '123' });
-      expect(invalid.success).toBe(false);
-      if (!invalid.success) {
-        expect(invalid.error.issues[0].message).toBe('Пароль должен быть не менее 6 символов');
-      }
-    });
-
-    it('registerSchema должен проверять имя', () => {
-      const invalid = registerSchema.safeParse({ 
-        email: 'test@example.com', 
-        password: 'password123',
-        name: 'a' 
-      });
-      expect(invalid.success).toBe(false);
-      if (!invalid.success) {
-        expect(invalid.error.issues[0].message).toBe('Имя должно быть не менее 2 символов');
-      }
     });
   });
 
@@ -47,10 +27,33 @@ describe('API Validation Schemas', () => {
       const valid = saveGameSchema.safeParse({ 
         gameType: 'SCHULTE',
         timeMs: 5000,
-        score: 100,
         metadata: { size: 5 }
       });
       expect(valid.success).toBe(true);
+    });
+
+    it('saveGameSchema должен отклонять client-side score на верхнем уровне', () => {
+      const invalid = saveGameSchema.safeParse({
+        gameType: 'SCHULTE',
+        timeMs: 5000,
+        score: 999999,
+        metadata: { size: 5 }
+      });
+      expect(invalid.success).toBe(false);
+    });
+  });
+
+  describe('Game Score Contract', () => {
+    it('computeServerScore ограничивает результат и не принимает готовый client score', () => {
+      const score = computeServerScore({
+        gameType: 'SCHULTE',
+        timeMs: 5000,
+        metadata: { score: 999999, size: 5, errors: 1 },
+      });
+
+      expect(score).toBeGreaterThanOrEqual(10);
+      expect(score).toBeLessThanOrEqual(1000);
+      expect(score).not.toBe(999999);
     });
   });
 });

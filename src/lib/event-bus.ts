@@ -13,7 +13,7 @@ class EventBus {
     CELL_CLICK: 'CELL_CLICK' as const,
     STABILITY_UPDATE: 'STABILITY_UPDATE' as const,
     DIFFICULTY_SUGGESTION: 'DIFFICULTY_SUGGESTION' as const,
-    FEEDBACK_SUBMITTED: 'FEEDBACK_SUBMITTED' as const,
+    FEEDBACK_SUBMITTED: 'feedback:submitted' as const,
   };
 
   private listeners: { [K in keyof EventMap]?: EventCallback<K>[] } = {};

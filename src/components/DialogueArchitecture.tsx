@@ -81,10 +81,9 @@ export function DialogueArchitecture() {
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({
           gameType: 'DIALOGUE_2_1',
-          score,
-          timeMs: 0,
+          timeMs: 1000,
           isCompleted: true,
-          metadata: { dialogueNodesCompleted: currentNodeIdx + 1 }
+          metadata: { score, dialogueNodesCompleted: currentNodeIdx + 1 }
         })
       })
       .then(() => refreshUser())

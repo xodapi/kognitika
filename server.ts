@@ -6,6 +6,7 @@ import { createServer as createViteServer } from 'vite';
 import prisma from './src/lib/prisma.ts';
 import cors from 'cors';
 import { rateLimit } from 'express-rate-limit';
+import jwt from 'jsonwebtoken';
 
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
@@ -36,6 +37,8 @@ import chatRoutes from './src/server/routes/chat.ts';
 import leaderboardRoutes from './src/server/routes/leaderboard.ts';
 import analyticsRoutes from './src/server/routes/analytics.ts';
 import dashboardRoutes from './src/server/routes/dashboard.ts';
+import observabilityRoutes from './src/server/routes/observability.ts';
+import ideasRoutes from './src/server/routes/ideas.ts';
 import { authenticate } from './src/server/middleware/auth.ts';
 import { privacyGuard } from './src/server/middleware/privacy.ts';
 
@@ -58,12 +61,14 @@ const activeDuels = new Map<string, {
 }>();
 
 const PORT = Number(process.env.PORT) || 3006;
+const BUILD_ID = process.env.BUILD_HASH || process.env.GIT_COMMIT || process.env.SOURCE_VERSION || 'dev';
 
 // Startup Guard
 if (!process.env.JWT_SECRET) {
   console.error('\x1b[31m[FATAL] JWT_SECRET is not defined in .env\x1b[0m');
   process.exit(1);
 }
+const JWT_SECRET = process.env.JWT_SECRET;
 
 async function startServer() {
   const app = express();
@@ -75,16 +80,48 @@ async function startServer() {
     }
   });
 
+  io.use(async (socket, next) => {
+    const token = typeof socket.handshake.auth?.token === 'string' ? socket.handshake.auth.token : null;
+    if (!token) return next(new Error('Unauthorized'));
+
+    try {
+      const decoded = jwt.verify(token, JWT_SECRET) as { id?: string };
+      if (!decoded.id) return next(new Error('Unauthorized'));
+
+      const user = await prisma.user.findUnique({
+        where: { id: decoded.id },
+        select: {
+          id: true,
+          name: true,
+          pseudonym: true,
+          brainId: true,
+          rating: true,
+          role: true,
+        },
+      });
+
+      if (!user) return next(new Error('Unauthorized'));
+      socket.data.user = user;
+      next();
+    } catch {
+      next(new Error('Unauthorized'));
+    }
+  });
+
   // Socket.io Logic
   io.on('connection', (socket) => {
-    console.log(`[Socket] Client connected: ${socket.id}`);
+    const connectedUser = socket.data.user;
+    console.log(`[Socket] Client connected: ${socket.id} user=${connectedUser.id}`);
 
-    socket.on('duel:matchmake', (data) => {
-      const { userId, rating, name } = data;
+    socket.on('duel:matchmake', () => {
+      const user = socket.data.user;
+      const userId = user.id;
+      const rating = Number.isFinite(user.rating) ? user.rating : 1000;
+      const name = user.pseudonym || user.name || `Brain ${user.id.slice(0, 8)}`;
       console.log(`[Matchmaking] User ${name} (${rating}) joined queue`);
       
       // Check if already in queue
-      matchmakingQueue = matchmakingQueue.filter(u => u.userId !== userId);
+      matchmakingQueue = matchmakingQueue.filter(u => u.userId !== userId && u.socketId !== socket.id);
       
       // Try to find a match
       const opponentIndex = matchmakingQueue.findIndex(u => Math.abs(u.rating - rating) <= 400);
@@ -112,40 +149,61 @@ async function startServer() {
       }
     });
 
-    socket.on('duel:leave-queue', (data) => {
-      const { userId } = data;
+    socket.on('duel:leave-queue', () => {
+      const userId = socket.data.user.id;
       matchmakingQueue = matchmakingQueue.filter(u => u.userId !== userId);
       console.log(`[Matchmaking] User ${userId} left queue`);
     });
 
     socket.on('duel:join', (data) => {
-// ...
-      const { roomId, userId } = data;
+      const roomId = typeof data?.roomId === 'string' ? data.roomId : '';
+      const userId = socket.data.user.id;
+      const duel = activeDuels.get(roomId);
+
+      if (!duel || !duel.players.includes(socket.id) || !duel.userIds.includes(userId)) {
+        socket.emit('duel:error', { error: 'Room access denied' });
+        return;
+      }
+
       socket.join(roomId);
       console.log(`[Socket] User ${userId} joined room ${roomId}`);
       socket.to(roomId).emit('duel:opponent-joined', { userId });
     });
 
     socket.on('duel:progress', async (data) => {
-      const { roomId, progress, userId } = data;
+      const roomId = typeof data?.roomId === 'string' ? data.roomId : '';
+      const userId = socket.data.user.id;
+      const rawProgress = Number(data?.progress);
+      const duel = activeDuels.get(roomId);
+
+      if (!duel || duel.isFinished || !duel.players.includes(socket.id) || !duel.userIds.includes(userId)) {
+        socket.emit('duel:error', { error: 'Room access denied' });
+        return;
+      }
+
+      if (!Number.isFinite(rawProgress)) {
+        socket.emit('duel:error', { error: 'Invalid progress' });
+        return;
+      }
+
+      const previousProgress = duel.progress.get(userId) || 0;
+      const progress = Math.max(previousProgress, Math.min(100, Math.max(0, rawProgress)));
       socket.to(roomId).emit('duel:opponent-progress', { progress });
 
-      const duel = activeDuels.get(roomId);
-      if (duel && !duel.isFinished) {
-        duel.progress.set(userId, progress);
+      duel.progress.set(userId, progress);
 
-        if (progress >= 100) {
-          duel.isFinished = true;
-          const opponentId = duel.userIds.find(id => id !== userId)!;
-          
-          // Determine winner
-          await resolveDuel(roomId, userId, opponentId);
-        }
+      if (progress >= 100) {
+        duel.isFinished = true;
+        const opponentId = duel.userIds.find(id => id !== userId);
+        if (!opponentId) return;
+        
+        // Determine winner
+        await resolveDuel(roomId, userId, opponentId);
       }
     });
 
     socket.on('disconnect', () => {
-      matchmakingQueue = matchmakingQueue.filter(u => u.socketId !== socket.id);
+      matchmakingQueue = matchmakingQueue.filter(u => u.socketId !== socket.id && u.userId !== socket.data.user?.id);
       
       // Cleanup active duels if someone leaves prematurely
       for (const [roomId, duel] of activeDuels.entries()) {
@@ -203,6 +261,10 @@ async function startServer() {
 
   app.use(cors());
   app.use(express.json());
+  app.use((_req, res, next) => {
+    res.setHeader('X-Build-Id', BUILD_ID);
+    next();
+  });
 
   // Privacy Guard (Anonymization) - ДОЛЖЕН БЫТЬ ПЕРЕД РОУТАМИ
   app.use(privacyGuard);
@@ -215,16 +277,38 @@ async function startServer() {
   app.use('/api/leaderboard', leaderboardRoutes);
   app.use('/api/analytics', apiLimiter, analyticsRoutes);
   app.use('/api/dashboard', apiLimiter, dashboardRoutes);
+  app.use('/api/client-error', apiLimiter, observabilityRoutes);
+  app.use('/api/ideas', apiLimiter, ideasRoutes);
 
   app.get('/api/health', (req, res) => {
-    res.json({ status: 'ok', timestamp: new Date().toISOString() });
+    res.json({ status: 'ok', timestamp: new Date().toISOString(), buildId: BUILD_ID });
   });
 
   app.get('/api/me', authenticate, async (req: any, res) => {
     try {
-      const user = await prisma.user.findUnique({ where: { id: req.user.id } });
+      const user = await prisma.user.findUnique({
+        where: { id: req.user.id },
+        select: {
+          id: true,
+          name: true,
+          brainId: true,
+          pseudonym: true,
+          level: true,
+          experience: true,
+          rating: true,
+          role: true,
+          streakDays: true,
+        },
+      });
       if (!user) return res.status(404).json({ error: 'User not found' });
-      res.json({ user });
+      const displayName = user.pseudonym || user.name || `Brain ${user.id.slice(0, 8)}`;
+      res.json({
+        user: {
+          ...user,
+          name: displayName,
+          email: null,
+        },
+      });
     } catch {
       res.status(500).json({ error: 'Failed to fetch user' });
     }
@@ -235,12 +319,31 @@ async function startServer() {
   app.post('/api/feedback', authenticate, async (req: any, res) => {
     try {
       const { type, content, rating } = req.body;
-      const userIdentifier = req.user.email || `Brain[${req.user.brainId || req.user.id.slice(0, 8)}]`;
       const trackingNum = `FB-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+
+      if (!['idea', 'bug', 'improvement', 'other'].includes(type) || typeof content !== 'string' || content.trim().length === 0 || content.length > 5000) {
+        return res.status(400).json({ error: 'Invalid feedback payload' });
+      }
       
       console.log(`[Feedback] type=${type} rating=${rating ?? 'n/a'}`);
       
-      // Note: In a real app, we would save this to the database
+      await prisma.feedback.create({
+        data: {
+          userId: req.user.id,
+          type,
+          content: content.trim(),
+          trackingNum,
+        },
+      });
+
+      const EventBusClass: any = eventBus.constructor;
+      eventBus.emit(EventBusClass.EVENTS.FEEDBACK_SUBMITTED, {
+        userId: req.user.id,
+        trackingNum,
+        type,
+        content: content.trim(),
+      });
+
       res.json({ success: true, trackingNum });
     } catch {
       res.status(500).json({ error: 'Failed to save feedback' });
@@ -256,16 +359,38 @@ async function startServer() {
     app.use(vite.middlewares);
   } else {
     const distPath = path.join(process.cwd(), 'dist');
-    // Disable caching for Service Worker itself
-    app.use((req, res, next) => {
-      if (req.path === '/sw.js') {
-        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-        res.setHeader('Content-Type', 'application/javascript');
-      }
-      next();
+
+    app.get('/sw.js', (_req, res) => {
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+      res.type('application/javascript');
+      res.sendFile(path.join(distPath, 'sw.js'));
     });
-    app.use(express.static(distPath));
+
+    app.use('/assets', express.static(path.join(distPath, 'assets'), {
+      immutable: true,
+      maxAge: '1y',
+      setHeaders: (res) => {
+        res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+      },
+    }));
+
+    app.use(express.static(distPath, {
+      index: false,
+      setHeaders: (res, filePath) => {
+        if (filePath.endsWith('.html')) {
+          res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+          res.setHeader('Pragma', 'no-cache');
+          res.setHeader('Expires', '0');
+        }
+      },
+    }));
+
     app.get('*', (_req, res) => {
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
       res.sendFile(path.join(distPath, 'index.html'));
     });
   }

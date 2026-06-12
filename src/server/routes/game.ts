@@ -5,6 +5,7 @@ import { handleValidationError } from '../utils/validation.ts';
 import { authenticate } from '../middleware/auth.ts';
 import { saveGameSchema } from '../schemas/game.ts';
 import { eventBus } from '../../lib/event-bus.ts';
+import { computeServerScore } from '../services/game-score.ts';
 
 const router = Router();
 
@@ -26,13 +27,13 @@ router.post('/save', authenticate, async (req: any, res) => {
   if (validationError) return validationError;
 
   try {
-    const { gameType, timeMs, metadata, score: providedScore } = result.data;
+    const { gameType, timeMs, metadata } = result.data;
 
-    if (!providedScore && (!timeMs || timeMs < 100)) {
+    if (!timeMs || timeMs < 100) {
       return res.status(400).json({ error: 'Invalid performance data' });
     }
 
-    const score = providedScore || Math.max(10, Math.floor(100000 / (timeMs || 10000)));
+    const score = computeServerScore({ gameType, timeMs, metadata });
 
     const session = await prisma.gameSession.create({
       data: {

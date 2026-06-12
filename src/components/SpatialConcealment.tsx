@@ -29,8 +29,8 @@ export function SpatialConcealment() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
           body: JSON.stringify({
-            gameType: 'SPATIAL',
-            timeMs: 0,
+            gameType: 'SPATIAL_CONCEALMENT',
+            timeMs: 1000,
             metadata: { level, score, errors }
           })
         }).catch(err => console.error('Failed to save session', err));

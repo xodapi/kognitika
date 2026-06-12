@@ -26,7 +26,7 @@ async function migrate() {
       }
     });
 
-    console.log(`[Migration] User ${user.email || user.id} -> ${pseudonym}`);
+    console.log(`[Migration] User ${user.id} -> ${pseudonym}`);
   }
 
   console.log('[Migration] Finished successfully.');

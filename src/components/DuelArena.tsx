@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Sword, Shield, Zap, Target, Activity, AlertCircle, Trophy, X } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useSchulteEngine } from '../hooks/useSchulteEngine';
-import { socket } from '../lib/socket';
+import { connectSocket, socket } from '../lib/socket';
 import { LeagueBadge } from './LeagueBadge';
 
 interface Opponent {
@@ -20,7 +20,7 @@ interface DuelArenaProps {
 }
 
 export const DuelArena: React.FC<DuelArenaProps> = ({ roomId, opponent, onFinish, onClose }) => {
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   const { state, startGame, clickCell } = useSchulteEngine(5, 'classic');
   const [opponentProgress, setOpponentProgress] = useState(0);
   const [countdown, setCountdown] = useState(3);
@@ -29,7 +29,10 @@ export const DuelArena: React.FC<DuelArenaProps> = ({ roomId, opponent, onFinish
   const [result, setResult] = useState<'win' | 'loss' | 'draw' | null>(null);
 
   useEffect(() => {
-    socket.emit('duel:join', { roomId, userId: user?.id });
+    if (!token) return;
+
+    connectSocket(token);
+    socket.emit('duel:join', { roomId });
 
     socket.on('duel:opponent-progress', (data: { progress: number }) => {
       setOpponentProgress(data.progress);
@@ -38,7 +41,7 @@ export const DuelArena: React.FC<DuelArenaProps> = ({ roomId, opponent, onFinish
     return () => {
       socket.off('duel:opponent-progress');
     };
-  }, [roomId, user?.id]);
+  }, [roomId, token]);
 
   useEffect(() => {
     if (countdown > 0) {
@@ -53,7 +56,7 @@ export const DuelArena: React.FC<DuelArenaProps> = ({ roomId, opponent, onFinish
   useEffect(() => {
     if (state.isActive) {
       const progress = (state.expectedIndex / state.expectedSequence.length) * 100;
-      socket.emit('duel:progress', { roomId, progress, userId: user?.id });
+      socket.emit('duel:progress', { roomId, progress });
     }
   }, [state.expectedIndex, state.expectedSequence.length, state.isActive, roomId]);
 

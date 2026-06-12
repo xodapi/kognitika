@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Zap, Users, Loader2, X, Sword, Shield, Trophy } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
-import { socket } from '../lib/socket';
+import { connectSocket, socket } from '../lib/socket';
 import { LeagueBadge } from './LeagueBadge';
 
 interface Opponent {
@@ -17,7 +17,7 @@ interface DuelLobbyProps {
 }
 
 export const DuelLobby: React.FC<DuelLobbyProps> = ({ onMatchFound, onClose }) => {
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   const [isSearching, setIsSearching] = useState(false);
   const [searchTime, setSearchTime] = useState(0);
 
@@ -45,17 +45,15 @@ export const DuelLobby: React.FC<DuelLobbyProps> = ({ onMatchFound, onClose }) =
   }, [onMatchFound]);
 
   const toggleSearch = () => {
-    if (!user) return;
+    if (!user || !token) return;
+
+    connectSocket(token);
 
     if (isSearching) {
-      socket.emit('duel:leave-queue', { userId: user.id });
+      socket.emit('duel:leave-queue');
       setIsSearching(false);
     } else {
-      socket.emit('duel:matchmake', { 
-        userId: user.id, 
-        rating: user.rating || 1000, 
-        name: user.pseudonym || user.name || 'Anonymous' 
-      });
+      socket.emit('duel:matchmake');
       setIsSearching(true);
     }
   };

@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { storageGateway } from '../lib/storage-gateway';
 import {
   AUTH_TOKEN_KEY,
+  BRAIN_ID_KEY,
   LEGACY_AUTH_TOKEN_KEY,
   LEGACY_AUTH_USER_KEY,
 } from '../lib/storage-keys';
@@ -10,7 +11,7 @@ import {
 interface User {
   id: string;
   name: string;
-  email?: string;
+  email?: string | null;
   pseudonym?: string;
   brainId?: string;
   level?: number;
@@ -75,6 +76,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       storageGateway.set(AUTH_TOKEN_KEY, legacyToken.value, authTokenSchema);
     }
 
+    if (resolvedUser?.brainId) {
+      storageGateway.set(BRAIN_ID_KEY, resolvedUser.brainId, authTokenSchema);
+    }
+
     if (resolvedToken && resolvedUser) {
       setToken(resolvedToken);
       setUser(resolvedUser);
@@ -112,6 +117,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     storageGateway.set(AUTH_TOKEN_KEY, tokenResult.data, authTokenSchema);
     storageGateway.set(LEGACY_AUTH_TOKEN_KEY, tokenResult.data, authTokenSchema);
     storageGateway.set(LEGACY_AUTH_USER_KEY, userResult.data, userSchema);
+    if (userResult.data.brainId) {
+      storageGateway.set(BRAIN_ID_KEY, userResult.data.brainId, authTokenSchema);
+    }
   };
 
   const logout = () => {

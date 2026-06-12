@@ -42,13 +42,14 @@ eventBus.on('feedback:submitted', async (data) => {
     if (!user) return;
 
     const adminEmail = process.env.ADMIN_EMAIL || 'd88u5@syntog.ru';
+    const userLabel = user.pseudonym || user.brainId || `User ${user.id.slice(0, 8)}`;
     
     // 1. Notify Admin via Email
     await transporter.sendMail({
       from: `Kognitika Feedback <${mailConfig.auth.user}>`,
       to: adminEmail,
       subject: `[Kognitika Feedback] ${type} - ${trackingNum}`,
-      text: `Обращение: ${trackingNum}\nОт: ${user.name} (${user.email})\nТип: ${type}\n\nТекст:\n${content}`
+      text: `Обращение: ${trackingNum}\nОт: ${userLabel}\nТип: ${type}\n\nТекст:\n${content}`
     });
 
     // 2. Confirmation to User

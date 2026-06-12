@@ -1,12 +1,8 @@
 import { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
-import { X, Copy, Check, Brain, Key, Mail, UserPlus } from 'lucide-react';
+import { X, Copy, Check, Brain, Key } from 'lucide-react';
 
 export function AuthModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
-  const [mode, setMode] = useState<'brain' | 'login' | 'register'>('brain');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [name, setName] = useState('');
   const [brainIdInput, setBrainIdInput] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -45,25 +41,11 @@ export function AuthModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
     setError('');
     setLoading(true);
 
-    let url = '';
-    let body = {};
-
-    if (mode === 'brain') {
-      url = '/api/auth/restore';
-      body = { brainId: brainIdInput };
-    } else if (mode === 'login') {
-      url = '/api/auth/login';
-      body = { email, password };
-    } else {
-      url = '/api/auth/register';
-      body = { email, password, name };
-    }
-
     try {
-      const res = await fetch(url, {
+      const res = await fetch('/api/auth/restore', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
+        body: JSON.stringify({ brainId: brainIdInput.trim() })
       });
       const data = await res.json();
       
@@ -132,114 +114,51 @@ export function AuthModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
           </div>
         </div>
 
-        <div className="flex bg-secondary/30 p-1 rounded-xl mb-8">
-          <button 
-            onClick={() => { setMode('brain'); setError(''); }}
-            className={`flex-1 flex items-center justify-center gap-2 py-2 text-[10px] font-bold uppercase tracking-widest rounded-lg transition-all ${mode === 'brain' ? 'bg-card text-primary shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
-          >
-            <Key className="w-3 h-3" /> Brain ID
-          </button>
-          <button 
-            onClick={() => { setMode('login'); setError(''); }}
-            className={`flex-1 flex items-center justify-center gap-2 py-2 text-[10px] font-bold uppercase tracking-widest rounded-lg transition-all ${mode === 'login' ? 'bg-card text-primary shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
-          >
-            <Mail className="w-3 h-3" /> Вход
-          </button>
-          <button 
-            onClick={() => { setMode('register'); setError(''); }}
-            className={`flex-1 flex items-center justify-center gap-2 py-2 text-[10px] font-bold uppercase tracking-widest rounded-lg transition-all ${mode === 'register' ? 'bg-card text-primary shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
-          >
-            <UserPlus className="w-3 h-3" /> Рег
-          </button>
+        <div className="flex items-center justify-center gap-2 bg-secondary/30 p-3 rounded-xl mb-8 text-primary border border-primary/10">
+          <Key className="w-4 h-4" />
+          <span className="text-[10px] font-bold uppercase tracking-widest">Brain ID доступ</span>
         </div>
         
-        {mode === 'brain' ? (
-          <div className="space-y-6">
-            <div className="text-center space-y-2">
-              <h3 className="text-lg font-bold tracking-tight uppercase">Анонимный доступ</h3>
-              <p className="text-muted-foreground text-[11px] leading-relaxed">
-                Тренируйтесь без пароля и email. Весь прогресс привязан к Brain ID.
-              </p>
-            </div>
-
-            <button 
-              onClick={handleBrainInit}
-              disabled={loading}
-              className="w-full py-4 bg-primary text-primary-foreground rounded-2xl font-bold uppercase tracking-widest text-[10px] hover:scale-[1.02] transition-transform shadow-lg shadow-primary/20 disabled:opacity-50"
-            >
-              {loading ? 'Создание...' : 'Начать новую сессию'}
-            </button>
-
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-border"></div></div>
-              <div className="relative flex justify-center text-[9px] uppercase tracking-tighter"><span className="bg-card px-2 text-muted-foreground">Или восстановить</span></div>
-            </div>
-
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <input 
-                type="text" 
-                value={brainIdInput} 
-                onChange={e => setBrainIdInput(e.target.value)} 
-                required 
-                className="w-full bg-secondary/50 border border-border rounded-xl px-4 py-3 text-xs font-mono focus:outline-none focus:border-primary transition-all text-center"
-                placeholder="Введите ваш Brain ID"
-              />
-              <button 
-                type="submit" 
-                disabled={loading || !brainIdInput}
-                className="w-full py-3 bg-secondary text-foreground rounded-xl font-bold uppercase tracking-widest text-[9px] hover:bg-secondary/80 transition-all disabled:opacity-50"
-              >
-                Возобновить прогресс
-              </button>
-            </form>
+        <div className="space-y-6">
+          <div className="text-center space-y-2">
+            <h3 className="text-lg font-bold tracking-tight uppercase">Анонимный доступ</h3>
+            <p className="text-muted-foreground text-[11px] leading-relaxed">
+              Тренируйтесь без пароля и email. Весь прогресс привязан к Brain ID.
+            </p>
           </div>
-        ) : (
-          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-            {mode === 'register' && (
-              <div>
-                <label className="block text-[9px] text-muted-foreground uppercase mb-1 tracking-widest">Псевдоним</label>
-                <input 
-                  type="text" 
-                  value={name} 
-                  onChange={e => setName(e.target.value)} 
-                  required 
-                  className="w-full bg-secondary/50 border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary transition-all"
-                  placeholder="ivan_cognitive"
-                />
-              </div>
-            )}
-            <div>
-              <label className="block text-[9px] text-muted-foreground uppercase mb-1 tracking-widest">Email</label>
-              <input 
-                type="email" 
-                value={email} 
-                onChange={e => setEmail(e.target.value)} 
-                required 
-                className="w-full bg-secondary/50 border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary transition-all"
-                placeholder="user@example.com"
-              />
-            </div>
-            <div>
-              <label className="block text-[9px] text-muted-foreground uppercase mb-1 tracking-widest">Пароль</label>
-              <input 
-                type="password" 
-                value={password} 
-                onChange={e => setPassword(e.target.value)} 
-                required 
-                className="w-full bg-secondary/50 border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary transition-all"
-                placeholder="••••••••"
-              />
-            </div>
-            
+
+          <button 
+            onClick={handleBrainInit}
+            disabled={loading}
+            className="w-full py-4 bg-primary text-primary-foreground rounded-2xl font-bold uppercase tracking-widest text-[10px] hover:scale-[1.02] transition-transform shadow-lg shadow-primary/20 disabled:opacity-50"
+          >
+            {loading ? 'Создание...' : 'Начать новую сессию'}
+          </button>
+
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-border"></div></div>
+            <div className="relative flex justify-center text-[9px] uppercase tracking-tighter"><span className="bg-card px-2 text-muted-foreground">Или восстановить</span></div>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <input 
+              type="text" 
+              value={brainIdInput} 
+              onChange={e => setBrainIdInput(e.target.value)} 
+              required 
+              className="w-full bg-secondary/50 border border-border rounded-xl px-4 py-3 text-xs font-mono focus:outline-none focus:border-primary transition-all text-center"
+              placeholder="Введите ваш Brain ID"
+              autoComplete="off"
+            />
             <button 
               type="submit" 
-              disabled={loading}
-              className="w-full mt-2 px-4 py-4 bg-primary text-primary-foreground text-[10px] uppercase tracking-widest rounded-2xl font-bold hover:scale-[1.02] transition-all shadow-lg shadow-primary/20 disabled:opacity-50"
+              disabled={loading || !brainIdInput.trim()}
+              className="w-full py-3 bg-secondary text-foreground rounded-xl font-bold uppercase tracking-widest text-[9px] hover:bg-secondary/80 transition-all disabled:opacity-50"
             >
-              {loading ? 'Загрузка...' : (mode === 'login' ? 'Войти в профиль' : 'Создать аккаунт')}
+              Возобновить прогресс
             </button>
           </form>
-        )}
+        </div>
 
         {error && (
           <div className="mt-4 text-destructive text-[10px] uppercase tracking-wide text-center bg-destructive/10 p-3 rounded-xl border border-destructive/20 animate-in fade-in slide-in-from-top-1">

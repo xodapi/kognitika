@@ -53,10 +53,9 @@ export function AnomalyDetector() {
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({
           gameType: 'ANOMALY_DETECTOR',
-          score,
           timeMs: 60000,
           isCompleted: true,
-          metadata: { anomaliesFound }
+          metadata: { score, anomaliesFound }
         })
       })
       .then(() => refreshUser())
