@@ -11,6 +11,10 @@ const transporter = nodemailer.createTransport({
   }
 });
 
+function isLegacyEmailNotificationsEnabled() {
+  return process.env.LEGACY_EMAIL_NOTIFICATIONS_ENABLED === 'true';
+}
+
 /**
  * Subscriber: Weekly Report Generator
  * Triggers when a user completes their first game of the week
@@ -22,14 +26,25 @@ eventBus.on('game:completed', async (data) => {
   // Check if it's Sunday (day 0) or Monday (day 1) to send reports
   const today = new Date();
   if (today.getDay() !== 1) return; // Only process on Mondays
+  if (!isLegacyEmailNotificationsEnabled()) return;
 
   // Check if report was already sent this week (simple metadata check or separate table)
-  const user = await prisma.user.findUnique({ where: { id: userId } });
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      id: true,
+      name: true,
+      pseudonym: true,
+      brainId: true,
+      email: true,
+    },
+  });
   if (!user) return;
 
-  // Brain ID пользователи не получают email-отчёты — это нормально
+  // Legacy opt-in only: Brain ID public users do not receive email reports.
   if (!user.email) {
-    console.log(`[Report] User ${user.brainId || user.id} is anonymous, skipping email report`);
+    const label = user.brainId ? `Brain ${user.brainId.slice(0, 8)}` : `User ${user.id.slice(0, 8)}`;
+    console.log(`[Report] ${label} has no legacy email, skipping email report`);
     return;
   }
 
@@ -46,6 +61,7 @@ eventBus.on('game:completed', async (data) => {
 
   const avgScore = sessions.reduce((sum, s) => sum + (s.score || 0), 0) / sessions.length;
   const totalTime = sessions.reduce((sum, s) => sum + (s.timeMs || 0), 0) / 1000 / 60; // minutes
+  const displayName = user.pseudonym || user.name || 'участник';
 
   await transporter.sendMail({
     from: `"Kognitika Analytics" <${process.env.SMTP_USER}>`,
@@ -53,7 +69,7 @@ eventBus.on('game:completed', async (data) => {
     subject: `Ваш прогресс за неделю в Kognitika 📊`,
     html: `
       <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #3b82f6; border-radius: 12px;">
-        <h2 style="color: #1e40af;">Еженедельный отчет: ${user.name}</h2>
+        <h2 style="color: #1e40af;">Еженедельный отчет: ${displayName}</h2>
         <p>Поздравляем! Вы завершили еще одну неделю когнитивных тренировок.</p>
         <div style="background: #f0f9ff; padding: 15px; border-radius: 8px; margin: 20px 0;">
           <p>🎯 <b>Всего сессий:</b> ${sessions.length}</p>

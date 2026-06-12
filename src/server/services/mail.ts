@@ -16,6 +16,10 @@ const mailConfig = {
 export const transporter = nodemailer.createTransport(mailConfig);
 
 export const sendMagicLinkEmail = async (email: string, magicToken: string, magicUrl: string) => {
+  if (process.env.LEGACY_EMAIL_AUTH_ENABLED !== 'true') {
+    throw new Error('Legacy email auth is disabled');
+  }
+
   return transporter.sendMail({
     from: `"Kognitika Auth" <${mailConfig.auth.user}>`,
     to: email,

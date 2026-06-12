@@ -16,6 +16,14 @@ const mailConfig = {
 
 const transporter = nodemailer.createTransport(mailConfig);
 
+function isLegacyEmailNotificationsEnabled() {
+  return process.env.LEGACY_EMAIL_NOTIFICATIONS_ENABLED === 'true';
+}
+
+function adminNotificationEmail() {
+  return process.env.ADMIN_NOTIFICATION_EMAIL || process.env.ADMIN_EMAIL || null;
+}
+
 /**
  * Subscriber: Handle Game Completion
  * Focuses on secondary effects like long-term analytics processing
@@ -41,24 +49,27 @@ eventBus.on('feedback:submitted', async (data) => {
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user) return;
 
-    const adminEmail = process.env.ADMIN_EMAIL || 'd88u5@syntog.ru';
-    const userLabel = user.pseudonym || user.brainId || `User ${user.id.slice(0, 8)}`;
+    const adminEmail = adminNotificationEmail();
+    const userLabel = user.pseudonym || (user.brainId ? `Brain ${user.brainId.slice(0, 8)}` : `User ${user.id.slice(0, 8)}`);
     
-    // 1. Notify Admin via Email
-    await transporter.sendMail({
-      from: `Kognitika Feedback <${mailConfig.auth.user}>`,
-      to: adminEmail,
-      subject: `[Kognitika Feedback] ${type} - ${trackingNum}`,
-      text: `Обращение: ${trackingNum}\nОт: ${userLabel}\nТип: ${type}\n\nТекст:\n${content}`
-    });
+    // Admin-only delivery channel. This is not public auth identity.
+    if (adminEmail) {
+      await transporter.sendMail({
+        from: `Kognitika Feedback <${mailConfig.auth.user}>`,
+        to: adminEmail,
+        subject: `[Kognitika Feedback] ${type} - ${trackingNum}`,
+        text: `Обращение: ${trackingNum}\nОт: ${userLabel}\nТип: ${type}\n\nТекст:\n${content}`
+      });
+    }
 
-    // 2. Confirmation to User
-    if (user.email) {
+    // Legacy opt-in only: Brain ID public users are not contacted by email.
+    if (isLegacyEmailNotificationsEnabled() && user.email) {
+      const displayName = user.pseudonym || user.name || 'участник';
       await transporter.sendMail({
         from: `Syntog Support <${mailConfig.auth.user}>`,
         to: user.email,
         subject: `Ваше обращение ${trackingNum} получено`,
-        text: `Здравствуйте, ${user.name}!\n\nМы получили ваше сообщение (${type}).\nНомер обращения: ${trackingNum}\n\nМы свяжемся с вами в ближайшее время.`
+        text: `Здравствуйте, ${displayName}!\n\nМы получили ваше сообщение (${type}).\nНомер обращения: ${trackingNum}\n\nМы свяжемся с вами в ближайшее время.`
       });
     }
 

@@ -9,7 +9,9 @@ datasource db {
 model User {
   id            String    @id @default(cuid())
   name          String?
+  /// Legacy/admin-only nullable contact field. Public Brain ID identity must not depend on email.
   email         String?   @unique
+  /// Legacy/admin-only nullable credential hash. Public Brain ID auth does not use passwords.
   password      String?
   brainId       String?   @unique
   pseudonym     String?

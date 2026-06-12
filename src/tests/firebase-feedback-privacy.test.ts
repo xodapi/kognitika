@@ -31,4 +31,12 @@ describe('Firebase feedback privacy contract', () => {
     expect(rules).not.toContain("'email'");
     expect(rules).not.toContain('"email"');
   });
+
+  it('does not use hard-coded email identity for Firebase admin access', () => {
+    const rules = readFileSync(new URL('../../firestore.rules', import.meta.url), 'utf8');
+
+    expect(rules).toContain('request.auth.token.admin == true');
+    expect(rules).not.toMatch(/email(_verified)?/);
+    expect(rules).not.toMatch(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i);
+  });
 });
