@@ -1,0 +1,136 @@
+name: Deploy Kognitika
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: kognitika-production
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: admin
+          POSTGRES_PASSWORD: adminpassword
+          POSTGRES_DB: cognitika
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U admin -d cognitika"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://admin:adminpassword@localhost:5432/cognitika?schema=public
+      JWT_SECRET: ci-only-replace-with-strong-secret
+      NODE_ENV: test
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.22.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm test
+      - run: pnpm build
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: verify
+    environment: production
+
+    steps:
+      - name: Prepare SSH
+        env:
+          DEPLOY_HOST: ${{ secrets.KOGNITIKA_DEPLOY_HOST }}
+          DEPLOY_PORT: ${{ secrets.KOGNITIKA_DEPLOY_PORT }}
+          DEPLOY_KEY: ${{ secrets.KOGNITIKA_DEPLOY_SSH_KEY }}
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "$DEPLOY_KEY" > ~/.ssh/kognitika_deploy_key
+          chmod 600 ~/.ssh/kognitika_deploy_key
+          ssh-keyscan -p "$DEPLOY_PORT" -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts
+
+      - name: Deploy on stroy
+        env:
+          DEPLOY_HOST: ${{ secrets.KOGNITIKA_DEPLOY_HOST }}
+          DEPLOY_PORT: ${{ secrets.KOGNITIKA_DEPLOY_PORT }}
+          DEPLOY_USER: ${{ secrets.KOGNITIKA_DEPLOY_USER }}
+          EXPECTED_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          ssh -i ~/.ssh/kognitika_deploy_key \
+            -p "$DEPLOY_PORT" \
+            -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=yes \
+            "$DEPLOY_USER@$DEPLOY_HOST" \
+            "EXPECTED_SHA='$EXPECTED_SHA' bash -s" <<'REMOTE'
+          set -Eeuo pipefail
+
+          cd /opt/kognitika
+
+          before="$(git rev-parse --short HEAD)"
+          echo "before=$before"
+
+          backup="/opt/kognitika-dist-backups/dist-$(date -u +%Y%m%d%H%M%S)-${EXPECTED_SHA:0:7}"
+          mkdir -p /opt/kognitika-dist-backups
+          if [ -d dist ]; then
+            cp -a dist "$backup"
+            echo "backup=$backup"
+          fi
+
+          asset_keep="$(mktemp -d)"
+          if [ -d dist/assets ]; then
+            cp -a dist/assets/. "$asset_keep"/
+          fi
+
+          cleanup() {
+            rm -rf "$asset_keep"
+          }
+          trap cleanup EXIT
+
+          git fetch origin main
+          git checkout main
+          git pull --ff-only origin main
+
+          actual_sha="$(git rev-parse HEAD)"
+          if [ "$actual_sha" != "$EXPECTED_SHA" ]; then
+            echo "Expected $EXPECTED_SHA but server checked out $actual_sha" >&2
+            exit 1
+          fi
+
+          build_id="$(git rev-parse --short HEAD)"
+          CI=true pnpm install --frozen-lockfile
+          BUILD_HASH="$build_id" VITE_BUILD_ID="$build_id" pnpm build
+
+          mkdir -p dist/assets
+          cp -an "$asset_keep"/. dist/assets/ 2>/dev/null || true
+
+          systemctl restart kognitika
+
+          health="$(curl -fsS http://127.0.0.1:3010/api/health)"
+          echo "$health"
+          echo "$health" | grep -q "\"buildId\":\"$build_id\""
+
+          echo "after=$(git rev-parse --short HEAD)"
+          echo "build_id=$build_id"
+          REMOTE
