@@ -2,6 +2,7 @@ import './src/lib/env.ts';
 import express from 'express';
 import { createServer } from 'http';
 import path from 'path';
+import { execSync } from 'child_process';
 import { createServer as createViteServer } from 'vite';
 import prisma from './src/lib/prisma.ts';
 import cors from 'cors';
@@ -61,7 +62,22 @@ const activeDuels = new Map<string, {
 }>();
 
 const PORT = Number(process.env.PORT) || 3006;
-const BUILD_ID = process.env.BUILD_HASH || process.env.GIT_COMMIT || process.env.SOURCE_VERSION || 'dev';
+
+function resolveBuildId() {
+  if (process.env.BUILD_HASH) return process.env.BUILD_HASH;
+  if (process.env.GIT_COMMIT) return process.env.GIT_COMMIT;
+  if (process.env.SOURCE_VERSION) return process.env.SOURCE_VERSION;
+
+  try {
+    return execSync('git rev-parse --short HEAD', { cwd: process.cwd(), stdio: ['ignore', 'pipe', 'ignore'] })
+      .toString()
+      .trim();
+  } catch {
+    return 'dev';
+  }
+}
+
+const BUILD_ID = resolveBuildId();
 
 // Startup Guard
 if (!process.env.JWT_SECRET) {
