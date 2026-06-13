@@ -4,7 +4,7 @@ import prisma from '../../lib/prisma.ts';
 import { handleValidationError } from '../utils/validation.ts';
 import { authenticate } from '../middleware/auth.ts';
 import { saveGameSchema } from '../schemas/game.ts';
-import { eventBus } from '../../lib/event-bus.ts';
+import { eventBus } from '../events/event-bus.ts';
 import { computeServerScore } from '../services/game-score.ts';
 import { createSafeLogger, safeError } from '../../lib/safe-logger.ts';
 

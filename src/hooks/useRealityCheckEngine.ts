@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { eventBus } from '../lib/event-bus';
+import { eventBus } from '../client/analytics/event-bus';
 import { getUniqueSession, ContentCard } from '../lib/content-db';
 
 export interface RealityPair {

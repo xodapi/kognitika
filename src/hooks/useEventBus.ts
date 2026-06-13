@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { eventBus } from '../lib/event-bus';
+import { eventBus } from '../client/analytics/event-bus';
 import { EventMap } from '../lib/event-schema';
 
 export function useEventBus<K extends keyof EventMap>(event: K, callback: (data: EventMap[K]) => void) {

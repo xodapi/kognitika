@@ -1,4 +1,4 @@
-import { eventBus } from './event-bus.ts';
+import { eventBus } from '../server/events/event-bus.ts';
 import prisma from './prisma.ts';
 import nodemailer from 'nodemailer';
 import { createSafeLogger } from './safe-logger.ts';

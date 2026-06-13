@@ -27,8 +27,8 @@ const authLimiter = rateLimit({
   message: { error: 'Too many authentication attempts, please try again after an hour.' }
 });
 
-// Register subscribers & EventBus
-import { eventBus } from './src/lib/event-bus.ts';
+// Register subscribers & server EventBus
+import { eventBus } from './src/server/events/event-bus.ts';
 import './src/lib/subscribers.ts';
 import './src/lib/report-subscriber.ts';
 import './src/lib/observability-subscriber.ts';
