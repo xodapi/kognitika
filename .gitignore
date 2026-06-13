@@ -2,6 +2,7 @@ node_modules/
 build/
 dist/
 coverage/
+playwright-report/
 .turbo/
 test-results/
 .DS_Store

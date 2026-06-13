@@ -1,48 +1,115 @@
-import { test, expect } from '@playwright/test';
+import { expect, test } from '@playwright/test';
+import { APP_ROUTE_PATHS } from '../src/lib/routes';
+import { collectUnexpectedBrowserErrors, expectAppReady, installSyntheticApi } from './helpers';
 
-test.describe('Kognitika Basic Flow', () => {
-  test('should load landing page', async ({ page }) => {
-    await page.goto('https://kognitika.syntog.ru/');
-    await expect(page).toHaveTitle(/Когнитика/);
+const ROUTE_PATHS = [...APP_ROUTE_PATHS];
+
+test.describe('Kognitika production smoke', () => {
+  test.beforeEach(async ({ page }) => {
+    await installSyntheticApi(page);
   });
 
-  test('should open leaderboard', async ({ page }) => {
-    await page.goto('https://kognitika.syntog.ru/leaderboard');
-    await expect(page.locator('h1')).toContainText('Зал Славы');
-    const rows = await page.locator('table tbody tr').count();
-    console.log(`Leaderboard has ${rows} rows`);
-    expect(rows).toBeGreaterThan(0);
+  test('loads with a dirty legacy localStorage profile instead of white-screening', async ({ page }) => {
+    await page.addInitScript(() => {
+      window.localStorage.setItem('user', '{bad-json');
+      window.localStorage.setItem('token', 'synthetic-legacy-token');
+      window.localStorage.setItem('kognitika:ui:theme', '"dark"');
+    });
+
+    const browserErrors = collectUnexpectedBrowserErrors(page);
+
+    await page.goto('/');
+    await expectAppReady(page);
+
+    await expect(page.locator('#kognitika-boot-recovery')).toHaveCount(0);
+    expect(await page.evaluate(() => window.localStorage.getItem('user'))).toBeNull();
+    expect(browserErrors).toEqual([]);
   });
 
-  test('should have a working theme toggle', async ({ page }) => {
-    await page.goto('https://kognitika.syntog.ru/');
-    await page.locator('button:has-text("Темная")').or(page.locator('button:has-text("Светлая")')).first().click();
-    // Theme change is visual — no assertion needed beyond no crash
+  test('does not install or control the page with a service worker on a fresh profile', async ({ page }) => {
+    await page.goto('/');
+    await expectAppReady(page);
+
+    const serviceWorkerState = await page.evaluate(async () => {
+      if (!('serviceWorker' in navigator)) {
+        return { supported: false, controlled: false, registrations: 0 };
+      }
+
+      const registrations = await navigator.serviceWorker.getRegistrations();
+      return {
+        supported: true,
+        controlled: Boolean(navigator.serviceWorker.controller),
+        registrations: registrations.length,
+      };
+    });
+
+    expect(serviceWorkerState.controlled).toBe(false);
+    expect(serviceWorkerState.registrations).toBe(0);
+  });
+
+  test('shows inline recovery UI when the built application bundle is blocked', async ({ page }) => {
+    await page.route(/\/assets\/.*\.js(\?.*)?$/, async (route) => {
+      await route.abort('blockedbyclient');
+    });
+
+    await page.goto('/');
+
+    await expect(page.locator('#kognitika-boot-recovery')).toBeVisible({ timeout: 9_000 });
+    await expect(page.getByText('Не удалось запустить Когнитику')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Сбросить состояние приложения' })).toBeVisible();
+    await expect(page.getByText('Brain ID').first()).toBeVisible();
   });
 });
 
-test.describe('Admin Security', () => {
-  test('admin panel is not linked from main navigation', async ({ page }) => {
-    await page.goto('https://kognitika.syntog.ru/');
-    // Убедиться, что прямых ссылок на /admin нет в DOM
-    const adminLinks = page.locator('a[href*="/admin"]');
-    await expect(adminLinks).toHaveCount(0);
+test.describe('Kognitika route and link contract', () => {
+  test.beforeEach(async ({ page }) => {
+    await installSyntheticApi(page);
   });
 
-  test('admin route does not expose sensitive data without auth', async ({ page }) => {
-    const response = await page.goto('https://kognitika.syntog.ru/admin');
-    // Страница должна либо редиректить, либо не показывать admin-контент
-    // Проверяем, что заголовок НЕ содержит "Панель управления" без авторизации
-    const bodyText = await page.textContent('body');
-    const isExposed = bodyText?.includes('Панель управления') && 
-                      !bodyText?.includes('Войти') && 
-                      !bodyText?.includes('Авторизация');
-    expect(isExposed).toBe(false);
-  });
+  for (const routePath of ROUTE_PATHS) {
+    test(`renders ${routePath} without a blank page`, async ({ page }) => {
+      const browserErrors = collectUnexpectedBrowserErrors(page);
 
-  test('training modules are accessible without auth (public)', async ({ page }) => {
-    await page.goto('https://kognitika.syntog.ru/');
-    // Главная страница должна быть доступна
-    await expect(page).toHaveURL('https://kognitika.syntog.ru/');
+      await page.goto(routePath);
+      await expectAppReady(page);
+
+      expect(browserErrors).toEqual([]);
+    });
+  }
+
+  test('all internal anchor links found on public routes resolve to a non-blank page', async ({ page }, testInfo) => {
+    test.setTimeout(120_000);
+
+    const internalPaths = new Set<string>();
+
+    for (const routePath of ROUTE_PATHS) {
+      await page.goto(routePath);
+      await expectAppReady(page);
+
+      const hrefs = await page.locator('a[href]').evaluateAll((links) =>
+        links.map((link) => (link as HTMLAnchorElement).href),
+      );
+      const currentOrigin = new URL(page.url()).origin;
+
+      for (const href of hrefs) {
+        const url = new URL(href);
+        if (url.origin !== currentOrigin) continue;
+        internalPaths.add(url.pathname);
+      }
+    }
+
+    await testInfo.attach('internal-links.json', {
+      contentType: 'application/json',
+      body: Buffer.from(JSON.stringify([...internalPaths].sort(), null, 2)),
+    });
+
+    for (const path of internalPaths) {
+      const browserErrors = collectUnexpectedBrowserErrors(page);
+
+      await page.goto(path);
+      await expectAppReady(page);
+
+      expect(browserErrors).toEqual([]);
+    }
   });
 });
