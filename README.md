@@ -125,6 +125,7 @@ Known non-blocking local warnings currently include Recharts zero-size container
 - Firestore feedback schema is a privacy/rules contract, not the public UI submission path.
 - Public identity is Brain ID-first; do not expose raw Brain ID, email, token, or password hashes in UI/API responses.
 - Brain ID storage/recovery boundaries are defined in `docs/brain-id-identity.md`.
+- PWA/offline-first must remain disabled until `docs/pwa-offline-strategy.md` acceptance gates are met.
 - Client analytics `ClickEvent` uses `{ cellId, reactionTimeMs }`.
 - Direct production file patches are forbidden outside documented emergency hotfixes.
 
