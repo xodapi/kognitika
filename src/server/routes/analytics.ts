@@ -3,6 +3,7 @@ import prisma from '../../lib/prisma.ts';
 import { authenticate } from '../middleware/auth.ts';
 import jwt from 'jsonwebtoken';
 import { createSafeLogger, safeError } from '../../lib/safe-logger.ts';
+import { brainLabelForIdentity, displayNameForIdentity } from '../utils/privacy.ts';
 
 const router = Router();
 const logger = createSafeLogger('analytics-route');
@@ -182,7 +183,8 @@ router.get('/export', authenticate, async (req: any, res) => {
     const exportData = {
       version: "1.0",
       subject: {
-        id: user?.brainId || user?.id,
+        brain_label: user ? brainLabelForIdentity(user) : undefined,
+        pseudonym: user ? displayNameForIdentity(user) : undefined,
         level: user?.level,
         rating: user?.rating,
         total_xp: user?.experience,

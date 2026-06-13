@@ -124,6 +124,7 @@ Known non-blocking local warnings currently include Recharts zero-size container
 - Public feedback submissions use the Prisma-backed `/api/feedback` route as the runtime source of truth.
 - Firestore feedback schema is a privacy/rules contract, not the public UI submission path.
 - Public identity is Brain ID-first; do not expose raw Brain ID, email, token, or password hashes in UI/API responses.
+- Brain ID storage/recovery boundaries are defined in `docs/brain-id-identity.md`.
 - Client analytics `ClickEvent` uses `{ cellId, reactionTimeMs }`.
 - Direct production file patches are forbidden outside documented emergency hotfixes.
 
