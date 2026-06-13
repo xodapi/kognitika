@@ -33,12 +33,15 @@ function collectFiles(dir: string, extensions: string[]) {
 describe('legacy email audit', () => {
   it('keeps public auth UI Brain ID-only', () => {
     const authModal = readRepoFile('src/components/AuthModal.tsx');
+    const publicComponentSources = collectFiles('src/components', ['.tsx']).map((file) => readFileSync(file, 'utf8'));
 
     expect(authModal).not.toMatch(/type=["']email["']/);
     expect(authModal).not.toMatch(/type=["']password["']/);
-    expect(authModal).not.toContain('/api/auth/login');
-    expect(authModal).not.toContain('/api/auth/register');
-    expect(authModal).not.toContain('/api/auth/magic-link');
+    for (const source of publicComponentSources) {
+      expect(source).not.toContain('/api/auth/login');
+      expect(source).not.toContain('/api/auth/register');
+      expect(source).not.toContain('/api/auth/magic-link');
+    }
   });
 
   it('does not use user.email as public UI identity', () => {
@@ -65,6 +68,7 @@ describe('legacy email audit', () => {
     expect(envExample).toContain('LEGACY_EMAIL_AUTH_ENABLED="false"');
     expect(envExample).toContain('ADMIN_NOTIFICATION_EMAIL');
     expect(envExample).not.toContain('ADMIN_EMAIL=');
+    expect(subscribers).not.toContain('ADMIN_EMAIL');
   });
 
   it('documents Prisma email and password as legacy/admin-only fields', () => {
@@ -72,5 +76,13 @@ describe('legacy email audit', () => {
 
     expect(schema).toContain('Legacy/admin-only nullable contact field');
     expect(schema).toContain('Legacy/admin-only nullable credential hash');
+  });
+
+  it('keeps admin authorization role-based instead of email-based', () => {
+    const authMiddleware = readRepoFile('src/server/middleware/auth.ts');
+
+    expect(authMiddleware).toContain("select: { role: true }");
+    expect(authMiddleware).not.toContain('ADMIN_EMAIL');
+    expect(authMiddleware).not.toMatch(/email/i);
   });
 });
