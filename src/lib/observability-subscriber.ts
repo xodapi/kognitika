@@ -1,4 +1,7 @@
 import { eventBus } from './event-bus.ts';
+import { createSafeLogger, safeError } from './safe-logger.ts';
+
+const logger = createSafeLogger('observability-subscriber');
 
 /**
  * Subscriber: Observability & Security (World Class Standards)
@@ -12,12 +15,12 @@ import { eventBus } from './event-bus.ts';
 eventBus.on('game:completed', (data) => {
   const { timeMs, gameType } = data;
   if (timeMs > 60000 && gameType === 'SCHULTE') {
-    console.log(`[PERF] User taking > 1 min for Schulte. Possible UX issue or heavy lag.`);
+    logger.warn('Slow Schulte session detected', { gameType, timeMs });
   }
 });
 
 // Error Tracking (Simulated Sentry)
 eventBus.on('error', (err) => {
-  console.error(`[CRITICAL] System Error logged to Observability:`, err);
+  logger.error('System error observed', { error: safeError(err) });
   // Integration with Sentry/Logtail would go here
 });

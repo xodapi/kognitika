@@ -1,7 +1,9 @@
 import { Router } from 'express';
 import prisma from '../../lib/prisma.ts';
+import { createSafeLogger, safeError } from '../../lib/safe-logger.ts';
 
 const router = Router();
+const logger = createSafeLogger('leaderboard-route');
 
 /**
  * GET /leaderboard
@@ -95,7 +97,7 @@ router.get('/', async (req, res) => {
 
     res.json(result);
   } catch (error) {
-    console.error('Leaderboard API Error:', error);
+    logger.error('Leaderboard fetch failed', { error: safeError(error), period });
     res.status(500).json({ error: 'Failed to fetch leaderboard' });
   }
 });

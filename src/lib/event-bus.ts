@@ -2,6 +2,9 @@ import { EventMap, EventRegistry } from './event-schema';
 import { eventRecorder } from './event-recorder';
 import { getDifficultySuggestion } from './cognitive-metrics';
 import { antiFraud } from './anti-fraud';
+import { createSafeLogger } from './safe-logger';
+
+const logger = createSafeLogger('event-bus');
 
 type EventCallback<K extends keyof EventMap> = (data: EventMap[K]) => void;
 type Middleware = <K extends keyof EventMap>(event: K, data: EventMap[K], next: () => void) => void;
@@ -46,7 +49,7 @@ class EventBus {
     if (schema) {
       const result = schema.safeParse(data);
       if (!result.success) {
-        console.error(`[EventBus] Validation failed for event "${event}":`, result.error.format());
+        logger.error('Validation failed', { event, error: result.error.format() });
         return;
       }
     }
@@ -84,7 +87,7 @@ eventBus.use((event, data, next) => {
 eventBus.use((event, data, next) => {
   const check = antiFraud.validateSession(event, data);
   if (check.isAnomalous) {
-    console.warn(`%c[SECURITY] Anomalous activity detected: ${check.reason}`, 'color: red; font-weight: bold', data);
+    logger.warn('Anomalous activity detected', { event, reason: check.reason });
     // For now, we just flag it in metadata. In future, we can abort the session.
     if (event === 'TRAINING_COMPLETE') {
       const payload = data as EventMap['TRAINING_COMPLETE'];
@@ -127,7 +130,7 @@ eventBus.use((event, data, next) => {
 // Logger Middleware (Console Game Style)
 eventBus.use((event, data, next) => {
   if (process.env.NODE_ENV === 'development') {
-    console.log(`%c[EVENT] ${event}`, 'color: #3b82f6; font-weight: bold', data);
+    logger.debug('Event emitted', { event, data });
   }
   next();
 });

@@ -4,6 +4,9 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { Check, X, ShieldAlert, Sparkles, HelpCircle } from 'lucide-react';
 import { PostGameInsight } from './PostGameInsight';
+import { createSafeLogger, safeError } from '../lib/safe-logger';
+
+const logger = createSafeLogger('cognitive-trash-filter');
 
 interface Statement {
   id: number;
@@ -168,7 +171,7 @@ export function CognitiveTrashFilter() {
           setSessionId(data.session.id);
         }
       })
-      .catch(err => console.error('Failed to save CognitiveTrashFilter session:', err));
+      .catch(err => logger.error('Session save failed', { error: safeError(err), gameType: 'COGNITIVE_TRASH_FILTER' }));
     }
   }, [isFinished, token, score, errors, durationMs, statements.length]);
 

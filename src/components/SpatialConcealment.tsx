@@ -4,6 +4,9 @@ import { Grid3x3, Target, Trophy, RefreshCw, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { emitEvent } from '../hooks/useEventBus';
 import { useSessionRecording } from '../hooks/useSessionRecording';
+import { createSafeLogger, safeError } from '../lib/safe-logger';
+
+const logger = createSafeLogger('spatial-concealment');
 
 type Cell = {
   id: number;
@@ -33,7 +36,7 @@ export function SpatialConcealment() {
             timeMs: 1000,
             metadata: { level, score, errors }
           })
-        }).catch(err => console.error('Failed to save session', err));
+        }).catch(err => logger.error('Session save failed', { error: safeError(err), gameType: 'SPATIAL_CONCEALMENT' }));
       }
     }
   }, [phase, level, score, errors, token]);

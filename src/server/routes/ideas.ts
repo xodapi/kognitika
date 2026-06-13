@@ -5,9 +5,11 @@ import prisma from '../../lib/prisma.ts';
 import { authenticate } from '../middleware/auth.ts';
 import { handleValidationError } from '../utils/validation.ts';
 import { sanitizePublicUserIdentity } from '../utils/privacy.ts';
+import { createSafeLogger, safeError } from '../../lib/safe-logger.ts';
 
 const router = Router();
 const JWT_SECRET = process.env.JWT_SECRET!;
+const logger = createSafeLogger('ideas-route');
 
 const ideaSchema = z.object({
   title: z.string().min(3).max(160),
@@ -61,7 +63,7 @@ router.get('/', async (req: any, res) => {
       userHasVoted: Array.isArray(idea.votes) && idea.votes.length > 0,
     })));
   } catch (error) {
-    console.error('[Ideas] List error:', error);
+    logger.error('Ideas list failed', { error: safeError(error) });
     res.status(500).json({ error: 'Failed to fetch ideas' });
   }
 });
@@ -105,7 +107,7 @@ router.post('/', authenticate, async (req: any, res) => {
       userHasVoted: false,
     });
   } catch (error) {
-    console.error('[Ideas] Create error:', error);
+    logger.error('Idea create failed', { error: safeError(error) });
     res.status(500).json({ error: 'Failed to create idea' });
   }
 });
@@ -131,7 +133,7 @@ router.post('/:id/vote', authenticate, async (req: any, res) => {
 
     res.json({ success: true });
   } catch (error) {
-    console.error('[Ideas] Vote error:', error);
+    logger.error('Idea vote failed', { error: safeError(error), ideaLabel: `Idea ${String(req.params.id).slice(0, 8)}` });
     res.status(500).json({ error: 'Failed to vote for idea' });
   }
 });

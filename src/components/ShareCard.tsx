@@ -7,6 +7,9 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { LeagueBadge } from './LeagueBadge';
+import { createSafeLogger, safeError } from '../lib/safe-logger';
+
+const logger = createSafeLogger('share-card');
 
 interface ShareCardProps {
   isOpen: boolean;
@@ -41,7 +44,7 @@ export function ShareCard({ isOpen, onClose }: ShareCardProps) {
         alert('Ссылка скопирована в буфер обмена!');
       }
     } catch (err) {
-      console.error('Share failed:', err);
+      logger.error('Share failed', { error: safeError(err) });
     }
   };
 

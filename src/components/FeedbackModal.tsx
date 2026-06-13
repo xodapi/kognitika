@@ -2,6 +2,9 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Send, MessageSquare, Lightbulb, Bug, Info, CheckCircle2, Zap } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
+import { createSafeLogger, safeError } from '../lib/safe-logger';
+
+const logger = createSafeLogger('feedback-modal');
 
 interface FeedbackModalProps {
   isOpen: boolean;
@@ -45,7 +48,7 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
       // Clear content but stay on success screen long enough
       setContent('');
     } catch (error) {
-      console.error('Error submitting feedback:', error);
+      logger.error('Feedback submit failed', { error: safeError(error), type });
       alert('Ошибка при отправке: ' + (error instanceof Error ? error.message : 'Неизвестная ошибка'));
     } finally {
       setIsSubmitting(false);

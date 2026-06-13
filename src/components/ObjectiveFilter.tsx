@@ -4,6 +4,9 @@ import { Shield, Brain, CheckCircle2, XCircle } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { PostGameInsight } from './PostGameInsight';
+import { createSafeLogger, safeError } from '../lib/safe-logger';
+
+const logger = createSafeLogger('objective-filter');
 
 interface Statement {
   id: number;
@@ -67,7 +70,7 @@ export function ObjectiveFilter() {
       })
       .then(res => res.json())
       .then(() => refreshUser())
-      .catch(err => console.error(err));
+      .catch(err => logger.error('Session save failed', { error: safeError(err), gameType: 'OBJECTIVE_FILTER' }));
     }
   }, [startTime, score, token, refreshUser]);
 

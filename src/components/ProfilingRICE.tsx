@@ -2,6 +2,9 @@ import { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Target, Users, Sparkles, ShieldAlert, Award, Star } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
+import { createSafeLogger, safeError } from '../lib/safe-logger';
+
+const logger = createSafeLogger('profiling-rice');
 
 type Motivation = 'REWARD' | 'IDEOLOGY' | 'COERCION' | 'EGO';
 
@@ -96,7 +99,7 @@ export function ProfilingRICE() {
         })
       })
       .then(() => refreshUser())
-      .catch(err => console.error(err));
+      .catch(err => logger.error('Session save failed', { error: safeError(err), gameType: 'PROFILING_RICE' }));
     }
   }, [score, currentIndex, token, refreshUser]);
 

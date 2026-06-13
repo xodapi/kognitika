@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Shield, MessageSquare, Lightbulb, CheckCircle, Clock, Send, ChevronRight, User } from 'lucide-react';
+import { createSafeLogger, safeError } from '../lib/safe-logger';
+
+const logger = createSafeLogger('admin-panel');
 
 interface Feedback {
   id: string;
@@ -49,7 +52,7 @@ export const AdminPanel: React.FC<{ token: string | null }> = ({ token }) => {
       setIdeas(iData);
       setIsAuthorized(true);
     } catch (err) {
-      console.error('Admin fetch failed', err);
+      logger.error('Admin fetch failed', { error: safeError(err) });
     } finally {
       setLoading(false);
     }
@@ -77,7 +80,7 @@ export const AdminPanel: React.FC<{ token: string | null }> = ({ token }) => {
         setResponseMap(prev => ({ ...prev, [id]: '' }));
       }
     } catch (err) {
-       console.error('Failed to respond', err);
+       logger.error('Feedback response failed', { error: safeError(err), feedbackLabel: `Feedback ${id.slice(0, 8)}` });
     }
   };
 
@@ -94,7 +97,7 @@ export const AdminPanel: React.FC<{ token: string | null }> = ({ token }) => {
       });
       if (res.ok) fetchAdminData();
     } catch (err) {
-       console.error('Failed to update idea status', err);
+       logger.error('Idea status update failed', { error: safeError(err), ideaLabel: `Idea ${id.slice(0, 8)}`, status });
     }
   };
 

@@ -7,6 +7,9 @@ import {
   LEGACY_AUTH_TOKEN_KEY,
   LEGACY_AUTH_USER_KEY,
 } from '../lib/storage-keys';
+import { createSafeLogger, safeError } from '../lib/safe-logger';
+
+const logger = createSafeLogger('auth-client');
 
 interface User {
   id: string;
@@ -103,7 +106,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         storageGateway.set(LEGACY_AUTH_USER_KEY, result.data, userSchema);
       }
     } catch (err) {
-      console.error('Failed to refresh user:', err);
+      logger.error('User refresh failed', { error: safeError(err) });
     }
   };
 

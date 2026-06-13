@@ -5,6 +5,9 @@ import { useNavigate } from 'react-router-dom';
 import { PostGameInsight } from './PostGameInsight';
 import { LuscherTest } from './LuscherTest';
 import { StressOverlay } from './StressOverlay';
+import { createSafeLogger, safeError } from '../lib/safe-logger';
+
+const logger = createSafeLogger('stroop-test');
 
 export function StroopTest() {
   const { state, startGame, answerQuestion, colors } = useStroopEngine();
@@ -80,7 +83,7 @@ export function StroopTest() {
             setSessionId(data.session.id);
           }
         })
-        .catch(err => console.error('Failed to save session', err));
+        .catch(err => logger.error('Session save failed', { error: safeError(err), gameType: 'STROOP' }));
      }
   }, [state.isFinished, state.timeLeftMs, token, state.score, state.errors, state.averageReactionTime, preSequence, useStress]);
 

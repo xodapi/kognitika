@@ -1,8 +1,10 @@
 import jwt from 'jsonwebtoken';
 import { applyPrivacyRedaction } from './privacy.ts';
 import prisma from '../../lib/prisma.ts';
+import { createSafeLogger, safeError } from '../../lib/safe-logger.ts';
 
 const JWT_SECRET = process.env.JWT_SECRET!;
+const logger = createSafeLogger('auth-middleware');
 
 export const authenticate = (req: any, res: any, next: any) => {
   const token = req.headers.authorization?.split(' ')[1];
@@ -36,7 +38,7 @@ export const isAdmin = async (req: any, res: any, next: any) => {
     req.user = { ...req.user, role: user.role };
     next();
   } catch (error) {
-    console.error('[Auth] Admin role check failed:', error);
+    logger.error('Admin role check failed', { error: safeError(error) });
     res.status(500).json({ error: 'Failed to verify admin access' });
   }
 };

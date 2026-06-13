@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Lightbulb, ThumbsUp, Plus, Send, X } from 'lucide-react';
+import { createSafeLogger, safeError } from '../lib/safe-logger';
+
+const logger = createSafeLogger('ideas-wall');
 
 interface Idea {
   id: string;
@@ -28,7 +31,7 @@ export const IdeasWall: React.FC<{ token: string | null }> = ({ token }) => {
       const data = await res.json();
       setIdeas(data);
     } catch (err) {
-      console.error('Failed to fetch ideas', err);
+      logger.error('Ideas fetch failed', { error: safeError(err) });
     } finally {
       setLoading(false);
     }
@@ -49,7 +52,7 @@ export const IdeasWall: React.FC<{ token: string | null }> = ({ token }) => {
         fetchIdeas();
       }
     } catch (err) {
-      console.error('Failed to vote', err);
+      logger.error('Idea vote failed', { error: safeError(err), ideaLabel: `Idea ${id.slice(0, 8)}` });
     }
   };
 
@@ -73,7 +76,7 @@ export const IdeasWall: React.FC<{ token: string | null }> = ({ token }) => {
         fetchIdeas();
       }
     } catch (err) {
-      console.error('Failed to submit idea', err);
+      logger.error('Idea submit failed', { error: safeError(err) });
     } finally {
       setSubmitting(false);
     }

@@ -1,6 +1,9 @@
 import { eventBus } from './event-bus.ts';
 import prisma from './prisma.ts';
 import nodemailer from 'nodemailer';
+import { createSafeLogger } from './safe-logger.ts';
+
+const logger = createSafeLogger('report-subscriber');
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
   port: parseInt(process.env.SMTP_PORT || '465'),
@@ -44,7 +47,7 @@ eventBus.on('game:completed', async (data) => {
   // Legacy opt-in only: Brain ID public users do not receive email reports.
   if (!user.email) {
     const label = user.brainId ? `Brain ${user.brainId.slice(0, 8)}` : `User ${user.id.slice(0, 8)}`;
-    console.log(`[Report] ${label} has no legacy email, skipping email report`);
+    logger.info('Skipping legacy email report for user without legacy email', { userLabel: label });
     return;
   }
 
@@ -82,5 +85,5 @@ eventBus.on('game:completed', async (data) => {
     `
   });
 
-  console.log(`[EDA Subscriber] Weekly report sent to legacy email user ${user.id}`);
+  logger.info('Weekly legacy email report sent', { userLabel: `User ${user.id.slice(0, 8)}` });
 });

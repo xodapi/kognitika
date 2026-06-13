@@ -2,6 +2,9 @@ import { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { MessageSquare, Headset, Mic2, Brain, ChevronRight } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
+import { createSafeLogger, safeError } from '../lib/safe-logger';
+
+const logger = createSafeLogger('dialogue-architecture');
 
 interface DialogueNode {
   id: number;
@@ -87,7 +90,7 @@ export function DialogueArchitecture() {
         })
       })
       .then(() => refreshUser())
-      .catch(err => console.error(err));
+      .catch(err => logger.error('Session save failed', { error: safeError(err), gameType: 'DIALOGUE_ARCHITECTURE' }));
     }
   }, [score, currentNodeIdx, token, refreshUser]);
 

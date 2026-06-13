@@ -5,9 +5,11 @@ import prisma from '../../lib/prisma.ts';
 import { handleValidationError } from '../utils/validation.ts';
 import { generateBrainId, generatePseudonym } from '../utils/brain-id.ts';
 import { resumeSchema } from '../schemas/auth.ts';
+import { createSafeLogger, safeError } from '../../lib/safe-logger.ts';
 
 const router = Router();
 const JWT_SECRET = process.env.JWT_SECRET!;
+const logger = createSafeLogger('auth-route');
 
 function signBrainToken(user: User) {
   return jwt.sign(
@@ -82,7 +84,7 @@ router.post('/brain', async (req, res) => {
       user: serializeBrainUser(user),
     });
   } catch (error) {
-    console.error('[Auth] Brain session error:', error);
+    logger.error('Brain session initialization failed', { error: safeError(error) });
     res.status(500).json({ error: 'Failed to initialize brain session' });
   }
 });

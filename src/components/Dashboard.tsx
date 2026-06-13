@@ -10,6 +10,9 @@ import { BrainIdBadge } from './BrainIdBadge';
 import { LeagueBadge } from './LeagueBadge';
 import { ShareCard } from './ShareCard';
 import { DuelsView } from './DuelsView';
+import { createSafeLogger, safeError } from '../lib/safe-logger';
+
+const logger = createSafeLogger('dashboard');
 import { CognitiveProfile } from './CognitiveProfile';
 import { Wiki } from './Wiki';
 import { StreakBanner } from './StreakBanner';
@@ -33,7 +36,7 @@ export function Dashboard({ onStartGame }: { onStartGame: (game: string) => void
        .then(resData => {
           if (Array.isArray(resData)) setLeaderboard(resData);
        })
-       .catch(console.error);
+       .catch(err => logger.error('Leaderboard fetch failed', { error: safeError(err) }));
 
      if (!token) return;
 
@@ -48,7 +51,7 @@ export function Dashboard({ onStartGame }: { onStartGame: (game: string) => void
         if (resData.role) setUserRole(resData.role);
         if (resData.streak) setStreak(resData.streak);
      })
-     .catch(console.error);
+     .catch(err => logger.error('Dashboard status fetch failed', { error: safeError(err) }));
 
      // Fetch user progress
      fetch('/api/progress', {
@@ -69,7 +72,7 @@ export function Dashboard({ onStartGame }: { onStartGame: (game: string) => void
              setData(chartData.reverse());
           }
      })
-     .catch(console.error);
+     .catch(err => logger.error('Progress fetch failed', { error: safeError(err) }));
   }, [token]);
 
   const milestones = [

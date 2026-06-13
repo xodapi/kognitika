@@ -1,6 +1,9 @@
 import { eventBus } from './event-bus.ts';
 import prisma from './prisma.ts';
 import nodemailer from 'nodemailer';
+import { createSafeLogger, safeError } from './safe-logger.ts';
+
+const logger = createSafeLogger('subscribers');
 
 // Email Config (Stalwart) - Shared with server.ts
 const mailConfig = {
@@ -30,12 +33,15 @@ function adminNotificationEmail() {
  */
 eventBus.on('game:completed', async (data) => {
   try {
-    console.log(`[EDA Subscriber] Processing session ${data.sessionId} for user ${data.userId}`);
+    logger.info('Processing completed game session', {
+      sessionLabel: `Session ${String(data.sessionId).slice(0, 8)}`,
+      userLabel: `User ${String(data.userId).slice(0, 8)}`,
+    });
     
     // Future: Trigger high-perf batch analytics in Rust here
     // For now, we just acknowledge the completion
   } catch (err) {
-    console.error('[EDA Error] Game Completed Handler:', err);
+    logger.error('Game completed handler failed', { error: safeError(err) });
   }
 });
 
@@ -73,8 +79,8 @@ eventBus.on('feedback:submitted', async (data) => {
       });
     }
 
-    console.log(`[EDA Subscriber] Notifications sent for feedback ${trackingNum}`);
+    logger.info('Feedback notifications processed', { trackingNum, type });
   } catch (err) {
-    console.error('[EDA Error] Feedback Handler:', err);
+    logger.error('Feedback handler failed', { error: safeError(err) });
   }
 });
