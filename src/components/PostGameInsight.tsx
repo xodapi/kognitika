@@ -6,6 +6,9 @@ import { LuscherTest } from './LuscherTest';
 import { EmotionalBarometer } from './EmotionalBarometer';
 import { useNavigate } from 'react-router-dom';
 import { routeForRecommendedGame } from '../lib/routes';
+import { createSafeLogger, safeError } from '../lib/safe-logger';
+
+const logger = createSafeLogger('post-game-insight');
 
 interface PostGameInsightProps {
   gameType: string;
@@ -66,7 +69,7 @@ export function PostGameInsight({
           })
         });
       } catch (err) {
-        console.error('Failed to save post-game color sequence:', err);
+        logger.error('Post-game color sequence save failed', { error: safeError(err), gameType });
       } finally {
         setSavingPostTest(false);
       }
@@ -98,7 +101,7 @@ export function PostGameInsight({
         }
       })
       .catch(err => {
-        console.error('Error fetching game insights:', err);
+        logger.error('Game insights fetch failed', { error: safeError(err), gameType });
         if (active) {
           // Fallback data if API fails or user is offline
           setInsight({

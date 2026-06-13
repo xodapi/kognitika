@@ -1,6 +1,9 @@
 import { useEffect } from 'react';
 import { useSituationalEngine } from '../hooks/useSituationalEngine';
 import { useAuth } from '../hooks/useAuth';
+import { createSafeLogger, safeError } from '../lib/safe-logger';
+
+const logger = createSafeLogger('situational-judgment-test');
 
 export function SituationalJudgmentTest() {
   const { state, startGame, answerQuestion } = useSituationalEngine();
@@ -17,7 +20,7 @@ export function SituationalJudgmentTest() {
               timeMs: state.timeMs,
               metadata: { score: state.score, maxScore: state.maxScore }
            })
-        }).catch(err => console.error('Failed to save session', err));
+        }).catch(err => logger.error('Session save failed', { error: safeError(err), gameType: 'SITUATIONAL_JUDGMENT' }));
      }
   }, [state.isFinished, state.timeMs, token, state.score, state.maxScore]);
 

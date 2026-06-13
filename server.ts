@@ -7,6 +7,9 @@ import { createServer as createViteServer } from 'vite';
 import prisma from './src/lib/prisma.ts';
 import cors from 'cors';
 import { rateLimit } from 'express-rate-limit';
+import { createSafeLogger } from './src/lib/safe-logger.ts';
+
+const logger = createSafeLogger('server');
 
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
@@ -65,7 +68,7 @@ const BUILD_ID = resolveBuildId();
 
 // Startup Guard
 if (!process.env.JWT_SECRET) {
-  console.error('\x1b[31m[FATAL] JWT_SECRET is not defined in .env\x1b[0m');
+  logger.error('JWT_SECRET is not defined in environment');
   process.exit(1);
 }
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -148,7 +151,7 @@ async function startServer() {
         return res.status(400).json({ error: 'Invalid feedback payload' });
       }
       
-      console.log(`[Feedback] type=${type} rating=${rating ?? 'n/a'}`);
+      logger.info('Feedback received', { type, rating: rating ?? 'n/a' });
       
       await prisma.feedback.create({
         data: {
@@ -219,7 +222,7 @@ async function startServer() {
   }
 
   httpServer.listen(PORT, '0.0.0.0', () => {
-    console.log(`\x1b[32m[Kognitika] Server running on http://localhost:${PORT}\x1b[0m`);
+    logger.info('Server running', { port: PORT, buildId: BUILD_ID });
   });
 }
 

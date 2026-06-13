@@ -1,5 +1,8 @@
 import { eventBus } from './event-bus';
 import { EventMap } from './event-schema';
+import { createSafeLogger } from './safe-logger';
+
+const logger = createSafeLogger('headless-runner');
 
 interface RecordedEvent {
   timestamp: number;
@@ -22,7 +25,7 @@ export class HeadlessRunner {
    * Replay events with original timing (Async)
    */
   async replayAsync() {
-    console.log(`[HeadlessRunner] Starting async replay of ${this.log.length} events...`);
+    logger.debug('Starting async replay', { eventCount: this.log.length });
     for (let i = 0; i < this.log.length; i++) {
       const current = this.log[i];
       const prev = i > 0 ? this.log[i - 1] : { timestamp: 0 };
@@ -34,7 +37,7 @@ export class HeadlessRunner {
 
       eventBus.emit(current.event, current.data);
     }
-    console.log('[HeadlessRunner] Replay finished.');
+    logger.debug('Replay finished');
   }
 
   /**
@@ -42,7 +45,7 @@ export class HeadlessRunner {
    * Useful for unit tests where we don't want to wait.
    */
   replaySync() {
-    console.log(`[HeadlessRunner] Starting sync replay of ${this.log.length} events...`);
+    logger.debug('Starting sync replay', { eventCount: this.log.length });
     this.log.forEach(item => {
       eventBus.emit(item.event, item.data);
     });

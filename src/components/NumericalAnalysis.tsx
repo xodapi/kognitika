@@ -6,8 +6,10 @@ import { useAuth } from '../hooks/useAuth';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { useNavigate } from 'react-router-dom';
 import { PostGameInsight } from './PostGameInsight';
+import { createSafeLogger, safeError } from '../lib/safe-logger';
 
 const COLORS = ['hsl(var(--primary))', 'hsl(var(--destructive))', 'hsl(var(--accent))', '#8b5cf6'];
+const logger = createSafeLogger('numerical-analysis');
 
 export function NumericalAnalysis() {
   const { state, startGame, stopGame, answerQuestion } = useNumericalEngine();
@@ -27,7 +29,7 @@ export function NumericalAnalysis() {
               timeMs: 60000 - state.timeLeftMs, // Time spent
               metadata: { score: state.score }
            })
-        }).catch(err => console.error('Failed to save session', err));
+        }).catch(err => logger.error('Session save failed', { error: safeError(err), gameType: 'NUMERICAL_ANALYSIS' }));
      }
   }, [state.isFinished, state.timeLeftMs, token, state.score]);
 

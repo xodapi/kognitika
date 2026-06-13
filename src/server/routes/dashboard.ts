@@ -1,8 +1,10 @@
 import { Router } from 'express';
 import prisma from '../../lib/prisma.ts';
 import { authenticate } from '../middleware/auth.ts';
+import { createSafeLogger, safeError } from '../../lib/safe-logger.ts';
 
 const router = Router();
+const logger = createSafeLogger('dashboard-route');
 
 // Вспомогательная функция перевода типов игр в русские названия
 const getGameTitle = (type: string) => {
@@ -172,7 +174,7 @@ router.get('/status', authenticate, async (req: any, res) => {
       dailyTasks
     });
   } catch (error) {
-    console.error('[Dashboard] Status error:', error);
+    logger.error('Dashboard status failed', { error: safeError(error) });
     res.status(500).json({ error: 'Ошибка получения статуса' });
   }
 });

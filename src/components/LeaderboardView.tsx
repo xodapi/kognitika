@@ -2,6 +2,9 @@ import { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { Trophy, Medal, Star, Target, Activity, Search, ArrowUpRight, Award, Zap } from 'lucide-react';
 import { LeagueBadge } from './LeagueBadge';
+import { createSafeLogger, safeError } from '../lib/safe-logger';
+
+const logger = createSafeLogger('leaderboard-view');
 
 interface LeaderboardUser {
   id: string;
@@ -33,7 +36,7 @@ export function LeaderboardView() {
         setLoading(false);
       })
       .catch(err => {
-        console.error('Leaderboard Fetch Error:', err);
+        logger.error('Leaderboard fetch failed', { error: safeError(err) });
         setLoading(false);
       });
   }, [period]);

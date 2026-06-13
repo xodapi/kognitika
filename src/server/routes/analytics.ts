@@ -2,8 +2,10 @@ import { Router } from 'express';
 import prisma from '../../lib/prisma.ts';
 import { authenticate } from '../middleware/auth.ts';
 import jwt from 'jsonwebtoken';
+import { createSafeLogger, safeError } from '../../lib/safe-logger.ts';
 
 const router = Router();
+const logger = createSafeLogger('analytics-route');
 
 /**
  * Сравнивает результаты текущей игры с историей пользователя
@@ -125,7 +127,7 @@ router.get('/compare', async (req: any, res) => {
       recommendedGameTitle
     });
   } catch (error) {
-    console.error('[Analytics] Compare error:', error);
+    logger.error('Analytics compare failed', { error: safeError(error) });
     res.status(500).json({ error: 'Ошибка сравнения результатов' });
   }
 });
@@ -160,7 +162,7 @@ router.get('/profile', authenticate, async (req: any, res) => {
       updatedAt: new Date().toISOString()
     });
   } catch (error) {
-    console.error('[Analytics] Profile error:', error);
+    logger.error('Analytics profile failed', { error: safeError(error) });
     res.status(500).json({ error: 'Ошибка генерации профиля' });
   }
 });

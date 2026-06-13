@@ -1,4 +1,7 @@
 import { EventMap } from './event-schema';
+import { createSafeLogger } from './safe-logger';
+
+const logger = createSafeLogger('event-recorder');
 
 interface RecordedEvent {
   timestamp: number;
@@ -15,12 +18,12 @@ class EventRecorder {
     this.currentSession = [];
     this.isRecording = true;
     this.startTime = Date.now();
-    console.log('[EventRecorder] Session recording started.');
+    logger.debug('Session recording started');
   }
 
   stop() {
     this.isRecording = false;
-    console.log('[EventRecorder] Session recording stopped. Total events:', this.currentSession.length);
+    logger.debug('Session recording stopped', { eventCount: this.currentSession.length });
     return this.currentSession;
   }
 

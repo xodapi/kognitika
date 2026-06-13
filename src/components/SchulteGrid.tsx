@@ -12,12 +12,14 @@ import { StabilityIndicator } from './StabilityIndicator';
 import { useEventBus } from '../hooks/useEventBus';
 import { useNavigate } from 'react-router-dom';
 import { PostGameInsight } from './PostGameInsight';
+import { createSafeLogger, safeError } from '../lib/safe-logger';
 
 const PASTEL_COLORS = [
   '#fecaca', '#fed7aa', '#fef08a', '#dcfce7', '#d1fae5', '#ccfbf1', '#e0f2fe', '#e0e7ff', '#ede9fe', '#fae8ff',
   '#fce7f3', '#ffe4e6', '#f3f4f6', '#ecfdf5', '#fff7ed', '#fff1f2', '#f0f9ff', '#f5f3ff', '#fdf2f8', '#f0fdf4',
   '#fffbeb', '#f8fafc', '#eff6ff', '#faf5ff', '#fff1f2'
 ];
+const logger = createSafeLogger('schulte-grid');
 
 const HIGH_CONTRAST_COLORS = [
   '#ef4444', '#f97316', '#f59e0b', '#10b981', '#06b6d4', '#3b82f6', '#6366f1', '#8b5cf6', '#d946ef', '#f43f5e'
@@ -226,7 +228,7 @@ export function SchulteGrid() {
               refreshUser();
             }
          })
-         .catch(err => console.error('Failed to save game:', err));
+         .catch(err => logger.error('Session save failed', { error: safeError(err), gameType: isGorbov ? 'SCHULTE_GORBOV' : 'SCHULTE' }));
       }
   }, [state.isFinished, state.timeMs, token, mode, size, distraction, state.errors, isGorbov, refreshUser, state.modifications, isHardcore]);
 

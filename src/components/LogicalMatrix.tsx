@@ -3,6 +3,9 @@ import { useLogicalEngine, MatrixItem } from '../hooks/useLogicalEngine';
 import { useAuth } from '../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { PostGameInsight } from './PostGameInsight';
+import { createSafeLogger, safeError } from '../lib/safe-logger';
+
+const logger = createSafeLogger('logical-matrix');
 
 function RenderShape({ item }: { item: MatrixItem }) {
   const { shape, color, count, rotation } = item;
@@ -55,7 +58,7 @@ export function LogicalMatrix() {
               timeMs: state.timeMs,
               metadata: { score: state.score }
            })
-        }).catch(err => console.error('Failed to save session', err));
+        }).catch(err => logger.error('Session save failed', { error: safeError(err), gameType: 'LOGICAL_SEQUENCE' }));
      }
   }, [state.isFinished, state.timeMs, token, state.score]);
 

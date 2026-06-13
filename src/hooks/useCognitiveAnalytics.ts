@@ -1,5 +1,8 @@
 import { useState, useEffect } from 'react';
 import { analyzeSession, getDifficultySuggestion, AnalysisResult, DifficultySuggestion } from '../lib/cognitive-metrics';
+import { createSafeLogger, safeError } from '../lib/safe-logger';
+
+const logger = createSafeLogger('cognitive-analytics');
 
 export function useCognitiveAnalytics() {
   const [isReady, setIsReady] = useState(true);
@@ -17,7 +20,7 @@ export function useCognitiveAnalytics() {
       
       return { result, suggestion };
     } catch (e) {
-      console.error('[useCognitiveAnalytics] Analytics failed', e);
+      logger.error('Analytics failed', { error: safeError(e) });
       return null;
     }
   };

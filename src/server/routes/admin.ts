@@ -2,8 +2,10 @@ import { Router } from 'express';
 import prisma from '../../lib/prisma.ts';
 import { authenticate, isAdmin } from '../middleware/auth.ts';
 import { sanitizeAdminUserIdentity, sanitizePublicUserIdentity } from '../utils/privacy.ts';
+import { createSafeLogger, safeError } from '../../lib/safe-logger.ts';
 
 const router = Router();
+const logger = createSafeLogger('admin-route');
 
 router.use(authenticate, isAdmin);
 
@@ -87,7 +89,7 @@ router.get('/feedback', async (req, res) => {
       }
     )));
   } catch (error) {
-    console.error('[Admin] Feedback list error:', error);
+    logger.error('Admin feedback list failed', { error: safeError(error) });
     res.status(500).json({ error: 'Failed to fetch feedback' });
   }
 });

@@ -1,8 +1,11 @@
 import prisma from '../../lib/prisma.ts';
+import { createSafeLogger, safeError } from '../../lib/safe-logger.ts';
 import { generateBrainId, generatePseudonym } from '../utils/brain-id.ts';
 
+const logger = createSafeLogger('migrate-to-brain');
+
 async function migrate() {
-  console.log('[Migration] Starting migration to Brain ID...');
+  logger.info('Starting Brain ID migration');
 
   const users = await prisma.user.findMany({
     where: {
@@ -10,7 +13,7 @@ async function migrate() {
     }
   });
 
-  console.log(`[Migration] Found ${users.length} users to migrate.`);
+  logger.info('Users queued for Brain ID migration', { count: users.length });
 
   for (const user of users) {
     const brainId = generateBrainId();
@@ -26,15 +29,15 @@ async function migrate() {
       }
     });
 
-    console.log(`[Migration] User ${user.id} -> ${pseudonym}`);
+    logger.info('User migrated to Brain ID', { userLabel: `User ${user.id.slice(0, 8)}`, pseudonym });
   }
 
-  console.log('[Migration] Finished successfully.');
+  logger.info('Brain ID migration finished successfully');
 }
 
 migrate()
   .catch(e => {
-    console.error(e);
+    logger.error('Brain ID migration failed', { error: safeError(e) });
     process.exit(1);
   })
   .finally(() => prisma.$disconnect());

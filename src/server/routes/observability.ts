@@ -1,7 +1,9 @@
 import { Router } from 'express';
 import { z } from 'zod';
+import { createSafeLogger, redactText } from '../../lib/safe-logger';
 
 const router = Router();
+const logger = createSafeLogger('client-error');
 
 const clientErrorSchema = z.object({
   name: z.string().max(120).optional(),
@@ -14,16 +16,8 @@ const clientErrorSchema = z.object({
   swController: z.boolean().optional(),
 });
 
-const REDACTION_PATTERNS = [
-  /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi,
-  /\bBR-[A-Z0-9-]{6,}\b/gi,
-  /\beyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\b/g,
-  /(token|refresh|authorization|password)["':=\s]+[^"',\s]+/gi,
-];
-
 function sanitize(value: unknown, fallback = 'unknown') {
-  const text = String(value || fallback).slice(0, 1200);
-  return REDACTION_PATTERNS.reduce((current, pattern) => current.replace(pattern, '[redacted]'), text);
+  return redactText(value || fallback, 1200);
 }
 
 router.post('/', (req, res) => {
@@ -33,7 +27,7 @@ router.post('/', (req, res) => {
   }
 
   const error = result.data;
-  console.warn('[ClientError]', {
+  logger.warn('Client error reported', {
     name: sanitize(error.name, 'Error'),
     message: sanitize(error.message),
     route: sanitize(error.route, '/'),

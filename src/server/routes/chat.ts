@@ -3,10 +3,12 @@ import { EventEmitter } from 'events';
 import { v4 as uuidv4 } from 'uuid';
 import jwt from 'jsonwebtoken';
 import prisma from '../../lib/prisma.ts';
+import { createSafeLogger, safeError } from '../../lib/safe-logger.ts';
 
 const router = Router();
 const chatBus = new EventEmitter();
 const JWT_SECRET = process.env.JWT_SECRET!;
+const logger = createSafeLogger('chat-route');
 
 router.get('/stream', async (req, res) => {
   res.setHeader('Content-Type', 'text/event-stream');
@@ -31,7 +33,7 @@ router.get('/stream', async (req, res) => {
     }));
     res.write(`event: history\ndata: ${JSON.stringify(history)}\n\n`);
   } catch (e) {
-    console.error('[SSE] History load error:', e);
+    logger.error('SSE history load failed', { error: safeError(e) });
   }
 
   const onMessage = (msg: object) => {

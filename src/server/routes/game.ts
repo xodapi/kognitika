@@ -6,8 +6,10 @@ import { authenticate } from '../middleware/auth.ts';
 import { saveGameSchema } from '../schemas/game.ts';
 import { eventBus } from '../../lib/event-bus.ts';
 import { computeServerScore } from '../services/game-score.ts';
+import { createSafeLogger, safeError } from '../../lib/safe-logger.ts';
 
 const router = Router();
+const logger = createSafeLogger('game-route');
 
 router.get('/progress', authenticate, async (req: any, res) => {
   try {
@@ -89,7 +91,7 @@ router.post('/save', authenticate, async (req: any, res) => {
 
     res.json({ session, newLevel: currentLvl, streakDays: user.streakDays });
   } catch (error) {
-    console.error('[Game] Save error:', error);
+    logger.error('Game save failed', { error: safeError(error) });
     res.status(500).json({ error: 'Failed to save session' });
   }
 });
@@ -123,7 +125,7 @@ router.post('/session/:id/metadata', authenticate, async (req: any, res) => {
 
     res.json({ success: true, session: updatedSession });
   } catch (error) {
-    console.error('[Game] Update session metadata error:', error);
+    logger.error('Session metadata update failed', { error: safeError(error), sessionLabel: `Session ${String(req.params.id).slice(0, 8)}` });
     res.status(500).json({ error: 'Failed to update session metadata' });
   }
 });

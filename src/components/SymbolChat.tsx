@@ -15,6 +15,9 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Send, Hash, Sparkles, Wifi, WifiOff } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
+import { createSafeLogger, safeError } from '../lib/safe-logger';
+
+const logger = createSafeLogger('symbol-chat');
 
 const SYMBOLS = ['Σ', 'Δ', 'Ω', 'Ψ', 'Φ', 'Γ', 'Θ', 'Ξ', 'Π', 'ℝ', 'ℂ', 'ℚ', 'ℕ', 'ℤ', '∮', '∇', '∃', '∀', '∈', '∉'];
 
@@ -108,7 +111,7 @@ export function SymbolChat() {
         }),
       });
     } catch (err) {
-      console.error('[SymbolChat] Send error:', err);
+      logger.error('Message send failed', { error: safeError(err) });
       // Восстановить ввод при ошибке
       setInput(text);
     } finally {

@@ -4,6 +4,9 @@ import { useAuth } from '../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { PostGameInsight } from './PostGameInsight';
 import { LuscherTest } from './LuscherTest';
+import { createSafeLogger, safeError } from '../lib/safe-logger';
+
+const logger = createSafeLogger('n-back-test');
 
 export function NBackTest() {
   const { state, startGame, answerMatch } = useNBackEngine();
@@ -75,7 +78,7 @@ export function NBackTest() {
             setSessionId(data.session.id);
           }
         })
-        .catch(err => console.error('Failed to save session', err));
+        .catch(err => logger.error('Session save failed', { error: safeError(err), gameType: 'N_BACK' }));
      }
   }, [state.isFinished, state.round, token, state.score, state.errors, preSequence]);
 

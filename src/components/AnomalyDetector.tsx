@@ -2,6 +2,9 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Activity, AlertOctagon, Zap, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
+import { createSafeLogger, safeError } from '../lib/safe-logger';
+
+const logger = createSafeLogger('anomaly-detector');
 
 export function AnomalyDetector() {
   const [gameState, setGameState] = useState<'idle' | 'scanning' | 'anomaly' | 'finished'>('idle');
@@ -59,7 +62,7 @@ export function AnomalyDetector() {
         })
       })
       .then(() => refreshUser())
-      .catch(err => console.error(err));
+      .catch(err => logger.error('Session save failed', { error: safeError(err), gameType: 'ANOMALY_DETECTOR' }));
     }
   }, [score, anomaliesFound, token, refreshUser]);
 
