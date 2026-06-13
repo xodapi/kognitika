@@ -16,7 +16,6 @@ Tracking roadmap: https://github.com/xodapi/kognitika/issues/10
 - Tailwind CSS + Motion (`motion/react`)
 - Express + Socket.io
 - Prisma + PostgreSQL
-- Firebase Auth/Firestore rules for selected applet and security-rule flows
 - Vitest + Playwright
 - JS analytics worker with a WASM-ready boundary for future hot paths
 
@@ -25,7 +24,6 @@ Tracking roadmap: https://github.com/xodapi/kognitika/issues/10
 - Node.js 22
 - pnpm 10.22.0
 - PostgreSQL 15+
-- Java 21 for local Firebase Firestore emulator tests
 
 The canonical package manager is pnpm. Do not use npm or yarn lockfiles.
 
@@ -88,10 +86,6 @@ Never commit real secrets, tokens, raw Brain IDs, production telemetry, or user 
 - `pnpm validate` - run the core validation suite
 - `pnpm build` - generate Prisma client and build the frontend
 - `pnpm test:e2e` - run Playwright E2E tests
-- `pnpm check:firebase:rules` - statically verify Firebase rules config
-- `pnpm test:firestore:rules` - run Firestore emulator rules tests
-
-`pnpm test:firestore:rules` needs Java and the Firebase emulator. In CI this is configured automatically.
 
 ## Validation
 
@@ -101,13 +95,6 @@ Before opening or merging a production-risk change, run:
 pnpm lint
 pnpm test
 pnpm build
-```
-
-For Firebase rules or feedback/privacy work, also run:
-
-```bash
-pnpm check:firebase:rules
-pnpm test:firestore:rules
 ```
 
 For navigation or post-game flow work, run:
@@ -122,7 +109,6 @@ Known non-blocking local warnings currently include Recharts zero-size container
 
 - Canonical port: `3006`.
 - Public feedback submissions use the Prisma-backed `/api/feedback` route as the runtime source of truth.
-- Firestore feedback schema is a privacy/rules contract, not the public UI submission path.
 - Public identity is Brain ID-first; do not expose raw Brain ID, email, token, or password hashes in UI/API responses.
 - Brain ID storage/recovery boundaries are defined in `docs/brain-id-identity.md`.
 - PWA/offline-first must remain disabled until `docs/pwa-offline-strategy.md` acceptance gates are met.
@@ -153,13 +139,9 @@ GitHub Actions run:
 
 - TypeScript lint
 - Vitest tests
-- Firebase rules static check
-- Firestore emulator rules tests
 - build
 - Playwright E2E
 - deploy to the production server on `main`
-
-Firebase active-rules deployment requires the repository secret `FIREBASE_SERVICE_ACCOUNT_JSON`. Without it, emulator verification can pass while active Firebase deployment is skipped with a warning.
 
 ## Docker
 

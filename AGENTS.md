@@ -5,32 +5,12 @@ This document describes the technical architecture and integration process for t
 ## 1. Tech Stack
 - **Frontend**: React (Vite) + Tailwind CSS + Motion (`motion/react`).
 - **Backend (Real-time)**: Express + Socket.io.
-- **Backend (Storage)**: Prisma + PostgreSQL for runtime product data. Firebase Auth/Firestore rules are used only for selected applet and rules-contract flows.
-- **Database Architecture**: PostgreSQL for runtime product data, with Firestore rules/contracts for selected Firebase-backed flows.
+- **Backend (Storage)**: Prisma + PostgreSQL for runtime product data.
+- **Database Architecture**: PostgreSQL for runtime product data. Firebase is not part of the runtime architecture.
 
-## 2. Firebase Integration Process
-To synchronize with the existing database, follow these steps:
-
-### Configuration
-The project uses `firebase-applet-config.json` for client-side configuration.
-- **SDK Initialization**: See `src/lib/firebase.ts`.
-- **Database Region**: `us-west1` (default for current environment).
-
-### Data Schema (Firestore)
-The source of truth for schemas is `firebase-blueprint.json`.
-- **`feedback` collection**:
-  - `userId`: String (Auth UID)
-  - `userName`: String
-  - `content`: String (Max 5000 chars)
-  - `type`: Enum (idea, bug, improvement, other)
-  - `status`: Enum (new, reviewed, resolved)
-  - `createdAt`: serverTimestamp()
-
-### Security Rules
-Rules are defined in `firestore.rules`.
-- **RBAC**: Admin check is performed via `request.auth.token.admin == true`; do not reintroduce public email identity as an admin source.
-- **Validation**: All writes MUST pass through `isValid[Entity]` helper functions.
-- **Immutability**: `userId` and `createdAt` are immutable after document creation.
+## 2. Firebase Status
+Firebase was removed from the runtime architecture because the product uses Brain ID, Prisma, and PostgreSQL as the active identity and data path.
+Do not reintroduce Firebase Auth, Firestore rules, or Firebase client configuration unless a new issue explicitly defines a product need, privacy review, deploy owner, and rollback plan.
 
 ## 3. Server Configuration (Full-Stack)
 - **Port**: 3006 by default. Keep `server.ts`, `.env.example`, Dockerfile, `docker-compose.yml`, README, and deployment configuration aligned if this changes.
@@ -39,9 +19,8 @@ Rules are defined in `firestore.rules`.
 
 ## 4. Development Workflow
 1. Declare new environment variables in `.env.example`.
-2. Update `firebase-blueprint.json` BEFORE modifying Firestore logic.
-3. Deploy Firestore rules through the GitHub Actions `Firebase Rules` workflow after structural changes. Do not rely on undocumented local tools.
-4. Use `handleFirestoreError` (standard pattern) to decorate errors for easier debugging.
+2. Keep Prisma schema, API contracts, tests, README, and deployment configuration aligned.
+3. Use repository-first deploy flow; direct production patches are forbidden outside documented emergency hotfixes.
 
 ---
 *Created by Gemini AI for Sergei Borisovich Bogorad.*
