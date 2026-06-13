@@ -3,10 +3,10 @@
 This document describes the technical architecture and integration process for the "Cognitika" platform, intended for other AI agents and developers.
 
 ## 1. Tech Stack
-- **Frontend**: React (Vite) + Tailwind CSS + Framer Motion.
+- **Frontend**: React (Vite) + Tailwind CSS + Motion (`motion/react`).
 - **Backend (Real-time)**: Express + Socket.io.
-- **Backend (Storage)**: Firebase Firestore + Firebase Auth.
-- **Database Architecture**: NoSQL (Document-based).
+- **Backend (Storage)**: Prisma + PostgreSQL for runtime product data. Firebase Auth/Firestore rules are used only for selected applet and rules-contract flows.
+- **Database Architecture**: PostgreSQL for runtime product data, with Firestore rules/contracts for selected Firebase-backed flows.
 
 ## 2. Firebase Integration Process
 To synchronize with the existing database, follow these steps:
@@ -28,19 +28,19 @@ The source of truth for schemas is `firebase-blueprint.json`.
 
 ### Security Rules
 Rules are defined in `firestore.rules`.
-- **RBAC**: Admin check is performed via `request.auth.token.email`.
+- **RBAC**: Admin check is performed via `request.auth.token.admin == true`; do not reintroduce public email identity as an admin source.
 - **Validation**: All writes MUST pass through `isValid[Entity]` helper functions.
 - **Immutability**: `userId` and `createdAt` are immutable after document creation.
 
 ## 3. Server Configuration (Full-Stack)
-- **Port**: 3000 (Hardcoded infrastructure requirement).
+- **Port**: 3006 by default. Keep `server.ts`, `.env.example`, Dockerfile, `docker-compose.yml`, README, and deployment configuration aligned if this changes.
 - **Socket.io**: Used for the "Cognitive Flow" real-time chat.
 - **Production-ready**: The `server.ts` handles both API routes and static serving of the Vite build.
 
 ## 4. Development Workflow
 1. Declare new environment variables in `.env.example`.
 2. Update `firebase-blueprint.json` BEFORE modifying Firestore logic.
-3. Deploy rules using `deploy_firebase` tool after structural changes.
+3. Deploy Firestore rules through the GitHub Actions `Firebase Rules` workflow after structural changes. Do not rely on undocumented local tools.
 4. Use `handleFirestoreError` (standard pattern) to decorate errors for easier debugging.
 
 ---

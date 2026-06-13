@@ -1,0 +1,36 @@
+name: Technical task
+description: Track implementation, refactor, documentation, or infrastructure work.
+title: "[P2] "
+labels: ["status:planned"]
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What should change and why?
+    validations:
+      required: true
+  - type: textarea
+    id: current_state
+    attributes:
+      label: Current state
+      description: Link files, routes, tests, workflows, or prior issues.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      placeholder: |
+        - [ ] Code/docs/config updated
+        - [ ] Tests or static checks added where useful
+        - [ ] `pnpm lint`, `pnpm test`, and/or `pnpm build` pass as relevant
+    validations:
+      required: true
+  - type: textarea
+    id: non_goals
+    attributes:
+      label: Non-goals
+      description: What should explicitly not be changed in this issue?
+    validations:
+      required: false

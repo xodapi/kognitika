@@ -1,0 +1,36 @@
+name: Security hardening
+description: Track trust-boundary, privacy, auth, or data-integrity work.
+title: "[P1][Security] "
+labels: ["priority:P1", "area:security", "status:planned"]
+body:
+  - type: textarea
+    id: risk
+    attributes:
+      label: Risk
+      description: Describe the trust boundary, abuse case, or privacy exposure.
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope
+      description: Which APIs, routes, UI surfaces, rules, or storage keys are in scope?
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      placeholder: |
+        - [ ] Server treats client input as untrusted
+        - [ ] Negative tests cover unauthorized or forged input
+        - [ ] Responses/logs do not expose email, token, password hash, raw Brain ID, or private telemetry
+    validations:
+      required: true
+  - type: textarea
+    id: verification
+    attributes:
+      label: Verification plan
+      description: Include unit, integration, E2E, CI, deploy, or production smoke checks.
+    validations:
+      required: true
