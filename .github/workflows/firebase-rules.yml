@@ -1,0 +1,120 @@
+name: Firebase Rules
+
+on:
+  pull_request:
+    paths:
+      - "firestore.rules"
+      - "firebase.json"
+      - ".firebaserc"
+      - "firebase-blueprint.json"
+      - "firebase-applet-config.json"
+      - "scripts/check-firebase-rules-config.mjs"
+      - "src/tests/firestore-rules-emulator.test.ts"
+      - ".github/workflows/firebase-rules.yml"
+      - "package.json"
+      - "pnpm-lock.yaml"
+  push:
+    branches: [main]
+    paths:
+      - "firestore.rules"
+      - "firebase.json"
+      - ".firebaserc"
+      - "firebase-blueprint.json"
+      - "firebase-applet-config.json"
+      - "scripts/check-firebase-rules-config.mjs"
+      - "src/tests/firestore-rules-emulator.test.ts"
+      - ".github/workflows/firebase-rules.yml"
+      - "package.json"
+      - "pnpm-lock.yaml"
+  workflow_dispatch:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 10.22.0
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm check:firebase:rules
+      - run: pnpm test:firestore:rules
+
+  deploy-rules:
+    runs-on: ubuntu-latest
+    needs: verify
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 10.22.0
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Compute rules hash
+        id: rules_hash
+        shell: bash
+        run: |
+          set -euo pipefail
+          hash="$(sha256sum firestore.rules | awk '{print $1}')"
+          echo "sha256=$hash" >> "$GITHUB_OUTPUT"
+          echo "firestore.rules sha256=$hash" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Deploy Firestore rules or warn
+        env:
+          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [ -z "${FIREBASE_SERVICE_ACCOUNT_JSON:-}" ]; then
+            {
+              echo "## [WARNING] Firebase rules deploy skipped"
+              echo ""
+              echo "Missing repository secret \`FIREBASE_SERVICE_ACCOUNT_JSON\`."
+              echo "Rules were verified in emulator, but active Firebase rules were not deployed or compared."
+              echo "rules_sha256=${{ steps.rules_hash.outputs.sha256 }}"
+            } >> "$GITHUB_STEP_SUMMARY"
+            echo "::warning::FIREBASE_SERVICE_ACCOUNT_JSON is missing; active Firebase rules deploy/verification skipped."
+            exit 0
+          fi
+
+          credentials_file="$RUNNER_TEMP/firebase-service-account.json"
+          printf '%s' "$FIREBASE_SERVICE_ACCOUNT_JSON" > "$credentials_file"
+          export GOOGLE_APPLICATION_CREDENTIALS="$credentials_file"
+
+          pnpm exec firebase deploy \
+            --only firestore:rules \
+            --project gen-lang-client-0338318402 \
+            --non-interactive
+
+          {
+            echo "## Firebase rules deployed"
+            echo ""
+            echo "commit=${GITHUB_SHA}"
+            echo "rules_sha256=${{ steps.rules_hash.outputs.sha256 }}"
+            echo "timestamp_utc=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          } >> "$GITHUB_STEP_SUMMARY"
