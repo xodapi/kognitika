@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { eventBus } from '../lib/event-bus';
+import { eventBus } from '../client/analytics/event-bus';
 import { RULE_SETS, CARDS_BY_RULESET, ContentCard } from '../lib/content-db';
 
 interface DecryptorState {

@@ -1,4 +1,4 @@
-import { eventBus } from './event-bus.ts';
+import { eventBus } from '../server/events/event-bus.ts';
 import { createSafeLogger, safeError } from './safe-logger.ts';
 
 const logger = createSafeLogger('observability-subscriber');

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { emitEvent } from './useEventBus';
-import { eventBus } from '../lib/event-bus';
+import { eventBus } from '../client/analytics/event-bus';
 import { generateGrid, generateExpectedSequence } from '../lib/schulte-generator';
 
 export type GameMode = 'classic' | 'reverse' | 'gorbov' | 'gorbov_v1' | 'gorbov_v2' | 'gorbov_v3' | 'gorbov_v4' | 'colorNoise' | 'scattered' | 'peripheral' | 'hardcore';
