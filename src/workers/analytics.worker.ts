@@ -1,7 +1,10 @@
-// import * as wasm from '../../../packages/analytics-kernel/pkg/analytics_kernel';
+interface ClickEvent {
+  cellId: number;
+  reactionTimeMs: number;
+}
 
-// JS fallback used until the optional WASM kernel is available in this repository.
-const wasm = {
+// JS analytics kernel used behind a WASM-ready worker boundary.
+const analyticsKernel = {
   suggest_next_difficulty: (avgTime: number, stability: number) => {
     const stable = stability < Math.max(250, avgTime * 0.2);
     return {
@@ -11,9 +14,9 @@ const wasm = {
       message: stable ? 'Можно немного усложнить режим' : 'Стабильный режим'
     };
   },
-  analyze_session_data: (events: any[]) => {
+  analyze_session_data: (events: ClickEvent[]) => {
     const reactionTimes = events
-      .map((event) => Number(event.reaction_time ?? event.reactionTime ?? event.reactionTimeMs ?? 0))
+      .map((event) => Number(event.reactionTimeMs))
       .filter((time) => Number.isFinite(time) && time >= 0);
     const average = reactionTimes.length
       ? reactionTimes.reduce((sum, time) => sum + time, 0) / reactionTimes.length
@@ -39,17 +42,17 @@ self.onmessage = async (e) => {
   
   if (type === 'SUGGEST_DIFFICULTY') {
     const { avgTime, stability } = data;
-    const suggestion = wasm.suggest_next_difficulty(avgTime, stability);
+    const suggestion = analyticsKernel.suggest_next_difficulty(avgTime, stability);
     self.postMessage({ type: 'DIFFICULTY_SUGGESTION', payload: suggestion });
   }
   
   if (type === 'ANALYZE_SESSION') {
     const { events } = data;
-    const wasmEvents = events.map(e => ({
-      cell: e.cell ?? e.cellId,
-      reaction_time: e.reactionTime ?? e.reactionTimeMs
+    const clickEvents: ClickEvent[] = events.map((event: ClickEvent) => ({
+      cellId: Number(event.cellId),
+      reactionTimeMs: Number(event.reactionTimeMs)
     }));
-    const analysis = wasm.analyze_session_data(wasmEvents);
+    const analysis = analyticsKernel.analyze_session_data(clickEvents);
     self.postMessage({ type: 'SESSION_ANALYSIS', payload: analysis });
   }
 };

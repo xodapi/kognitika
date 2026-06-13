@@ -29,19 +29,19 @@ eventBus.use((event, data, next) => {
   next();
 });
 
-let clickBuffer: { cell: number; reactionTime: number }[] = [];
+let clickBuffer: { cellId: number; reactionTimeMs: number }[] = [];
 const BUFFER_THRESHOLD = 5;
 
 eventBus.use((event, data, next) => {
   if (event === 'CELL_CLICK') {
     const clickData = data as EventMap['CELL_CLICK'];
     clickBuffer.push({
-      cell: Number(clickData.cellId ?? 0),
-      reactionTime: clickData.reactionTimeMs
+      cellId: Number(clickData.cellId ?? 0),
+      reactionTimeMs: clickData.reactionTimeMs
     });
 
     if (clickBuffer.length >= BUFFER_THRESHOLD) {
-      const times = clickBuffer.map(c => c.reactionTime);
+      const times = clickBuffer.map(c => c.reactionTimeMs);
       const avg = times.reduce((a, b) => a + b, 0) / times.length;
       const variance = times.reduce((acc, t) => acc + Math.pow(t - avg, 2), 0) / times.length;
       const stability = Math.sqrt(variance);

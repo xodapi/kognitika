@@ -1,17 +1,18 @@
-// It provides a high-level API for the frontend and handles WASM loading via Worker
+// High-level analytics API for the frontend.
+// The current implementation uses a JS worker/fallback behind a WASM-ready boundary.
 
 let analyticsWorker: Worker | null = null;
 
-function getWorker(): Worker {
-  if (!analyticsWorker && typeof window !== 'undefined') {
+function getWorker(): Worker | null {
+  if (!analyticsWorker && typeof window !== 'undefined' && typeof Worker !== 'undefined') {
     analyticsWorker = new Worker(new URL('../workers/analytics.worker.ts', import.meta.url), { type: 'module' });
   }
-  return analyticsWorker!;
+  return analyticsWorker;
 }
 
 export interface ClickEvent {
-  cell: number;
-  reactionTime: number;
+  cellId: number;
+  reactionTimeMs: number;
 }
 
 export interface AnalysisResult {
@@ -51,8 +52,16 @@ export interface SemanticMetrics {
  * Get data-driven difficulty suggestion based on past performance.
  */
 export async function getDifficultySuggestion(avgTime: number, stability: number): Promise<DifficultySuggestion> {
+  const fallbackSuggestion = {
+    nextGridSize: 3,
+    noiseLevel: 0,
+    rotationEnabled: false,
+    message: "Стабильный режим"
+  };
+  const worker = getWorker();
+  if (!worker) return fallbackSuggestion;
+
   return new Promise((resolve) => {
-    const worker = getWorker();
     const handleMessage = (e: MessageEvent) => {
       if (e.data.type === 'DIFFICULTY_SUGGESTION') {
         const suggestion = e.data.payload;
@@ -70,7 +79,7 @@ export async function getDifficultySuggestion(avgTime: number, stability: number
     
     setTimeout(() => {
       worker.removeEventListener('message', handleMessage);
-      resolve({ nextGridSize: 3, noiseLevel: 0, rotationEnabled: false, message: "Стабильный режим" });
+      resolve(fallbackSuggestion);
     }, 1000);
   });
 }
@@ -117,11 +126,14 @@ export async function getSemanticConsistency(correctHits: number, totalItems: nu
 
 /**
  * High-performance session analysis.
- * Uses the Rust kernel (WASM) for heavy computations.
+ * Uses the JS analytics worker when available and a synchronous JS fallback otherwise.
+ * Future Rust/WASM kernels must preserve this ClickEvent contract.
  */
 export async function analyzeSession(events: ClickEvent[]): Promise<AnalysisResult> {
+  const worker = getWorker();
+  if (!worker) return fallbackAnalysis(events);
+
   return new Promise((resolve) => {
-    const worker = getWorker();
     const handleMessage = (e: MessageEvent) => {
       if (e.data.type === 'SESSION_ANALYSIS') {
         const result = e.data.payload;
@@ -146,12 +158,12 @@ export async function analyzeSession(events: ClickEvent[]): Promise<AnalysisResu
 
 /**
  * JS Fallback for cognitive metrics calculation.
- * Ensures reliability even if WASM fails to load.
+ * Ensures reliability when a worker is unavailable or times out.
  */
 function fallbackAnalysis(events: ClickEvent[]): AnalysisResult {
   if (events.length === 0) return { averageTime: 0, stabilityIndex: 0, fatigability: 0, reactionConsistency: 100 };
 
-  const times = events.map(e => e.reactionTime);
+  const times = events.map(e => e.reactionTimeMs);
   const avg = times.reduce((a, b) => a + b, 0) / times.length;
   
   const variance = times.reduce((acc, t) => acc + Math.pow(t - avg, 2), 0) / times.length;
