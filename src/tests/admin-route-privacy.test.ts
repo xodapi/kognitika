@@ -16,6 +16,7 @@ const prismaMock = vi.hoisted(() => ({
   },
   feedback: {
     findMany: vi.fn(),
+    update: vi.fn(),
   },
 }));
 
@@ -64,6 +65,22 @@ function adminToken(payload: Record<string, unknown>) {
 async function getJson(baseUrl: string, path: string, token: string) {
   const response = await fetch(`${baseUrl}${path}`, {
     headers: { Authorization: `Bearer ${token}` },
+  });
+
+  return {
+    status: response.status,
+    body: await response.json(),
+  };
+}
+
+async function postJson(baseUrl: string, path: string, token: string, body: unknown) {
+  const response = await fetch(`${baseUrl}${path}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(body),
   });
 
   return {
@@ -170,5 +187,73 @@ describe('admin route privacy and authorization contract', () => {
     expect(serialized).not.toContain('synthetic-password-hash');
     expect(serialized).not.toContain('synthetic-token');
     expect(serialized).not.toContain('BR-SYNTHETIC-FEEDBACK-SECRET');
+  });
+
+  it('validates and sanitizes /api/admin/feedback/:id/response', async () => {
+    prismaMock.user.findUnique.mockResolvedValue({ role: 'ADMIN' });
+    prismaMock.feedback.update.mockResolvedValue({
+      id: 'feedback_synthetic_1',
+      type: 'bug',
+      content: 'Synthetic feedback only.',
+      adminResponse: 'Synthetic admin response.',
+      status: 'replied',
+      trackingNum: 'FB-SYNTH',
+      createdAt: '2026-01-01T00:00:00.000Z',
+      userId: 'user_synthetic_feedback',
+      user: {
+        id: 'user_synthetic_feedback',
+        name: 'Legacy Feedback Visible',
+        pseudonym: 'Brain Feedback',
+        brainId: 'BR-SYNTHETIC-FEEDBACK-SECRET',
+        email: 'feedback@example.test',
+        token: 'synthetic-token',
+      },
+    });
+
+    const baseUrl = await createAdminHarness();
+    const token = adminToken({ id: 'user_synthetic_admin', role: 'ADMIN' });
+
+    const invalid = await postJson(baseUrl, '/api/admin/feedback/feedback_synthetic_1/response', token, {
+      response: '',
+    });
+    expect(invalid.status).toBe(400);
+    expect(prismaMock.feedback.update).not.toHaveBeenCalled();
+
+    const response = await postJson(baseUrl, '/api/admin/feedback/feedback_synthetic_1/response', token, {
+      response: '  Synthetic admin response.  ',
+    });
+    const serialized = JSON.stringify(response.body);
+
+    expect(response.status).toBe(200);
+    expect(prismaMock.feedback.update).toHaveBeenCalledWith({
+      where: { id: 'feedback_synthetic_1' },
+      data: { adminResponse: 'Synthetic admin response.', status: 'replied' },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            pseudonym: true,
+            brainId: true,
+          },
+        },
+      },
+    });
+    expect(response.body.feedback).toMatchObject({
+      id: 'feedback_synthetic_1',
+      text: 'Synthetic feedback only.',
+      adminResponse: 'Synthetic admin response.',
+      status: 'replied',
+      trackingNum: 'FB-SYNTH',
+      user: {
+        name: 'Brain Feedback',
+        pseudonym: 'Brain Feedback',
+        brainLabel: 'Brain BR-SYNTH',
+      },
+    });
+    expect(serialized).not.toContain('feedback@example.test');
+    expect(serialized).not.toContain('synthetic-token');
+    expect(serialized).not.toContain('BR-SYNTHETIC-FEEDBACK-SECRET');
+    expect(serialized).not.toContain('user_synthetic_feedback');
   });
 });

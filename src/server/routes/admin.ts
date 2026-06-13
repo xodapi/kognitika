@@ -3,11 +3,25 @@ import prisma from '../../lib/prisma.ts';
 import { authenticate, isAdmin } from '../middleware/auth.ts';
 import { sanitizeAdminUserIdentity, sanitizePublicUserIdentity } from '../utils/privacy.ts';
 import { createSafeLogger, safeError } from '../../lib/safe-logger.ts';
+import { feedbackResponseSchema } from '../schemas/feedback.ts';
 
 const router = Router();
 const logger = createSafeLogger('admin-route');
 
 router.use(authenticate, isAdmin);
+
+function serializeFeedback(item: any) {
+  return {
+    id: item.id,
+    type: item.type,
+    text: item.content,
+    adminResponse: item.adminResponse,
+    status: item.status,
+    trackingNum: item.trackingNum,
+    createdAt: item.createdAt,
+    user: item.user ? sanitizePublicUserIdentity(item.user) : undefined,
+  };
+}
 
 router.get('/users', async (req, res) => {
   const users = await prisma.user.findMany({
@@ -76,49 +90,43 @@ router.get('/feedback', async (req, res) => {
       },
     });
 
-    res.json(feedback.map((item) => (
-      {
-        id: item.id,
-        type: item.type,
-        text: item.content,
-        adminResponse: item.adminResponse,
-        status: item.status,
-        trackingNum: item.trackingNum,
-        createdAt: item.createdAt,
-        user: sanitizePublicUserIdentity(item.user),
-      }
-    )));
+    res.json(feedback.map(serializeFeedback));
   } catch (error) {
     logger.error('Admin feedback list failed', { error: safeError(error) });
     res.status(500).json({ error: 'Failed to fetch feedback' });
   }
 });
 
-router.post('/feedback/:id/respond', async (req, res) => {
-  try {
-    const { response } = req.body;
-    const feedback = await prisma.feedback.update({
-      where: { id: req.params.id },
-      data: { adminResponse: response, status: 'replied' }
-    });
-    res.json(feedback);
-  } catch {
-    res.status(500).json({ error: 'Failed to save response' });
+async function saveFeedbackResponse(req: any, res: any) {
+  const parsed = feedbackResponseSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ error: 'Invalid feedback response payload' });
   }
-});
 
-router.post('/feedback/:id/response', async (req, res) => {
   try {
-    const { response } = req.body;
     const feedback = await prisma.feedback.update({
       where: { id: req.params.id },
-      data: { adminResponse: response, status: 'replied' }
+      data: { adminResponse: parsed.data.response, status: 'replied' },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            pseudonym: true,
+            brainId: true,
+          },
+        },
+      },
     });
-    res.json({ success: true, feedback });
-  } catch {
+    res.json({ success: true, feedback: serializeFeedback(feedback) });
+  } catch (error) {
+    logger.error('Admin feedback response failed', { error: safeError(error) });
     res.status(500).json({ error: 'Failed to save response' });
   }
-});
+}
+
+router.post('/feedback/:id/respond', saveFeedbackResponse);
+router.post('/feedback/:id/response', saveFeedbackResponse);
 
 router.post('/ideas/:id/status', async (req, res) => {
   try {

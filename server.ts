@@ -27,8 +27,7 @@ const authLimiter = rateLimit({
   message: { error: 'Too many authentication attempts, please try again after an hour.' }
 });
 
-// Register subscribers & server EventBus
-import { eventBus } from './src/server/events/event-bus.ts';
+// Register subscribers
 import './src/lib/subscribers.ts';
 import './src/lib/report-subscriber.ts';
 import './src/lib/observability-subscriber.ts';
@@ -42,6 +41,7 @@ import analyticsRoutes from './src/server/routes/analytics.ts';
 import dashboardRoutes from './src/server/routes/dashboard.ts';
 import observabilityRoutes from './src/server/routes/observability.ts';
 import ideasRoutes from './src/server/routes/ideas.ts';
+import feedbackRoutes from './src/server/routes/feedback.ts';
 import { authenticate } from './src/server/middleware/auth.ts';
 import { privacyGuard } from './src/server/middleware/privacy.ts';
 
@@ -105,6 +105,7 @@ async function startServer() {
   app.use('/api/dashboard', apiLimiter, dashboardRoutes);
   app.use('/api/client-error', apiLimiter, observabilityRoutes);
   app.use('/api/ideas', apiLimiter, ideasRoutes);
+  app.use('/api/feedback', apiLimiter, feedbackRoutes);
 
   app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString(), buildId: BUILD_ID });
@@ -141,40 +142,6 @@ async function startServer() {
   });
 
   app.get('/api/progress', (req, res) => res.redirect('/api/game/progress'));
-
-  app.post('/api/feedback', authenticate, async (req: any, res) => {
-    try {
-      const { type, content, rating } = req.body;
-      const trackingNum = `FB-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
-
-      if (!['idea', 'bug', 'improvement', 'other'].includes(type) || typeof content !== 'string' || content.trim().length === 0 || content.length > 5000) {
-        return res.status(400).json({ error: 'Invalid feedback payload' });
-      }
-      
-      logger.info('Feedback received', { type, rating: rating ?? 'n/a' });
-      
-      await prisma.feedback.create({
-        data: {
-          userId: req.user.id,
-          type,
-          content: content.trim(),
-          trackingNum,
-        },
-      });
-
-      const EventBusClass: any = eventBus.constructor;
-      eventBus.emit(EventBusClass.EVENTS.FEEDBACK_SUBMITTED, {
-        userId: req.user.id,
-        trackingNum,
-        type,
-        content: content.trim(),
-      });
-
-      res.json({ success: true, trackingNum });
-    } catch {
-      res.status(500).json({ error: 'Failed to save feedback' });
-    }
-  });
 
   // ── Vite Middleware / Static ─────────────────────────────
   if (process.env.NODE_ENV !== 'production') {
