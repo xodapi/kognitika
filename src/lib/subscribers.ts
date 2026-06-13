@@ -24,7 +24,7 @@ function isLegacyEmailNotificationsEnabled() {
 }
 
 function adminNotificationEmail() {
-  return process.env.ADMIN_NOTIFICATION_EMAIL || process.env.ADMIN_EMAIL || null;
+  return process.env.ADMIN_NOTIFICATION_EMAIL || null;
 }
 
 /**
