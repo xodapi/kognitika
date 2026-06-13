@@ -22,9 +22,6 @@ Do not reintroduce Firebase Auth, Firestore rules, or Firebase client configurat
 2. Keep Prisma schema, API contracts, tests, README, and deployment configuration aligned.
 3. Use repository-first deploy flow; direct production patches are forbidden outside documented emergency hotfixes.
 
----
-*Created by Gemini AI for Sergei Borisovich Bogorad.*
-
 ## 5. Mandatory Agent Start Checklist
 
 Before making any repository, server, or GitHub change, every agent MUST run and inspect:

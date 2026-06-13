@@ -89,6 +89,8 @@ const tabTitles: Record<string, string> = {
   '/focus': 'Глубокий Фокус'
 };
 
+const appBuildId = import.meta.env.VITE_BUILD_ID || import.meta.env.VITE_GIT_COMMIT || 'dev';
+
 function AppContent() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -394,7 +396,7 @@ function AppContent() {
                        <span className="text-[10px] font-black uppercase tracking-wider">Metatext</span>
                     </div>
                     <p className="text-[10px] leading-relaxed text-muted-foreground font-medium">
-                      Создано <span className="text-foreground font-black">Gemini AI</span> по заданию <span className="text-foreground font-black">Богорад Сергея Борисовича</span>.
+                      Когнитивная платформа <span className="text-foreground font-black">Kognitika</span> для Brain ID-профиля и тренировки мышления.
                     </p>
                     <div className="flex justify-between items-center mt-3 pt-3 border-t border-border/50">
                       <a href="https://syntog.ru" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-[10px] text-primary hover:underline font-black uppercase tracking-tight">
@@ -467,6 +469,13 @@ function AppContent() {
            </div>
          )}
       </main>
+
+      <footer
+        aria-label="Версия сборки"
+        className="fixed bottom-24 right-3 lg:bottom-3 z-40 rounded-lg border border-border bg-card/80 px-2.5 py-1 text-[10px] font-mono font-bold text-muted-foreground shadow-sm backdrop-blur-md"
+      >
+        build {appBuildId}
+      </footer>
 
       {/* Floating Mobile Nav */}
       <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-sm h-16 bg-card/60 backdrop-blur-2xl border border-white/10 rounded-3xl lg:hidden z-50 flex items-center justify-around px-2 shadow-[0_15px_40px_-15px_rgba(0,0,0,0.3)]">

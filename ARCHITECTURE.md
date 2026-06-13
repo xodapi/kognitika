@@ -1,6 +1,6 @@
 # Kognitika Core: Architectural Source of Truth
 
-> Версия: 1.3.0 | Обновлено: 2026-05-14 | Статус: Phase 8 Complete
+> Версия: 1.4.0 | Обновлено: 2026-06-13 | Статус: Stabilized MVP
 
 ---
 
@@ -8,30 +8,30 @@
 
 Платформа эволюционировала: **EDA → Adaptive Intelligence System → Cognitive Engineering Suite**.
 
-Все когнитивные расчёты выполняются в Rust-ядре через WASM. Интерфейс динамически подстраивается под состояние пользователя. Phase 8 добавляет социальные функции и real-time инфраструктуру.
+Когнитивные расчёты сейчас выполняются в TypeScript/JS через engine hooks и analytics worker. WASM остаётся будущей границей для hot-path алгоритмов, но отсутствующий Rust-пакет не является runtime-зависимостью. Интерфейс динамически подстраивается под состояние пользователя, а real-time функции идут через Express + Socket.io.
 
 ---
 
 ## Полная карта модулей
 
-| Модуль | Hook | EventBus | Тест | WASM | Статус |
+| Модуль | Hook | EventBus | Тест | Analytics | Статус |
 |---|---|---|---|---|---|
-| **Таблицы Шульте** | `useSchulteEngine` | ✅ | ✅ 7/7 | ✅ | Production |
-| **Скоропечатание** | `useTypingEngine` | ✅ | ✅ 2/2 | ✅ | Production |
-| **Spatial Concealment** | `useSpatialEngine` | ✅ | ✅ 3/3 | ✅ | Production |
-| **N-Back Test** | `useNBackEngine` | ✅ | ✅ 4/4 | ❌ | Production |
-| **Тест Струпа** | `useStroopEngine` | ✅ | ✅ 4/4 | ❌ | Production |
-| **Логическая матрица** | `useLogicalEngine` | ✅ | ✅ 3/3 | ❌ | Production |
-| **Числовой анализ** | `useNumericalEngine` | ✅ | ✅ 3/3 | ❌ | Production |
-| **Топологическая память** | `useTopologyEngine` | ✅ | ✅ | ❌ | Production |
-| **Детектор коллизий** | `useCollisionEngine` | ✅ | ✅ | ❌ | Production |
-| **Асинхронный диспетчер** | `useDispatcherEngine` | ✅ | ✅ | ❌ | Production |
-| **Смысловой сканер** | `useLanguageScannerEngine` | ✅ | — | ❌ | Production |
-| **Декриптор** | `useDecryptorEngine` | ✅ | — | ❌ | Production |
-| **Верификация реальности** | `useRealityCheckEngine` | ✅ | — | ❌ | Production |
-| **Редукция шума** | `useNoiseReductionEngine` | ✅ | ✅ | ❌ | Production |
-| **Ситуационный тест** | `useSituationalEngine` | ✅ | — | ❌ | Beta |
-| **Concentration Curve** | — (UI Widget) | ✅ | ✅ | ❌ | UI Visualization |
+| **Таблицы Шульте** | `useSchulteEngine` | ✅ | ✅ 7/7 | JS / WASM-ready | Production |
+| **Скоропечатание** | `useTypingEngine` | ✅ | ✅ 2/2 | JS / WASM-ready | Production |
+| **Spatial Concealment** | `useSpatialEngine` | ✅ | ✅ 3/3 | JS / WASM-ready | Production |
+| **N-Back Test** | `useNBackEngine` | ✅ | ✅ 4/4 | JS | Production |
+| **Тест Струпа** | `useStroopEngine` | ✅ | ✅ 4/4 | JS | Production |
+| **Логическая матрица** | `useLogicalEngine` | ✅ | ✅ 3/3 | JS | Production |
+| **Числовой анализ** | `useNumericalEngine` | ✅ | ✅ 3/3 | JS | Production |
+| **Топологическая память** | `useTopologyEngine` | ✅ | ✅ | JS | Production |
+| **Детектор коллизий** | `useCollisionEngine` | ✅ | ✅ | JS | Production |
+| **Асинхронный диспетчер** | `useDispatcherEngine` | ✅ | ✅ | JS | Production |
+| **Смысловой сканер** | `useLanguageScannerEngine` | ✅ | — | JS | Production |
+| **Декриптор** | `useDecryptorEngine` | ✅ | — | JS | Production |
+| **Верификация реальности** | `useRealityCheckEngine` | ✅ | — | JS | Production |
+| **Редукция шума** | `useNoiseReductionEngine` | ✅ | ✅ | JS | Production |
+| **Ситуационный тест** | `useSituationalEngine` | ✅ | — | JS | Beta |
+| **Concentration Curve** | — (UI Widget) | ✅ | ✅ | UI | UI Visualization |
 
 > **Concentration Curve** — визуализирующий виджет, отображает данные от EventBus. Собственного Engine-хука не имеет намеренно.
 
@@ -55,14 +55,14 @@ UI Component ←→ use{Module}Engine ←→ EventBus ←→ Analytics / Subscri
 | `TRAINING_COMPLETE` | Engine | DB-writer, Leaderboard |
 | `MISTAKE_MADE` | Engine | Analytics |
 | `STABILITY_UPDATE` | Analytics | UI (HUD widgets) |
-| `DIFFICULTY_SUGGESTION` | WASM Kernel | Engine (Adaptive mode) |
+| `DIFFICULTY_SUGGESTION` | Analytics worker | Engine (Adaptive mode) |
 
-### 2. Hybrid Analytical Bridge (Rust/WASM)
+### 2. Analytics Boundary
 
-Тяжёлые вычисления в `@stroy/analytics-kernel`:
-- **WASM Worker**: расчёты в отдельном потоке (не блокирует Main Thread, 60 FPS)
-- **JS Fallbacks**: `src/lib/cognitive-metrics.ts` — аналоги всех Rust-функций
-- **В тестах**: WASM мокируется через `vi.mock('../lib/cognitive-metrics')`
+Текущий аналитический слой:
+- **JS Worker**: `src/workers/analytics.worker.ts` держит расчёты за worker-границей.
+- **JS Metrics**: `src/lib/cognitive-metrics.ts` содержит текущие реализации метрик.
+- **WASM-ready contract**: будущий Rust/WASM модуль должен сохранить публичный `ClickEvent` contract и не возвращать отсутствующий `packages/analytics-kernel`.
 
 ### 3. Seeded Determinism
 
@@ -79,16 +79,17 @@ expect(grid1).toEqual(grid2); // всегда true
 | Система | Зона ответственности |
 |---|---|
 | **Prisma / PostgreSQL** | Сессии тренировок, XP, история, лидерборд |
-| **Firebase** | Real-time события (live duels), push-уведомления |
+| **Express / Socket.io** | API, real-time дуэли, SymbolChat |
+| **StorageGateway** | Аудируемый доступ браузера к localStorage |
 
 ---
 
 ## Дорожная карта
 
 ### ✅ Phase 1-4: Завершены
-- EDA рефакторинг, EventBus, Rust/WASM аналитическое ядро
+- EDA рефакторинг, EventBus, JS analytics worker с WASM-ready contract
 - Adaptive UI (стабильность, кривая концентрации)
-- Reaction Consistency, Fatigue Threshold (WASM)
+- Reaction Consistency, Fatigue Threshold через JS analytics boundary
 
 ### ✅ Phase 5: Cognitive Engineering Suite
 - Топологическая память (граф-память)
@@ -110,9 +111,9 @@ expect(grid1).toEqual(grid2); // всегда true
 ### 🗓 Phase 9: Leagues & Real-time Duels
 - Полноценный UI для когнитивных дуэлей
 - Глобальные лиги и сезоны
-- Rust Multi-analysis (сравнение динамики нескольких игроков)
+- WASM hot-path research без переписывания всего стека
 
 ---
 
 > [!IMPORTANT]
-> Перед каждым коммитом: `npm run validate`. Это запускает Gatekeeper — 12 headless-тестов математического ядра всех Production-модулей.
+> Перед каждым коммитом: `pnpm validate`, а для production-risk изменений также `pnpm lint`, `pnpm test`, `pnpm build`.

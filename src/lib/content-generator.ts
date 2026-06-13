@@ -1,8 +1,8 @@
 /**
  * Статический контент-движок Когнитики (v2.0)
  *
- * Gemini API удалён — весь контент генерируется детерминированно
- * из локальной базы knowledge (content-db.ts) с seed-перемешкой.
+ * External AI APIs are not used here. Content is generated deterministically
+ * from the local knowledge base (content-db.ts) with seed-based shuffling.
  *
  * Применяется в: CollisionDetector, LanguageScanner, RealityCheck
  * Используемые данные: CARDS_BY_RULESET, RULE_SETS из content-db.ts
