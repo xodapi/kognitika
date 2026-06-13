@@ -2,7 +2,7 @@
   "entities": {
     "Feedback": {
       "title": "Feedback",
-      "description": "User suggestions, ideas, and bug reports",
+      "description": "Privacy contract for user suggestions, ideas, and bug reports. Runtime public submissions use the Prisma-backed /api/feedback route as the source of truth.",
       "type": "object",
       "properties": {
         "userId": { "type": "string", "description": "The ID of the user who submitted the feedback" },
