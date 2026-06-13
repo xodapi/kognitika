@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { analyzeSession, getDifficultySuggestion, AnalysisResult, DifficultySuggestion } from '../lib/cognitive-metrics';
+import { analyzeSession, getDifficultySuggestion } from '../lib/cognitive-metrics';
 import { createSafeLogger, safeError } from '../lib/safe-logger';
 
 const logger = createSafeLogger('cognitive-analytics');
@@ -9,10 +9,9 @@ export function useCognitiveAnalytics() {
 
   const analyzeSchulte = async (events: any[]) => {
     try {
-      // Map frontend events to ClickEvent format expected by the bridge
       const clickEvents = events.map(e => ({
-        cell: e.cellId || e.cell,
-        reactionTime: e.reactionTimeMs || e.reaction_time
+        cellId: Number(e.cellId),
+        reactionTimeMs: Number(e.reactionTimeMs)
       }));
 
       const result = await analyzeSession(clickEvents);
