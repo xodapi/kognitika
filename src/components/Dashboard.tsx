@@ -86,48 +86,48 @@ export function Dashboard({ onStartGame }: { onStartGame: (game: string) => void
   return (
     <div className="space-y-8 flex flex-col pb-12">
       {/* Navigation Tabs - Decluttered: Only Training and Admin */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 bg-card/30 p-1.5 border border-border rounded-2xl w-fit">
+      <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+        <div className="grid w-full grid-cols-2 gap-2 bg-card/30 p-1.5 border border-border rounded-2xl sm:w-fit sm:flex sm:flex-wrap">
           <button 
             onClick={() => setActiveTab('training')}
-            className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'training' ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20' : 'text-muted-foreground hover:text-foreground'}`}
+            className={`flex min-w-0 items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all sm:px-6 ${activeTab === 'training' ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20' : 'text-muted-foreground hover:text-foreground'}`}
           >
-            <Activity className="w-4 h-4" />
+            <Activity className="w-4 h-4 shrink-0" />
             Тренировки
           </button>
           <button 
             onClick={() => setActiveTab('profile')}
-            className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'profile' ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20' : 'text-muted-foreground hover:text-foreground'}`}
+            className={`flex min-w-0 items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all sm:px-6 ${activeTab === 'profile' ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20' : 'text-muted-foreground hover:text-foreground'}`}
           >
-            <Brain className="w-4 h-4" />
+            <Brain className="w-4 h-4 shrink-0" />
             Профиль
           </button>
           <button 
             onClick={() => setActiveTab('duels')}
-            className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'duels' ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20' : 'text-muted-foreground hover:text-foreground'}`}
+            className={`flex min-w-0 items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all sm:px-6 ${activeTab === 'duels' ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20' : 'text-muted-foreground hover:text-foreground'}`}
           >
-            <Sword className="w-4 h-4" />
+            <Sword className="w-4 h-4 shrink-0" />
             Дуэли
           </button>
           <button 
             onClick={() => setActiveTab('wiki')}
-            className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'wiki' ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20' : 'text-muted-foreground hover:text-foreground'}`}
+            className={`flex min-w-0 items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all sm:px-6 ${activeTab === 'wiki' ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20' : 'text-muted-foreground hover:text-foreground'}`}
           >
-            <BookOpen className="w-4 h-4" />
+            <BookOpen className="w-4 h-4 shrink-0" />
             Знания
           </button>
           {userRole === 'ADMIN' && (
             <button 
               onClick={() => setActiveTab('admin')}
-              className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'admin' ? 'bg-destructive text-destructive-foreground shadow-lg shadow-destructive/20' : 'text-muted-foreground hover:text-destructive'}`}
+              className={`flex min-w-0 items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all sm:px-6 ${activeTab === 'admin' ? 'bg-destructive text-destructive-foreground shadow-lg shadow-destructive/20' : 'text-muted-foreground hover:text-destructive'}`}
             >
-              <Shield className="w-4 h-4" />
+              <Shield className="w-4 h-4 shrink-0" />
               Админ
             </button>
           )}
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex min-w-0 flex-wrap items-center gap-3 xl:justify-end">
           {user?.rating !== undefined && <LeagueBadge rating={user.rating} size="md" />}
           {user?.brainId && <BrainIdBadge brainId={user.brainId} pseudonym={user.pseudonym || 'Anonymous'} />}
         </div>

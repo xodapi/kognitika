@@ -177,8 +177,14 @@
   * {
     @apply border-border;
   }
+  html,
+  body,
+  #root {
+    max-width: 100%;
+  }
   body {
     @apply bg-background text-foreground font-sans transition-colors duration-300;
+    overflow-x: clip;
   }
 }
 
@@ -189,4 +195,3 @@
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
-

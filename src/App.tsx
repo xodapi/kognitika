@@ -121,7 +121,7 @@ function AppContent() {
         <div className="flex items-center gap-3">
           <button 
             onClick={() => setIsMobileMenuOpen(true)}
-            className="lg:hidden p-2 hover:bg-secondary rounded-lg transition-colors"
+            className="2xl:hidden p-2 hover:bg-secondary rounded-lg transition-colors"
           >
             <Menu className="w-5 h-5" />
           </button>
@@ -137,7 +137,7 @@ function AppContent() {
           </div>
         </div>
 
-        <nav className="hidden lg:flex items-center gap-1 bg-secondary/50 p-1 rounded-xl border border-border">
+        <nav className="hidden 2xl:flex items-center gap-1 bg-secondary/50 p-1 rounded-xl border border-border">
           <button 
             onClick={() => navigate('/')} 
             className={`flex items-center gap-2 px-4 py-2 text-xs font-bold uppercase tracking-wider transition-all rounded-lg ${activeTab === 'dashboard' ? 'bg-primary text-primary-foreground shadow-md' : 'text-muted-foreground hover:text-foreground hover:bg-secondary'}`}
@@ -241,7 +241,7 @@ function AppContent() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-background/80 backdrop-blur-md z-[50] lg:hidden"
+              className="fixed inset-0 bg-background/80 backdrop-blur-md z-[50] 2xl:hidden"
               onClick={() => setIsMobileMenuOpen(false)}
             />
             <motion.div
@@ -250,7 +250,7 @@ function AppContent() {
               animate={{ x: 0, opacity: 1 }}
               exit={{ x: '-100%', opacity: 0 }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="fixed inset-y-0 left-0 w-[280px] bg-card/60 backdrop-blur-2xl border-r border-white/10 z-[51] lg:hidden flex flex-col p-6 shadow-2xl"
+              className="fixed inset-y-0 left-0 w-[280px] bg-card/60 backdrop-blur-2xl border-r border-white/10 z-[51] 2xl:hidden flex flex-col p-6 shadow-2xl"
             >
             <div className="p-6 border-b border-border flex justify-between items-center bg-secondary/30">
               <div className="flex items-center gap-2">

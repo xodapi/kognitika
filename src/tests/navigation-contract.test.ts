@@ -80,4 +80,12 @@ describe('navigation contract', () => {
     expect(appSource).toContain('aria-label="Версия сборки"');
     expect(appSource).toContain('build {appBuildId}');
   });
+
+  it('keeps the full header navigation behind a wide breakpoint', () => {
+    const appSource = readRepoFile('src/App.tsx');
+
+    expect(appSource).toContain('className="hidden 2xl:flex items-center gap-1');
+    expect(appSource).toContain('className="2xl:hidden p-2');
+    expect(appSource).not.toContain('className="hidden lg:flex items-center gap-1');
+  });
 });
