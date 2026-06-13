@@ -101,9 +101,14 @@ export function NumericalAnalysis() {
       <div className="lg:col-span-9 bg-card/20 border border-border rounded-3xl p-4 sm:p-6 flex flex-col items-center justify-center relative min-h-[400px] lg:h-full">
          <div className="w-full flex-1 flex flex-col justify-center items-center gap-6 sm:gap-8 max-w-3xl">
            
-           <h3 className="text-xl lg:text-2xl font-medium tracking-tight text-center leading-relaxed">
+           <div className="text-center space-y-3">
+             <p className="text-[10px] uppercase tracking-[0.24em] text-primary font-black">
+               Вопрос {state.currentIndex + 1} из {state.questions.length}:
+             </p>
+             <h3 className="text-xl lg:text-2xl font-medium tracking-tight leading-relaxed">
              {curQ.title}
-           </h3>
+             </h3>
+           </div>
 
            {/* Data Visualization */}
            <div className="w-full h-[200px] lg:h-[250px] bg-background/50 border border-border rounded-xl p-4">
