@@ -1,32 +1,33 @@
-import { test, expect } from '@playwright/test';
-import { devices } from 'playwright';
+import { expect, test } from '@playwright/test';
+import { collectUnexpectedBrowserErrors, expectAppReady, installSyntheticApi } from './helpers';
 
-test.use({
-  ...devices['iPhone 12'],
-});
+test.describe('Post-game navigation', () => {
+  test.beforeEach(async ({ page }) => {
+    await installSyntheticApi(page);
+  });
 
-test('capture mobile scanner overlay', async ({ page }) => {
-  // Переходим на страницу сканера
-  await page.goto('https://kognitika.syntog.ru/scanner');
-  
-  // Ждем появления кнопки "ВСЁ ПОНЯТНО, В БОЙ" и кликаем
-  const startBtn = page.locator('button:has-text("ВСЁ ПОНЯТНО, В БОЙ")');
-  await startBtn.waitFor({ timeout: 5000 });
-  await startBtn.click();
-  
-  // Ждем появления карточки с цитатой
-  await page.waitForTimeout(1000);
-  
-  // Кликаем по первой кнопке манипуляции в футере, чтобы вызвать ошибку (или правильный ответ)
-  // Кнопки имеют текст правил, например "Газлайтинг"
-  const firstRuleBtn = page.locator('button').filter({ hasText: /Газлайтинг|Чучело|Ad Hominem|Дилемма|Ложная дилемма/i }).first();
-  await firstRuleBtn.waitFor({ timeout: 5000 });
-  await firstRuleBtn.click();
-  
-  // Ждем отображения оверлея с результатом
-  await page.waitForTimeout(1000);
-  
-  // Делаем скриншот всего экрана и сохраняем его в artifacts
-  await page.screenshot({ path: 'C:/Users/d88u5/.gemini/antigravity/brain/3ef02b24-7196-4658-84c3-95b44d8e25c2/mobile_scanner_overlay_before.png' });
-  console.log('Screenshot captured successfully.');
+  test('Numerical Analysis recommendation opens the next training module', async ({ page }) => {
+    const browserErrors = collectUnexpectedBrowserErrors(page);
+
+    await page.goto('/numerical');
+    await expectAppReady(page);
+
+    await page.getByRole('button', { name: 'Начать тест' }).click();
+
+    for (let index = 0; index < 5; index += 1) {
+      const answerButton = page.getByRole('button', { name: /^-?\d+%$/ }).first();
+      await expect(answerButton).toBeVisible();
+      await answerButton.click();
+    }
+
+    await expect(page.getByRole('heading', { name: 'Анализ завершен' })).toBeVisible();
+    await expect(page.getByText('Логические матрицы')).toBeVisible();
+
+    await page.getByRole('button', { name: /Начать рекомендованное/i }).click();
+
+    await expect(page).toHaveURL(/\/logical$/);
+    await expectAppReady(page);
+    await expect(page.getByText(/Системная логика|Логическая матрица/i)).toBeVisible();
+    expect(browserErrors).toEqual([]);
+  });
 });
