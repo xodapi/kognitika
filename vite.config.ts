@@ -12,7 +12,7 @@ export default defineConfig({
     dedupe: ['react', 'react-dom'],
   },
   server: {
-    // HMR is disabled in AI Studio via DISABLE_HMR env var.
+    // Allow CI or remote preview environments to disable websocket HMR.
     hmr: process.env.DISABLE_HMR !== 'true',
   },
   optimizeDeps: {

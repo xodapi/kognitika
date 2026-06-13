@@ -37,17 +37,17 @@
 | `src/components/ConcentrationCurve.test.tsx` | Кривая концентрации | — | ❌ (UI only) |
 | `src/components/LeaderboardView.test.tsx` | Лидерборд | — | ❌ (UI only) |
 
-### Разница между `npm run test` и `npm run validate`
+### Разница между `pnpm test` и `pnpm validate`
 
 ```
-npm run test      → запускает ВСЕ файлы через vitest.config.ts
-npm run validate  → запускает только 12 ключевых engine-тестов (Gatekeeper)
+pnpm test      → запускает ВСЕ файлы через vitest.config.ts
+pnpm validate  → запускает core validation suite
 ```
 
 `validate` — это «Вратарь»: быстрая проверка математического ядра перед коммитом.
 `test` — полное покрытие, включая UI-компоненты.
 
-**Правило:** всегда запускать `npm run validate` перед `git commit`.
+**Правило:** всегда запускать `pnpm validate` перед `git commit`.
 
 ---
 
@@ -76,9 +76,9 @@ npm run validate  → запускает только 12 ключевых engine
 
 1. Создать `src/tests/{module}-core.test.ts`
 2. Импортировать хук `use{Module}Engine`
-3. Замокировать WASM: `vi.mock('../lib/cognitive-metrics', ...)`
-4. Добавить файл в команду `validate` в `package.json`
-5. Запустить `npm run validate` — должно быть зелёным
+3. Если модуль использует аналитику, мокировать `../lib/cognitive-metrics` только на уровне теста.
+4. Убедиться, что файл попадает в `vitest.config.ts`.
+5. Запустить `pnpm validate` — должно быть зелёным.
 
 ---
 
@@ -88,8 +88,7 @@ npm run validate  → запускает только 12 ключевых engine
 
 ```yaml
 - name: Validate core logic
-  run: npm run validate
-  working-directory: apps/kognitika
+  run: pnpm validate
 ```
 
 Этот шаг блокирует merge при любом регрессе в математическом ядре.

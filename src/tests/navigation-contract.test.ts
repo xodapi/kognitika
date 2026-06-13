@@ -72,4 +72,12 @@ describe('navigation contract', () => {
       expect(declaredRoutes.has(`/${id}`), `TrainingGallery module '${id}' should have a matching route`).toBe(true);
     }
   });
+
+  it('exposes the deployed build id for manual QA', () => {
+    const appSource = readRepoFile('src/App.tsx');
+
+    expect(appSource).toContain('import.meta.env.VITE_BUILD_ID');
+    expect(appSource).toContain('aria-label="Версия сборки"');
+    expect(appSource).toContain('build {appBuildId}');
+  });
 });

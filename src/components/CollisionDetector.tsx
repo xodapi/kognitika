@@ -9,16 +9,16 @@ export function CollisionDetector() {
   const { state, startGame, flagCard } = useCollisionEngine();
   const { token } = useAuth();
   const [isGenerating, setIsGenerating] = useState(false);
-  const [aiMode, setAiMode] = useState(false);
-  const [aiError, setAiError] = useState<string | null>(null);
+  const [generatedMode, setGeneratedMode] = useState(false);
+  const [contentError, setContentError] = useState<string | null>(null);
   const levelRef = useRef(1);
 
-  // Запуск с AI-генерацией контента
-  const startWithAI = async (level: number) => {
+  // Local deterministic content generation keeps this module offline and reproducible.
+  const startWithGeneratedContent = async (level: number) => {
     levelRef.current = level;
     setIsGenerating(true);
-    setAiError(null);
-    setAiMode(true);
+    setContentError(null);
+    setGeneratedMode(true);
     try {
       // Используем дефолтные правила сценария для генерации релевантных карточек
       const defaultRules = level <= 1
@@ -28,10 +28,9 @@ export function CollisionDetector() {
         : [{ id: 1, text: 'Модуль B зависит от A — A грузится первым' }, { id: 2, text: 'Кэш очищается только при CRITICAL ошибке' }, { id: 3, text: 'Логи хранятся не менее 30 дней' }];
 
       await generateCollisionCards(defaultRules, level, 10);
-      // После генерации просто стартуем игру — контент через fallback уже богатый
       startGame(level);
     } catch {
-      setAiError('Gemini недоступен — запускаем со статичными сценариями');
+      setContentError('Локальный генератор недоступен — запускаем базовые сценарии');
       startGame(level);
     } finally {
       setIsGenerating(false);
@@ -61,9 +60,9 @@ export function CollisionDetector() {
             <div className="w-16 h-16 bg-red-500/10 border border-red-500/30 rounded-2xl flex items-center justify-center">
               <Filter className="w-8 h-8 text-red-400" />
             </div>
-            {aiMode && (
+            {generatedMode && (
               <div className="flex items-center gap-1.5 bg-violet-500/10 border border-violet-500/30 text-violet-400 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest">
-                <Sparkles className="w-3 h-3" /> AI-режим
+                <Sparkles className="w-3 h-3" /> Локальный режим
               </div>
             )}
           </div>
@@ -78,9 +77,9 @@ export function CollisionDetector() {
             </p>
           </div>
 
-          {aiError && (
+          {contentError && (
             <div className="bg-amber-500/10 border border-amber-500/30 text-amber-400 px-4 py-2 rounded-xl text-xs font-medium">
-              ⚠ {aiError}
+              ⚠ {contentError}
             </div>
           )}
 
@@ -90,7 +89,7 @@ export function CollisionDetector() {
               <button
                 key={lvl}
                 id={`collision-level-${lvl}`}
-                onClick={() => startWithAI(lvl)}
+                onClick={() => startWithGeneratedContent(lvl)}
                 disabled={isGenerating}
                 className="group relative flex flex-col items-center gap-1 px-3 py-4 bg-card/40 border border-border rounded-2xl hover:border-red-400/50 hover:bg-red-500/5 transition-all disabled:opacity-50"
               >
@@ -106,13 +105,13 @@ export function CollisionDetector() {
           {isGenerating && (
             <div className="flex items-center gap-2 text-sm text-violet-400 font-medium">
               <Loader2 className="w-4 h-4 animate-spin" />
-              Gemini генерирует уникальные карточки…
+              Локальный генератор готовит карточки…
             </div>
           )}
 
           <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
             <Sparkles className="w-3 h-3 text-violet-400" />
-            <span>Контент генерируется Gemini AI · Каждая сессия уникальна</span>
+            <span>Контент создаётся локально и детерминированно</span>
           </div>
         </div>
       </div>

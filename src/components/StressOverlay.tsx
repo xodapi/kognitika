@@ -36,7 +36,14 @@ export function StressOverlay({ isActive, intensity, children }: StressOverlayPr
   return (
     <div className="relative w-full h-full overflow-hidden rounded-3xl">
       {/* Noise layer */}
-      <div className={`absolute inset-0 pointer-events-none z-50 opacity-[0.03] mix-blend-overlay bg-[url('https://grainy-gradients.vercel.app/noise.svg')]`} />
+      <div
+        className="absolute inset-0 pointer-events-none z-50 opacity-[0.03] mix-blend-overlay"
+        style={{
+          backgroundImage:
+            'radial-gradient(circle at 1px 1px, rgba(255,255,255,0.55) 1px, transparent 0)',
+          backgroundSize: '6px 6px',
+        }}
+      />
       
       {/* Flashing lights for High intensity */}
       <AnimatePresence>
