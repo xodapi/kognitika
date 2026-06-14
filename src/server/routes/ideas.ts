@@ -6,6 +6,7 @@ import { authenticate } from '../middleware/auth.ts';
 import { handleValidationError } from '../utils/validation.ts';
 import { sanitizePublicUserIdentity } from '../utils/privacy.ts';
 import { createSafeLogger, safeError } from '../../lib/safe-logger.ts';
+import { eventBus } from '../events/event-bus.ts';
 
 const router = Router();
 const JWT_SECRET = process.env.JWT_SECRET!;
@@ -94,6 +95,13 @@ router.post('/', authenticate, async (req: any, res) => {
           select: { votes: true },
         },
       },
+    });
+
+    eventBus.emit('idea:submitted', {
+      userId: req.user.id,
+      ideaId: idea.id,
+      title: idea.title,
+      description: idea.description,
     });
 
     res.status(201).json({

@@ -2,6 +2,11 @@ import { eventBus } from '../server/events/event-bus.ts';
 import prisma from './prisma.ts';
 import nodemailer from 'nodemailer';
 import { createSafeLogger, safeError } from './safe-logger.ts';
+import {
+  buildFeedbackTelegramMessage,
+  buildIdeaTelegramMessage,
+  sendTelegramAdminMessage,
+} from '../server/services/telegram-notifier.ts';
 
 const logger = createSafeLogger('subscribers');
 
@@ -25,6 +30,33 @@ function isLegacyEmailNotificationsEnabled() {
 
 function adminNotificationEmail() {
   return process.env.ADMIN_NOTIFICATION_EMAIL || null;
+}
+
+function adminNotificationUserLabel(user: { pseudonym?: string | null; name?: string | null }) {
+  return user.pseudonym || user.name || 'Brain ID user';
+}
+
+async function deliverTelegramAdminNotification(text: string, eventLabel: string) {
+  const result = await sendTelegramAdminMessage(text);
+
+  if (result.disabled) {
+    logger.info('Telegram admin notifications disabled', { eventLabel });
+    return;
+  }
+
+  if (!result.delivered) {
+    logger.warn('Telegram admin notification failed', {
+      eventLabel,
+      status: result.status ?? 'n/a',
+      error: result.error,
+    });
+    return;
+  }
+
+  logger.info('Telegram admin notification delivered', {
+    eventLabel,
+    status: result.status ?? 'n/a',
+  });
 }
 
 /**
@@ -52,11 +84,18 @@ eventBus.on('game:completed', async (data) => {
 eventBus.on('feedback:submitted', async (data) => {
   try {
     const { userId, trackingNum, type, content } = data;
-    const user = await prisma.user.findUnique({ where: { id: userId } });
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        email: true,
+        name: true,
+        pseudonym: true,
+      },
+    });
     if (!user) return;
 
     const adminEmail = adminNotificationEmail();
-    const userLabel = user.pseudonym || (user.brainId ? `Brain ${user.brainId.slice(0, 8)}` : `User ${user.id.slice(0, 8)}`);
+    const userLabel = adminNotificationUserLabel(user);
     
     // Admin-only delivery channel. This is not public auth identity.
     if (adminEmail) {
@@ -67,6 +106,13 @@ eventBus.on('feedback:submitted', async (data) => {
         text: `Обращение: ${trackingNum}\nОт: ${userLabel}\nТип: ${type}\n\nТекст:\n${content}`
       });
     }
+
+    await deliverTelegramAdminNotification(buildFeedbackTelegramMessage({
+      trackingNum,
+      type,
+      userLabel,
+      content,
+    }), 'feedback:submitted');
 
     // Legacy opt-in only: Brain ID public users are not contacted by email.
     if (isLegacyEmailNotificationsEnabled() && user.email) {
@@ -82,5 +128,34 @@ eventBus.on('feedback:submitted', async (data) => {
     logger.info('Feedback notifications processed', { trackingNum, type });
   } catch (err) {
     logger.error('Feedback handler failed', { error: safeError(err) });
+  }
+});
+
+/**
+ * Subscriber: Handle Idea Submission
+ * Sends privacy-safe admin notifications after durable persistence.
+ */
+eventBus.on('idea:submitted', async (data) => {
+  try {
+    const { userId, ideaId, title, description } = data;
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        name: true,
+        pseudonym: true,
+      },
+    });
+    if (!user) return;
+
+    await deliverTelegramAdminNotification(buildIdeaTelegramMessage({
+      ideaId,
+      title,
+      userLabel: adminNotificationUserLabel(user),
+      description,
+    }), 'idea:submitted');
+
+    logger.info('Idea notifications processed', { ideaLabel: `Idea ${ideaId.slice(0, 8)}` });
+  } catch (err) {
+    logger.error('Idea handler failed', { error: safeError(err) });
   }
 });
