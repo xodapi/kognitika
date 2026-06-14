@@ -7,6 +7,7 @@
   "scripts": {
     "dev": "tsx server.ts",
     "build": "prisma generate && vite build",
+    "check:bundle": "node scripts/check-bundle-budget.mjs",
     "start": "tsx server.ts",
     "preview": "vite preview",
     "clean": "rm -rf dist",

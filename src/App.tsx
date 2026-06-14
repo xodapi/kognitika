@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState, useEffect } from 'react';
+import { lazy, Suspense, useState, useEffect, type ComponentType, type ReactNode } from 'react';
 import { useTheme } from 'next-themes';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
@@ -15,43 +15,11 @@ import {
 } from 'lucide-react';
 import { Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom';
 
-import { SpeedTyping } from './components/SpeedTyping';
-import { SpatialConcealment } from './components/SpatialConcealment';
-import { SchulteGrid } from './components/SchulteGrid';
-import { Dashboard } from './components/Dashboard';
-import { NumericalAnalysis } from './components/NumericalAnalysis';
-import { LogicalMatrix } from './components/LogicalMatrix';
-import { StroopTest } from './components/StroopTest';
-import { NBackTest } from './components/NBackTest';
-import { SituationalJudgmentTest } from './components/SituationalJudgmentTest';
 import { AuthProvider, useAuth } from './hooks/useAuth';
 import { AuthModal } from './components/AuthModal';
-import { SymbolChat } from './components/SymbolChat';
 import { FeedbackModal } from './components/FeedbackModal';
 import { AppErrorBoundary } from './components/AppErrorBoundary';
-
-import { AdminPanel } from './components/AdminPanel';
-import { IdeasWall } from './components/IdeasWall';
-import { ObjectiveFilter } from './components/ObjectiveFilter';
-import { ProfilingRICE } from './components/ProfilingRICE';
-import { AnomalyDetector } from './components/AnomalyDetector';
-import { SocialEQ } from './components/SocialEQ';
-import { Reframing } from './components/Reframing';
-import { RejectionImmunity } from './components/RejectionImmunity';
-import { Storytelling } from './components/Storytelling';
-import { DeepFocus } from './components/DeepFocus';
-import { LeaderboardView } from './components/LeaderboardView';
-import { TopologyMemory } from './components/TopologyMemory';
-import { CollisionDetector } from './components/CollisionDetector';
-import { AsyncDispatcher } from './components/AsyncDispatcher';
-import { NoiseReduction } from './components/NoiseReduction';
-import { LanguageScanner } from './components/LanguageScanner';
-import { Decryptor } from './components/Decryptor';
-import { RealityCheck } from './components/RealityCheck';
 import { DonateButton } from './components/DonateButton';
-import { NeuroSilence } from './components/NeuroSilence';
-import { CognitiveTrashFilter } from './components/CognitiveTrashFilter';
-import { HypeFilter } from './components/HypeFilter';
 
 type Tab = 'dashboard' | 'schulte' | 'numerical' | 'logical' | 'stroop' | 'nback' | 'situational' | 'typing' | 'spatial' | 'admin' | 'ideas' | 'objective' | 'profiling' | 'anomaly' | 'dialogue' | 'leaderboard' | 'topology' | 'collision' | 'dispatcher' | 'noise' | 'scanner' | 'decryptor' | 'reality' | 'silence' | 'filter' | 'hype' | 'reframing' | 'rejection' | 'storytelling' | 'focus';
 
@@ -90,6 +58,72 @@ const tabTitles: Record<string, string> = {
 };
 
 const appBuildId = import.meta.env.VITE_BUILD_ID || import.meta.env.VITE_GIT_COMMIT || 'dev';
+
+function lazyNamed<TProps extends object = Record<string, never>>(
+  loader: () => Promise<unknown>,
+  exportName: string,
+) {
+  return lazy(async () => {
+    const module = await loader() as Record<string, ComponentType<TProps>>;
+    return { default: module[exportName] };
+  });
+}
+
+const Dashboard = lazyNamed<{ onStartGame: (game: string) => void }>(
+  () => import('./components/Dashboard'),
+  'Dashboard',
+);
+const LeaderboardView = lazyNamed(() => import('./components/LeaderboardView'), 'LeaderboardView');
+const SchulteGrid = lazyNamed(() => import('./components/SchulteGrid'), 'SchulteGrid');
+const NumericalAnalysis = lazyNamed(() => import('./components/NumericalAnalysis'), 'NumericalAnalysis');
+const LogicalMatrix = lazyNamed(() => import('./components/LogicalMatrix'), 'LogicalMatrix');
+const StroopTest = lazyNamed(() => import('./components/StroopTest'), 'StroopTest');
+const NBackTest = lazyNamed(() => import('./components/NBackTest'), 'NBackTest');
+const SituationalJudgmentTest = lazyNamed(() => import('./components/SituationalJudgmentTest'), 'SituationalJudgmentTest');
+const SpeedTyping = lazyNamed(() => import('./components/SpeedTyping'), 'SpeedTyping');
+const SpatialConcealment = lazyNamed(() => import('./components/SpatialConcealment'), 'SpatialConcealment');
+const ObjectiveFilter = lazyNamed(() => import('./components/ObjectiveFilter'), 'ObjectiveFilter');
+const ProfilingRICE = lazyNamed(() => import('./components/ProfilingRICE'), 'ProfilingRICE');
+const AnomalyDetector = lazyNamed(() => import('./components/AnomalyDetector'), 'AnomalyDetector');
+const SocialEQ = lazyNamed<{ onFinish?: () => void }>(() => import('./components/SocialEQ'), 'SocialEQ');
+const AdminPanel = lazyNamed<{ token: string | null }>(() => import('./components/AdminPanel'), 'AdminPanel');
+const IdeasWall = lazyNamed<{ token: string | null }>(() => import('./components/IdeasWall'), 'IdeasWall');
+const TopologyMemory = lazyNamed(() => import('./components/TopologyMemory'), 'TopologyMemory');
+const CollisionDetector = lazyNamed(() => import('./components/CollisionDetector'), 'CollisionDetector');
+const AsyncDispatcher = lazyNamed(() => import('./components/AsyncDispatcher'), 'AsyncDispatcher');
+const NoiseReduction = lazyNamed<{ level?: number }>(() => import('./components/NoiseReduction'), 'NoiseReduction');
+const LanguageScanner = lazyNamed(() => import('./components/LanguageScanner'), 'LanguageScanner');
+const Decryptor = lazyNamed(() => import('./components/Decryptor'), 'Decryptor');
+const RealityCheck = lazyNamed<{ onFinish: (results?: unknown) => void }>(
+  () => import('./components/RealityCheck'),
+  'RealityCheck',
+);
+const NeuroSilence = lazyNamed(() => import('./components/NeuroSilence'), 'NeuroSilence');
+const CognitiveTrashFilter = lazyNamed(() => import('./components/CognitiveTrashFilter'), 'CognitiveTrashFilter');
+const HypeFilter = lazyNamed<{ onFinish: (results?: unknown) => void }>(() => import('./components/HypeFilter'), 'HypeFilter');
+const Reframing = lazyNamed<{ onFinish?: () => void }>(() => import('./components/Reframing'), 'Reframing');
+const RejectionImmunity = lazyNamed<{ onFinish?: () => void }>(
+  () => import('./components/RejectionImmunity'),
+  'RejectionImmunity',
+);
+const Storytelling = lazyNamed<{ onFinish?: () => void }>(() => import('./components/Storytelling'), 'Storytelling');
+const DeepFocus = lazyNamed<{ onFinish?: () => void }>(() => import('./components/DeepFocus'), 'DeepFocus');
+const SymbolChat = lazyNamed(() => import('./components/SymbolChat'), 'SymbolChat');
+
+function SectionFallback() {
+  return (
+    <div className="min-h-[360px] rounded-2xl border border-border bg-card/40 p-8 shadow-sm">
+      <div className="h-3 w-28 rounded-full bg-primary/20" />
+      <div className="mt-6 h-8 w-64 max-w-full rounded-xl bg-secondary" />
+      <div className="mt-4 h-24 rounded-2xl bg-secondary/70" />
+      <p className="sr-only">Раздел загружается</p>
+    </div>
+  );
+}
+
+function LazySection({ children }: { children: ReactNode }) {
+  return <Suspense fallback={<SectionFallback />}>{children}</Suspense>;
+}
 
 function AppContent() {
   const navigate = useNavigate();
@@ -424,47 +458,51 @@ function AppContent() {
 
       <main className="flex-1 w-full max-w-[1400px] mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 relative z-10 pb-32 lg:pb-10 px-4 md:px-8 mt-4">
          <div className="lg:col-span-9 h-full">
-            <Routes>
-              <Route path="/" element={<Dashboard onStartGame={(game) => navigate(`/${game}`)} />} />
-              <Route path="/dashboard" element={<Navigate to="/" replace />} />
-              <Route path="/schulte" element={<SchulteGrid />} />
-              <Route path="/numerical" element={<NumericalAnalysis />} />
-              <Route path="/logical" element={<LogicalMatrix />} />
-              <Route path="/stroop" element={<StroopTest />} />
-              <Route path="/nback" element={<NBackTest />} />
-              <Route path="/situational" element={<SituationalJudgmentTest />} />
-              <Route path="/typing" element={<SpeedTyping />} />
-              <Route path="/spatial" element={<SpatialConcealment />} />
-              <Route path="/objective" element={<ObjectiveFilter />} />
-              <Route path="/profiling" element={<ProfilingRICE />} />
-              <Route path="/anomaly" element={<AnomalyDetector />} />
-              <Route path="/dialogue" element={<SocialEQ onFinish={() => navigate('/')} />} />
-              <Route path="/admin" element={isAdmin ? <AdminPanel token={token} /> : <Navigate to="/" replace />} />
-              <Route path="/ideas" element={<IdeasWall token={token} />} />
-              <Route path="/leaderboard" element={<LeaderboardView />} />
-              <Route path="/topology" element={<TopologyMemory />} />
-              <Route path="/collision" element={<CollisionDetector />} />
-              <Route path="/dispatcher" element={<AsyncDispatcher />} />
-              <Route path="/noise" element={<NoiseReduction level={1} />} />
-              <Route path="/scanner" element={<LanguageScanner />} />
-              <Route path="/decryptor" element={<Decryptor />} />
-              <Route path="/reality" element={<RealityCheck onFinish={() => navigate('/')} />} />
-              <Route path="/silence" element={<NeuroSilence />} />
-              <Route path="/filter" element={<CognitiveTrashFilter />} />
-              <Route path="/hype" element={<HypeFilter onFinish={() => navigate('/')} />} />
-              <Route path="/reframing" element={<Reframing onFinish={() => navigate('/')} />} />
-              <Route path="/rejection" element={<RejectionImmunity onFinish={() => navigate('/')} />} />
-              <Route path="/storytelling" element={<Storytelling onFinish={() => navigate('/')} />} />
-              <Route path="/focus" element={<DeepFocus onFinish={() => navigate('/')} />} />
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
+            <LazySection>
+              <Routes>
+                <Route path="/" element={<Dashboard onStartGame={(game) => navigate(`/${game}`)} />} />
+                <Route path="/dashboard" element={<Navigate to="/" replace />} />
+                <Route path="/schulte" element={<SchulteGrid />} />
+                <Route path="/numerical" element={<NumericalAnalysis />} />
+                <Route path="/logical" element={<LogicalMatrix />} />
+                <Route path="/stroop" element={<StroopTest />} />
+                <Route path="/nback" element={<NBackTest />} />
+                <Route path="/situational" element={<SituationalJudgmentTest />} />
+                <Route path="/typing" element={<SpeedTyping />} />
+                <Route path="/spatial" element={<SpatialConcealment />} />
+                <Route path="/objective" element={<ObjectiveFilter />} />
+                <Route path="/profiling" element={<ProfilingRICE />} />
+                <Route path="/anomaly" element={<AnomalyDetector />} />
+                <Route path="/dialogue" element={<SocialEQ onFinish={() => navigate('/')} />} />
+                <Route path="/admin" element={isAdmin ? <AdminPanel token={token} /> : <Navigate to="/" replace />} />
+                <Route path="/ideas" element={<IdeasWall token={token} />} />
+                <Route path="/leaderboard" element={<LeaderboardView />} />
+                <Route path="/topology" element={<TopologyMemory />} />
+                <Route path="/collision" element={<CollisionDetector />} />
+                <Route path="/dispatcher" element={<AsyncDispatcher />} />
+                <Route path="/noise" element={<NoiseReduction level={1} />} />
+                <Route path="/scanner" element={<LanguageScanner />} />
+                <Route path="/decryptor" element={<Decryptor />} />
+                <Route path="/reality" element={<RealityCheck onFinish={() => navigate('/')} />} />
+                <Route path="/silence" element={<NeuroSilence />} />
+                <Route path="/filter" element={<CognitiveTrashFilter />} />
+                <Route path="/hype" element={<HypeFilter onFinish={() => navigate('/')} />} />
+                <Route path="/reframing" element={<Reframing onFinish={() => navigate('/')} />} />
+                <Route path="/rejection" element={<RejectionImmunity onFinish={() => navigate('/')} />} />
+                <Route path="/storytelling" element={<Storytelling onFinish={() => navigate('/')} />} />
+                <Route path="/focus" element={<DeepFocus onFinish={() => navigate('/')} />} />
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
+            </LazySection>
          </div>
          
          {/* Adaptive Chat Position */}
          {isChatEnabled && (
            <div className="fixed bottom-28 right-4 lg:relative lg:bottom-0 lg:right-0 lg:col-span-3 h-[450px] lg:h-full z-40 transition-all">
              <div className="h-full bg-card/40 backdrop-blur-xl border border-border rounded-3xl overflow-hidden shadow-2xl lg:shadow-none">
-                <SymbolChat />
+                <LazySection>
+                  <SymbolChat />
+                </LazySection>
              </div>
            </div>
          )}
