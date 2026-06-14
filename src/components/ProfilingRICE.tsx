@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Target, Users, Sparkles, ShieldAlert, Award, Star } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { createSafeLogger, safeError } from '../lib/safe-logger';
+import { CompletionRecommendation } from './CompletionRecommendation';
 
 const logger = createSafeLogger('profiling-rice');
 
@@ -103,6 +104,13 @@ export function ProfilingRICE() {
     }
   }, [score, currentIndex, token, refreshUser]);
 
+  const restartGame = () => {
+    setCurrentIndex(0);
+    setScore(0);
+    setLastError(false);
+    setGameState('profiling');
+  };
+
   if (gameState === 'idle') {
     return (
       <div className="col-span-12 flex flex-col items-center justify-center h-full min-h-[400px] gap-8 p-8">
@@ -131,9 +139,13 @@ export function ProfilingRICE() {
         </div>
         <h2 className="text-[10px] text-muted-foreground uppercase tracking-widest mb-2">Анализ завершен</h2>
         <div className="text-4xl font-black mb-8 text-primary">Мастер убеждения</div>
-        <button onClick={() => setGameState('idle')} className="px-8 py-3 bg-primary text-primary-foreground text-[10px] uppercase tracking-wider rounded-lg font-bold">
-           В меню
-        </button>
+        <CompletionRecommendation
+          sourceModuleId="profiling"
+          score={score}
+          maxScore={SCENARIOS.length}
+          onRepeat={restartGame}
+          className="max-w-3xl"
+        />
       </div>
     );
   }

@@ -4,6 +4,7 @@ import { Card, CardHeader, CardTitle, CardContent } from './ui/card';
 import { Button } from './ui/button';
 import { Target, Play, Square, MessageCircle, Lightbulb, BellRing, Brain } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { CompletionRecommendation } from './CompletionRecommendation';
 
 export function DeepFocus({ onFinish }: { onFinish?: () => void }) {
   const [minutes, setMinutes] = useState(25);
@@ -57,9 +58,14 @@ export function DeepFocus({ onFinish }: { onFinish?: () => void }) {
             </div>
           )}
 
-          <Button onClick={onFinish} className="w-full h-12 text-lg" variant="default">
-            Завершить
-          </Button>
+          <CompletionRecommendation
+            sourceModuleId="focus"
+            score={score}
+            errors={distractions.length}
+            onRepeat={startSession}
+            onMenu={onFinish}
+            menuLabel="Завершить"
+          />
         </CardContent>
       </Card>
     );

@@ -6,6 +6,7 @@ import { emitEvent } from '../hooks/useEventBus';
 import { useSessionRecording } from '../hooks/useSessionRecording';
 
 import { useTypingEngine } from '../hooks/useTypingEngine';
+import { CompletionRecommendation } from './CompletionRecommendation';
 
 const TEXTS = [
   "Цифровая трансформация железных дорог требует высокого уровня когнитивной гибкости и скорости принятия решений в условиях неопределенности.",
@@ -132,11 +133,14 @@ export function SpeedTyping() {
                     </div>
                   </div>
                 </div>
-                <div className="flex gap-4">
-                  <button onClick={startTest} className="px-6 py-3 bg-primary text-primary-foreground rounded-xl font-black uppercase text-[10px] tracking-widest">
-                    Повторить
-                  </button>
-                </div>
+                <CompletionRecommendation
+                  sourceModuleId="typing"
+                  score={cpm}
+                  accuracy={accuracy}
+                  errors={errors}
+                  onRepeat={startTest}
+                  className="max-w-3xl"
+                />
               </motion.div>
             ) : (
               <motion.div 

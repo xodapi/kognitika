@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useLanguageScannerEngine } from '../hooks/useLanguageScannerEngine';
-import { 
+import {
   Shield, 
   CheckCircle, 
   XCircle, 
@@ -15,10 +15,11 @@ import {
   Timer,
   AlertCircle
 } from 'lucide-react';
+import { CompletionRecommendation } from './CompletionRecommendation';
 
 export const LanguageScanner: React.FC = () => {
   const engine = useLanguageScannerEngine();
-  const { state, startScan, flagCard } = engine;
+  const { state, startScan, flagCard, startGame } = engine;
 
   React.useEffect(() => {
     engine.startGame(1, 123);
@@ -94,6 +95,27 @@ export const LanguageScanner: React.FC = () => {
             ВСЁ ПОНЯТНО, В БОЙ
           </button>
         </motion.div>
+      </div>
+    );
+  }
+
+  if (state.phase === 'result') {
+    return (
+      <div className="flex min-h-[500px] flex-col items-center justify-center rounded-3xl border border-slate-100 bg-white p-4 text-center shadow-sm sm:min-h-[600px] sm:p-8">
+        <Shield className="mb-4 h-12 w-12 text-emerald-600" />
+        <h2 className="mb-2 text-2xl font-black tracking-tight text-slate-800">Сканирование завершено</h2>
+        <p className="mb-6 text-sm font-medium text-slate-500">
+          Найдено {state.hits} из {state.maxScore}. Ошибок: {state.misses + state.falsePositives}.
+        </p>
+        <CompletionRecommendation
+          sourceModuleId="scanner"
+          score={state.score}
+          maxScore={state.maxScore}
+          errors={state.misses + state.falsePositives}
+          durationMs={state.timeMs}
+          onRepeat={() => startGame(state.level, 123)}
+          className="max-w-3xl"
+        />
       </div>
     );
   }

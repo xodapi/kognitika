@@ -1,8 +1,9 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useDecryptorEngine } from '../hooks/useDecryptorEngine';
-import { Cpu, Terminal, CheckCircle2, XCircle, Brain, Layers, ArrowRight } from 'lucide-react';
+import { Cpu, Terminal, Brain, Layers, ArrowRight } from 'lucide-react';
 import { clsx } from 'clsx';
+import { CompletionRecommendation } from './CompletionRecommendation';
 
 export const Decryptor: React.FC = () => {
   const { state, startGame, handleAnswer } = useDecryptorEngine();
@@ -76,12 +77,14 @@ export const Decryptor: React.FC = () => {
             </div>
           </div>
 
-          <button
-            onClick={() => startGame(state.level)}
-            className="px-8 py-3 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-full transition-all hover:scale-105 active:scale-95 shadow-lg shadow-purple-500/25"
-          >
-            НОВЫЙ ЦИКЛ
-          </button>
+          <CompletionRecommendation
+            sourceModuleId="decryptor"
+            score={state.score}
+            errors={state.misses}
+            onRepeat={() => startGame(state.level)}
+            repeatLabel="Новый цикл"
+            className="max-w-3xl bg-slate-800/60"
+          />
         </motion.div>
       </div>
     );

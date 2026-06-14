@@ -2,7 +2,8 @@ import { motion, AnimatePresence } from 'motion/react';
 import { useTopologyEngine, NodeState, NodeId } from '../hooks/useTopologyEngine';
 import { useAuth } from '../hooks/useAuth';
 import { useEffect } from 'react';
-import { GitBranch, ChevronRight, RefreshCw, CheckCircle } from 'lucide-react';
+import { GitBranch, ChevronRight, CheckCircle } from 'lucide-react';
+import { CompletionRecommendation } from './CompletionRecommendation';
 
 const STATE_COLORS: Record<NodeState, string> = {
   idle:    'bg-secondary border-border text-muted-foreground',
@@ -279,10 +280,15 @@ export function TopologyMemory() {
         <div className="text-sm font-bold mb-1">{grade}</div>
         <div className="text-xs text-muted-foreground mb-2">Точность: {pct}%</div>
         <div className="text-xs font-mono text-muted-foreground mb-8">Время: {(state.timeMs / 1000).toFixed(1)}с · Уровень {state.level}</div>
-        <div className="flex gap-3">
-          <button onClick={() => startGame(state.level)} className="flex items-center gap-2 px-5 py-2.5 border border-border rounded-xl text-xs font-bold hover:bg-secondary transition-colors">
-            <RefreshCw className="w-3.5 h-3.5" /> Повторить
-          </button>
+        <CompletionRecommendation
+          sourceModuleId="topology"
+          score={state.score}
+          maxScore={state.maxScore}
+          durationMs={state.timeMs}
+          onRepeat={() => startGame(state.level)}
+          className="max-w-3xl"
+        />
+        <div className="mt-4 flex gap-3">
           {pct >= 70 && (
             <button onClick={nextLevel} className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-xl text-xs font-bold hover:bg-indigo-500 transition-colors">
               Уровень {state.level + 1} <ChevronRight className="w-3.5 h-3.5" />

@@ -6,6 +6,7 @@
 import { motion, AnimatePresence } from 'motion/react';
 import { useNoiseReductionEngine } from '../hooks/useNoiseReductionEngine';
 import { Play, Shield, AlertTriangle, Eye, Zap, Target } from 'lucide-react';
+import { CompletionRecommendation } from './CompletionRecommendation';
 
 interface NoiseReductionProps {
   level?: number;
@@ -138,14 +139,16 @@ export function NoiseReduction({ level = 1, onComplete }: NoiseReductionProps) {
           ))}
         </div>
 
+        <CompletionRecommendation
+          sourceModuleId="noise"
+          score={inhibitoryIndex}
+          accuracy={accuracy}
+          errors={state.misses + state.falseAlarms}
+          durationMs={state.timeMs}
+          onRepeat={() => startGame(state.level)}
+          className="max-w-3xl"
+        />
         <div className="flex gap-3">
-          <button
-            id="noise-retry-btn"
-            onClick={() => startGame(state.level)}
-            className="px-8 py-3 bg-primary text-primary-foreground rounded-2xl font-bold hover:bg-primary/90 transition-all"
-          >
-            Повторить
-          </button>
           <button
             id="noise-next-level-btn"
             onClick={() => startGame(Math.min(state.level + 1, 4))}

@@ -2,7 +2,8 @@ import { motion } from 'motion/react';
 import { useDispatcherEngine } from '../hooks/useDispatcherEngine';
 import { useAuth } from '../hooks/useAuth';
 import { useEffect } from 'react';
-import { Cpu, RefreshCw, ChevronRight, Zap } from 'lucide-react';
+import { Cpu, ChevronRight, Zap } from 'lucide-react';
+import { CompletionRecommendation } from './CompletionRecommendation';
 
 export function AsyncDispatcher() {
   const { state, startGame, triggerStream } = useDispatcherEngine();
@@ -84,10 +85,16 @@ export function AsyncDispatcher() {
               <div className="text-[10px] text-muted-foreground">КПД</div>
             </div>
           </div>
-          <div className="flex gap-3">
-            <button onClick={() => startGame(state.level)} className="flex items-center gap-2 px-5 py-2.5 border border-border rounded-xl text-xs font-bold hover:bg-secondary transition-colors">
-              <RefreshCw className="w-3.5 h-3.5" /> Повторить
-            </button>
+          <CompletionRecommendation
+            sourceModuleId="dispatcher"
+            score={state.score}
+            accuracy={efficiency}
+            errors={state.totalOverflows}
+            durationMs={state.timeMs}
+            onRepeat={() => startGame(state.level)}
+            className="max-w-3xl"
+          />
+          <div className="mt-4 flex gap-3">
             {state.score >= 80 && state.level < 3 && (
               <button onClick={() => startGame(state.level + 1)} className="flex items-center gap-2 px-5 py-2.5 bg-amber-600 text-white rounded-xl text-xs font-bold hover:bg-amber-500 transition-colors">
                 Уровень {state.level + 1} <ChevronRight className="w-3.5 h-3.5" />

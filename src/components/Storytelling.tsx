@@ -4,6 +4,7 @@ import { Card, CardHeader, CardTitle, CardContent } from './ui/card';
 import { Button } from './ui/button';
 import { Network, Play, Link as LinkIcon, AlertCircle, BookOpen } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { CompletionRecommendation } from './CompletionRecommendation';
 
 export function Storytelling({ onFinish }: { onFinish?: () => void }) {
   const {
@@ -36,9 +37,13 @@ export function Storytelling({ onFinish }: { onFinish?: () => void }) {
               Умение находить метафоры и связывать несоединимое — признак сильного интеллекта.
             </p>
           </div>
-          <Button onClick={onFinish} className="w-full h-12 text-lg" variant="default">
-            Завершить
-          </Button>
+          <CompletionRecommendation
+            sourceModuleId="storytelling"
+            score={score}
+            onRepeat={startSession}
+            onMenu={onFinish}
+            menuLabel="Завершить"
+          />
         </CardContent>
       </Card>
     );
