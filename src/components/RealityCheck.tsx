@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Target, Shield, AlertTriangle, CheckCircle2, ChevronRight, Brain, Zap, Info } from 'lucide-react';
 import { useRealityCheckEngine } from '../hooks/useRealityCheckEngine';
 import { useAuth } from '../hooks/useAuth';
+import { CompletionRecommendation } from './CompletionRecommendation';
 
 export function RealityCheck({ onFinish }: { onFinish: (results: any) => void }) {
   const { user } = useAuth();
@@ -45,12 +46,14 @@ export function RealityCheck({ onFinish }: { onFinish: (results: any) => void })
              </div>
           </div>
 
-          <button
-            onClick={() => onFinish(score)}
-            className="px-12 py-4 bg-primary text-primary-foreground font-black rounded-2xl hover:scale-105 active:scale-95 transition-all uppercase tracking-widest text-xs"
-          >
-            Вернуться в штаб
-          </button>
+          <CompletionRecommendation
+            sourceModuleId="reality"
+            score={score}
+            onRepeat={startSession}
+            onMenu={() => onFinish(score)}
+            menuLabel="Вернуться в штаб"
+            className="max-w-3xl"
+          />
         </motion.div>
       </div>
     );

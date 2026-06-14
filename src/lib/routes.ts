@@ -38,6 +38,8 @@ export const RECOMMENDED_GAME_ROUTES = {
   nback: '/nback',
   numerical: '/numerical',
   logical: '/logical',
+  situational: '/situational',
+  typing: '/typing',
   spatial: '/spatial',
   topology: '/topology',
   collision: '/collision',
@@ -49,6 +51,13 @@ export const RECOMMENDED_GAME_ROUTES = {
   objective: '/objective',
   profiling: '/profiling',
   silence: '/silence',
+  filter: '/filter',
+  hype: '/hype',
+  dialogue: '/dialogue',
+  reframing: '/reframing',
+  rejection: '/rejection',
+  storytelling: '/storytelling',
+  focus: '/focus',
 } as const satisfies Record<string, (typeof APP_ROUTE_PATHS)[number]>;
 
 const appRouteSet = new Set<string>(APP_ROUTE_PATHS);

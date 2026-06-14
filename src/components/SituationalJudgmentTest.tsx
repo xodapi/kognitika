@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useSituationalEngine } from '../hooks/useSituationalEngine';
 import { useAuth } from '../hooks/useAuth';
 import { createSafeLogger, safeError } from '../lib/safe-logger';
+import { CompletionRecommendation } from './CompletionRecommendation';
 
 const logger = createSafeLogger('situational-judgment-test');
 
@@ -53,11 +54,14 @@ export function SituationalJudgmentTest() {
                Время: {(state.timeMs / 1000).toFixed(1)}s
             </div>
             
-            <div className="flex gap-4 w-full max-w-sm border-t border-border pt-6">
-               <button onClick={startGame} className="flex-1 px-4 py-3 bg-primary text-primary-foreground text-[10px] uppercase tracking-wider rounded-lg font-bold hover:bg-primary/90 transition-colors">
-                 Повторить сценарии
-               </button>
-            </div>
+            <CompletionRecommendation
+              sourceModuleId="situational"
+              score={state.score}
+              maxScore={state.maxScore}
+              durationMs={state.timeMs}
+              onRepeat={startGame}
+              repeatLabel="Повторить сценарии"
+            />
          </div>
       </div>
     );

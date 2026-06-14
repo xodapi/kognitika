@@ -1,12 +1,11 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
-import { TrendingUp, TrendingDown, Award, Brain, Zap, RotateCcw, Menu, ArrowRight, ShieldAlert, Heart } from 'lucide-react';
+import { TrendingUp, TrendingDown, Award, Brain, Heart } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { LuscherTest } from './LuscherTest';
 import { EmotionalBarometer } from './EmotionalBarometer';
-import { useNavigate } from 'react-router-dom';
-import { routeForRecommendedGame } from '../lib/routes';
 import { createSafeLogger, safeError } from '../lib/safe-logger';
+import { CompletionRecommendation } from './CompletionRecommendation';
 
 const logger = createSafeLogger('post-game-insight');
 
@@ -41,7 +40,6 @@ export function PostGameInsight({
   sessionId = null
 }: PostGameInsightProps) {
   const { token } = useAuth();
-  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [insight, setInsight] = useState<ComparisonData | null>(null);
   const [localPostSequence, setLocalPostSequence] = useState<number[] | null>(null);
@@ -74,11 +72,6 @@ export function PostGameInsight({
         setSavingPostTest(false);
       }
     }
-  };
-
-  const handleStartRecommended = () => {
-    if (!insight?.recommendedGame) return;
-    navigate(routeForRecommendedGame(insight.recommendedGame));
   };
 
   useEffect(() => {
@@ -226,38 +219,20 @@ export function PostGameInsight({
             </div>
           )}
 
-          {/* Cognitive Verdict Card */}
           {insight && (
-            <div className="bg-card/40 border border-border/80 rounded-2xl p-6 relative overflow-hidden">
-              <div className="flex items-start gap-3">
-                <Brain className="w-5 h-5 text-primary mt-0.5 shrink-0" />
-                <div>
-                  <h4 className="text-xs font-black uppercase tracking-wider text-foreground mb-2">Когнитивный разбор</h4>
-                  <p className="text-sm text-muted-foreground leading-relaxed">
-                    {insight.verdict}
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Recommendation CTA */}
-          {insight && insight.recommendedGame && (
-            <div className="bg-card/10 border border-border/40 rounded-2xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <Zap className="w-5 h-5 text-amber-500 shrink-0 animate-pulse" />
-                <div className="text-center sm:text-left">
-                  <p className="text-[9px] text-muted-foreground uppercase font-black tracking-wider">Рекомендация для зоны роста</p>
-                  <p className="text-sm font-bold text-foreground">{insight.recommendedGameTitle || getGameTitle(insight.recommendedGame.toUpperCase())}</p>
-                </div>
-              </div>
-              <button 
-                onClick={handleStartRecommended}
-                className="flex items-center gap-1 text-[10px] font-black uppercase tracking-widest text-primary hover:text-primary/80 transition-colors group"
-              >
-                Начать рекомендованное <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-              </button>
-            </div>
+            <CompletionRecommendation
+              sourceModuleId={gameType}
+              sourceSessionId={sessionId}
+              score={score}
+              accuracy={100 - errors * 8}
+              errors={errors}
+              durationMs={timeMs}
+              recommendedModuleId={insight.recommendedGame}
+              recommendedTitle={insight.recommendedGameTitle}
+              improvementText={insight.verdict}
+              onRepeat={onPlayAgain}
+              onMenu={onBackToMenu}
+            />
           )}
         </motion.div>
       )}
@@ -291,24 +266,6 @@ export function PostGameInsight({
           )}
         </div>
       )}
-
-      {/* Action buttons */}
-      <div className="flex flex-col sm:flex-row gap-4 border-t border-border pt-6 mt-8">
-        <button
-          onClick={onBackToMenu}
-          className="flex-1 py-4 bg-card border border-border text-foreground hover:bg-secondary rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 transition-all active:scale-98"
-        >
-          <Menu className="w-4 h-4" />
-          В меню
-        </button>
-        <button
-          onClick={onPlayAgain}
-          className="flex-1 py-4 bg-primary text-primary-foreground hover:bg-primary/90 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 shadow-lg shadow-primary/20 transition-all active:scale-98"
-        >
-          <RotateCcw className="w-4 h-4" />
-          Повторить
-        </button>
-      </div>
     </div>
   );
 }

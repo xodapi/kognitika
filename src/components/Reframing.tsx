@@ -4,6 +4,7 @@ import { Card, CardHeader, CardTitle, CardContent } from './ui/card';
 import { Button } from './ui/button';
 import { Lightbulb, RefreshCw, Play, CheckCircle2, XCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { CompletionRecommendation } from './CompletionRecommendation';
 
 export function Reframing({ onFinish }: { onFinish?: () => void }) {
   const {
@@ -36,9 +37,13 @@ export function Reframing({ onFinish }: { onFinish?: () => void }) {
               Умение видеть возможности в неудачах — ключевой навык антихрупкости.
             </p>
           </div>
-          <Button onClick={onFinish} className="w-full h-12 text-lg" variant="default">
-            Завершить
-          </Button>
+          <CompletionRecommendation
+            sourceModuleId="reframing"
+            score={score}
+            onRepeat={startSession}
+            onMenu={onFinish}
+            menuLabel="Завершить"
+          />
         </CardContent>
       </Card>
     );

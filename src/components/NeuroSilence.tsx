@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
 import { EyeOff, VolumeX, ShieldAlert } from 'lucide-react';
+import { CompletionRecommendation } from './CompletionRecommendation';
 
 export function NeuroSilence() {
   const navigate = useNavigate();
@@ -73,6 +74,13 @@ export function NeuroSilence() {
     }
   };
 
+  const restartSession = () => {
+    setTimeLeft(120);
+    setBreathState('inhale');
+    setBreathTimer(4);
+    setIsFinished(false);
+  };
+
   if (isFinished) {
     return (
       <div className="col-span-12 flex items-center justify-center min-h-[500px] bg-black text-white p-6">
@@ -91,12 +99,15 @@ export function NeuroSilence() {
               Вы успешно выполнили 2-минутную дыхательную сессию. Ваше сердцебиение нормализовалось, уровень кортизола снизился. Мозг готов к эффективной работе.
             </p>
           </div>
-          <button
-            onClick={() => navigate('/')}
-            className="w-full py-4 bg-white text-black hover:bg-neutral-200 rounded-2xl font-black text-xs uppercase tracking-widest transition-all active:scale-95"
-          >
-            Вернуться на дашборд
-          </button>
+          <CompletionRecommendation
+            sourceModuleId="silence"
+            score={100}
+            durationMs={120000}
+            onRepeat={restartSession}
+            onMenu={() => navigate('/')}
+            menuLabel="На дашборд"
+            className="border-neutral-800 bg-neutral-950"
+          />
         </motion.div>
       </div>
     );

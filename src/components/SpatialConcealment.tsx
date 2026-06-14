@@ -5,6 +5,7 @@ import { useAuth } from '../hooks/useAuth';
 import { emitEvent } from '../hooks/useEventBus';
 import { useSessionRecording } from '../hooks/useSessionRecording';
 import { createSafeLogger, safeError } from '../lib/safe-logger';
+import { CompletionRecommendation } from './CompletionRecommendation';
 
 const logger = createSafeLogger('spatial-concealment');
 
@@ -132,12 +133,14 @@ export function SpatialConcealment() {
                   <p className="text-sm text-muted-foreground">Вы достигли уровня {level}</p>
                   <p className="text-4xl font-black mt-4">{score} <span className="text-xs uppercase text-muted-foreground">очков</span></p>
                 </div>
-                <button 
-                  onClick={startTraining}
-                  className="px-8 py-4 bg-primary text-primary-foreground rounded-2xl font-black uppercase tracking-widest text-xs shadow-lg shadow-primary/20 hover:scale-105 transition-transform"
-                >
-                  Попробовать снова
-                </button>
+                <CompletionRecommendation
+                  sourceModuleId="spatial"
+                  score={score}
+                  errors={errors}
+                  onRepeat={startTraining}
+                  repeatLabel="Попробовать снова"
+                  className="max-w-3xl"
+                />
               </motion.div>
             ) : (
               <motion.div 

@@ -2,8 +2,9 @@ import { motion, AnimatePresence } from 'motion/react';
 import { useCollisionEngine, Card } from '../hooks/useCollisionEngine';
 import { useAuth } from '../hooks/useAuth';
 import { useEffect, useState, useRef } from 'react';
-import { Filter, AlertTriangle, CheckCircle, RefreshCw, ChevronRight, Sparkles, Loader2 } from 'lucide-react';
-import { generateCollisionCards, GeneratedCard } from '../lib/content-generator';
+import { Filter, AlertTriangle, CheckCircle, ChevronRight, Sparkles, Loader2 } from 'lucide-react';
+import { generateCollisionCards } from '../lib/content-generator';
+import { CompletionRecommendation } from './CompletionRecommendation';
 
 export function CollisionDetector() {
   const { state, startGame, flagCard } = useCollisionEngine();
@@ -271,10 +272,16 @@ export function CollisionDetector() {
             <div className="text-[10px] text-muted-foreground">Ложных</div>
           </div>
         </div>
-        <div className="flex gap-3">
-          <button onClick={() => startGame(state.level)} className="flex items-center gap-2 px-5 py-2.5 border border-border rounded-xl text-xs font-bold hover:bg-secondary transition-colors">
-            <RefreshCw className="w-3.5 h-3.5" /> Повторить
-          </button>
+        <CompletionRecommendation
+          sourceModuleId="collision"
+          score={state.score}
+          maxScore={state.maxScore}
+          errors={state.misses + state.falsePositives}
+          durationMs={state.timeMs}
+          onRepeat={() => startGame(state.level)}
+          className="max-w-3xl"
+        />
+        <div className="mt-4 flex gap-3">
           {accuracy >= 70 && (
             <button onClick={() => startGame(state.level + 1)} className="flex items-center gap-2 px-5 py-2.5 bg-red-600 text-white rounded-xl text-xs font-bold hover:bg-red-500 transition-colors">
               Уровень {state.level + 1} <ChevronRight className="w-3.5 h-3.5" />

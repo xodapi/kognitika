@@ -4,6 +4,7 @@ import { Card, CardHeader, CardTitle, CardContent } from './ui/card';
 import { Button } from './ui/button';
 import { ShieldAlert, ThumbsDown, ThumbsUp, Frown, Play, AlertOctagon } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { CompletionRecommendation } from './CompletionRecommendation';
 
 export function RejectionImmunity({ onFinish }: { onFinish?: () => void }) {
   const {
@@ -46,9 +47,13 @@ export function RejectionImmunity({ onFinish }: { onFinish?: () => void }) {
             Очки иммунитета даются только за смелые поступки, которые ведут к отказу. 
             Чем больше отказов вы способны пережить, тем шире ваши возможности.
           </p>
-          <Button onClick={onFinish} className="w-full h-12 text-lg" variant="default">
-            Завершить
-          </Button>
+          <CompletionRecommendation
+            sourceModuleId="rejection"
+            score={score + immunityPoints}
+            onRepeat={startSession}
+            onMenu={onFinish}
+            menuLabel="Завершить"
+          />
         </CardContent>
       </Card>
     );
