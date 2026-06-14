@@ -22,16 +22,34 @@ export const IdeasWall: React.FC<{ token: string | null }> = ({ token }) => {
   const [newTitle, setNewTitle] = useState('');
   const [newDesc, setNewDesc] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [submitError, setSubmitError] = useState('');
+
+  const readResponseError = async (response: Response, fallback: string) => {
+    try {
+      const data = await response.json();
+      return typeof data?.error === 'string' ? data.error : fallback;
+    } catch {
+      return fallback;
+    }
+  };
+
+  const networkMessage = 'Не удалось связаться с сервером. Проверьте подключение и попробуйте ещё раз.';
 
   const fetchIdeas = async () => {
     try {
+      setErrorMessage('');
       const res = await fetch('/api/ideas', {
         headers: token ? { 'Authorization': `Bearer ${token}` } : {}
       });
+      if (!res.ok) {
+        throw new Error(await readResponseError(res, 'Не удалось загрузить идеи'));
+      }
       const data = await res.json();
-      setIdeas(data);
+      setIdeas(Array.isArray(data) ? data : []);
     } catch (err) {
       logger.error('Ideas fetch failed', { error: safeError(err) });
+      setErrorMessage(err instanceof Error && err.message !== 'Failed to fetch' ? err.message : networkMessage);
     } finally {
       setLoading(false);
     }
@@ -42,23 +60,38 @@ export const IdeasWall: React.FC<{ token: string | null }> = ({ token }) => {
   }, [token]);
 
   const handleVote = async (id: string) => {
-    if (!token) return;
+    if (!token) {
+      setErrorMessage('Войдите через Brain ID, чтобы голосовать за идеи.');
+      return;
+    }
     try {
+      setErrorMessage('');
       const res = await fetch(`/api/ideas/${id}/vote`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` }
       });
+      if (!res.ok) {
+        throw new Error(await readResponseError(res, 'Не удалось сохранить голос'));
+      }
       if (res.ok) {
         fetchIdeas();
       }
     } catch (err) {
       logger.error('Idea vote failed', { error: safeError(err), ideaLabel: `Idea ${id.slice(0, 8)}` });
+      setErrorMessage(err instanceof Error && err.message !== 'Failed to fetch' ? err.message : networkMessage);
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!token || !newTitle || !newDesc) return;
+    setSubmitError('');
+
+    if (!token) {
+      setSubmitError('Войдите через Brain ID, чтобы предложить идею.');
+      return;
+    }
+    if (!newTitle.trim() || !newDesc.trim()) return;
+
     setSubmitting(true);
     try {
       const res = await fetch('/api/ideas', {
@@ -74,9 +107,12 @@ export const IdeasWall: React.FC<{ token: string | null }> = ({ token }) => {
         setNewDesc('');
         setShowAddModal(false);
         fetchIdeas();
+      } else {
+        throw new Error(await readResponseError(res, 'Не удалось опубликовать идею'));
       }
     } catch (err) {
       logger.error('Idea submit failed', { error: safeError(err) });
+      setSubmitError(err instanceof Error && err.message !== 'Failed to fetch' ? err.message : networkMessage);
     } finally {
       setSubmitting(false);
     }
@@ -97,6 +133,12 @@ export const IdeasWall: React.FC<{ token: string | null }> = ({ token }) => {
           Предложить
         </button>
       </div>
+
+      {errorMessage && (
+        <p role="alert" className="rounded-2xl border border-destructive/20 bg-destructive/10 px-4 py-3 text-xs font-bold text-destructive">
+          {errorMessage}
+        </p>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <AnimatePresence mode="popLayout">
@@ -196,7 +238,7 @@ export const IdeasWall: React.FC<{ token: string | null }> = ({ token }) => {
                   <input 
                     required
                     value={newTitle}
-                    onChange={e => setNewTitle(e.target.value)}
+                    onChange={e => { setNewTitle(e.target.value); setSubmitError(''); }}
                     placeholder="Например: Добавить звуки природы"
                     className="w-full bg-background border border-border rounded-xl px-4 py-3 text-sm focus:border-primary outline-none transition-all"
                   />
@@ -208,11 +250,17 @@ export const IdeasWall: React.FC<{ token: string | null }> = ({ token }) => {
                     required
                     rows={4}
                     value={newDesc}
-                    onChange={e => setNewDesc(e.target.value)}
+                    onChange={e => { setNewDesc(e.target.value); setSubmitError(''); }}
                     placeholder="Опишите, как это поможет пользователям..."
                     className="w-full bg-background border border-border rounded-xl px-4 py-3 text-sm focus:border-primary outline-none transition-all resize-none"
                   />
                 </div>
+
+                {submitError && (
+                  <p role="alert" className="rounded-xl border border-destructive/20 bg-destructive/10 px-4 py-3 text-xs font-bold text-destructive">
+                    {submitError}
+                  </p>
+                )}
 
                 <button 
                   disabled={submitting}
