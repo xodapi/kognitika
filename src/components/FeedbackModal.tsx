@@ -20,10 +20,26 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [trackingNum, setTrackingNum] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
+
+  const readResponseError = async (response: Response) => {
+    try {
+      const data = await response.json();
+      return typeof data?.error === 'string' ? data.error : 'Не удалось отправить обращение';
+    } catch {
+      return 'Не удалось отправить обращение';
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!content.trim() || !user || !token) return;
+    setErrorMessage('');
+
+    if (!content.trim()) return;
+    if (!user || !token) {
+      setErrorMessage('Войдите через Brain ID, чтобы отправить обращение и получить номер.');
+      return;
+    }
 
     setIsSubmitting(true);
     try {
@@ -36,11 +52,11 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
         body: JSON.stringify({ type, content })
       });
 
-      const data = await response.json();
-
       if (!response.ok) {
-         throw new Error(data.error || 'Failed to submit');
+         throw new Error(await readResponseError(response));
       }
+
+      const data = await response.json();
       
       setTrackingNum(data.trackingNum);
       setIsSuccess(true);
@@ -49,7 +65,9 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
       setContent('');
     } catch (error) {
       logger.error('Feedback submit failed', { error: safeError(error), type });
-      alert('Ошибка при отправке: ' + (error instanceof Error ? error.message : 'Неизвестная ошибка'));
+      setErrorMessage(error instanceof Error && error.message !== 'Failed to fetch'
+        ? error.message
+        : 'Не удалось связаться с сервером. Проверьте подключение и попробуйте ещё раз.');
     } finally {
       setIsSubmitting(false);
     }
@@ -119,7 +137,7 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
                          <button 
                             key={item.id}
                             type="button"
-                            onClick={() => setType(item.id as FeedbackType)}
+                            onClick={() => { setType(item.id as FeedbackType); setErrorMessage(''); }}
                             className={`flex items-center gap-3 p-3 rounded-xl border text-xs font-bold transition-all ${type === item.id ? 'bg-primary/10 border-primary text-primary' : 'bg-secondary/50 border-border text-muted-foreground hover:bg-secondary'}`}
                          >
                             <item.icon className="w-4 h-4" /> {item.label}
@@ -132,16 +150,22 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
                      <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-3 block">Ваше сообщение</label>
                      <textarea 
                         value={content}
-                        onChange={(e) => setContent(e.target.value)}
+                        onChange={(e) => { setContent(e.target.value); setErrorMessage(''); }}
                         placeholder="Опишите вашу идею или проблему..."
                         rows={5}
                         className="w-full bg-secondary border border-border rounded-2xl p-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all placeholder:text-muted-foreground/50 resize-none"
                      />
                   </div>
 
+                  {errorMessage && (
+                    <p role="alert" className="rounded-xl border border-destructive/20 bg-destructive/10 px-4 py-3 text-xs font-bold text-destructive">
+                      {errorMessage}
+                    </p>
+                  )}
+
                   <button 
                     type="submit"
-                    disabled={isSubmitting || !content.trim() || !user}
+                    disabled={isSubmitting || !content.trim()}
                     className="w-full py-4 bg-primary text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-lg shadow-primary/20 disabled:opacity-50 disabled:shadow-none hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2"
                   >
                     {isSubmitting ? 'Отправка...' : <><Send className="w-4 h-4" /> Отправить предложение</>}
