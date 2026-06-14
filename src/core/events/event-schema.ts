@@ -36,6 +36,13 @@ export const FeedbackSubmittedSchema = z.object({
   content: z.string()
 });
 
+export const IdeaSubmittedSchema = z.object({
+  userId: z.string(),
+  ideaId: z.string(),
+  title: z.string(),
+  description: z.string()
+});
+
 export const DifficultySuggestionSchema = z.object({
   nextGridSize: z.number(),
   noiseLevel: z.number(),
@@ -49,9 +56,11 @@ export const EventRegistry = {
   'CELL_CLICK': CellClickSchema,
   'MISTAKE_MADE': z.any(),
   'FEEDBACK_SUBMITTED': FeedbackSubmittedSchema,
+  'IDEA_SUBMITTED': IdeaSubmittedSchema,
   'DIFFICULTY_SUGGESTION': DifficultySuggestionSchema,
   'game:completed': z.any(), // Legacy/Bridge
   'feedback:submitted': FeedbackSubmittedSchema, // Legacy/Bridge alias
+  'idea:submitted': IdeaSubmittedSchema, // Legacy/Bridge alias
   'error': z.any(),
   'STABILITY_UPDATE': z.object({ avg: z.number(), stability: z.number() }),
   'GAME_START': z.any(),

@@ -12,6 +12,7 @@ export class EventBus {
     STABILITY_UPDATE: 'STABILITY_UPDATE' as const,
     DIFFICULTY_SUGGESTION: 'DIFFICULTY_SUGGESTION' as const,
     FEEDBACK_SUBMITTED: 'feedback:submitted' as const,
+    IDEA_SUBMITTED: 'idea:submitted' as const,
   };
 
   private listeners: { [K in keyof EventMap]?: EventCallback<K>[] } = {};
