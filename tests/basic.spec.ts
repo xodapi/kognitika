@@ -86,6 +86,25 @@ test.describe('Kognitika production smoke', () => {
     await expectAppReady(page);
   });
 
+  test('does not show boot recovery while a lazy route chunk is still loading', async ({ page }) => {
+    test.setTimeout(45_000);
+
+    let delayedDashboardChunk = false;
+    await page.route(/\/assets\/Dashboard-.*\.js(\?.*)?$/, async (route) => {
+      delayedDashboardChunk = true;
+      await new Promise((resolve) => setTimeout(resolve, 9_000));
+      await route.continue();
+    });
+
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
+    await page.waitForTimeout(8_000);
+
+    expect(delayedDashboardChunk).toBe(true);
+    await expect(page.locator('#kognitika-boot-recovery')).toHaveCount(0);
+
+    await expectAppReady(page);
+  });
+
   test('direct /admin load without admin auth mounts the app and redirects home', async ({ page }) => {
     const browserErrors = collectUnexpectedBrowserErrors(page);
 
