@@ -7,7 +7,17 @@ import { BrowserRouter } from 'react-router-dom';
 import './index.css';
 import { setupGlobalErrorReporting } from './lib/client-error.ts';
 
+declare global {
+  interface Window {
+    __KOGNITIKA_BOOT__?: {
+      markModuleStarted?: () => void;
+      markMounted?: () => void;
+    };
+  }
+}
+
 setupGlobalErrorReporting();
+window.__KOGNITIKA_BOOT__?.markModuleStarted?.();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -18,3 +28,7 @@ createRoot(document.getElementById('root')!).render(
     </ThemeProvider>
   </StrictMode>,
 );
+
+window.requestAnimationFrame(() => {
+  window.__KOGNITIKA_BOOT__?.markMounted?.();
+});

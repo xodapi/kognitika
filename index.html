@@ -11,6 +11,24 @@
     <meta property="og:url" content="https://kognitika.ru/" />
     <!-- <link rel="manifest" href="/manifest.json" /> -->
     <title>Когнитика — Тренажер внимания и памяти</title>
+    <script>
+      (function () {
+        window.__KOGNITIKA_PENDING_SCRIPT_ERROR__ = '';
+        window.addEventListener('error', function (event) {
+          const target = event.target;
+          if (!target || target === window || target.tagName !== 'SCRIPT') return;
+
+          const source = target.getAttribute('src') || target.src || '';
+          const isMainBundle = source.indexOf('/assets/') !== -1 || source.indexOf('/src/main.tsx') !== -1;
+          if (!isMainBundle) return;
+
+          window.__KOGNITIKA_PENDING_SCRIPT_ERROR__ = 'Основной скрипт приложения не загрузился.';
+          if (typeof window.handleScriptError === 'function') {
+            window.handleScriptError();
+          }
+        }, true);
+      }());
+    </script>
   </head>
   <body>
     <div id="root"></div>
@@ -20,7 +38,10 @@
         const TRANSIENT_PREFIXES = ['kognitika:ui:', 'kognitika:session:', 'kognitika:cache:'];
         const IDENTITY_KEYS = ['kognitika:brainId', 'kognitika:auth:token', 'kognitika:auth:refresh'];
         const LEGACY_IDENTITY_KEYS = ['token', 'user'];
-        const RECOVERY_TIMEOUT_MS = 7000;
+        const SLOW_LOAD_NOTICE_MS = 12000;
+        const RECOVERY_TIMEOUT_MS = 60000;
+        const MOUNT_TIMEOUT_AFTER_MODULE_MS = 20000;
+        const LOADING_ID = 'kognitika-boot-loading';
 
         function getStorage(name) {
           try {
@@ -137,11 +158,26 @@
           return Boolean(root && root.childElementCount > 0);
         }
 
-        function showRecovery(reason) {
-          if (document.getElementById(RECOVERY_ID) || rootMounted()) return;
+        function removeElement(id) {
+          const element = document.getElementById(id);
+          if (element) element.remove();
+        }
+
+        function clearBootUi() {
+          removeElement(LOADING_ID);
+          removeElement(RECOVERY_ID);
+        }
+
+        function ensureBootStyle() {
+          if (document.getElementById('kognitika-boot-style')) return;
 
           const style = document.createElement('style');
+          style.id = 'kognitika-boot-style';
           style.textContent = [
+            '#' + LOADING_ID + ' { position: fixed; inset: 0; z-index: 2147483646; box-sizing: border-box; min-height: 100vh; padding: 24px; display: grid; place-items: center; overflow: auto; background: #f8fafc; color: #111827; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }',
+            '#' + LOADING_ID + ' .panel { width: min(100%, 520px); padding: 22px; border: 1px solid #d1d5db; border-radius: 8px; background: #ffffff; box-shadow: 0 16px 40px rgba(15, 23, 42, 0.10); }',
+            '#' + LOADING_ID + ' h1 { margin: 0 0 10px; font-size: 22px; line-height: 1.25; letter-spacing: 0; }',
+            '#' + LOADING_ID + ' p { margin: 0; font-size: 15px; line-height: 1.55; color: #4b5563; }',
             '#' + RECOVERY_ID + ' { position: fixed; inset: 0; z-index: 2147483647; box-sizing: border-box; min-height: 100vh; padding: 24px; display: grid; place-items: center; overflow: auto; background: #f8fafc; color: #111827; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }',
             '#' + RECOVERY_ID + ' * { box-sizing: border-box; }',
             '#' + RECOVERY_ID + ' .panel { width: min(100%, 560px); padding: 24px; border: 1px solid #d1d5db; border-radius: 8px; background: #ffffff; box-shadow: 0 16px 40px rgba(15, 23, 42, 0.12); }',
@@ -157,6 +193,30 @@
             '#' + RECOVERY_ID + ' .status { min-height: 22px; margin-top: 14px; font-size: 14px; color: #374151; }'
           ].join('\n');
           document.head.appendChild(style);
+        }
+
+        function showLoadingNotice() {
+          if (document.getElementById(LOADING_ID) || document.getElementById(RECOVERY_ID) || rootMounted()) return;
+
+          ensureBootStyle();
+
+          const loading = document.createElement('div');
+          loading.id = LOADING_ID;
+          loading.innerHTML = [
+            '<div class="panel" role="status" aria-live="polite">',
+            '<h1>Когнитика загружается</h1>',
+            '<p>Первый запуск на этом устройстве может занять немного больше времени. Если приложение не загрузится, будет показан безопасный экран восстановления.</p>',
+            '</div>'
+          ].join('');
+
+          document.body.appendChild(loading);
+        }
+
+        function showRecovery(reason) {
+          if (document.getElementById(RECOVERY_ID) || rootMounted()) return;
+
+          removeElement(LOADING_ID);
+          ensureBootStyle();
 
           const recovery = document.createElement('div');
           recovery.id = RECOVERY_ID;
@@ -190,8 +250,23 @@
           showRecovery('Основной скрипт приложения не загрузился.');
         };
 
+        if (window.__KOGNITIKA_PENDING_SCRIPT_ERROR__) {
+          window.setTimeout(window.handleScriptError, 0);
+        }
+
+        window.__KOGNITIKA_BOOT__ = {
+          markModuleStarted: function () {
+            window.setTimeout(function () {
+              showRecovery('React загрузился, но приложение не смонтировалось в окне браузера.');
+            }, MOUNT_TIMEOUT_AFTER_MODULE_MS);
+          },
+          markMounted: clearBootUi
+        };
+
+        window.setTimeout(showLoadingNotice, SLOW_LOAD_NOTICE_MS);
+
         window.setTimeout(function () {
-          showRecovery('React не смонтировал приложение за отведенное время.');
+          showRecovery('Основной скрипт приложения загружается слишком долго.');
         }, RECOVERY_TIMEOUT_MS);
 
         const root = document.getElementById('root');
@@ -201,6 +276,7 @@
 
             const recovery = document.getElementById(RECOVERY_ID);
             if (recovery) recovery.remove();
+            removeElement(LOADING_ID);
           }).observe(root, { childList: true });
         }
       }());
