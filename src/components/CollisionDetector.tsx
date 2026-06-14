@@ -2,8 +2,10 @@ import { motion, AnimatePresence } from 'motion/react';
 import { useCollisionEngine, Card } from '../hooks/useCollisionEngine';
 import { useAuth } from '../hooks/useAuth';
 import { useEffect, useState, useRef } from 'react';
-import { Filter, AlertTriangle, CheckCircle, RefreshCw, ChevronRight, Sparkles, Loader2 } from 'lucide-react';
+import { Filter, AlertTriangle, CheckCircle, ChevronRight, Sparkles, Loader2 } from 'lucide-react';
 import { generateCollisionCards, GeneratedCard } from '../lib/content-generator';
+import { useNavigate } from 'react-router-dom';
+import { PostGameInsight } from './PostGameInsight';
 
 export function CollisionDetector() {
   const { state, startGame, flagCard } = useCollisionEngine();
@@ -12,6 +14,7 @@ export function CollisionDetector() {
   const [generatedMode, setGeneratedMode] = useState(false);
   const [contentError, setContentError] = useState<string | null>(null);
   const levelRef = useRef(1);
+  const navigate = useNavigate();
 
   // Local deterministic content generation keeps this module offline and reproducible.
   const startWithGeneratedContent = async (level: number) => {
@@ -248,39 +251,23 @@ export function CollisionDetector() {
 
   // Result
   const accuracy = state.maxScore > 0 ? Math.round((state.hits / state.maxScore) * 100) : 0;
-  const grade = accuracy >= 90 ? 'Мастер-аналитик' : accuracy >= 70 ? 'Опытный фильтр' : accuracy >= 50 ? 'Стажёр' : 'Требует практики';
 
   return (
     <div className="col-span-12 grid grid-cols-1 lg:grid-cols-12 gap-4 h-full min-h-0">
-      <div className="lg:col-start-3 lg:col-span-8 bg-card/20 border border-border rounded-3xl p-8 flex flex-col items-center text-center">
-        <div className="text-[10px] uppercase tracking-widest text-muted-foreground mb-4 font-bold">Фильтр завершён</div>
-        <div className="text-5xl font-black font-mono mb-2 text-primary">{state.score}</div>
-        <div className="text-sm font-bold mb-1">{grade}</div>
-        <div className="text-xs text-muted-foreground mb-6">Уровень {state.level}</div>
-        <div className="grid grid-cols-3 gap-4 w-full max-w-sm mb-8">
-          <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-3">
-            <div className="text-emerald-400 font-black text-xl">{state.hits}</div>
-            <div className="text-[10px] text-muted-foreground">Поймано</div>
-          </div>
-          <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-3">
-            <div className="text-amber-400 font-black text-xl">{state.misses}</div>
-            <div className="text-[10px] text-muted-foreground">Пропущено</div>
-          </div>
-          <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3">
-            <div className="text-red-400 font-black text-xl">{state.falsePositives}</div>
-            <div className="text-[10px] text-muted-foreground">Ложных</div>
-          </div>
-        </div>
-        <div className="flex gap-3">
-          <button onClick={() => startGame(state.level)} className="flex items-center gap-2 px-5 py-2.5 border border-border rounded-xl text-xs font-bold hover:bg-secondary transition-colors">
-            <RefreshCw className="w-3.5 h-3.5" /> Повторить
+      <div className="lg:col-start-3 lg:col-span-8 flex flex-col items-center gap-4">
+        <PostGameInsight
+          gameType="COLLISION_DETECTOR"
+          score={state.score}
+          timeMs={state.timeMs}
+          errors={state.misses + state.falsePositives}
+          onPlayAgain={() => startGame(state.level)}
+          onBackToMenu={() => navigate('/')}
+        />
+        {accuracy >= 70 && (
+          <button onClick={() => startGame(state.level + 1)} className="flex items-center gap-2 px-5 py-2.5 bg-red-600 text-white rounded-xl text-xs font-bold hover:bg-red-500 transition-colors">
+            Уровень {state.level + 1} <ChevronRight className="w-3.5 h-3.5" />
           </button>
-          {accuracy >= 70 && (
-            <button onClick={() => startGame(state.level + 1)} className="flex items-center gap-2 px-5 py-2.5 bg-red-600 text-white rounded-xl text-xs font-bold hover:bg-red-500 transition-colors">
-              Уровень {state.level + 1} <ChevronRight className="w-3.5 h-3.5" />
-            </button>
-          )}
-        </div>
+        )}
       </div>
     </div>
   );

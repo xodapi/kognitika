@@ -4,6 +4,7 @@ import { Card, CardHeader, CardTitle, CardContent } from './ui/card';
 import { Button } from './ui/button';
 import { ShieldAlert, ThumbsDown, ThumbsUp, Frown, Play, AlertOctagon } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { PostGameInsight } from './PostGameInsight';
 
 export function RejectionImmunity({ onFinish }: { onFinish?: () => void }) {
   const {
@@ -20,37 +21,16 @@ export function RejectionImmunity({ onFinish }: { onFinish?: () => void }) {
 
   if (isFinished) {
     return (
-      <Card className="max-w-2xl mx-auto shadow-2xl bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800">
-        <CardHeader>
-          <CardTitle className="text-2xl font-bold flex items-center gap-2">
-            <ShieldAlert className="text-red-500" />
-            Итоги терапии отказами
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="bg-zinc-100 dark:bg-zinc-800 p-6 rounded-xl text-center">
-              <h3 className="text-sm font-medium mb-2 text-zinc-500">Очки Безопасности</h3>
-              <p className="text-3xl font-black text-blue-600 dark:text-blue-400">
-                {score} XP
-              </p>
-            </div>
-            <div className="bg-red-50 dark:bg-red-900/20 p-6 rounded-xl text-center border border-red-200 dark:border-red-800">
-              <h3 className="text-sm font-medium mb-2 text-red-600 dark:text-red-400">Очки Иммунитета</h3>
-              <p className="text-3xl font-black text-red-600 dark:text-red-400">
-                {immunityPoints} XP
-              </p>
-            </div>
-          </div>
-          <p className="text-center text-zinc-500 dark:text-zinc-400">
-            Очки иммунитета даются только за смелые поступки, которые ведут к отказу. 
-            Чем больше отказов вы способны пережить, тем шире ваши возможности.
-          </p>
-          <Button onClick={onFinish} className="w-full h-12 text-lg" variant="default">
-            Завершить
-          </Button>
-        </CardContent>
-      </Card>
+      <div className="max-w-2xl mx-auto">
+        <PostGameInsight
+          gameType="REJECTION_IMMUNITY"
+          score={score + immunityPoints}
+          timeMs={1000}
+          errors={Math.max(0, Math.ceil((300 - score - immunityPoints) / 100))}
+          onPlayAgain={startSession}
+          onBackToMenu={() => onFinish?.()}
+        />
+      </div>
     );
   }
 

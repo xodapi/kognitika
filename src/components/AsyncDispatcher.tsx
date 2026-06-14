@@ -2,11 +2,14 @@ import { motion } from 'motion/react';
 import { useDispatcherEngine } from '../hooks/useDispatcherEngine';
 import { useAuth } from '../hooks/useAuth';
 import { useEffect } from 'react';
-import { Cpu, RefreshCw, ChevronRight, Zap } from 'lucide-react';
+import { Cpu, ChevronRight, Zap } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { PostGameInsight } from './PostGameInsight';
 
 export function AsyncDispatcher() {
   const { state, startGame, triggerStream } = useDispatcherEngine();
   const { token } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (state.isFinished && token) {
@@ -58,42 +61,22 @@ export function AsyncDispatcher() {
 
   // Result
   if (state.isFinished) {
-    const efficiency = state.totalTriggers > 0
-      ? Math.round(((state.totalTriggers - state.totalOverflows) / Math.max(state.totalTriggers, 1)) * 100)
-      : 0;
-    const grade = state.score >= 150 ? 'Мастер-диспетчер' : state.score >= 80 ? 'Опытный оператор' : state.score >= 40 ? 'Стажёр' : 'Новичок';
-
     return (
       <div className="col-span-12 grid grid-cols-1 lg:grid-cols-12 gap-4 h-full min-h-0">
-        <div className="lg:col-start-3 lg:col-span-8 bg-card/20 border border-border rounded-3xl p-8 flex flex-col items-center text-center">
-          <div className="text-[10px] uppercase tracking-widest text-muted-foreground mb-4 font-bold">Диспетчеризация завершена</div>
-          <div className="text-6xl font-black font-mono mb-2 text-amber-400">{state.score}</div>
-          <div className="text-sm font-bold mb-1">{grade}</div>
-          <div className="text-xs text-muted-foreground mb-6">Уровень {state.level} · {(state.timeMs / 1000).toFixed(0)}с</div>
-          <div className="grid grid-cols-3 gap-4 w-full max-w-sm mb-8">
-            <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-3">
-              <div className="text-amber-400 font-black text-xl">{state.totalTriggers}</div>
-              <div className="text-[10px] text-muted-foreground">Триггеров</div>
-            </div>
-            <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3">
-              <div className="text-red-400 font-black text-xl">{state.totalOverflows}</div>
-              <div className="text-[10px] text-muted-foreground">Переполнений</div>
-            </div>
-            <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-3">
-              <div className="text-emerald-400 font-black text-xl">{efficiency}%</div>
-              <div className="text-[10px] text-muted-foreground">КПД</div>
-            </div>
-          </div>
-          <div className="flex gap-3">
-            <button onClick={() => startGame(state.level)} className="flex items-center gap-2 px-5 py-2.5 border border-border rounded-xl text-xs font-bold hover:bg-secondary transition-colors">
-              <RefreshCw className="w-3.5 h-3.5" /> Повторить
+        <div className="lg:col-start-3 lg:col-span-8 flex flex-col items-center gap-4">
+          <PostGameInsight
+            gameType="ASYNC_DISPATCHER"
+            score={state.score}
+            timeMs={state.timeMs}
+            errors={state.totalOverflows}
+            onPlayAgain={() => startGame(state.level)}
+            onBackToMenu={() => navigate('/')}
+          />
+          {state.score >= 80 && state.level < 3 && (
+            <button onClick={() => startGame(state.level + 1)} className="flex items-center gap-2 px-5 py-2.5 bg-amber-600 text-white rounded-xl text-xs font-bold hover:bg-amber-500 transition-colors">
+              Уровень {state.level + 1} <ChevronRight className="w-3.5 h-3.5" />
             </button>
-            {state.score >= 80 && state.level < 3 && (
-              <button onClick={() => startGame(state.level + 1)} className="flex items-center gap-2 px-5 py-2.5 bg-amber-600 text-white rounded-xl text-xs font-bold hover:bg-amber-500 transition-colors">
-                Уровень {state.level + 1} <ChevronRight className="w-3.5 h-3.5" />
-              </button>
-            )}
-          </div>
+          )}
         </div>
       </div>
     );

@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { NumericalAnalysis } from '../components/NumericalAnalysis';
+import { eventBus } from '../client/analytics/event-bus';
 
 const engineMocks = vi.hoisted(() => ({
   startGame: vi.fn(),
@@ -56,6 +57,8 @@ describe('post-game recommendation navigation', () => {
   });
 
   it('opens the recommended module after completed NumericalAnalysis instead of replaying the same test', async () => {
+    const emitSpy = vi.spyOn(eventBus, 'emit');
+
     render(
       <MemoryRouter initialEntries={['/numerical']}>
         <Routes>
@@ -85,6 +88,13 @@ describe('post-game recommendation navigation', () => {
     const recommendedButton = await screen.findByRole('button', { name: /Начать рекомендованное/i });
 
     fireEvent.click(recommendedButton);
+
+    expect(emitSpy).toHaveBeenCalledWith('PracticeRecommended', expect.objectContaining({
+      category: 'cognitive',
+      moduleId: 'logical',
+      reason: 'weak_area',
+      sourceSessionId: expect.any(String),
+    }));
 
     await waitFor(() => {
       expect(screen.getByTestId('location')).toHaveTextContent('/logical');

@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Activity, AlertOctagon, Zap, ShieldCheck } from 'lucide-react';
+import { Activity, AlertOctagon, Zap } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { createSafeLogger, safeError } from '../lib/safe-logger';
+import { useNavigate } from 'react-router-dom';
+import { PostGameInsight } from './PostGameInsight';
 
 const logger = createSafeLogger('anomaly-detector');
 
@@ -14,6 +16,7 @@ export function AnomalyDetector() {
   const [chartData, setChartData] = useState<number[]>(Array(50).fill(50));
   const [timeLeft, setTimeLeft] = useState(60);
   const { token, refreshUser } = useAuth();
+  const navigate = useNavigate();
   
   const gameInterval = useRef<NodeJS.Timeout | null>(null);
   const startTime = useRef<number>(0);
@@ -122,13 +125,14 @@ export function AnomalyDetector() {
   if (gameState === 'finished') {
      return (
        <div className="col-span-12 flex flex-col items-center justify-center h-full min-h-[400px] p-8 text-center">
-         <ShieldCheck className="w-16 h-16 text-green-500 mb-6" />
-         <h2 className="text-[10px] text-muted-foreground uppercase tracking-widest mb-2">Отчет о дежурстве</h2>
-         <div className="text-6xl font-black mb-2 text-primary">{score}</div>
-         <div className="text-[10px] text-muted-foreground uppercase font-black mb-8">АНОМАЛИЙ ПРЕДОТВРАЩЕНО: {anomaliesFound}</div>
-         <button onClick={() => setGameState('idle')} className="px-8 py-3 bg-primary text-primary-foreground text-[10px] uppercase tracking-wider rounded-lg font-bold">
-            В систему
-         </button>
+         <PostGameInsight
+           gameType="ANOMALY_DETECTOR"
+           score={score}
+           timeMs={60000}
+           errors={Math.max(0, 5 - anomaliesFound)}
+           onPlayAgain={startGame}
+           onBackToMenu={() => navigate('/')}
+         />
        </div>
      );
   }

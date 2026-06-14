@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Keyboard, Zap, Target, RefreshCw, Trophy, AlertCircle } from 'lucide-react';
-import { useAuth } from '../hooks/useAuth';
-import { emitEvent } from '../hooks/useEventBus';
+import { Keyboard, Zap, Target, RefreshCw, AlertCircle } from 'lucide-react';
 import { useSessionRecording } from '../hooks/useSessionRecording';
+import { useNavigate } from 'react-router-dom';
+import { PostGameInsight } from './PostGameInsight';
 
 import { useTypingEngine } from '../hooks/useTypingEngine';
 
@@ -17,8 +17,8 @@ const TEXTS = [
 
 export function SpeedTyping() {
   const { state, startTest, handleInput } = useTypingEngine(TEXTS);
-  const { text, userInput, isFinished, cpm, accuracy, errors, isActive } = state;
-  const { token } = useAuth();
+  const { text, userInput, isFinished, cpm, accuracy, errors, isActive, timeMs } = state;
+  const navigate = useNavigate();
   
   useSessionRecording(isActive, isFinished);
   
@@ -109,34 +109,16 @@ export function SpeedTyping() {
                 key="finished"
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="flex-1 flex flex-col items-center justify-center text-center gap-6"
+                className="flex-1 flex items-center justify-center"
               >
-                <div className="w-20 h-20 rounded-3xl bg-primary/10 border border-primary/20 flex items-center justify-center relative">
-                  <Trophy className="w-10 h-10 text-primary" />
-                  <motion.div 
-                    className="absolute inset-0 border-2 border-primary rounded-3xl"
-                    animate={{ scale: [1, 1.2, 1], opacity: [1, 0, 1] }}
-                    transition={{ duration: 2, repeat: Infinity }}
-                  />
-                </div>
-                <div>
-                  <h2 className="text-xl font-black uppercase tracking-tight mb-2">Тест завершен!</h2>
-                  <div className="flex gap-8 mt-4">
-                    <div className="text-center">
-                      <p className="text-[10px] text-muted-foreground uppercase font-black mb-1">Скорость</p>
-                      <p className="text-3xl font-black text-primary">{cpm} <span className="text-xs">CPM</span></p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-[10px] text-muted-foreground uppercase font-black mb-1">Точность</p>
-                      <p className="text-3xl font-black text-primary">{accuracy}%</p>
-                    </div>
-                  </div>
-                </div>
-                <div className="flex gap-4">
-                  <button onClick={startTest} className="px-6 py-3 bg-primary text-primary-foreground rounded-xl font-black uppercase text-[10px] tracking-widest">
-                    Повторить
-                  </button>
-                </div>
+                <PostGameInsight
+                  gameType="TYPING"
+                  score={cpm}
+                  timeMs={timeMs}
+                  errors={errors}
+                  onPlayAgain={startTest}
+                  onBackToMenu={() => navigate('/')}
+                />
               </motion.div>
             ) : (
               <motion.div 

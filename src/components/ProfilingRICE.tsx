@@ -1,8 +1,10 @@
 import { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Target, Users, Sparkles, ShieldAlert, Award, Star } from 'lucide-react';
+import { Target, Users, Sparkles, ShieldAlert, Award } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { createSafeLogger, safeError } from '../lib/safe-logger';
+import { useNavigate } from 'react-router-dom';
+import { PostGameInsight } from './PostGameInsight';
 
 const logger = createSafeLogger('profiling-rice');
 
@@ -53,8 +55,16 @@ export function ProfilingRICE() {
   const [score, setScore] = useState(0);
   const [lastError, setLastError] = useState(false);
   const { token, refreshUser } = useAuth();
+  const navigate = useNavigate();
 
   const currentScenario = SCENARIOS[currentIndex % SCENARIOS.length];
+
+  const startProfiling = () => {
+    setCurrentIndex(0);
+    setScore(0);
+    setLastError(false);
+    setGameState('profiling');
+  };
 
   const handleMotivationSelect = (m: Motivation) => {
     if (m === currentScenario.correctMotivation) {
@@ -115,7 +125,7 @@ export function ProfilingRICE() {
             Научитесь определять скрытую мотивацию людей и подбирать ключи к их поведению по системе: 
             <b> Reward, Ideology, Coercion, Ego</b>.
           </p>
-          <button onClick={() => setGameState('profiling')} className="w-full py-4 bg-primary text-primary-foreground rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-xl shadow-primary/20 hover:scale-[1.02] transition-all">
+          <button onClick={startProfiling} className="w-full py-4 bg-primary text-primary-foreground rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-xl shadow-primary/20 hover:scale-[1.02] transition-all">
             Начать анализ
           </button>
         </div>
@@ -126,14 +136,14 @@ export function ProfilingRICE() {
   if (gameState === 'finished') {
     return (
       <div className="col-span-12 flex flex-col items-center justify-center h-full min-h-[400px] p-8 text-center">
-        <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center mb-6">
-           <Star className="w-8 h-8 text-primary fill-current" />
-        </div>
-        <h2 className="text-[10px] text-muted-foreground uppercase tracking-widest mb-2">Анализ завершен</h2>
-        <div className="text-4xl font-black mb-8 text-primary">Мастер убеждения</div>
-        <button onClick={() => setGameState('idle')} className="px-8 py-3 bg-primary text-primary-foreground text-[10px] uppercase tracking-wider rounded-lg font-bold">
-           В меню
-        </button>
+        <PostGameInsight
+          gameType="PROFILING_RICE"
+          score={score}
+          timeMs={1000}
+          errors={Math.max(0, SCENARIOS.length - score)}
+          onPlayAgain={startProfiling}
+          onBackToMenu={() => navigate('/')}
+        />
       </div>
     );
   }

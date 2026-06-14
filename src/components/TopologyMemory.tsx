@@ -2,7 +2,9 @@ import { motion, AnimatePresence } from 'motion/react';
 import { useTopologyEngine, NodeState, NodeId } from '../hooks/useTopologyEngine';
 import { useAuth } from '../hooks/useAuth';
 import { useEffect } from 'react';
-import { GitBranch, ChevronRight, RefreshCw, CheckCircle } from 'lucide-react';
+import { GitBranch, ChevronRight, CheckCircle } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { PostGameInsight } from './PostGameInsight';
 
 const STATE_COLORS: Record<NodeState, string> = {
   idle:    'bg-secondary border-border text-muted-foreground',
@@ -128,6 +130,7 @@ function GraphView({ nodes, edges, interactive, userAnswers, onSetAnswer }: {
 export function TopologyMemory() {
   const { state, startGame, nextEvent, setNodeAnswer, submitAnswers, nextLevel } = useTopologyEngine();
   const { token } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (state.isFinished && token) {
@@ -267,28 +270,23 @@ export function TopologyMemory() {
 
   // Result phase
   const pct = Math.round((state.score / state.maxScore) * 100);
-  const grade = pct >= 90 ? 'Превосходно' : pct >= 70 ? 'Хорошо' : pct >= 50 ? 'Удовлетворительно' : 'Требует практики';
 
   return (
     <div className="col-span-12 grid grid-cols-1 lg:grid-cols-12 gap-4 h-full min-h-0">
-      <div className="lg:col-start-3 lg:col-span-8 bg-card/20 border border-border rounded-3xl p-8 flex flex-col items-center text-center">
-        <div className="text-[10px] uppercase tracking-widest text-muted-foreground mb-4 font-bold">Результат</div>
-        <div className="text-6xl font-black font-mono tabular-nums mb-2 text-indigo-400">
-          {state.score}<span className="text-3xl text-muted-foreground">/{state.maxScore}</span>
-        </div>
-        <div className="text-sm font-bold mb-1">{grade}</div>
-        <div className="text-xs text-muted-foreground mb-2">Точность: {pct}%</div>
-        <div className="text-xs font-mono text-muted-foreground mb-8">Время: {(state.timeMs / 1000).toFixed(1)}с · Уровень {state.level}</div>
-        <div className="flex gap-3">
-          <button onClick={() => startGame(state.level)} className="flex items-center gap-2 px-5 py-2.5 border border-border rounded-xl text-xs font-bold hover:bg-secondary transition-colors">
-            <RefreshCw className="w-3.5 h-3.5" /> Повторить
+      <div className="lg:col-start-3 lg:col-span-8 flex flex-col items-center gap-4">
+        <PostGameInsight
+          gameType="TOPOLOGY_MEMORY"
+          score={state.score}
+          timeMs={state.timeMs}
+          errors={Math.max(0, state.maxScore - state.score)}
+          onPlayAgain={() => startGame(state.level)}
+          onBackToMenu={() => navigate('/')}
+        />
+        {pct >= 70 && (
+          <button onClick={nextLevel} className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-xl text-xs font-bold hover:bg-indigo-500 transition-colors">
+            Уровень {state.level + 1} <ChevronRight className="w-3.5 h-3.5" />
           </button>
-          {pct >= 70 && (
-            <button onClick={nextLevel} className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-xl text-xs font-bold hover:bg-indigo-500 transition-colors">
-              Уровень {state.level + 1} <ChevronRight className="w-3.5 h-3.5" />
-            </button>
-          )}
-        </div>
+        )}
       </div>
     </div>
   );

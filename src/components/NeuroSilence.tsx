@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
-import { EyeOff, VolumeX, ShieldAlert } from 'lucide-react';
+import { EyeOff, VolumeX } from 'lucide-react';
+import { PostGameInsight } from './PostGameInsight';
 
 export function NeuroSilence() {
   const navigate = useNavigate();
@@ -9,6 +10,13 @@ export function NeuroSilence() {
   const [breathState, setBreathState] = useState<'inhale' | 'hold' | 'exhale'>('inhale');
   const [breathTimer, setBreathTimer] = useState(4); // Seconds left in current breath state
   const [isFinished, setIsFinished] = useState(false);
+
+  const restartSession = () => {
+    setTimeLeft(120);
+    setBreathState('inhale');
+    setBreathTimer(4);
+    setIsFinished(false);
+  };
 
   // Total Timer
   useEffect(() => {
@@ -79,24 +87,16 @@ export function NeuroSilence() {
         <motion.div 
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="max-w-md w-full bg-neutral-900 border border-neutral-800 rounded-3xl p-8 text-center space-y-6 shadow-2xl"
+          className="max-w-2xl w-full"
         >
-          <div className="w-16 h-16 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl flex items-center justify-center mx-auto text-emerald-400">
-            <ShieldAlert className="w-8 h-8" />
-          </div>
-          <div>
-            <h2 className="text-[10px] text-emerald-400 uppercase tracking-[0.2em] font-black mb-2">Перезагрузка завершена</h2>
-            <h3 className="text-2xl font-black uppercase tracking-tight">Миндалина спокойна</h3>
-            <p className="text-sm text-neutral-400 mt-4 leading-relaxed">
-              Вы успешно выполнили 2-минутную дыхательную сессию. Ваше сердцебиение нормализовалось, уровень кортизола снизился. Мозг готов к эффективной работе.
-            </p>
-          </div>
-          <button
-            onClick={() => navigate('/')}
-            className="w-full py-4 bg-white text-black hover:bg-neutral-200 rounded-2xl font-black text-xs uppercase tracking-widest transition-all active:scale-95"
-          >
-            Вернуться на дашборд
-          </button>
+          <PostGameInsight
+            gameType="NEURO_SILENCE"
+            score={100}
+            timeMs={120000}
+            errors={0}
+            onPlayAgain={restartSession}
+            onBackToMenu={() => navigate('/')}
+          />
         </motion.div>
       </div>
     );

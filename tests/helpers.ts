@@ -129,14 +129,18 @@ export async function installSyntheticApi(page: Page) {
     }
 
     if (url.pathname === '/api/analytics/compare') {
+      const gameType = url.searchParams.get('gameType');
+      const nextModule = gameType === 'TYPING'
+        ? { recommendedGame: 'scanner', recommendedGameTitle: 'Смысловой сканер' }
+        : { recommendedGame: 'logical', recommendedGameTitle: 'Логические матрицы' };
+
       await route.fulfill(
         jsonResponse({
           deltaPercentage: 0,
           trend: 'stable',
           percentile: 75,
           verdict: 'Синтетический анализ завершен. Данные пользователей не используются.',
-          recommendedGame: 'logical',
-          recommendedGameTitle: 'Логические матрицы',
+          ...nextModule,
         }),
       );
       return;

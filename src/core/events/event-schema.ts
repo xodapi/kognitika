@@ -43,6 +43,22 @@ export const DifficultySuggestionSchema = z.object({
   message: z.string()
 });
 
+export const DailyPracticeCategorySchema = z.enum(['cognitive', 'somatic', 'safety']);
+
+export const PracticeRecommendationReasonSchema = z.enum([
+  'weak_area',
+  'streak_maintenance',
+  'variety',
+  'recovery',
+]);
+
+export const PracticeRecommendedSchema = z.object({
+  category: DailyPracticeCategorySchema,
+  moduleId: z.string().min(1),
+  reason: PracticeRecommendationReasonSchema,
+  sourceSessionId: z.string().min(1),
+});
+
 // Registry of all events and their payloads
 export const EventRegistry = {
   'TRAINING_COMPLETE': TrainingCompleteSchema,
@@ -50,6 +66,7 @@ export const EventRegistry = {
   'MISTAKE_MADE': z.any(),
   'FEEDBACK_SUBMITTED': FeedbackSubmittedSchema,
   'DIFFICULTY_SUGGESTION': DifficultySuggestionSchema,
+  'PracticeRecommended': PracticeRecommendedSchema,
   'game:completed': z.any(), // Legacy/Bridge
   'feedback:submitted': FeedbackSubmittedSchema, // Legacy/Bridge alias
   'error': z.any(),

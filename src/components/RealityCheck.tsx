@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Target, Shield, AlertTriangle, CheckCircle2, ChevronRight, Brain, Zap, Info } from 'lucide-react';
 import { useRealityCheckEngine } from '../hooks/useRealityCheckEngine';
 import { useAuth } from '../hooks/useAuth';
+import { PostGameInsight } from './PostGameInsight';
 
 export function RealityCheck({ onFinish }: { onFinish: (results: any) => void }) {
   const { user } = useAuth();
@@ -28,29 +29,14 @@ export function RealityCheck({ onFinish }: { onFinish: (results: any) => void })
     return (
       <div className="flex flex-col items-center justify-center min-h-[500px] sm:h-[600px] bg-card/40 backdrop-blur-xl border border-border rounded-3xl p-6 sm:p-12 text-center">
         <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}>
-          <div className="w-20 h-20 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-6">
-            <Shield className="w-10 h-10 text-primary" />
-          </div>
-          <h2 className="text-2xl sm:text-4xl font-black mb-1 sm:mb-2 uppercase italic tracking-tighter">Анализ завершен</h2>
-          <div className="text-4xl sm:text-6xl font-black text-primary mb-6 sm:mb-8">{score} <span className="text-lg sm:text-xl">XP</span></div>
-          
-          <div className="grid grid-cols-2 gap-4 mb-12 max-w-md mx-auto">
-             <div className="p-4 bg-secondary/50 rounded-2xl border border-border">
-                <p className="text-[10px] text-muted-foreground uppercase font-black mb-1">Точность</p>
-                <p className="text-xl font-black">100%</p>
-             </div>
-             <div className="p-4 bg-secondary/50 rounded-2xl border border-border">
-                <p className="text-[10px] text-muted-foreground uppercase font-black mb-1">Бдительность</p>
-                <p className="text-xl font-black">Высокая</p>
-             </div>
-          </div>
-
-          <button
-            onClick={() => onFinish(score)}
-            className="px-12 py-4 bg-primary text-primary-foreground font-black rounded-2xl hover:scale-105 active:scale-95 transition-all uppercase tracking-widest text-xs"
-          >
-            Вернуться в штаб
-          </button>
+          <PostGameInsight
+            gameType="REALITY_CHECK"
+            score={score}
+            timeMs={1000}
+            errors={0}
+            onPlayAgain={startSession}
+            onBackToMenu={() => onFinish(score)}
+          />
         </motion.div>
       </div>
     );

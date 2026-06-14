@@ -5,6 +5,8 @@ import { useAuth } from '../hooks/useAuth';
 import { emitEvent } from '../hooks/useEventBus';
 import { useSessionRecording } from '../hooks/useSessionRecording';
 import { createSafeLogger, safeError } from '../lib/safe-logger';
+import { useNavigate } from 'react-router-dom';
+import { PostGameInsight } from './PostGameInsight';
 
 const logger = createSafeLogger('spatial-concealment');
 
@@ -21,6 +23,7 @@ export function SpatialConcealment() {
   const { state, startTraining, handleCellClick } = useSpatialEngine();
   const { level, gridSize, activeCount, grid, phase, score, errors } = state;
   const { token } = useAuth();
+  const navigate = useNavigate();
   const MEMORIZE_SECS = 3; // matches useSpatialEngine memorize duration
   
   useSessionRecording(phase !== 'idle' && phase !== 'result', phase === 'result');
@@ -122,22 +125,16 @@ export function SpatialConcealment() {
                 key="result"
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="flex flex-col items-center text-center gap-6"
+                className="w-full flex items-center justify-center"
               >
-                <div className="w-20 h-20 rounded-3xl bg-destructive/10 border border-destructive/20 flex items-center justify-center">
-                  <EyeOff className="w-10 h-10 text-destructive" />
-                </div>
-                <div>
-                  <h2 className="text-xl font-black uppercase tracking-tight mb-2 text-destructive">Ошибка!</h2>
-                  <p className="text-sm text-muted-foreground">Вы достигли уровня {level}</p>
-                  <p className="text-4xl font-black mt-4">{score} <span className="text-xs uppercase text-muted-foreground">очков</span></p>
-                </div>
-                <button 
-                  onClick={startTraining}
-                  className="px-8 py-4 bg-primary text-primary-foreground rounded-2xl font-black uppercase tracking-widest text-xs shadow-lg shadow-primary/20 hover:scale-105 transition-transform"
-                >
-                  Попробовать снова
-                </button>
+                <PostGameInsight
+                  gameType="SPATIAL_CONCEALMENT"
+                  score={score}
+                  timeMs={1000}
+                  errors={errors}
+                  onPlayAgain={startTraining}
+                  onBackToMenu={() => navigate('/')}
+                />
               </motion.div>
             ) : (
               <motion.div 

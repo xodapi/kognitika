@@ -4,12 +4,14 @@ import { Card, CardHeader, CardTitle, CardContent } from './ui/card';
 import { Button } from './ui/button';
 import { Target, Play, Square, MessageCircle, Lightbulb, BellRing, Brain } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { PostGameInsight } from './PostGameInsight';
 
 export function DeepFocus({ onFinish }: { onFinish?: () => void }) {
   const [minutes, setMinutes] = useState(25);
   const {
     isActive,
     isFinished,
+    timeLeft,
     formattedTime,
     progress,
     distractions,
@@ -22,46 +24,16 @@ export function DeepFocus({ onFinish }: { onFinish?: () => void }) {
 
   if (isFinished) {
     return (
-      <Card className="max-w-2xl mx-auto shadow-2xl bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800">
-        <CardHeader>
-          <CardTitle className="text-2xl font-bold flex items-center gap-2">
-            <Target className="text-purple-500" />
-            Итоги сессии Глубокого Фокуса
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="bg-zinc-100 dark:bg-zinc-800 p-6 rounded-xl text-center">
-              <h3 className="text-sm font-medium mb-2 text-zinc-500">Фокус-очки</h3>
-              <p className="text-4xl font-black text-purple-600 dark:text-purple-400">
-                {score} XP
-              </p>
-            </div>
-            <div className="bg-purple-50 dark:bg-purple-900/20 p-6 rounded-xl text-center border border-purple-200 dark:border-purple-800">
-              <h3 className="text-sm font-medium mb-2 text-purple-600 dark:text-purple-400">Отвлечения</h3>
-              <p className="text-4xl font-black text-purple-600 dark:text-purple-400">
-                {distractions.length}
-              </p>
-            </div>
-          </div>
-          
-          {distractions.length > 0 && (
-            <div className="space-y-2">
-              <h4 className="font-semibold text-zinc-700 dark:text-zinc-300">Аналитика отвлечений:</h4>
-              <ul className="text-sm text-zinc-600 dark:text-zinc-400 space-y-1">
-                <li>Внутренние (мысли о другом): {distractions.filter(d => d.type === 'internal').length}</li>
-                <li>Внешние (звуки, телефон): {distractions.filter(d => d.type === 'external').length}</li>
-                <li>Эмоции (тревога, скука): {distractions.filter(d => d.type === 'emotion').length}</li>
-                <li>Идеи (новые проекты): {distractions.filter(d => d.type === 'idea').length}</li>
-              </ul>
-            </div>
-          )}
-
-          <Button onClick={onFinish} className="w-full h-12 text-lg" variant="default">
-            Завершить
-          </Button>
-        </CardContent>
-      </Card>
+      <div className="max-w-2xl mx-auto">
+        <PostGameInsight
+          gameType="DEEP_FOCUS"
+          score={score}
+          timeMs={(minutes * 60 - timeLeft) * 1000}
+          errors={distractions.length}
+          onPlayAgain={startSession}
+          onBackToMenu={() => onFinish?.()}
+        />
+      </div>
     );
   }
 

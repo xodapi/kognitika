@@ -2,8 +2,9 @@ import React from 'react';
 import { useSocialEQEngine, DialogueOption } from '../hooks/useSocialEQEngine';
 import { Card, CardHeader, CardTitle, CardContent } from './ui/card';
 import { Button } from './ui/button';
-import { AlertCircle, UserCheck, MessageSquare, Play } from 'lucide-react';
+import { AlertCircle, MessageSquare, Play } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { PostGameInsight } from './PostGameInsight';
 
 export function SocialEQ({ onFinish }: { onFinish?: () => void }) {
   const {
@@ -19,28 +20,16 @@ export function SocialEQ({ onFinish }: { onFinish?: () => void }) {
 
   if (isFinished) {
     return (
-      <Card className="max-w-2xl mx-auto shadow-2xl bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800">
-        <CardHeader>
-          <CardTitle className="text-2xl font-bold flex items-center gap-2">
-            <UserCheck className="text-green-500" />
-            Итоги симуляции
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="bg-zinc-100 dark:bg-zinc-800 p-6 rounded-xl text-center">
-            <h3 className="text-xl font-medium mb-2">Социальный интеллект (EQ)</h3>
-            <p className="text-4xl font-black text-indigo-600 dark:text-indigo-400">
-              {score} XP
-            </p>
-            <p className="text-zinc-500 dark:text-zinc-400 mt-4">
-              Вы отлично справляетесь с деэскалацией конфликтов.
-            </p>
-          </div>
-          <Button onClick={onFinish} className="w-full h-12 text-lg" variant="default">
-            Завершить
-          </Button>
-        </CardContent>
-      </Card>
+      <div className="max-w-2xl mx-auto">
+        <PostGameInsight
+          gameType="SOCIAL_EQ"
+          score={score}
+          timeMs={1000}
+          errors={Math.max(0, Math.ceil((100 - score) / 50))}
+          onPlayAgain={startSession}
+          onBackToMenu={() => onFinish?.()}
+        />
+      </div>
     );
   }
 

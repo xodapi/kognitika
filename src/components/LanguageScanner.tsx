@@ -15,6 +15,8 @@ import {
   Timer,
   AlertCircle
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { PostGameInsight } from './PostGameInsight';
 
 export const LanguageScanner: React.FC = () => {
   const engine = useLanguageScannerEngine();
@@ -96,6 +98,10 @@ export const LanguageScanner: React.FC = () => {
         </motion.div>
       </div>
     );
+  }
+
+  if (state.phase === 'result') {
+    return <LanguageScannerResult state={state} onReplay={() => engine.startGame(state.level, 123)} />;
   }
 
   // Active Scan Phase
@@ -280,3 +286,26 @@ export const LanguageScanner: React.FC = () => {
     </div>
   );
 };
+
+function LanguageScannerResult({
+  state,
+  onReplay,
+}: {
+  state: ReturnType<typeof useLanguageScannerEngine>['state'];
+  onReplay: () => void;
+}) {
+  const navigate = useNavigate();
+
+  return (
+    <div className="flex flex-col items-center justify-center min-h-[70vh] px-4">
+      <PostGameInsight
+        gameType="LANGUAGE_SCANNER"
+        score={state.score}
+        timeMs={state.timeMs}
+        errors={state.misses + state.falsePositives}
+        onPlayAgain={onReplay}
+        onBackToMenu={() => navigate('/')}
+      />
+    </div>
+  );
+}

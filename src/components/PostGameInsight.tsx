@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'motion/react';
 import { TrendingUp, TrendingDown, Award, Brain, Zap, RotateCcw, Menu, ArrowRight, ShieldAlert, Heart } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
@@ -7,6 +7,14 @@ import { EmotionalBarometer } from './EmotionalBarometer';
 import { useNavigate } from 'react-router-dom';
 import { routeForRecommendedGame } from '../lib/routes';
 import { createSafeLogger, safeError } from '../lib/safe-logger';
+import { eventBus } from '../client/analytics/event-bus';
+import {
+  buildCompletionNarrative,
+  createClientSourceSessionId,
+  getPracticeGameTitle,
+  getPracticeRecommendation,
+  type PracticeRecommendation,
+} from '../lib/practice-recommendations';
 
 const logger = createSafeLogger('post-game-insight');
 
@@ -26,8 +34,8 @@ interface ComparisonData {
   trend: 'up' | 'down' | 'stable';
   percentile: number;
   verdict: string;
-  recommendedGame: string;
-  recommendedGameTitle: string;
+  recommendedGame?: string;
+  recommendedGameTitle?: string;
 }
 
 export function PostGameInsight({
@@ -47,6 +55,30 @@ export function PostGameInsight({
   const [localPostSequence, setLocalPostSequence] = useState<number[] | null>(null);
   const [showPostTest, setShowPostTest] = useState(false);
   const [savingPostTest, setSavingPostTest] = useState(false);
+  const sourceSessionId = useMemo(
+    () => sessionId || createClientSourceSessionId({ gameType, score, timeMs }),
+    [gameType, score, sessionId, timeMs],
+  );
+  const recommendation: PracticeRecommendation = useMemo(
+    () => getPracticeRecommendation(gameType, {
+      recommendedGame: insight?.recommendedGame,
+      recommendedGameTitle: insight?.recommendedGameTitle,
+      errors,
+      trend: insight?.trend,
+    }),
+    [errors, gameType, insight?.recommendedGame, insight?.recommendedGameTitle, insight?.trend],
+  );
+  const narrative = useMemo(
+    () => buildCompletionNarrative({
+      gameType,
+      score,
+      errors,
+      percentile: insight?.percentile,
+      verdict: insight?.verdict,
+      recommendation,
+    }),
+    [errors, gameType, insight?.percentile, insight?.verdict, recommendation, score],
+  );
 
   const handlePostLuscherFinish = async (seq: number[]) => {
     setLocalPostSequence(seq);
@@ -77,9 +109,20 @@ export function PostGameInsight({
   };
 
   const handleStartRecommended = () => {
-    if (!insight?.recommendedGame) return;
-    navigate(routeForRecommendedGame(insight.recommendedGame));
+    eventBus.emit('PracticeRecommended', {
+      category: recommendation.category,
+      moduleId: recommendation.moduleId,
+      reason: recommendation.reason,
+      sourceSessionId,
+    });
   };
+
+  useEffect(() => {
+    return eventBus.on('PracticeRecommended', (payload) => {
+      if (payload.sourceSessionId !== sourceSessionId) return;
+      navigate(routeForRecommendedGame(payload.moduleId));
+    });
+  }, [navigate, sourceSessionId]);
 
   useEffect(() => {
     let active = true;
@@ -103,6 +146,7 @@ export function PostGameInsight({
       .catch(err => {
         logger.error('Game insights fetch failed', { error: safeError(err), gameType });
         if (active) {
+          const fallback = getPracticeRecommendation(gameType, { errors });
           // Fallback data if API fails or user is offline
           setInsight({
             deltaPercentage: 0,
@@ -111,8 +155,8 @@ export function PostGameInsight({
             verdict: errors > 3 
               ? 'Вы завершили тренировку! Хороший темп, но обратите внимание на точность — старайтесь совершать меньше ошибок.' 
               : 'Отличная тренировка! Стабильный результат. Продолжайте регулярные занятия для закрепления навыка.',
-            recommendedGame: 'schulte',
-            recommendedGameTitle: 'Таблицы Шульте'
+            recommendedGame: fallback.moduleId,
+            recommendedGameTitle: fallback.moduleTitle
           });
           setLoading(false);
         }
@@ -122,28 +166,6 @@ export function PostGameInsight({
       active = false;
     };
   }, [gameType, score, timeMs, errors, token]);
-
-  // Game translation helper
-  const getGameTitle = (type: string) => {
-    const titles: Record<string, string> = {
-      SCHULTE: 'Таблицы Шульте',
-      STROOP: 'Эффект Струпа',
-      N_BACK: 'Задача N-назад',
-      NUMERICAL_ANALYSIS: 'Числовой анализ',
-      LOGICAL_SEQUENCE: 'Логическая матрица',
-      SPEED_TYPING: 'Скоростная печать',
-      COLLISION_DETECTOR: 'Детектор коллизий',
-      TOPOLOGY_MEMORY: 'Топологическая память',
-      ASYNC_DISPATCHER: 'Асинхронный диспетчер',
-      NOISE_REDUCTION: 'Редукция шума',
-      LANGUAGE_SCANNER: 'Смысловой сканер',
-      DECRYPTOR: 'Декриптор',
-      REALITY_CHECK: 'Проверка реальности',
-      OBJECTIVE_FILTER: 'Объективный фильтр',
-      PROFILING_RICE: 'Профайлинг RICE'
-    };
-    return titles[type] || type;
-  };
 
   if (showPostTest) {
     return (
@@ -162,7 +184,7 @@ export function PostGameInsight({
 
       <h2 className="text-[10px] text-muted-foreground uppercase tracking-[0.2em] font-black text-center mb-2">Анализ завершен</h2>
       <h3 className="text-2xl font-black text-center uppercase tracking-tight text-foreground mb-8">
-        {getGameTitle(gameType)}
+        {getPracticeGameTitle(gameType)}
       </h3>
 
       {/* Raw stats grid */}
@@ -226,39 +248,45 @@ export function PostGameInsight({
             </div>
           )}
 
-          {/* Cognitive Verdict Card */}
-          {insight && (
-            <div className="bg-card/40 border border-border/80 rounded-2xl p-6 relative overflow-hidden">
+          {/* Completion contract */}
+          <div className="grid grid-cols-1 gap-4">
+            <div className="bg-card/40 border border-border/80 rounded-2xl p-5 relative overflow-hidden">
               <div className="flex items-start gap-3">
-                <Brain className="w-5 h-5 text-primary mt-0.5 shrink-0" />
+                <Award className="w-5 h-5 text-emerald-500 mt-0.5 shrink-0" />
                 <div>
-                  <h4 className="text-xs font-black uppercase tracking-wider text-foreground mb-2">Когнитивный разбор</h4>
-                  <p className="text-sm text-muted-foreground leading-relaxed">
-                    {insight.verdict}
-                  </p>
+                  <h4 className="text-xs font-black uppercase tracking-wider text-foreground mb-2">Что получилось</h4>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{narrative.didWell}</p>
                 </div>
               </div>
             </div>
-          )}
 
-          {/* Recommendation CTA */}
-          {insight && insight.recommendedGame && (
+            <div className="bg-card/40 border border-border/80 rounded-2xl p-5 relative overflow-hidden">
+              <div className="flex items-start gap-3">
+                <ShieldAlert className="w-5 h-5 text-amber-500 mt-0.5 shrink-0" />
+                <div>
+                  <h4 className="text-xs font-black uppercase tracking-wider text-foreground mb-2">Что улучшить</h4>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{narrative.improve}</p>
+                </div>
+              </div>
+            </div>
+
             <div className="bg-card/10 border border-border/40 rounded-2xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
               <div className="flex items-center gap-3">
                 <Zap className="w-5 h-5 text-amber-500 shrink-0 animate-pulse" />
                 <div className="text-center sm:text-left">
-                  <p className="text-[9px] text-muted-foreground uppercase font-black tracking-wider">Рекомендация для зоны роста</p>
-                  <p className="text-sm font-bold text-foreground">{insight.recommendedGameTitle || getGameTitle(insight.recommendedGame.toUpperCase())}</p>
+                  <p className="text-[9px] text-muted-foreground uppercase font-black tracking-wider">Что дальше</p>
+                  <p className="text-sm font-bold text-foreground">{recommendation.moduleTitle}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{narrative.recommendationReason}</p>
                 </div>
               </div>
-              <button 
+              <button
                 onClick={handleStartRecommended}
                 className="flex items-center gap-1 text-[10px] font-black uppercase tracking-widest text-primary hover:text-primary/80 transition-colors group"
               >
                 Начать рекомендованное <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </button>
             </div>
-          )}
+          </div>
         </motion.div>
       )}
 

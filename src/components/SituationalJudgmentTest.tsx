@@ -2,12 +2,15 @@ import { useEffect } from 'react';
 import { useSituationalEngine } from '../hooks/useSituationalEngine';
 import { useAuth } from '../hooks/useAuth';
 import { createSafeLogger, safeError } from '../lib/safe-logger';
+import { useNavigate } from 'react-router-dom';
+import { PostGameInsight } from './PostGameInsight';
 
 const logger = createSafeLogger('situational-judgment-test');
 
 export function SituationalJudgmentTest() {
   const { state, startGame, answerQuestion } = useSituationalEngine();
   const { token } = useAuth();
+  const navigate = useNavigate();
   
   // Save result on finish
   useEffect(() => {
@@ -43,21 +46,15 @@ export function SituationalJudgmentTest() {
   if (state.isFinished) {
     return (
       <div className="col-span-12 grid grid-cols-1 lg:grid-cols-12 gap-4 h-full min-h-0 relative">
-         <div className="lg:col-start-4 lg:col-span-6 bg-card/20 border border-border rounded-3xl p-6 sm:p-8 flex flex-col items-center justify-center text-center">
-            <h2 className="text-[10px] text-muted-foreground uppercase tracking-widest mb-6">Анализ завершен</h2>
-            
-            <div className="text-4xl sm:text-6xl font-mono tabular-nums mb-2 font-bold text-primary">{state.score}<span className="text-xl sm:text-2xl text-muted-foreground">/{state.maxScore}</span></div>
-            <div className="text-xs sm:text-sm font-medium mb-4 uppercase tracking-widest">Баллов за решения</div>
-            
-            <div className="text-sm font-mono text-muted-foreground mb-8">
-               Время: {(state.timeMs / 1000).toFixed(1)}s
-            </div>
-            
-            <div className="flex gap-4 w-full max-w-sm border-t border-border pt-6">
-               <button onClick={startGame} className="flex-1 px-4 py-3 bg-primary text-primary-foreground text-[10px] uppercase tracking-wider rounded-lg font-bold hover:bg-primary/90 transition-colors">
-                 Повторить сценарии
-               </button>
-            </div>
+         <div className="lg:col-start-3 lg:col-span-8 flex items-center justify-center">
+            <PostGameInsight
+              gameType="SITUATIONAL_JUDGMENT"
+              score={state.score}
+              timeMs={state.timeMs}
+              errors={Math.max(0, state.maxScore - state.score)}
+              onPlayAgain={startGame}
+              onBackToMenu={() => navigate('/')}
+            />
          </div>
       </div>
     );

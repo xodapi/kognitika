@@ -6,6 +6,8 @@
 import { motion, AnimatePresence } from 'motion/react';
 import { useNoiseReductionEngine } from '../hooks/useNoiseReductionEngine';
 import { Play, Shield, AlertTriangle, Eye, Zap, Target } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { PostGameInsight } from './PostGameInsight';
 
 interface NoiseReductionProps {
   level?: number;
@@ -20,10 +22,7 @@ function formatTime(ms: number) {
 
 export function NoiseReduction({ level = 1, onComplete }: NoiseReductionProps) {
   const { state, startGame, stopGame, reactToSignal, reactToDistractor } = useNoiseReductionEngine();
-
-  const accuracy = state.hits + state.falseAlarms > 0
-    ? Math.round((state.hits / Math.max(1, state.hits + state.misses)) * 100)
-    : 0;
+  const navigate = useNavigate();
 
   const inhibitoryIndex = state.hits + state.falseAlarms > 0
     ? Math.round((state.hits / Math.max(1, state.hits + state.falseAlarms)) * 100)
@@ -109,51 +108,30 @@ export function NoiseReduction({ level = 1, onComplete }: NoiseReductionProps) {
 
   // ─── ЭКРАН РЕЗУЛЬТАТА ────────────────────────────────────
   if (state.phase === 'result') {
-    const rank = inhibitoryIndex >= 90 ? 'Мастер фокуса' :
-                 inhibitoryIndex >= 75 ? 'Тренированный' :
-                 inhibitoryIndex >= 55 ? 'Прогрессирующий' : 'Новичок';
-
     return (
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         className="flex flex-col items-center justify-center min-h-[70vh] gap-6 px-4"
       >
-        <div className="text-center">
-          <div className="text-6xl font-black mb-2">{inhibitoryIndex}%</div>
-          <div className="text-xl font-bold text-emerald-400">{rank}</div>
-          <div className="text-sm text-muted-foreground mt-1">Индекс тормозного контроля</div>
-        </div>
-
-        <div className="grid grid-cols-3 gap-4 max-w-sm w-full">
-          {[
-            { label: 'Верных реакций', value: state.hits, color: 'text-emerald-400' },
-            { label: 'Пропущено', value: state.misses, color: 'text-amber-400' },
-            { label: 'Ложных нажатий', value: state.falseAlarms, color: 'text-red-400' },
-          ].map((stat, i) => (
-            <div key={i} className="bg-card/40 border border-border rounded-2xl p-4 text-center">
-              <div className={`text-2xl font-black ${stat.color}`}>{stat.value}</div>
-              <div className="text-xs text-muted-foreground mt-1">{stat.label}</div>
-            </div>
-          ))}
-        </div>
-
-        <div className="flex gap-3">
-          <button
-            id="noise-retry-btn"
-            onClick={() => startGame(state.level)}
-            className="px-8 py-3 bg-primary text-primary-foreground rounded-2xl font-bold hover:bg-primary/90 transition-all"
-          >
-            Повторить
-          </button>
-          <button
-            id="noise-next-level-btn"
-            onClick={() => startGame(Math.min(state.level + 1, 4))}
-            className="px-8 py-3 bg-card/40 border border-border rounded-2xl font-bold hover:border-primary/50 transition-all"
-          >
-            Уровень {Math.min(state.level + 1, 4)}
-          </button>
-        </div>
+        <PostGameInsight
+          gameType="NOISE_REDUCTION"
+          score={inhibitoryIndex}
+          timeMs={state.timeMs}
+          errors={state.misses + state.falseAlarms}
+          onPlayAgain={() => startGame(state.level)}
+          onBackToMenu={() => {
+            onComplete?.();
+            navigate('/');
+          }}
+        />
+        <button
+          id="noise-next-level-btn"
+          onClick={() => startGame(Math.min(state.level + 1, 4))}
+          className="px-8 py-3 bg-card/40 border border-border rounded-2xl font-bold hover:border-primary/50 transition-all"
+        >
+          Уровень {Math.min(state.level + 1, 4)}
+        </button>
       </motion.div>
     );
   }

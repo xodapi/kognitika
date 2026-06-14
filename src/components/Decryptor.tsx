@@ -1,11 +1,14 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useDecryptorEngine } from '../hooks/useDecryptorEngine';
-import { Cpu, Terminal, CheckCircle2, XCircle, Brain, Layers, ArrowRight } from 'lucide-react';
+import { Cpu, Terminal, Layers, ArrowRight } from 'lucide-react';
 import { clsx } from 'clsx';
+import { useNavigate } from 'react-router-dom';
+import { PostGameInsight } from './PostGameInsight';
 
 export const Decryptor: React.FC = () => {
   const { state, startGame, handleAnswer } = useDecryptorEngine();
+  const navigate = useNavigate();
 
   if (state.phase === 'memorize') {
     return (
@@ -59,29 +62,16 @@ export const Decryptor: React.FC = () => {
         <motion.div
           initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          className="text-center"
+          className="w-full"
         >
-          <Brain className="w-12 h-12 sm:w-16 sm:h-16 text-purple-500 mx-auto mb-4 sm:mb-6" />
-          <h2 className="text-2xl sm:text-4xl font-black mb-2">Анализ завершен</h2>
-          <div className="text-4xl sm:text-6xl font-black text-purple-400 mb-6 sm:mb-8">{state.score} XP</div>
-          
-          <div className="grid grid-cols-2 gap-4 sm:gap-8 mb-8 sm:mb-12">
-            <div className="text-center">
-              <div className="text-xs sm:text-sm text-slate-500 uppercase mb-1">Точность</div>
-              <div className="text-xl sm:text-2xl font-bold text-green-400">{state.hits}</div>
-            </div>
-            <div className="text-center">
-              <div className="text-xs sm:text-sm text-slate-500 uppercase mb-1">Ошибки</div>
-              <div className="text-xl sm:text-2xl font-bold text-red-400">{state.misses}</div>
-            </div>
-          </div>
-
-          <button
-            onClick={() => startGame(state.level)}
-            className="px-8 py-3 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-full transition-all hover:scale-105 active:scale-95 shadow-lg shadow-purple-500/25"
-          >
-            НОВЫЙ ЦИКЛ
-          </button>
+          <PostGameInsight
+            gameType="DECRYPTOR"
+            score={state.score}
+            timeMs={60000 - state.timeMs}
+            errors={state.misses}
+            onPlayAgain={() => startGame(state.level)}
+            onBackToMenu={() => navigate('/')}
+          />
         </motion.div>
       </div>
     );

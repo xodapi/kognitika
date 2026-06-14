@@ -4,6 +4,7 @@ import { Card, CardHeader, CardTitle, CardContent } from './ui/card';
 import { Button } from './ui/button';
 import { Network, Play, Link as LinkIcon, AlertCircle, BookOpen } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { PostGameInsight } from './PostGameInsight';
 
 export function Storytelling({ onFinish }: { onFinish?: () => void }) {
   const {
@@ -19,28 +20,16 @@ export function Storytelling({ onFinish }: { onFinish?: () => void }) {
 
   if (isFinished) {
     return (
-      <Card className="max-w-2xl mx-auto shadow-2xl bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800">
-        <CardHeader>
-          <CardTitle className="text-2xl font-bold flex items-center gap-2">
-            <Network className="text-amber-500" />
-            Итоги смысловых связей
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="bg-zinc-100 dark:bg-zinc-800 p-6 rounded-xl text-center">
-            <h3 className="text-xl font-medium mb-2">Навык: Сторителлинг</h3>
-            <p className="text-4xl font-black text-amber-600 dark:text-amber-400">
-              {score} XP
-            </p>
-            <p className="text-zinc-500 dark:text-zinc-400 mt-4">
-              Умение находить метафоры и связывать несоединимое — признак сильного интеллекта.
-            </p>
-          </div>
-          <Button onClick={onFinish} className="w-full h-12 text-lg" variant="default">
-            Завершить
-          </Button>
-        </CardContent>
-      </Card>
+      <div className="max-w-2xl mx-auto">
+        <PostGameInsight
+          gameType="STORYTELLING"
+          score={score}
+          timeMs={1000}
+          errors={Math.max(0, Math.ceil((300 - score) / 100))}
+          onPlayAgain={startSession}
+          onBackToMenu={() => onFinish?.()}
+        />
+      </div>
     );
   }
 
