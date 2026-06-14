@@ -48,16 +48,53 @@ test.describe('Kognitika production smoke', () => {
   });
 
   test('shows inline recovery UI when the built application bundle is blocked', async ({ page }) => {
-    await page.route(/\/assets\/.*\.js(\?.*)?$/, async (route) => {
-      await route.abort('blockedbyclient');
+    await page.route(/\/(assets\/.*|src\/main\.tsx)(\?.*)?$/, async (route) => {
+      const pathname = new URL(route.request().url()).pathname;
+      if (pathname.endsWith('.js') || pathname.endsWith('/src/main.tsx')) {
+        await route.abort('blockedbyclient');
+        return;
+      }
+
+      await route.continue();
     });
 
     await page.goto('/');
 
-    await expect(page.locator('#kognitika-boot-recovery')).toBeVisible({ timeout: 9_000 });
+    await expect(page.locator('#kognitika-boot-recovery')).toBeVisible({ timeout: 5_000 });
     await expect(page.getByText('Не удалось запустить Когнитику')).toBeVisible();
     await expect(page.getByRole('button', { name: 'Сбросить состояние приложения' })).toBeVisible();
     await expect(page.getByText('Brain ID').first()).toBeVisible();
+  });
+
+  test('keeps waiting on a slow main bundle instead of showing fatal recovery', async ({ page }) => {
+    test.setTimeout(45_000);
+
+    let delayedMainBundle = false;
+    await page.route(/\/assets\/index-.*\.js(\?.*)?$/, async (route) => {
+      if (!delayedMainBundle) {
+        delayedMainBundle = true;
+        await new Promise((resolve) => setTimeout(resolve, 9_000));
+      }
+
+      await route.continue();
+    });
+
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
+    await page.waitForTimeout(8_000);
+    await expect(page.locator('#kognitika-boot-recovery')).toHaveCount(0);
+
+    await expectAppReady(page);
+  });
+
+  test('direct /admin load without admin auth mounts the app and redirects home', async ({ page }) => {
+    const browserErrors = collectUnexpectedBrowserErrors(page);
+
+    await page.goto('/admin');
+    await expectAppReady(page);
+    await expect(page.locator('#kognitika-boot-recovery')).toHaveCount(0);
+    await expect(page).toHaveURL(/\/$/);
+
+    expect(browserErrors).toEqual([]);
   });
 
   test('does not create horizontal overflow across QA viewports', async ({ page }) => {
