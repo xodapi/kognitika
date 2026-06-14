@@ -125,6 +125,78 @@ function LazySection({ children }: { children: ReactNode }) {
   return <Suspense fallback={<SectionFallback />}>{children}</Suspense>;
 }
 
+function AdminAccessGate({
+  user,
+  onLogin,
+  onBack,
+}: {
+  user: { role?: string | null; pseudonym?: string | null; name?: string | null } | null;
+  onLogin: () => void;
+  onBack: () => void;
+}) {
+  const isSignedIn = Boolean(user);
+
+  return (
+    <section className="min-h-[520px] flex items-center justify-center py-10">
+      <div className="w-full max-w-2xl rounded-2xl border border-border bg-card/50 p-6 sm:p-8 shadow-sm backdrop-blur-md">
+        <div className="mb-6 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
+          {isSignedIn ? <Shield className="h-6 w-6" /> : <Lock className="h-6 w-6" />}
+        </div>
+        <p className="mb-3 text-[10px] font-black uppercase tracking-[0.25em] text-primary">
+          Админ-панель
+        </p>
+        <h2 className="text-2xl font-black uppercase tracking-tight text-foreground">
+          {isSignedIn ? 'Нужны права администратора' : 'Сначала войдите через Brain ID'}
+        </h2>
+        <p className="mt-4 max-w-xl text-sm leading-6 text-muted-foreground">
+          {isSignedIn
+            ? 'Этот раздел доступен только операторам проекта. Ваш Brain ID работает в пользовательском режиме, данные админ-панели скрыты.'
+            : 'Админ-панель открывается только после входа и проверки роли на сервере. Войдите или восстановите Brain ID, если у этого профиля есть права администратора.'}
+        </p>
+        {isSignedIn && (
+          <div className="mt-5 rounded-xl border border-border bg-background/50 px-4 py-3">
+            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+              Текущий профиль
+            </p>
+            <p className="mt-1 truncate text-sm font-bold text-foreground">
+              {user?.pseudonym || user?.name || 'Brain ID пользователь'}
+            </p>
+          </div>
+        )}
+        <div className="mt-7 flex flex-col gap-3 sm:flex-row">
+          {isSignedIn ? (
+            <button
+              type="button"
+              onClick={onBack}
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-xs font-black uppercase tracking-widest text-primary-foreground shadow-md transition-all hover:shadow-lg"
+            >
+              <LayoutDashboard className="h-4 w-4" />
+              Вернуться к обзору
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={onLogin}
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-xs font-black uppercase tracking-widest text-primary-foreground shadow-md transition-all hover:shadow-lg"
+            >
+              <LogIn className="h-4 w-4" />
+              Войти через Brain ID
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={onBack}
+            className="inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-background px-5 py-3 text-xs font-black uppercase tracking-widest text-muted-foreground transition-all hover:text-foreground"
+          >
+            <ChevronRight className="h-4 w-4 rotate-180" />
+            На главную
+          </button>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function AppContent() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -474,7 +546,18 @@ function AppContent() {
                 <Route path="/profiling" element={<ProfilingRICE />} />
                 <Route path="/anomaly" element={<AnomalyDetector />} />
                 <Route path="/dialogue" element={<SocialEQ onFinish={() => navigate('/')} />} />
-                <Route path="/admin" element={isAdmin ? <AdminPanel token={token} /> : <Navigate to="/" replace />} />
+                <Route
+                  path="/admin"
+                  element={isAdmin ? (
+                    <AdminPanel token={token} />
+                  ) : (
+                    <AdminAccessGate
+                      user={user}
+                      onLogin={() => setIsAuthOpen(true)}
+                      onBack={() => navigate('/')}
+                    />
+                  )}
+                />
                 <Route path="/ideas" element={<IdeasWall token={token} />} />
                 <Route path="/leaderboard" element={<LeaderboardView />} />
                 <Route path="/topology" element={<TopologyMemory />} />

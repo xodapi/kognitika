@@ -105,13 +105,15 @@ test.describe('Kognitika production smoke', () => {
     await expectAppReady(page);
   });
 
-  test('direct /admin load without admin auth mounts the app and redirects home', async ({ page }) => {
+  test('direct /admin load without admin auth mounts the app and shows access guidance', async ({ page }) => {
     const browserErrors = collectUnexpectedBrowserErrors(page);
 
     await page.goto('/admin');
     await expectAppReady(page);
     await expect(page.locator('#kognitika-boot-recovery')).toHaveCount(0);
-    await expect(page).toHaveURL(/\/$/);
+    await expect(page).toHaveURL(/\/admin$/);
+    await expect(page.getByRole('heading', { name: /сначала войдите через brain id/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /войти через brain id/i })).toBeVisible();
 
     expect(browserErrors).toEqual([]);
   });
