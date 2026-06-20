@@ -49,11 +49,4 @@ jobs:
       - run: pnpm build
       - run: pnpm check:bundle
       - run: pnpm exec playwright install --with-deps chromium
-      - name: Run Playwright E2E in attached mode
-        env:
-          PORT: "3006"
-          BASE_URL: "http://127.0.0.1:3006"
-          NODE_ENV: "production"
-          NO_PROXY: "127.0.0.1,localhost,::1"
-          no_proxy: "127.0.0.1,localhost,::1"
-        run: pnpm ci-e2e-attached
+      - run: pnpm test:e2e

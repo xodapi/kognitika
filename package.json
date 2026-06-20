@@ -15,8 +15,7 @@
     "test": "vitest run",
     "test:e2e": "playwright test",
     "validate": "vitest run",
-    "test:e2e:attached": "node scripts/run-playwright-attached.mjs",
-    "ci-e2e-attached": "node scripts/ci-e2e-attached.mjs"
+    "test:e2e:attached": "node scripts/run-playwright-attached.mjs"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.2.0",
