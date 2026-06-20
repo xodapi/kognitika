@@ -49,4 +49,42 @@ jobs:
       - run: pnpm build
       - run: pnpm check:bundle
       - run: pnpm exec playwright install --with-deps chromium
-      - run: pnpm test:e2e
+      - name: Run Playwright E2E
+        env:
+          PORT: 3006
+          BASE_URL: http://127.0.0.1:3006
+          NODE_ENV: production
+          NO_PROXY: 127.0.0.1,localhost,::1
+          no_proxy: 127.0.0.1,localhost,::1
+        run: |
+          set -euo pipefail
+          log_file="$(mktemp)"
+          pnpm start > "$log_file" 2>&1 &
+          server_pid="$!"
+          cleanup() {
+            status="$?"
+            kill "$server_pid" 2>/dev/null || true
+            if [ "$status" -ne 0 ]; then
+              cat "$log_file" || true
+            fi
+            rm -f "$log_file"
+            exit "$status"
+          }
+          trap cleanup EXIT
+
+          ready=""
+          for attempt in $(seq 1 60); do
+            if ready="$(curl -fsS "$BASE_URL/api/health" 2>/dev/null)"; then
+              break
+            fi
+            echo "Waiting for local E2E server ($attempt/60)..."
+            sleep 1
+          done
+
+          if [ -z "$ready" ]; then
+            echo "Local E2E server did not become healthy" >&2
+            exit 1
+          fi
+
+          echo "$ready"
+          pnpm test:e2e:attached
