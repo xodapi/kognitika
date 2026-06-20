@@ -6,6 +6,10 @@ import { createServer, type Server as HttpServer } from 'http';
 import type { AddressInfo } from 'net';
 import jwt from 'jsonwebtoken';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+  clearPracticeFlowEventsForTests,
+  recordPracticeFlowEvent,
+} from '../server/services/practice-flow-store';
 
 const JWT_SECRET = 'synthetic-admin-route-secret';
 
@@ -38,6 +42,7 @@ beforeAll(async () => {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  clearPracticeFlowEventsForTests();
 });
 
 afterEach(async () => {
@@ -190,6 +195,51 @@ describe('admin route privacy and authorization contract', () => {
     expect(serialized).not.toContain('synthetic-password-hash');
     expect(serialized).not.toContain('synthetic-token');
     expect(serialized).not.toContain('BR-SYNTHETIC-FEEDBACK-SECRET');
+  });
+
+  it('exposes privacy-safe practice flow summary to admins', async () => {
+    prismaMock.user.findUnique.mockResolvedValue({ role: 'ADMIN' });
+    recordPracticeFlowEvent({
+      event: 'PracticeStarted',
+      category: 'cognitive',
+      moduleId: 'typing',
+      route: '/typing',
+      buildId: 'test-build',
+      storageSchemaVersion: '1',
+      anonymousSessionId: 'anon-synthetic-admin-summary',
+      timestamp: '2026-01-01T00:00:00.000Z',
+      checkpoint: 'route_loaded',
+    });
+    recordPracticeFlowEvent({
+      event: 'PracticeAbandoned',
+      category: 'cognitive',
+      moduleId: 'typing',
+      route: '/typing',
+      buildId: 'test-build',
+      storageSchemaVersion: '1',
+      anonymousSessionId: 'anon-synthetic-admin-summary',
+      timestamp: '2026-01-01T00:00:05.000Z',
+      lastCheckpoint: 'route_loaded',
+      reason: 'route_change',
+      durationMs: 5_000,
+    });
+
+    const baseUrl = await createAdminHarness();
+    const token = adminToken({ id: 'user_synthetic_admin', role: 'ADMIN' });
+
+    const response = await getJson(baseUrl, '/api/admin/practice-flow', token);
+    const serialized = JSON.stringify(response.body);
+
+    expect(response.status).toBe(200);
+    expect(response.body).toMatchObject({
+      totalEvents: 2,
+      dropOffByModuleAndCheckpoint: [
+        { moduleId: 'typing', checkpoint: 'route_loaded', abandoned: 1 },
+      ],
+    });
+    expect(serialized).not.toContain('synthetic@example.test');
+    expect(serialized).not.toContain('BR-SYNTHETIC');
+    expect(serialized).not.toContain('synthetic-token');
   });
 
   it('validates and sanitizes /api/admin/feedback/:id/response', async () => {
