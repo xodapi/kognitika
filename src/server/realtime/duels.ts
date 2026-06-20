@@ -41,6 +41,9 @@ interface DuelPrisma {
     findUnique(args: unknown): Promise<any>;
     update(args: unknown): unknown;
   };
+  xpEvent: {
+    create(args: unknown): unknown;
+  };
   $transaction(args: unknown[]): Promise<unknown>;
 }
 
@@ -163,6 +166,20 @@ export function registerDuelHandlers(
           data: {
             rating: Math.max(100, loser.rating + loserLoss),
             experience: { increment: 5 },
+          },
+        }),
+        prisma.xpEvent.create({
+          data: {
+            userId: winnerId,
+            amount: 25,
+            reason: 'duel:win',
+          },
+        }),
+        prisma.xpEvent.create({
+          data: {
+            userId: loserId,
+            amount: 5,
+            reason: 'duel:loss',
           },
         }),
       ]);

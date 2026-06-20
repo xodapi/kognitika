@@ -72,6 +72,9 @@ See `.env.example` for the full list. Required for normal local work:
 - `APP_URL=http://localhost:3006`
 - `FRONTEND_URL=http://localhost:3006`
 - `CORS_ORIGIN=http://localhost:3006`
+- `CORS_ALLOW_DEV_WILDCARD=false`
+
+`CORS_ORIGIN` accepts a comma-separated allowlist shared by Express and Socket.io. Wildcard CORS requires `CORS_ORIGIN=*` plus `CORS_ALLOW_DEV_WILDCARD=true` and is accepted only in development/test; production without an allowlist fails closed for browser cross-origin requests and logs a startup warning.
 
 Optional integrations include Telegram, SMTP, and legacy email channels. Public auth is Brain ID-first; legacy email features must remain explicitly gated.
 
@@ -85,7 +88,9 @@ Never commit real secrets, tokens, raw Brain IDs, production telemetry, or user 
 - `pnpm test` - run the Vitest suite
 - `pnpm validate` - run the core validation suite
 - `pnpm build` - generate Prisma client and build the frontend
-- `pnpm test:e2e` - run Playwright E2E tests
+- `pnpm test:e2e` - run Playwright E2E tests and let Playwright manage its production-style webServer
+- `pnpm test:e2e:attached` - run Playwright against an already running local server; defaults to `http://127.0.0.1:3006` and is useful on Windows/proxy environments
+- `pnpm clean` - remove only the local `dist` directory through a cross-platform Node helper
 
 ## Validation
 
@@ -102,6 +107,15 @@ For navigation or post-game flow work, run:
 ```bash
 pnpm test:e2e
 ```
+
+If local Playwright webServer readiness is affected by a desktop proxy, start the app separately and use the attached mode:
+
+```bash
+pnpm dev
+pnpm test:e2e:attached
+```
+
+The attached mode sets `NO_PROXY` for localhost and uses `BASE_URL` if you need a non-default URL.
 
 Known non-blocking local warnings currently include Recharts zero-size container warnings in jsdom and React `act(...)` warnings in existing dashboard tests. Treat new failures as blockers.
 

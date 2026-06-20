@@ -44,6 +44,17 @@ Recovery screen and boot fallback language must distinguish:
 
 The UI may tell users that progress is preserved only when it is actually linked to the server-side Brain ID/user record.
 
+## Display Contract
+
+Raw Brain ID must not be always visible in profile/dashboard surfaces. Public UI should:
+
+- show pseudonym or a privacy-safe label by default;
+- show a friendly status such as `Профиль защищен` or `Приватный режим`, not a legal-number badge near the user's name;
+- display only a short masked Brain ID form unless the user explicitly reveals it;
+- offer reveal/copy as a deliberate action with copy that reminds the user to store Brain ID in a private password manager or another protected place.
+
+Legal/compliance details belong in help, documentation, or privacy screens. They should not be repeated next to the user identity on every profile view.
+
 ## Export Boundaries
 
 There are two different export concepts:
@@ -61,6 +72,13 @@ Future identity export/import requirements:
 - QR/file payload versioned and schema-validated;
 - no real production Brain IDs or tokens in tests, docs, fixtures, issue comments, or screenshots;
 - import restores access to the same anonymous profile without exposing personal data in logs or telemetry.
+
+Candidate recovery models for product review:
+
+- manual Brain ID save: current baseline; simplest, but highest risk if the user loses or exposes the identifier;
+- recovery phrase: familiar wallet-style UX; must be generated client-side, encrypted, and never logged;
+- encrypted key file: better for desktop custody; requires clear backup guidance and import validation;
+- QR transfer: useful for device handoff; must be short-lived or encrypted to avoid shoulder-surfing risk.
 
 ## Logging And Telemetry
 

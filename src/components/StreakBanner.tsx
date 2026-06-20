@@ -3,16 +3,19 @@ import { Flame, AlertCircle } from 'lucide-react';
 
 interface StreakBannerProps {
   streak: {
-    days: number;
-    multiplier: number;
-    isBroken: boolean;
+    days?: number;
+    current?: number;
+    multiplier?: number;
+    isBroken?: boolean;
   } | null;
 }
 
 export function StreakBanner({ streak }: StreakBannerProps) {
   if (!streak) return null;
 
-  const { days, multiplier, isBroken } = streak;
+  const days = streak.days ?? streak.current ?? 0;
+  const multiplier = streak.multiplier ?? 1;
+  const isBroken = streak.isBroken ?? false;
 
   if (isBroken || days === 0) {
     return (

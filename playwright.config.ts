@@ -1,5 +1,18 @@
 import { defineConfig, devices } from '@playwright/test';
 
+const localNoProxy = [
+  '127.0.0.1',
+  'localhost',
+  '::1',
+  ...(process.env.NO_PROXY || process.env.no_proxy || '').split(','),
+]
+  .map((value) => value.trim())
+  .filter(Boolean);
+const noProxy = [...new Set(localNoProxy)].join(',');
+
+process.env.NO_PROXY = noProxy;
+process.env.no_proxy = noProxy;
+
 const e2ePort = Number(process.env.E2E_PORT || 4173);
 const baseURL = process.env.BASE_URL || `http://127.0.0.1:${e2ePort}`;
 const useExternalBaseURL = Boolean(process.env.BASE_URL);
@@ -34,6 +47,8 @@ export default defineConfig({
         env: {
           ...process.env,
           NODE_ENV: 'production',
+          NO_PROXY: noProxy,
+          no_proxy: noProxy,
           PORT: String(e2ePort),
           JWT_SECRET: process.env.JWT_SECRET || 'e2e-only-replace-with-strong-secret',
           DATABASE_URL:

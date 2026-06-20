@@ -57,9 +57,11 @@ function createPrismaMock(users = syntheticUsers()) {
     users.set(user.id, nextUser);
     return { ...nextUser };
   });
+  const createXpEvent = vi.fn(async (args: any) => args);
 
   return {
     user: { findUnique, update },
+    xpEvent: { create: createXpEvent },
     $transaction: vi.fn(async (operations: unknown[]) => Promise.all(operations)),
   };
 }
@@ -260,6 +262,20 @@ describe('Socket.io duel trust boundary', () => {
     await expect(bobResult).resolves.toEqual({ roomId, result: 'loss', winnerId: 'u1', loserId: 'u2' });
     expect(progressEvents.at(-1)).toBe(100);
     expect(prisma.$transaction).toHaveBeenCalledOnce();
+    expect(prisma.xpEvent.create).toHaveBeenCalledWith({
+      data: {
+        userId: 'u1',
+        amount: 25,
+        reason: 'duel:win',
+      },
+    });
+    expect(prisma.xpEvent.create).toHaveBeenCalledWith({
+      data: {
+        userId: 'u2',
+        amount: 5,
+        reason: 'duel:loss',
+      },
+    });
 
     alice.disconnect();
     bob.disconnect();

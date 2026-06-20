@@ -21,7 +21,7 @@ import { FeedbackModal } from './components/FeedbackModal';
 import { AppErrorBoundary } from './components/AppErrorBoundary';
 import { DonateButton } from './components/DonateButton';
 
-type Tab = 'dashboard' | 'schulte' | 'numerical' | 'logical' | 'stroop' | 'nback' | 'situational' | 'typing' | 'spatial' | 'admin' | 'ideas' | 'objective' | 'profiling' | 'anomaly' | 'dialogue' | 'leaderboard' | 'topology' | 'collision' | 'dispatcher' | 'noise' | 'scanner' | 'decryptor' | 'reality' | 'silence' | 'filter' | 'hype' | 'reframing' | 'rejection' | 'storytelling' | 'focus';
+type Tab = 'dashboard' | 'schulte' | 'numerical' | 'logical' | 'stroop' | 'nback' | 'situational' | 'typing' | 'spatial' | 'admin' | 'ideas' | 'wiki' | 'objective' | 'profiling' | 'anomaly' | 'dialogue' | 'leaderboard' | 'topology' | 'collision' | 'dispatcher' | 'noise' | 'scanner' | 'decryptor' | 'reality' | 'silence' | 'filter' | 'hype' | 'reframing' | 'rejection' | 'storytelling' | 'focus';
 
 const tabTitles: Record<string, string> = {
   '/': 'Обзор',
@@ -54,7 +54,8 @@ const tabTitles: Record<string, string> = {
   '/reframing': 'Фича, а не баг',
   '/rejection': 'Иммунитет к отказам',
   '/storytelling': 'Смысловые связи',
-  '/focus': 'Глубокий Фокус'
+  '/focus': 'Глубокий Фокус',
+  '/wiki': 'База знаний'
 };
 
 const appBuildId = import.meta.env.VITE_BUILD_ID || import.meta.env.VITE_GIT_COMMIT || 'dev';
@@ -109,6 +110,7 @@ const RejectionImmunity = lazyNamed<{ onFinish?: () => void }>(
 const Storytelling = lazyNamed<{ onFinish?: () => void }>(() => import('./components/Storytelling'), 'Storytelling');
 const DeepFocus = lazyNamed<{ onFinish?: () => void }>(() => import('./components/DeepFocus'), 'DeepFocus');
 const SymbolChat = lazyNamed(() => import('./components/SymbolChat'), 'SymbolChat');
+const Wiki = lazyNamed(() => import('./components/Wiki'), 'Wiki');
 
 function SectionFallback() {
   return (
@@ -318,10 +320,11 @@ function AppContent() {
           {user ? (
             <button 
               onClick={() => setIsMobileMenuOpen(true)}
-              className="flex items-center gap-2 pl-2 pr-1 py-1 bg-secondary rounded-full border border-border hover:border-primary/30 transition-all group"
+              className="flex min-w-0 max-w-[220px] items-center gap-2 pl-2 pr-1 py-1 bg-secondary rounded-full border border-border hover:border-primary/30 transition-all group"
+              title={user.pseudonym || user.name || 'Аноним'}
             >
-              <div className="text-right hidden md:block px-1">
-                <p className="text-[10px] font-bold leading-none transition-colors group-hover:text-primary">
+              <div className="text-right hidden md:block px-1 min-w-0">
+                <p className="max-w-[140px] truncate text-[10px] font-bold leading-none transition-colors group-hover:text-primary xl:max-w-[170px]">
                   {user.pseudonym || user.name || 'Аноним'}
                 </p>
                 <p className="text-[8px] text-primary uppercase font-black tracking-tighter">LVL {user.level || 1}</p>
@@ -529,7 +532,7 @@ function AppContent() {
       </AnimatePresence>
 
       <main className="flex-1 w-full max-w-[1400px] mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 relative z-10 pb-32 lg:pb-10 px-4 md:px-8 mt-4">
-         <div className="lg:col-span-9 h-full">
+         <div className={`${isChatEnabled ? 'lg:col-span-9' : 'lg:col-span-12'} h-full`}>
             <LazySection>
               <Routes>
                 <Route path="/" element={<Dashboard onStartGame={(game) => navigate(`/${game}`)} />} />
@@ -559,6 +562,8 @@ function AppContent() {
                   )}
                 />
                 <Route path="/ideas" element={<IdeasWall token={token} />} />
+                <Route path="/wiki" element={<Wiki />} />
+                <Route path="/wiki/:articleId" element={<Wiki />} />
                 <Route path="/leaderboard" element={<LeaderboardView />} />
                 <Route path="/topology" element={<TopologyMemory />} />
                 <Route path="/collision" element={<CollisionDetector />} />

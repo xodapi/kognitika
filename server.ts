@@ -8,6 +8,7 @@ import prisma from './src/lib/prisma.ts';
 import cors from 'cors';
 import { rateLimit } from 'express-rate-limit';
 import { createSafeLogger } from './src/lib/safe-logger.ts';
+import { createExpressCorsOptions, createSocketCorsOptions, resolveCorsConfig } from './src/server/config/cors.ts';
 
 const logger = createSafeLogger('server');
 
@@ -72,20 +73,21 @@ if (!process.env.JWT_SECRET) {
   process.exit(1);
 }
 const JWT_SECRET = process.env.JWT_SECRET;
+const corsConfig = resolveCorsConfig(process.env);
+if (corsConfig.warning) {
+  logger.warn('CORS configuration warning', { reason: corsConfig.warning });
+}
 
 async function startServer() {
   const app = express();
   const httpServer = createServer(app);
   const io = new Server(httpServer, {
-    cors: {
-      origin: "*",
-      methods: ["GET", "POST"]
-    }
+    cors: createSocketCorsOptions(corsConfig),
   });
 
   registerDuelHandlers(io, { prisma, jwtSecret: JWT_SECRET });
 
-  app.use(cors());
+  app.use(cors(createExpressCorsOptions(corsConfig)));
   app.use(express.json());
   app.use((_req, res, next) => {
     res.setHeader('X-Build-Id', BUILD_ID);

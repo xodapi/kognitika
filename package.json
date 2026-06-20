@@ -10,11 +10,12 @@
     "check:bundle": "node scripts/check-bundle-budget.mjs",
     "start": "tsx server.ts",
     "preview": "vite preview",
-    "clean": "rm -rf dist",
+    "clean": "node scripts/clean-dist.mjs",
     "lint": "prisma generate && tsc --noEmit",
     "test": "vitest run",
     "test:e2e": "playwright test",
-    "validate": "vitest run"
+    "validate": "vitest run",
+    "test:e2e:attached": "node scripts/run-playwright-attached.mjs"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.2.0",

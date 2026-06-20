@@ -3,7 +3,7 @@ import { useNumericalEngine } from '../hooks/useNumericalEngine';
 import { Calculator } from './Calculator';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from '../hooks/useAuth';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { BarChart, Bar, CartesianGrid, LabelList, Legend, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { useNavigate } from 'react-router-dom';
 import { PostGameInsight } from './PostGameInsight';
 import { createSafeLogger, safeError } from '../lib/safe-logger';
@@ -65,6 +65,9 @@ export function NumericalAnalysis() {
   }
 
   const curQ = state.questions[state.currentIndex];
+  const percentageData = curQ?.type === 'percentage_change'
+    ? [{ name: '2022', value: curQ.data.oldVal }, { name: '2023', value: curQ.data.newVal }]
+    : [];
   
   return (
     <div className="col-span-12 grid grid-cols-1 lg:grid-cols-12 gap-4 h-full min-h-0 pb-4">
@@ -111,25 +114,41 @@ export function NumericalAnalysis() {
            </div>
 
            {/* Data Visualization */}
-           <div className="w-full h-[200px] lg:h-[250px] bg-background/50 border border-border rounded-xl p-4">
+           <div className="w-full bg-background/50 border border-border rounded-xl p-4">
+              <div className="h-[200px] lg:h-[240px]">
               {curQ.type === 'percentage_change' && (
                  <ResponsiveContainer width="100%" height="100%">
-                   <BarChart data={[{ name: '2022', value: curQ.data.oldVal }, { name: '2023', value: curQ.data.newVal }]}>
+                   <BarChart data={percentageData} margin={{ top: 24, right: 8, left: 0, bottom: 0 }}>
+                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
                      <XAxis dataKey="name" tick={{fill: 'hsl(var(--muted-foreground))'}} axisLine={false} tickLine={false} />
                      <YAxis tick={{fill: 'hsl(var(--muted-foreground))'}} axisLine={false} tickLine={false} />
                      <Tooltip contentStyle={{ backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))', borderRadius: '0.5rem' }} />
-                     <Bar dataKey="value" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                     <Bar dataKey="value" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]}>
+                       <LabelList dataKey="value" position="top" fill="hsl(var(--foreground))" formatter={(value: number) => `${value} млн`} />
+                     </Bar>
                    </BarChart>
                  </ResponsiveContainer>
               )}
               {curQ.type === 'share' && (
                  <ResponsiveContainer width="100%" height="100%">
                    <PieChart>
-                     <Pie data={curQ.data.parts} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
+                     <Pie
+                       data={curQ.data.parts}
+                       cx="50%"
+                       cy="45%"
+                       innerRadius={48}
+                       outerRadius={76}
+                       paddingAngle={5}
+                       dataKey="value"
+                       nameKey="name"
+                       labelLine={false}
+                       label={({ name, value }) => `${name}: ${value}`}
+                     >
                        {curQ.data.parts.map((_: any, index: number) => (
                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                        ))}
                      </Pie>
+                     <Legend verticalAlign="bottom" iconSize={10} wrapperStyle={{ fontSize: 11 }} />
                      <Tooltip contentStyle={{ backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))', borderRadius: '0.5rem' }} />
                    </PieChart>
                  </ResponsiveContainer>
@@ -156,6 +175,24 @@ export function NumericalAnalysis() {
                    </table>
                  </div>
               )}
+              </div>
+              <div className="mt-3 rounded-lg border border-border/60 bg-card/50 px-3 py-2 text-[11px] text-muted-foreground">
+                {curQ.type === 'percentage_change' && (
+                  <span>
+                    Данные: 2022 - {curQ.data.oldVal} млн; 2023 - {curQ.data.newVal} млн.
+                  </span>
+                )}
+                {curQ.type === 'share' && (
+                  <span>
+                    Данные: {curQ.data.parts.map((part: any) => `${part.name} - ${part.value}`).join('; ')}. Цель: {curQ.data.target}.
+                  </span>
+                )}
+                {curQ.type === 'weighted_average' && (
+                  <span>
+                    Данные продублированы в таблице: рентабельность и вес каждого проекта.
+                  </span>
+                )}
+              </div>
            </div>
 
            {/* Answer Options */}

@@ -5,15 +5,19 @@ import {
   Radar, RadarChart, PolarGrid, PolarAngleAxis, 
   ResponsiveContainer 
 } from 'recharts';
-import { Download, Brain, TrendingUp, History, Info, Activity } from 'lucide-react';
+import { ArrowRight, Download, Brain, TrendingUp, History, Info, Activity } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 
 interface ProfileData {
-  profile: Record<string, number>;
+  profile: Record<string, number> | null;
   trend: number;
   sessionsCount: number;
+  requiredSessions?: number;
+  remainingSessions?: number;
   updatedAt: string;
 }
+
+const DEFAULT_REQUIRED_SESSIONS = 5;
 
 export function CognitiveProfile() {
   const { token } = useAuth();
@@ -48,12 +52,30 @@ export function CognitiveProfile() {
   };
 
   if (loading) return <div className="p-8 text-center animate-pulse">Анализ нейронных связей...</div>;
-  if (!data || !data.profile) return (
-    <div className="p-8 bg-card/30 border border-border rounded-3xl text-center">
-      <Brain className="w-12 h-12 mx-auto mb-4 text-muted-foreground opacity-20" />
-      <p className="text-muted-foreground">Недостаточно данных. Пройдите хотя бы 5-10 тренировок.</p>
-    </div>
-  );
+  if (!data || !data.profile) {
+    const completed = data?.sessionsCount ?? 0;
+    const required = data?.requiredSessions ?? DEFAULT_REQUIRED_SESSIONS;
+    const remaining = data?.remainingSessions ?? Math.max(0, required - completed);
+    const progress = required > 0 ? Math.min(100, Math.round((completed / required) * 100)) : 0;
+
+    return (
+      <div className="p-8 bg-card/30 border border-border rounded-3xl text-center">
+        <Brain className="w-12 h-12 mx-auto mb-4 text-muted-foreground opacity-20" />
+        <p className="text-[10px] font-black uppercase tracking-widest text-primary mb-2">
+          Профиль набирает точность
+        </p>
+        <h3 className="text-xl font-black tracking-tight text-foreground mb-3">
+          Пройдено {completed} из {required} тренировок
+        </h3>
+        <div className="mx-auto mb-4 h-2 w-full max-w-sm overflow-hidden rounded-full bg-secondary">
+          <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${progress}%` }} />
+        </div>
+        <p className="text-sm text-muted-foreground leading-relaxed">
+          Осталось пройти {remaining} {remaining === 1 ? 'тренировку' : remaining >= 2 && remaining <= 4 ? 'тренировки' : 'тренировок'}. Отличное начало: чем больше завершенных сессий, тем честнее профиль видит ваши сильные стороны и зоны роста.
+        </p>
+      </div>
+    );
+  }
 
   const radarData = [
     { subject: 'Внимание', A: data.profile.attention, fullMark: 100 },
@@ -64,11 +86,11 @@ export function CognitiveProfile() {
   ];
 
   const categories = [
-    { key: 'attention', title: 'Внимание', descStrong: 'Вы отлично удерживаете фокус и фильтруете визуальный шум.', descWeak: 'Возможна рассеянность. Рекомендуем регулярные тренировки с Таблицами Шульте.' },
-    { key: 'memory', title: 'Память', descStrong: 'У вас развита рабочая и топологическая память, вы легко оперируете объемами данных.', descWeak: 'Сложно удерживать структуры данных. Попробуйте тренажер N-назад и Пространство.' },
-    { key: 'logic', title: 'Логика', descStrong: 'Вы превосходно находите скрытые паттерны, причинно-следственные связи и анализируете смыслы.', descWeak: 'Зона роста. Попробуйте Логические матрицы, Числовой анализ и Объективный фильтр.' },
-    { key: 'speed', title: 'Скорость', descStrong: 'Вы обладаете мгновенной моторной реакцией и высокой скоростью обработки информации.', descWeak: 'Реакция замедлена. Рекомендуем Скоростную печать и Детектор коллизий.' },
-    { key: 'resilience', title: 'Стрессоустойчивость', descStrong: 'Вы сохраняете продуктивность в условиях высокой когнитивной нагрузки и асинхронности.', descWeak: 'Уровень стресса высок. Рекомендуем Редукцию шума и технику нейрорегуляции «Тишина».' },
+    { key: 'attention', title: 'Внимание', descStrong: 'Вы отлично удерживаете фокус и фильтруете визуальный шум.', descWeak: 'Возможна рассеянность. Рекомендуем регулярные тренировки с Таблицами Шульте.', recommendations: [{ label: 'Таблицы Шульте', route: '/schulte' }] },
+    { key: 'memory', title: 'Память', descStrong: 'У вас развита рабочая и топологическая память, вы легко оперируете объемами данных.', descWeak: 'Сложно удерживать структуры данных. Попробуйте тренажер N-назад и Пространство.', recommendations: [{ label: 'N-назад', route: '/nback' }, { label: 'Пространство', route: '/spatial' }] },
+    { key: 'logic', title: 'Логика', descStrong: 'Вы превосходно находите скрытые паттерны, причинно-следственные связи и анализируете смыслы.', descWeak: 'Зона роста. Попробуйте Логические матрицы, Числовой анализ и Объективный фильтр.', recommendations: [{ label: 'Логические матрицы', route: '/logical' }, { label: 'Числовой анализ', route: '/numerical' }, { label: 'Объективный фильтр', route: '/objective' }] },
+    { key: 'speed', title: 'Скорость', descStrong: 'Вы обладаете мгновенной моторной реакцией и высокой скоростью обработки информации.', descWeak: 'Реакция замедлена. Рекомендуем Скоростную печать и Детектор коллизий.', recommendations: [{ label: 'Скоростная печать', route: '/typing' }, { label: 'Детектор коллизий', route: '/collision' }] },
+    { key: 'resilience', title: 'Стрессоустойчивость', descStrong: 'Вы сохраняете продуктивность в условиях высокой когнитивной нагрузки и асинхронности.', descWeak: 'Уровень стресса высок. Рекомендуем Редукцию шума и технику нейрорегуляции «Тишина».', recommendations: [{ label: 'Редукция шума', route: '/noise' }, { label: 'Тишина', route: '/silence' }] },
   ];
 
   // Sort by score to find strong/weak
@@ -87,7 +109,7 @@ export function CognitiveProfile() {
       speed: '/typing',
       resilience: '/noise'
     };
-    const route = gameRoutes[weak?.key || 'attention'] || '/';
+    const route = weak?.recommendations?.[0]?.route || gameRoutes[weak?.key || 'attention'] || '/';
     navigate(route);
   };
 
@@ -210,6 +232,21 @@ export function CognitiveProfile() {
             <p className="text-xs text-muted-foreground leading-relaxed">
               {weak?.descWeak}
             </p>
+            {weak?.recommendations && weak.recommendations.length > 0 && (
+              <div className="mt-4 flex flex-wrap gap-2">
+                {weak.recommendations.map(item => (
+                  <button
+                    key={item.route}
+                    type="button"
+                    onClick={() => navigate(item.route)}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-destructive/20 bg-background/50 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-foreground transition-all hover:border-primary hover:text-primary"
+                  >
+                    {item.label}
+                    <ArrowRight className="w-3 h-3" />
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 

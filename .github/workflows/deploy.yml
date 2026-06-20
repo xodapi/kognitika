@@ -129,7 +129,7 @@ jobs:
 
           health=""
           for attempt in $(seq 1 30); do
-            if health="$(curl -fsS http://127.0.0.1:3010/api/health 2>/dev/null)"; then
+            if health="$(curl -fsS http://127.0.0.1:3006/api/health 2>/dev/null)"; then
               break
             fi
             echo "Waiting for kognitika health check ($attempt/30)..."

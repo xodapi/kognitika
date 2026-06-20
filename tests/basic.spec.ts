@@ -119,6 +119,24 @@ test.describe('Kognitika production smoke', () => {
   });
 
   test('does not create horizontal overflow across QA viewports', async ({ page }) => {
+    await page.addInitScript(() => {
+      const user = {
+        id: 'synthetic-wide-user',
+        name: 'Synthetic Wide User',
+        pseudonym: 'Synthetic Very Long Brain Identity',
+        brainId: 'BR-SYNTHETIC-WIDE-0001',
+        level: 12,
+        experience: 2500,
+        rating: 900,
+        role: 'USER',
+        streakDays: 2,
+        _count: { sessions: 12 },
+      };
+      window.localStorage.setItem('token', 'synthetic-token');
+      window.localStorage.setItem('user', JSON.stringify(user));
+      window.localStorage.setItem('kognitika:auth:token', JSON.stringify('synthetic-token'));
+    });
+
     const viewports = [
       { width: 320, height: 700 },
       { width: 375, height: 812 },
@@ -127,12 +145,15 @@ test.describe('Kognitika production smoke', () => {
       { width: 1024, height: 768 },
       { width: 1366, height: 768 },
       { width: 1440, height: 900 },
+      { width: 1920, height: 1080 },
+      { width: 2560, height: 1440 },
     ];
 
     for (const viewport of viewports) {
       await page.setViewportSize(viewport);
       await page.goto('/');
       await expectAppReady(page);
+      await expect(page.locator('header button[title="Synthetic Very Long Brain Identity"]')).toBeVisible();
 
       const layout = await page.evaluate(() => {
         const documentWidth = Math.max(document.documentElement.scrollWidth, document.body.scrollWidth);
@@ -143,6 +164,9 @@ test.describe('Kognitika production smoke', () => {
         const horizontalScroll = scroller.scrollLeft;
         scroller.scrollLeft = previousScrollLeft;
         const footer = document.querySelector('footer[aria-label="Версия сборки"]');
+        const header = document.querySelector('header');
+        const main = document.querySelector('main');
+        const userButton = document.querySelector('header button[title="Synthetic Very Long Brain Identity"]');
         const mobileNav = Array.from(document.querySelectorAll('div')).find((el) => {
           const className = String(el.getAttribute('class') || '');
           return className.includes('fixed bottom-6') && className.includes('max-w-sm');
@@ -162,6 +186,9 @@ test.describe('Kognitika production smoke', () => {
         };
 
         const footerRect = rectOf(footer);
+        const headerRect = rectOf(header);
+        const mainRect = rectOf(main);
+        const userButtonRect = rectOf(userButton);
         const mobileNavRect = rectOf(mobileNav);
         const overlaps = Boolean(
           footerRect &&
@@ -216,6 +243,18 @@ test.describe('Kognitika production smoke', () => {
           horizontalScroll,
           footerText: footer?.textContent?.trim() || '',
           footerOverlapsMobileNav: overlaps,
+          mainCenterOffset: mainRect ? Math.round((mainRect.left + mainRect.right) / 2 - viewportWidth / 2) : null,
+          headerUserInsideViewport: Boolean(
+            userButtonRect &&
+            userButtonRect.left >= -1 &&
+            userButtonRect.right <= viewportWidth + 1,
+          ),
+          headerUserInsideHeader: Boolean(
+            headerRect &&
+            userButtonRect &&
+            userButtonRect.left >= headerRect.left - 1 &&
+            userButtonRect.right <= headerRect.right + 1,
+          ),
           visibleOverflowElements,
         };
       });
@@ -230,6 +269,11 @@ test.describe('Kognitika production smoke', () => {
       ).toEqual([]);
       expect(layout.footerText).toMatch(/^build /);
       expect(layout.footerOverlapsMobileNav, `footer overlap at ${viewport.width}x${viewport.height}`).toBe(false);
+      expect(layout.headerUserInsideViewport, `header user clipping at ${viewport.width}x${viewport.height}`).toBe(true);
+      expect(layout.headerUserInsideHeader, `header user outside header at ${viewport.width}x${viewport.height}`).toBe(true);
+      if (viewport.width >= 1440) {
+        expect(Math.abs(layout.mainCenterOffset ?? 999), `main center offset at ${viewport.width}x${viewport.height}`).toBeLessThanOrEqual(12);
+      }
     }
   });
 });
@@ -237,6 +281,20 @@ test.describe('Kognitika production smoke', () => {
 test.describe('Kognitika route and link contract', () => {
   test.beforeEach(async ({ page }) => {
     await installSyntheticApi(page);
+  });
+
+  test('direct knowledge-base article URL loads a complete article', async ({ page }) => {
+    const browserErrors = collectUnexpectedBrowserErrors(page);
+
+    await page.goto('/wiki/stroop');
+    await expectAppReady(page);
+
+    await expect(page.getByRole('heading', { name: 'Эффект Струпа' })).toBeVisible();
+    await expect(page.getByText('Что тренирует')).toBeVisible();
+    await expect(page.getByText('Как проходить')).toBeVisible();
+    await expect(page.getByText('Что означают метрики')).toBeVisible();
+
+    expect(browserErrors).toEqual([]);
   });
 
   for (const routePath of ROUTE_PATHS) {

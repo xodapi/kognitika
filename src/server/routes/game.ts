@@ -37,17 +37,6 @@ router.post('/save', authenticate, async (req: any, res) => {
 
     const score = computeServerScore({ gameType, timeMs, metadata });
 
-    const session = await prisma.gameSession.create({
-      data: {
-        userId: req.user.id,
-        gameType: gameType as any,
-        score,
-        timeMs: timeMs || 0,
-        isCompleted: true,
-        metadata: (metadata || {}) as import('@prisma/client').Prisma.InputJsonValue
-      }
-    });
-
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const currentUser = await prisma.user.findUnique({ where: { id: req.user.id } });
@@ -63,17 +52,36 @@ router.post('/save', authenticate, async (req: any, res) => {
       newStreak = 1;
     }
 
-    const user = await prisma.user.update({
-      where: { id: req.user.id },
-      data: {
-        experience: { increment: score },
-        streakDays: newStreak,
-        lastPlayedAt: now,
-        ...(metadata?.distraction && metadata.distraction !== 'none' ? {
-          rating: { increment: Math.max(1, Math.floor(100000 / (timeMs || 10000)) - 5) }
-        } : {})
-      }
-    });
+    const [session, user] = await prisma.$transaction([
+      prisma.gameSession.create({
+        data: {
+          userId: req.user.id,
+          gameType: gameType as any,
+          score,
+          timeMs: timeMs || 0,
+          isCompleted: true,
+          metadata: (metadata || {}) as import('@prisma/client').Prisma.InputJsonValue
+        }
+      }),
+      prisma.user.update({
+        where: { id: req.user.id },
+        data: {
+          experience: { increment: score },
+          streakDays: newStreak,
+          lastPlayedAt: now,
+          ...(metadata?.distraction && metadata.distraction !== 'none' ? {
+            rating: { increment: Math.max(1, Math.floor(100000 / (timeMs || 10000)) - 5) }
+          } : {})
+        }
+      }),
+      prisma.xpEvent.create({
+        data: {
+          userId: req.user.id,
+          amount: score,
+          reason: `game:${gameType}`,
+        },
+      }),
+    ]);
 
     const currentLvl = Math.floor(user.experience / 500) + 1;
     const EventBusClass: any = eventBus.constructor;

@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { renderHook, act, waitFor } from '@testing-library/react';
+import { renderHook, act } from '@testing-library/react';
 import { useTypingEngine } from '../hooks/useTypingEngine';
 import { eventBus } from '../lib/event-bus';
+import { formatTypingAccuracy, formatTypingCpm } from '../components/SpeedTyping';
 
 // Mock analytics to avoid WASM issues in tests
 vi.mock('../lib/cognitive-metrics', () => ({
@@ -74,5 +75,30 @@ describe('Typing Core Engine (Event-Driven)', () => {
     });
 
     expect(result.current.state.errors).toBe(1);
+  });
+
+  it('должен выбирать случайный текст без немедленного повтора', () => {
+    const randomSpy = vi.spyOn(Math, 'random');
+    randomSpy.mockReturnValueOnce(0.05);
+    randomSpy.mockReturnValueOnce(0.05);
+    randomSpy.mockReturnValueOnce(0.95);
+
+    const { result } = renderHook(() => useTypingEngine(['Первый текст', 'Второй текст', 'Третий текст']));
+
+    act(() => result.current.startTest());
+    expect(result.current.state.text).toBe('Первый текст');
+
+    act(() => result.current.startTest());
+    expect(result.current.state.text).toBe('Второй текст');
+
+    act(() => result.current.startTest());
+    expect(result.current.state.text).toBe('Третий текст');
+
+    randomSpy.mockRestore();
+  });
+
+  it('должен форматировать пользовательские метрики без длинных дробей', () => {
+    expect(formatTypingCpm(126.6679297371911)).toBe('127');
+    expect(formatTypingAccuracy(83.33333333333334)).toBe('83,3');
   });
 });
