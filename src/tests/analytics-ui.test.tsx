@@ -161,5 +161,6 @@ describe('Wiki UI', () => {
     fireEvent.click(article);
     expect(screen.getByText(/Что тренирует/i)).toBeDefined();
     expect(screen.getByText(/Селективное внимание/i)).toBeDefined();
+    expect(screen.getByText(/Способность остановить автоматическую реакцию/i)).toBeDefined();
   });
 });

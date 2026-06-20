@@ -83,16 +83,31 @@ export function Wiki() {
                 </div>
               </div>
 
-              <div className="flex flex-wrap gap-2 mt-auto pt-8 border-t border-border/30">
-                {selected.tags.map(tag => (
-                  <span
-                    key={tag}
-                    title={TAG_GLOSSARY[tag] || tag}
-                    className="px-3 py-1 bg-secondary/50 border border-border rounded-lg text-[10px] font-bold text-muted-foreground uppercase tracking-widest"
-                  >
-                    #{tag}
-                  </span>
-                ))}
+              <div className="mt-auto pt-8 border-t border-border/30">
+                <div className="flex flex-wrap gap-2">
+                  {selected.tags.map(tag => (
+                    <span
+                      key={tag}
+                      title={TAG_GLOSSARY[tag] || tag}
+                      className="px-3 py-1 bg-secondary/50 border border-border rounded-lg text-[10px] font-bold text-muted-foreground uppercase tracking-widest"
+                    >
+                      #{tag}
+                    </span>
+                  ))}
+                </div>
+
+                <dl className="mt-4 grid gap-2 text-xs leading-relaxed">
+                  {selected.tags.map(tag => {
+                    const description = TAG_GLOSSARY[tag] || tag;
+
+                    return (
+                      <div key={tag} className="grid gap-1 sm:grid-cols-[minmax(0,150px)_1fr]">
+                        <dt className="font-bold text-primary">#{tag}</dt>
+                        <dd className="text-muted-foreground">{description}</dd>
+                      </div>
+                    );
+                  })}
+                </dl>
               </div>
             </motion.div>
           ) : (
