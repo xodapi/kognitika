@@ -280,7 +280,13 @@ export function Dashboard({ onStartGame }: { onStartGame: (game: string) => void
                            <LineChart data={data}>
                               <CartesianGrid strokeDasharray="3 3" stroke="#ffffff05" vertical={false} />
                               <XAxis dataKey="date" stroke="#888888" fontSize={10} tickLine={false} axisLine={false} />
-                              <YAxis stroke="#888888" fontSize={10} tickLine={false} axisLine={false} tickFormatter={(v) => `${(v/1000).toFixed(0)}s`} />
+                              <YAxis
+                                stroke="#888888"
+                                fontSize={10}
+                                tickLine={false}
+                                axisLine={false}
+                                tickFormatter={(v) => typeof v === 'number' ? `${(v / 1000).toFixed(0)}s` : ''}
+                              />
                               <Tooltip contentStyle={{ backgroundColor: '#18181b', border: '1px solid #27272a', borderRadius: '12px', fontSize: '10px' }} />
                               <Line type="monotone" dataKey="time" stroke="#3b82f6" strokeWidth={3} dot={{ fill: '#3b82f6', r: 4 }} activeDot={{ r: 6 }} />
                            </LineChart>

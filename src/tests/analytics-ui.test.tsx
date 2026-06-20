@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { CognitiveProfile } from '../components/CognitiveProfile';
 import { Wiki } from '../components/Wiki';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import React from 'react';
 
 
@@ -57,19 +57,109 @@ describe('CognitiveProfile UI', () => {
     const exportBtn = await screen.findByRole('button', { name: /Скачать JSON/i });
     expect(exportBtn).toBeDefined();
   });
+
+  it('должен показывать readiness count при нуле тренировок', async () => {
+    global.fetch = vi.fn(() =>
+      Promise.resolve({
+        json: () => Promise.resolve({
+          profile: null,
+          trend: 0,
+          sessionsCount: 0,
+          requiredSessions: 5,
+          remainingSessions: 5,
+        }),
+      })
+    ) as any;
+
+    render(
+      <MemoryRouter>
+        <CognitiveProfile />
+      </MemoryRouter>
+    );
+
+    expect(await screen.findByText(/Пройдено 0 из 5 тренировок/i)).toBeDefined();
+    expect(screen.getByText(/Осталось пройти 5 тренировок/i)).toBeDefined();
+  });
+
+  it('должен показывать readiness count при частичном прогрессе', async () => {
+    global.fetch = vi.fn(() =>
+      Promise.resolve({
+        json: () => Promise.resolve({
+          profile: null,
+          trend: 0,
+          sessionsCount: 3,
+          requiredSessions: 5,
+          remainingSessions: 2,
+        }),
+      })
+    ) as any;
+
+    render(
+      <MemoryRouter>
+        <CognitiveProfile />
+      </MemoryRouter>
+    );
+
+    expect(await screen.findByText(/Пройдено 3 из 5 тренировок/i)).toBeDefined();
+    expect(screen.getByText(/Осталось пройти 2 тренировки/i)).toBeDefined();
+  });
+
+  it('должен открывать рекомендованные модули профиля внутренними переходами', async () => {
+    function LocationProbe() {
+      const location = useLocation();
+      return <div data-testid="location">{location.pathname}</div>;
+    }
+
+    global.fetch = vi.fn(() =>
+      Promise.resolve({
+        json: () => Promise.resolve({
+          profile: { attention: 80, memory: 70, logic: 90, speed: 60, resilience: 10 },
+          trend: 5,
+          sessionsCount: 12,
+          requiredSessions: 5,
+          remainingSessions: 0,
+        }),
+      })
+    ) as any;
+
+    render(
+      <MemoryRouter>
+        <CognitiveProfile />
+        <LocationProbe />
+      </MemoryRouter>
+    );
+
+    const noiseButton = await screen.findByRole('button', { name: /Редукция шума/i });
+    expect(screen.getByRole('button', { name: /Тишина/i })).toBeDefined();
+
+    fireEvent.click(noiseButton);
+    expect(screen.getByTestId('location')).toHaveTextContent('/noise');
+  });
 });
 
 describe('Wiki UI', () => {
+  function renderWiki(initialPath = '/wiki') {
+    return render(
+      <MemoryRouter initialEntries={[initialPath]}>
+        <Routes>
+          <Route path="/wiki" element={<Wiki />} />
+          <Route path="/wiki/:articleId" element={<Wiki />} />
+        </Routes>
+      </MemoryRouter>
+    );
+  }
+
   it('должен отображать список статей', () => {
-    render(<Wiki />);
+    renderWiki();
     expect(screen.getByText(/Эффект Струпа/i)).toBeDefined();
     expect(screen.getByText(/Таблицы Шульте/i)).toBeDefined();
   });
 
   it('должен показывать контент при выборе статьи', async () => {
-    render(<Wiki />);
+    renderWiki();
     const article = screen.getByText(/Эффект Струпа/i);
     fireEvent.click(article);
-    expect(screen.getByText(/селективное внимание/i)).toBeDefined();
+    expect(screen.getByText(/Что тренирует/i)).toBeDefined();
+    expect(screen.getByText(/Селективное внимание/i)).toBeDefined();
   });
 });

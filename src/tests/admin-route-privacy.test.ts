@@ -18,6 +18,9 @@ const prismaMock = vi.hoisted(() => ({
     findMany: vi.fn(),
     update: vi.fn(),
   },
+  idea: {
+    update: vi.fn(),
+  },
 }));
 
 vi.mock('../lib/prisma.ts', () => ({
@@ -255,5 +258,39 @@ describe('admin route privacy and authorization contract', () => {
     expect(serialized).not.toContain('synthetic-token');
     expect(serialized).not.toContain('BR-SYNTHETIC-FEEDBACK-SECRET');
     expect(serialized).not.toContain('user_synthetic_feedback');
+  });
+
+  it('validates and normalizes /api/admin/ideas/:id/status', async () => {
+    prismaMock.user.findUnique.mockResolvedValue({ role: 'ADMIN' });
+    prismaMock.idea.update.mockResolvedValue({
+      id: 'idea_synthetic_status',
+      title: 'Synthetic idea',
+      description: 'Synthetic idea description.',
+      status: 'IN_PROGRESS',
+    });
+
+    const baseUrl = await createAdminHarness();
+    const token = adminToken({ id: 'user_synthetic_admin', role: 'ADMIN' });
+
+    const invalid = await postJson(baseUrl, '/api/admin/ideas/idea_synthetic_status/status', token, {
+      status: 'maybe',
+    });
+    expect(invalid.status).toBe(400);
+    expect(invalid.body).toEqual({ error: 'Invalid idea status' });
+    expect(prismaMock.idea.update).not.toHaveBeenCalled();
+
+    const response = await postJson(baseUrl, '/api/admin/ideas/idea_synthetic_status/status', token, {
+      status: 'in progress',
+    });
+
+    expect(response.status).toBe(200);
+    expect(prismaMock.idea.update).toHaveBeenCalledWith({
+      where: { id: 'idea_synthetic_status' },
+      data: { status: 'IN_PROGRESS' },
+    });
+    expect(response.body).toMatchObject({
+      id: 'idea_synthetic_status',
+      status: 'IN_PROGRESS',
+    });
   });
 });

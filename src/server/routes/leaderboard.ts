@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import prisma from '../../lib/prisma.ts';
 import { createSafeLogger, safeError } from '../../lib/safe-logger.ts';
+import { authenticate, isAdmin } from '../middleware/auth.ts';
 
 const router = Router();
 const logger = createSafeLogger('leaderboard-route');
@@ -106,7 +107,7 @@ router.get('/', async (req, res) => {
  * GET /leaderboard/sync
  * (Admin only) Принудительное обновление кэша рейтинга.
  */
-router.post('/sync', async (req, res) => {
+router.post('/sync', authenticate, isAdmin, async (_req, res) => {
   // Логика синхронизации User -> LeaderboardEntry
   res.json({ message: 'Sync started' });
 });

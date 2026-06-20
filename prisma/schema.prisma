@@ -116,7 +116,9 @@ model Idea {
   user          User     @relation(fields: [userId], references: [id])
   title         String
   description   String
-  status        String   @default("open") // open, planned, implemented, rejected
+  /// Canonical statuses: PENDING, IN_PROGRESS, DONE, REJECTED.
+  /// Legacy open/planned/implemented/rejected values are normalized by API serializers.
+  status        String   @default("PENDING")
   votes         IdeaVote[]
   createdAt     DateTime @default(now())
 }

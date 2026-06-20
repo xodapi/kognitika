@@ -7,6 +7,7 @@ import { handleValidationError } from '../utils/validation.ts';
 import { sanitizePublicUserIdentity } from '../utils/privacy.ts';
 import { createSafeLogger, safeError } from '../../lib/safe-logger.ts';
 import { eventBus } from '../events/event-bus.ts';
+import { normalizeIdeaStatus } from '../utils/idea-status.ts';
 
 const router = Router();
 const JWT_SECRET = process.env.JWT_SECRET!;
@@ -57,7 +58,7 @@ router.get('/', async (req: any, res) => {
       id: idea.id,
       title: idea.title,
       description: idea.description,
-      status: idea.status,
+      status: normalizeIdeaStatus(idea.status),
       createdAt: idea.createdAt,
       author: sanitizePublicUserIdentity(idea.user),
       _count: idea._count,

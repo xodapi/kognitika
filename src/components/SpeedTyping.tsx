@@ -13,13 +13,31 @@ const TEXTS = [
   "Система управления движением поездов базируется на строгом соблюдении графиков и мгновенном реагировании на любые отклонения от нормы.",
   "Когнитивный аудит персонала позволяет выявить скрытые резервы эффективности и снизить вероятность ошибок, вызванных человеческим фактором.",
   "Интеграция искусственного интеллекта в процессы планирования перевозок оптимизирует логистические цепочки и повышает общую пропускную способность сети.",
-  "Безопасность на транспорте является приоритетной задачей, решение которой невозможно без постоянного совершенствования профессиональных навыков сотрудников."
+  "Безопасность на транспорте является приоритетной задачей, решение которой невозможно без постоянного совершенствования профессиональных навыков сотрудников.",
+  "Оператор сложной системы удерживает в памяти несколько потоков событий и переключает внимание без потери качества решений.",
+  "Короткая пауза перед ответом снижает число ошибок, помогает заметить противоречия и возвращает контроль над автоматическими реакциями.",
+  "Точная формулировка задачи экономит время команды, потому что уменьшает шум, лишние уточнения и случайные интерпретации.",
+  "Регулярная тренировка внимания похожа на настройку прибора: маленькие повторения постепенно делают реакцию устойчивее.",
+  "Когда данные меняются быстро, полезно сначала выделить сигнал, затем проверить источник и только после этого принимать решение."
 ];
+
+const integerFormatter = new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 0 });
+const percentFormatter = new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 1 });
+
+export function formatTypingCpm(value: number) {
+  return integerFormatter.format(value);
+}
+
+export function formatTypingAccuracy(value: number) {
+  return percentFormatter.format(value);
+}
 
 export function SpeedTyping() {
   const { state, startTest, handleInput } = useTypingEngine(TEXTS);
   const { text, userInput, isFinished, cpm, accuracy, errors, isActive } = state;
   const { token } = useAuth();
+  const displayCpm = formatTypingCpm(cpm);
+  const displayAccuracy = formatTypingAccuracy(accuracy);
   
   useSessionRecording(isActive, isFinished);
   
@@ -47,7 +65,7 @@ export function SpeedTyping() {
               <p className="text-[8px] text-muted-foreground uppercase font-black mb-1">Скорость (CPM)</p>
               <div className="flex items-center gap-2">
                 <Zap className="w-4 h-4 text-primary" />
-                <span className="text-xl font-black tabular-nums">{cpm}</span>
+                <span className="text-xl font-black tabular-nums">{displayCpm}</span>
               </div>
             </div>
 
@@ -55,7 +73,7 @@ export function SpeedTyping() {
               <p className="text-[8px] text-muted-foreground uppercase font-black mb-1">Точность</p>
               <div className="flex items-center gap-2">
                 <Target className="w-4 h-4 text-primary" />
-                <span className="text-xl font-black tabular-nums">{accuracy}%</span>
+                <span className="text-xl font-black tabular-nums">{displayAccuracy}%</span>
               </div>
             </div>
 
@@ -125,11 +143,11 @@ export function SpeedTyping() {
                   <div className="flex gap-8 mt-4">
                     <div className="text-center">
                       <p className="text-[10px] text-muted-foreground uppercase font-black mb-1">Скорость</p>
-                      <p className="text-3xl font-black text-primary">{cpm} <span className="text-xs">CPM</span></p>
+                      <p className="text-3xl font-black text-primary">{displayCpm} <span className="text-xs">CPM</span></p>
                     </div>
                     <div className="text-center">
                       <p className="text-[10px] text-muted-foreground uppercase font-black mb-1">Точность</p>
-                      <p className="text-3xl font-black text-primary">{accuracy}%</p>
+                      <p className="text-3xl font-black text-primary">{displayAccuracy}%</p>
                     </div>
                   </div>
                 </div>

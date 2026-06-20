@@ -34,6 +34,7 @@
 | `src/tests/dispatcher-core.test.ts` | Асинхронный диспетчер | — | ✅ |
 | `src/tests/logic-verification.test.ts` | Верификация логики | — | ✅ |
 | `src/tests/reproducibility.test.ts` | Детерминизм seed | — | ✅ |
+| `src/tests/knowledge-base-contract.test.ts` | Контракт базы знаний для публичных тренажеров | 2 | ✅ |
 | `src/components/ConcentrationCurve.test.tsx` | Кривая концентрации | — | ❌ (UI only) |
 | `src/components/LeaderboardView.test.tsx` | Лидерборд | — | ❌ (UI only) |
 
@@ -48,6 +49,8 @@ pnpm validate  → запускает core validation suite
 `test` — полное покрытие, включая UI-компоненты.
 
 **Правило:** всегда запускать `pnpm validate` перед `git commit`.
+
+**Правило базы знаний:** если в `APP_ROUTE_PATHS` добавляется новый публичный тренажер или тест, в том же PR нужно добавить или обновить статью в `src/lib/knowledge-base.ts`. Контракт `src/tests/knowledge-base-contract.test.ts` должен оставаться зеленым.
 
 ---
 

@@ -14,6 +14,7 @@ export interface TypingState {
 }
 
 export function useTypingEngine(texts: string[]) {
+  const nextTextIndexRef = useRef(0);
   const [state, setState] = useState<TypingState>({
     text: '',
     userInput: '',
@@ -26,9 +27,13 @@ export function useTypingEngine(texts: string[]) {
   });
 
   const startTest = useCallback(() => {
-    const randomText = texts[Math.floor(Math.random() * texts.length)];
+    const safeTexts = texts.length > 0 ? texts : [''];
+    const nextIndex = nextTextIndexRef.current % safeTexts.length;
+    const selectedText = safeTexts[nextIndex];
+    nextTextIndexRef.current = (nextIndex + 1) % safeTexts.length;
+
     setState({
-      text: randomText,
+      text: selectedText,
       userInput: '',
       startTime: null,
       isFinished: false,

@@ -15,7 +15,7 @@ vi.mock('motion/react', () => ({
 // Mock useAuth
 vi.mock('../hooks/useAuth', () => ({
   useAuth: () => ({
-    user: { name: 'Test User', level: 5, experience: 1200, rating: 1500, brainId: 'BR-123' },
+    user: { name: 'Test User', level: 5, experience: 1200, rating: 1500, brainId: '00000000-0000-4000-8000-000000000488' },
     token: 'fake-token',
     refreshUser: vi.fn()
   })
@@ -75,7 +75,9 @@ describe('Dashboard UI', () => {
 
   it('должен отображать бейджи рейтинга и Brain ID', () => {
     render(<Dashboard onStartGame={() => {}} />);
-    expect(screen.getByText(/BR-123/i)).toBeDefined();
+    expect(screen.getByText(/Профиль защищен/i)).toBeDefined();
+    expect(screen.getByText(/0488/i)).toBeDefined();
+    expect(screen.queryByText(/00000000-0000-4000-8000-000000000488/i)).toBeNull();
     expect(screen.getByText(/Test User/i)).toBeDefined();
   });
 });

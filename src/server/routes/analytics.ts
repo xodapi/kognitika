@@ -7,6 +7,7 @@ import { brainLabelForIdentity, displayNameForIdentity } from '../utils/privacy.
 
 const router = Router();
 const logger = createSafeLogger('analytics-route');
+const PROFILE_READY_SESSION_THRESHOLD = 5;
 
 /**
  * Сравнивает результаты текущей игры с историей пользователя
@@ -145,8 +146,19 @@ router.get('/profile', authenticate, async (req: any, res) => {
       take: 100 // Берем больше данных для точности
     });
 
-    if (sessions.length === 0) {
-      return res.json({ profile: null, message: 'Недостаточно данных для анализа' });
+    const sessionsCount = sessions.length;
+    const requiredSessions = PROFILE_READY_SESSION_THRESHOLD;
+    const remainingSessions = Math.max(0, requiredSessions - sessionsCount);
+
+    if (sessionsCount < requiredSessions) {
+      return res.json({
+        profile: null,
+        trend: 0,
+        sessionsCount,
+        requiredSessions,
+        remainingSessions,
+        message: 'Профиль станет точнее после нескольких завершенных тренировок'
+      });
     }
 
     const profile = calculateProfile(sessions);
@@ -159,7 +171,9 @@ router.get('/profile', authenticate, async (req: any, res) => {
     res.json({ 
       profile, 
       trend,
-      sessionsCount: sessions.length,
+      sessionsCount,
+      requiredSessions,
+      remainingSessions: 0,
       updatedAt: new Date().toISOString()
     });
   } catch (error) {

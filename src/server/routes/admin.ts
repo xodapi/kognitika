@@ -4,6 +4,7 @@ import { authenticate, isAdmin } from '../middleware/auth.ts';
 import { sanitizeAdminUserIdentity, sanitizePublicUserIdentity } from '../utils/privacy.ts';
 import { createSafeLogger, safeError } from '../../lib/safe-logger.ts';
 import { feedbackResponseSchema } from '../schemas/feedback.ts';
+import { normalizeIdeaStatus, parseIdeaStatus } from '../utils/idea-status.ts';
 
 const router = Router();
 const logger = createSafeLogger('admin-route');
@@ -129,10 +130,14 @@ router.post('/feedback/:id/respond', saveFeedbackResponse);
 router.post('/feedback/:id/response', saveFeedbackResponse);
 
 router.post('/ideas/:id/status', async (req, res) => {
+  const status = parseIdeaStatus(req.body?.status);
+  if (!status) {
+    return res.status(400).json({ error: 'Invalid idea status' });
+  }
+
   try {
-    const { status } = req.body;
     const idea = await prisma.idea.update({ where: { id: req.params.id }, data: { status } });
-    res.json(idea);
+    res.json({ ...idea, status: normalizeIdeaStatus(idea.status) });
   } catch {
     res.status(500).json({ error: 'Failed to update status' });
   }

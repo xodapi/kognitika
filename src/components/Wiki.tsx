@@ -1,48 +1,12 @@
-import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { BookOpen, Brain, Shield, Cpu, Zap, ChevronRight, Info } from 'lucide-react';
-
-interface WikiArticle {
-  id: string;
-  title: string;
-  category: string;
-  content: string;
-  tags: string[];
-}
-
-const ARTICLES: WikiArticle[] = [
-  {
-    id: 'stroop',
-    title: 'Эффект Струпа',
-    category: 'База',
-    content: 'Задержка реакции при прочтении слов, когда цвет слов не совпадает с написанными словами. Это классический тест на селективное внимание и когнитивную гибкость. Тренировка позволяет мозгу быстрее разрешать конфликты между автоматическими процессами (чтение) и контролируемыми (определение цвета).',
-    tags: ['Внимание', 'Тормозный контроль']
-  },
-  {
-    id: 'schulte',
-    title: 'Таблицы Шульте',
-    category: 'База',
-    content: 'Инструмент для тренировки периферического зрения и концентрации. Регулярные занятия расширяют поле зрения, позволяя считывать информацию быстрее и эффективнее, что критично при работе с большими массивами данных или кодом.',
-    tags: ['Зрение', 'Скорость']
-  },
-  {
-    id: 'nback',
-    title: 'Задача N-назад',
-    category: 'База',
-    content: 'Упражнение для развития рабочей памяти. Участнику необходимо определить, совпадал ли текущий стимул с тем, что был N шагов назад. Это одно из немногих упражнений с доказанным эффектом переноса на общий интеллект (Fluid Intelligence).',
-    tags: ['Память', 'Интеллект']
-  },
-  {
-    id: 'mindguard',
-    title: 'Страж Разума (Mind Guard)',
-    category: 'Безопасность',
-    content: 'Система подготовки к работе в условиях информационной перегрузки и манипуляций. Включает детекцию логических ошибок, эмоциональных триггеров и семантического дрейфа. Цель — сохранить объективность анализа в условиях давления.',
-    tags: ['Критическое мышление', 'Безопасность']
-  }
-];
+import { BookOpen, Brain, ChevronRight, Info } from 'lucide-react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { KNOWLEDGE_ARTICLE_BY_ID, KNOWLEDGE_ARTICLES, TAG_GLOSSARY } from '../lib/knowledge-base';
 
 export function Wiki() {
-  const [selected, setSelected] = useState<WikiArticle | null>(null);
+  const navigate = useNavigate();
+  const { articleId } = useParams();
+  const selected = articleId ? KNOWLEDGE_ARTICLE_BY_ID.get(articleId) || null : null;
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
@@ -58,10 +22,10 @@ export function Wiki() {
         </div>
 
         <div className="space-y-2">
-          {ARTICLES.map(article => (
+          {KNOWLEDGE_ARTICLES.map(article => (
             <button
               key={article.id}
-              onClick={() => setSelected(article)}
+              onClick={() => navigate(article.route)}
               className={`w-full p-4 text-left rounded-2xl border transition-all flex items-center justify-between group ${
                 selected?.id === article.id 
                   ? 'bg-primary border-primary text-primary-foreground shadow-lg shadow-primary/20 scale-[1.02]' 
@@ -99,14 +63,33 @@ export function Wiki() {
               </div>
 
               <div className="prose prose-invert max-w-none">
-                <p className="text-lg text-foreground/80 leading-relaxed mb-8">
-                  {selected.content}
-                </p>
+                <div className="grid gap-4">
+                  {[
+                    ['Что тренирует', selected.trains],
+                    ['Как проходить', selected.howTo],
+                    ['Что означают метрики', selected.metrics],
+                    ['Почему это важно', selected.science],
+                    ['Ограничения', selected.safety],
+                  ].map(([label, body]) => (
+                    <section key={label} className="rounded-2xl border border-border bg-background/40 p-4">
+                      <h3 className="mb-2 text-[10px] font-black uppercase tracking-widest text-primary">
+                        {label}
+                      </h3>
+                      <p className="text-sm leading-relaxed text-foreground/80">
+                        {body}
+                      </p>
+                    </section>
+                  ))}
+                </div>
               </div>
 
               <div className="flex flex-wrap gap-2 mt-auto pt-8 border-t border-border/30">
                 {selected.tags.map(tag => (
-                  <span key={tag} className="px-3 py-1 bg-secondary/50 border border-border rounded-lg text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                  <span
+                    key={tag}
+                    title={TAG_GLOSSARY[tag] || tag}
+                    className="px-3 py-1 bg-secondary/50 border border-border rounded-lg text-[10px] font-bold text-muted-foreground uppercase tracking-widest"
+                  >
                     #{tag}
                   </span>
                 ))}
@@ -119,7 +102,7 @@ export function Wiki() {
               </div>
               <h3 className="text-xl font-black mb-2">Выберите тему</h3>
               <p className="text-muted-foreground text-sm max-w-xs">
-                Выберите статью из списка слева, чтобы изучить научную базу упражнения.
+                Выберите статью из списка слева или откройте прямую ссылку вида /wiki/stroop.
               </p>
             </div>
           )}

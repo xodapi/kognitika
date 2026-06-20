@@ -20,6 +20,7 @@ vi.mock('../hooks/useNumericalEngine', () => ({
               { name: 'Отдел B', value: 47 },
               { name: 'Отдел С', value: 21 },
             ],
+            target: 'Отдел С',
           },
           options: [17, 22, 20, 21],
           correctAnswer: 21,
@@ -48,5 +49,6 @@ describe('NumericalAnalysis question label', () => {
 
     expect(screen.getByText('Вопрос 1 из 1:')).toBeInTheDocument();
     expect(screen.getByText(/Какова доля \(%\) подразделения "Отдел С"/i)).toBeInTheDocument();
+    expect(screen.getByText(/Данные: Отдел А - 32; Отдел B - 47; Отдел С - 21\. Цель: Отдел С\./i)).toBeInTheDocument();
   });
 });

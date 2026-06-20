@@ -86,7 +86,48 @@ async function postJson(baseUrl: string, path: string, token: string, body: unkn
   };
 }
 
+async function getJson(baseUrl: string, path: string) {
+  const response = await fetch(`${baseUrl}${path}`);
+
+  return {
+    status: response.status,
+    body: await response.json(),
+  };
+}
+
 describe('ideas route notification contract', () => {
+  it('normalizes legacy statuses in list responses', async () => {
+    prismaMock.idea.findMany.mockResolvedValue([
+      {
+        id: 'idea_synthetic_legacy',
+        title: 'Synthetic legacy idea',
+        description: 'Synthetic legacy idea description.',
+        status: 'open',
+        createdAt: '2026-01-01T00:00:00.000Z',
+        user: {
+          id: 'user_synthetic_idea',
+          name: null,
+          pseudonym: 'Brain Synthetic',
+          brainId: 'BR-SYNTHETIC-IDEA-SECRET',
+        },
+        votes: [],
+        _count: {
+          votes: 0,
+        },
+      },
+    ]);
+
+    const baseUrl = await createIdeasHarness();
+    const response = await getJson(baseUrl, '/api/ideas');
+
+    expect(response.status).toBe(200);
+    expect(response.body[0]).toMatchObject({
+      id: 'idea_synthetic_legacy',
+      status: 'PENDING',
+    });
+    expect(JSON.stringify(response.body)).not.toContain('BR-SYNTHETIC-IDEA-SECRET');
+  });
+
   it('persists an idea before emitting admin notification events', async () => {
     prismaMock.idea.create.mockResolvedValue({
       id: 'idea_synthetic_1',

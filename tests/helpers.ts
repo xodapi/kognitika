@@ -86,7 +86,7 @@ export async function installSyntheticApi(page: Page) {
           ],
           levelProgress: 35,
           role: 'USER',
-          streak: { current: 1, longest: 3 },
+          streak: { days: 1, current: 1, longest: 3, multiplier: 1, isBroken: false },
         }),
       );
       return;

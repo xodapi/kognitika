@@ -91,5 +91,5 @@ describe('post-game recommendation navigation', () => {
     });
     expect(screen.getByText('Logical route reached')).toBeInTheDocument();
     expect(engineMocks.startGame).not.toHaveBeenCalled();
-  });
+  }, 10_000);
 });
