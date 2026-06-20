@@ -65,6 +65,22 @@ pnpm validate  → запускает core validation suite
 ---
 
 ## Уровень 3 — E2E тесты (Playwright)
+### Локальный запуск E2E
+
+Обычный production-style запуск:
+
+```bash
+pnpm test:e2e
+```
+
+Если на машине есть desktop proxy и Playwright зависает на ожидании `webServer`, запустите сервер отдельно и используйте attached-режим:
+
+```bash
+pnpm dev
+pnpm test:e2e:attached
+```
+
+Attached-режим по умолчанию проверяет `http://127.0.0.1:3006` и выставляет `NO_PROXY` для `127.0.0.1,localhost,::1`. Для другого адреса задайте `BASE_URL`.
 
 **Конфиг:** отдельный от Vitest, файлы в `tests/`
 
