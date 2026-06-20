@@ -1,0 +1,798 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Как мы стабилизировали Kognitika: итоги технического цикла</title>
+  <meta name="description" content="Статья о том, какие production, privacy, security и product проблемы были решены в Kognitika за период стабилизации.">
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f7f8fb;
+      --paper: #ffffff;
+      --ink: #172033;
+      --muted: #5f6b7a;
+      --soft: #eef2f7;
+      --line: #d9e0ea;
+      --accent: #246bfe;
+      --accent-2: #0f8b6f;
+      --warn: #b45309;
+      --danger: #b42318;
+      --shadow: 0 20px 60px rgba(23, 32, 51, 0.12);
+      --radius: 8px;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      line-height: 1.6;
+    }
+
+    a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+
+    .page {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 32px 20px 64px;
+    }
+
+    .article {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .hero {
+      padding: 48px 48px 36px;
+      border-bottom: 1px solid var(--line);
+      background:
+        linear-gradient(135deg, rgba(36, 107, 254, 0.08), rgba(15, 139, 111, 0.08)),
+        var(--paper);
+    }
+
+    .eyebrow {
+      margin: 0 0 14px;
+      color: var(--accent-2);
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    h1,
+    h2,
+    h3 {
+      line-height: 1.16;
+      letter-spacing: 0;
+    }
+
+    h1 {
+      margin: 0;
+      max-width: 860px;
+      font-size: clamp(34px, 5vw, 60px);
+      font-weight: 900;
+    }
+
+    .lead {
+      max-width: 780px;
+      margin: 22px 0 0;
+      color: var(--muted);
+      font-size: 19px;
+    }
+
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 28px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      min-height: 32px;
+      padding: 6px 10px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.72);
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .content {
+      padding: 40px 48px 48px;
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin: 0 0 36px;
+    }
+
+    .metric {
+      min-height: 132px;
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--soft);
+    }
+
+    .metric strong {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 24px;
+      line-height: 1;
+    }
+
+    .metric span {
+      display: block;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .section {
+      padding: 34px 0;
+      border-top: 1px solid var(--line);
+    }
+
+    .section:first-of-type {
+      border-top: 0;
+      padding-top: 0;
+    }
+
+    h2 {
+      margin: 0 0 12px;
+      font-size: 30px;
+      font-weight: 900;
+    }
+
+    h3 {
+      margin: 24px 0 8px;
+      font-size: 19px;
+      font-weight: 850;
+    }
+
+    p {
+      margin: 12px 0;
+    }
+
+    .section-intro {
+      max-width: 820px;
+      color: var(--muted);
+      font-size: 17px;
+    }
+
+    .issue-row {
+      display: grid;
+      grid-template-columns: 200px 1fr;
+      gap: 18px;
+      padding: 20px 0;
+      border-top: 1px solid var(--line);
+    }
+
+    .issue-row:first-of-type {
+      border-top: 0;
+    }
+
+    .issue-label {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .issue-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .issue-links a,
+    .issue-links span {
+      display: inline-flex;
+      padding: 4px 8px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: #fff;
+      font-size: 13px;
+      font-weight: 750;
+    }
+
+    .status {
+      display: inline-flex;
+      align-items: center;
+      margin-bottom: 8px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 850;
+      text-transform: uppercase;
+    }
+
+    .status.done {
+      background: rgba(15, 139, 111, 0.12);
+      color: #06634f;
+    }
+
+    .status.warn {
+      background: rgba(180, 83, 9, 0.12);
+      color: var(--warn);
+    }
+
+    .status.next {
+      background: rgba(36, 107, 254, 0.12);
+      color: var(--accent);
+    }
+
+    ul {
+      margin: 12px 0 0;
+      padding-left: 22px;
+    }
+
+    li {
+      margin: 6px 0;
+    }
+
+    .quote {
+      margin: 24px 0 0;
+      padding: 18px 20px;
+      border-left: 4px solid var(--accent);
+      background: var(--soft);
+      border-radius: 0 var(--radius) var(--radius) 0;
+      color: var(--ink);
+      font-weight: 650;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      margin-top: 18px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 760px;
+      background: #fff;
+    }
+
+    th,
+    td {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      background: var(--soft);
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    tr:last-child td {
+      border-bottom: 0;
+    }
+
+    code {
+      padding: 2px 5px;
+      border-radius: 5px;
+      background: var(--soft);
+      color: #26364f;
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+      font-size: 0.92em;
+    }
+
+    .callout {
+      margin-top: 24px;
+      padding: 20px;
+      border: 1px solid rgba(180, 83, 9, 0.3);
+      border-radius: var(--radius);
+      background: rgba(180, 83, 9, 0.08);
+    }
+
+    .footer {
+      padding: 28px 48px;
+      border-top: 1px solid var(--line);
+      background: var(--soft);
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .footer p {
+      margin: 0;
+    }
+
+    @media (max-width: 860px) {
+      .hero,
+      .content,
+      .footer {
+        padding-left: 24px;
+        padding-right: 24px;
+      }
+
+      .summary-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .issue-row {
+        grid-template-columns: 1fr;
+        gap: 10px;
+      }
+    }
+
+    @media (max-width: 560px) {
+      .page {
+        padding: 0;
+      }
+
+      .article {
+        border-radius: 0;
+        border-left: 0;
+        border-right: 0;
+      }
+
+      .hero,
+      .content,
+      .footer {
+        padding-left: 18px;
+        padding-right: 18px;
+      }
+
+      .summary-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media print {
+      body {
+        background: #fff;
+      }
+
+      .page {
+        max-width: none;
+        padding: 0;
+      }
+
+      .article {
+        border: 0;
+        box-shadow: none;
+      }
+
+      a {
+        color: inherit;
+        text-decoration: underline;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <article class="article">
+      <header class="hero">
+        <p class="eyebrow">Kognitika / отчет для команды</p>
+        <h1>Как мы стабилизировали Kognitika и закрыли главные риски продукта</h1>
+        <p class="lead">
+          За этот цикл мы двигались не от красивых фич, а от production-risk:
+          белый экран, хрупкий boot-слой, приватность Brain ID, доверие к игровым данным,
+          админ-доступ, обратная связь и объяснимость тренажеров.
+        </p>
+        <div class="meta" aria-label="Ключевые маркеры периода">
+          <span class="pill">Boot recovery</span>
+          <span class="pill">Brain ID-only auth</span>
+          <span class="pill">Server trust boundary</span>
+          <span class="pill">Telegram feedback</span>
+          <span class="pill">Knowledge base</span>
+          <span class="pill">Bundle/version visibility</span>
+        </div>
+      </header>
+
+      <div class="content">
+        <section class="summary-grid" aria-label="Краткие итоги">
+          <div class="metric">
+            <strong>202</strong>
+            <span>автоматических теста прошли в локальном Vitest-прогоне</span>
+          </div>
+          <div class="metric">
+            <strong>54</strong>
+            <span>test files покрывают UI, API, privacy, security и contracts</span>
+          </div>
+          <div class="metric">
+            <strong>0</strong>
+            <span>runtime-зависимостей от Firebase после архитектурной зачистки</span>
+          </div>
+          <div class="metric">
+            <strong>1</strong>
+            <span>единая ветка стабилизации для PR вместо прямых production-патчей</span>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2>Главная идея цикла</h2>
+          <p class="section-intro">
+            Мы не переписывали продукт с нуля. Мы сделали более важную вещь:
+            нашли места, где система могла ломаться молча, терять доверие пользователя
+            или принимать непроверенные данные, и превратили эти места в явные контракты.
+          </p>
+          <div class="quote">
+            Белый экран оказался не отдельным багом React, а симптомом хрупкого boot/storage-слоя.
+            Поэтому исправление пошло через архитектуру восстановления, storage policy,
+            ErrorBoundary и observability, а не через случайные патчи на сервере.
+          </div>
+        </section>
+
+        <section class="section">
+          <h2>1. Production incident: белый экран и boot recovery</h2>
+          <p class="section-intro">
+            Начальная проблема была практической: у части пользователей после hard reload
+            сайт оставался белым экраном. Инкогнито работало, обычный профиль - нет.
+            Это указало на старое локальное состояние и кэш, а не на один сломанный компонент.
+          </p>
+
+          <div class="issue-row">
+            <div>
+              <div class="issue-label">Issues</div>
+              <div class="issue-links">
+                <a href="https://github.com/xodapi/kognitika/issues/13">#13</a>
+                <a href="https://github.com/xodapi/kognitika/issues/14">#14</a>
+                <a href="https://github.com/xodapi/kognitika/issues/15">#15</a>
+                <a href="https://github.com/xodapi/kognitika/issues/16">#16</a>
+                <a href="https://github.com/xodapi/kognitika/issues/17">#17</a>
+                <a href="https://github.com/xodapi/kognitika/issues/18">#18</a>
+                <a href="https://github.com/xodapi/kognitika/issues/19">#19</a>
+                <a href="https://github.com/xodapi/kognitika/issues/59">#59</a>
+              </div>
+            </div>
+            <div>
+              <span class="status done">implemented / verified</span>
+              <p>
+                Service Worker убран из runtime до PWA-аудита, watchdog-redirect на
+                <code>?retry=1</code> удален, в <code>index.html</code> добавлен inline recovery UI,
+                React-дерево закрыто верхним ErrorBoundary.
+              </p>
+              <ul>
+                <li>Пользователь больше не остается перед пустым экраном без объяснения.</li>
+                <li>Recovery разделяет сброс временного состояния и сброс identity.</li>
+                <li>Hard reload перестал быть единственным способом диагностики.</li>
+                <li>Версия сборки видна на сайте, чтобы ручной тестировщик понимал, что именно проверяет.</li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2>2. Storage и Brain ID: приватность без случайного удаления личности</h2>
+          <p class="section-intro">
+            После диагностики стало ясно, что localStorage нельзя оставлять набором случайных ключей.
+            Нужно явно разделить временное состояние приложения и идентичность пользователя.
+          </p>
+
+          <div class="issue-row">
+            <div>
+              <div class="issue-label">Issues</div>
+              <div class="issue-links">
+                <a href="https://github.com/xodapi/kognitika/issues/16">#16</a>
+                <a href="https://github.com/xodapi/kognitika/issues/22">#22</a>
+                <a href="https://github.com/xodapi/kognitika/issues/23">#23</a>
+                <a href="https://github.com/xodapi/kognitika/issues/24">#24</a>
+                <a href="https://github.com/xodapi/kognitika/issues/25">#25</a>
+                <a href="https://github.com/xodapi/kognitika/issues/67">#67</a>
+                <a href="https://github.com/xodapi/kognitika/issues/78">#78</a>
+              </div>
+            </div>
+            <div>
+              <span class="status done">implemented / planned horizon</span>
+              <p>
+                Публичная авторизация переведена в Brain ID-first модель. Email/password
+                больше не являются публичным сценарием входа, legacy email оставлен только как
+                изолированный совместимый слой.
+              </p>
+              <ul>
+                <li>Brain ID скрыт по умолчанию и раскрывается только явным действием.</li>
+                <li>Статус рядом с профилем стал человеческим: <code>Профиль защищен</code>.</li>
+                <li>Сброс app-state не удаляет Brain ID и токены авторизации.</li>
+                <li>На перспективу заведена задача portable backup/export-import, чтобы пользователь не терял доступ.</li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2>3. Security: сервер больше не доверяет клиенту</h2>
+          <p class="section-intro">
+            Второй риск был менее заметен глазами, но важен для продукта: нельзя принимать
+            игровой результат, duel state или admin-действия как истину только потому, что их прислал клиент.
+          </p>
+
+          <div class="issue-row">
+            <div>
+              <div class="issue-label">Issues</div>
+              <div class="issue-links">
+                <a href="https://github.com/xodapi/kognitika/issues/3">#3</a>
+                <a href="https://github.com/xodapi/kognitika/issues/4">#4</a>
+                <a href="https://github.com/xodapi/kognitika/issues/79">#79</a>
+                <a href="https://github.com/xodapi/kognitika/issues/80">#80</a>
+                <a href="https://github.com/xodapi/kognitika/issues/82">#82</a>
+              </div>
+            </div>
+            <div>
+              <span class="status done">implemented / verified</span>
+              <p>
+                Серверная граница доверия усилена: Socket.io дуэли проверяют авторизацию,
+                membership и допустимость действий, game-save создает серверный score и XP events,
+                а leaderboard sync закрыт admin middleware.
+              </p>
+              <ul>
+                <li><code>/api/leaderboard/sync</code>: unauthenticated получает 401, non-admin - 403.</li>
+                <li>CORS больше не wildcard: Express и Socket.io используют общий <code>CORS_ORIGIN</code> allowlist.</li>
+                <li>Weekly leaderboard теперь может опираться на реальные XP events.</li>
+                <li>Добавлены route и contract tests для security-поведения.</li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2>4. Admin, feedback и операционная видимость</h2>
+          <p class="section-intro">
+            Мы начали превращать продукт из черного ящика в наблюдаемую систему:
+            пользовательская обратная связь доходит до Telegram, админка честно показывает
+            состояние доступа, а клиентские ошибки готовятся к privacy-safe telemetry.
+          </p>
+
+          <div class="issue-row">
+            <div>
+              <div class="issue-label">Issues</div>
+              <div class="issue-links">
+                <a href="https://github.com/xodapi/kognitika/issues/21">#21</a>
+                <a href="https://github.com/xodapi/kognitika/issues/50">#50</a>
+                <a href="https://github.com/xodapi/kognitika/issues/70">#70</a>
+                <a href="https://github.com/xodapi/kognitika/issues/73">#73</a>
+                <a href="https://github.com/xodapi/kognitika/issues/74">#74</a>
+              </div>
+            </div>
+            <div>
+              <span class="status done">implemented / partially planned</span>
+              <p>
+                Feedback отправляется в Telegram bot, сетевые ошибки больше не показываются
+                пользователю как сырой <code>Failed to fetch</code>, а <code>/admin</code> без прав
+                показывает понятный сценарий входа или отказа.
+              </p>
+              <ul>
+                <li>Админ-доступ проверяется сервером, а не устаревшим JWT payload.</li>
+                <li>Privacy-safe client-error telemetry остается следующим операционным шагом.</li>
+                <li>Build id добавлен как простая диагностика: видно, на какой сборке возникла ошибка.</li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2>5. Product flow после тестов</h2>
+          <p class="section-intro">
+            Раньше часть тренажеров завершалась тупиком: результат показан, дальше только меню.
+            Теперь completion flow начинает вести пользователя по траектории развития.
+          </p>
+
+          <div class="issue-row">
+            <div>
+              <div class="issue-label">Issues</div>
+              <div class="issue-links">
+                <a href="https://github.com/xodapi/kognitika/issues/46">#46</a>
+                <a href="https://github.com/xodapi/kognitika/issues/47">#47</a>
+                <a href="https://github.com/xodapi/kognitika/issues/48">#48</a>
+              </div>
+            </div>
+            <div>
+              <span class="status next">foundation ready</span>
+              <p>
+                После теста пользователь видит, что получилось, что можно улучшить,
+                и какой следующий тест пройти. Событие рекомендации заложено так, чтобы
+                позже строить ежедневную траекторию и кривую изменения когнитивных способностей.
+              </p>
+              <ul>
+                <li>Completion recommendation работает как пользовательский сценарий, а не только как кнопка.</li>
+                <li>Модель готовится к категориям <code>cognitive</code>, <code>somatic</code>, <code>safety</code>.</li>
+                <li>Следующий шаг - связать рекомендации с event log и аналитикой вовлеченности.</li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2>6. База знаний и объяснимость тренажеров</h2>
+          <p class="section-intro">
+            Ручная проверка показала, что короткого описания недостаточно:
+            пользователю нужно понять, как проходить тест, что именно он тренирует,
+            почему это имеет смысл и где границы интерпретации результата.
+          </p>
+
+          <div class="issue-row">
+            <div>
+              <div class="issue-label">Issues</div>
+              <div class="issue-links">
+                <a href="https://github.com/xodapi/kognitika/issues/51">#51</a>
+                <a href="https://github.com/xodapi/kognitika/issues/52">#52</a>
+                <a href="https://github.com/xodapi/kognitika/issues/53">#53</a>
+                <a href="https://github.com/xodapi/kognitika/issues/54">#54</a>
+                <a href="https://github.com/xodapi/kognitika/issues/55">#55</a>
+              </div>
+            </div>
+            <div>
+              <span class="status done">implemented / verified</span>
+              <p>
+                Добавлен structured knowledge base: у каждой статьи есть разделы
+                <code>howTo</code>, <code>science</code>, <code>safety</code> и теги.
+                Добавлен contract test, чтобы новые тренажеры не появлялись без объяснения.
+              </p>
+              <ul>
+                <li>Теги вроде “Тормозной контроль” становятся объяснимыми, а не загадочными.</li>
+                <li>Wiki получает отдельные URL и может развиваться как образовательный слой.</li>
+                <li>База знаний становится частью product quality, а не необязательным текстом.</li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2>7. Ручное QA: что поправили глазами пользователя</h2>
+          <p class="section-intro">
+            Ручное тестирование дало важные находки: перекосы на больших экранах,
+            длинные дроби в скорости печати, невидимые данные в числовом анализе,
+            непонятный профиль и отсутствие активных рекомендаций.
+          </p>
+
+          <div class="issue-row">
+            <div>
+              <div class="issue-label">Issues</div>
+              <div class="issue-links">
+                <a href="https://github.com/xodapi/kognitika/issues/26">#26</a>
+                <a href="https://github.com/xodapi/kognitika/issues/60">#60</a>
+                <a href="https://github.com/xodapi/kognitika/issues/71">#71</a>
+                <span>manual QA</span>
+              </div>
+            </div>
+            <div>
+              <span class="status done">implemented / partially verified</span>
+              <p>
+                Интерфейс получил более проверяемые состояния: числовой анализ показывает
+                метку “Вопрос 1 из 5” и fallback-данные, скорость печати округляет CPM/accuracy,
+                тексты печати выбираются случайно, а профиль показывает, сколько тренировок
+                осталось до надежного анализа.
+              </p>
+              <ul>
+                <li>Добавлена E2E/link coverage для ключевых пользовательских переходов.</li>
+                <li>Большие экраны включены в адаптивный QA-набор.</li>
+                <li>Полный локальный Playwright-прогон требует отдельной стабилизации runner/Chromium.</li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2>8. Удаление мертвого Firebase-слоя</h2>
+          <p class="section-intro">
+            Firebase оказался не runtime-зависимостью продукта. Вместо того чтобы чинить
+            IAM-права и CI для неиспользуемого слоя, мы приняли более чистое решение:
+            удалить Firebase и зафиксировать PostgreSQL/Prisma/Brain ID как основной путь данных.
+          </p>
+
+          <div class="issue-row">
+            <div>
+              <div class="issue-label">Issues</div>
+              <div class="issue-links">
+                <a href="https://github.com/xodapi/kognitika/issues/27">#27</a>
+                <a href="https://github.com/xodapi/kognitika/issues/20">#20</a>
+              </div>
+            </div>
+            <div>
+              <span class="status done">implemented</span>
+              <p>
+                Firebase config, rules и deploy workflow удалены из runtime-повестки.
+                В <code>AGENTS.md</code> зафиксировано: Firebase не возвращать без отдельного
+                product need, privacy review, deploy owner и rollback plan.
+              </p>
+              <ul>
+                <li>PWA/offline-first отделен от Firebase и оставлен на будущий Workbox-аудит.</li>
+                <li>Поиск Firebase/AI Studio хвостов показывает только документационные запреты и roadmap-упоминания.</li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2>Что проверено</h2>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Проверка</th>
+                  <th>Результат</th>
+                  <th>Что подтверждает</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>pnpm lint</code></td>
+                  <td>green</td>
+                  <td>TypeScript и Prisma client generation проходят.</td>
+                </tr>
+                <tr>
+                  <td><code>pnpm test</code></td>
+                  <td>54 files / 202 tests passed</td>
+                  <td>UI, API, privacy, security, storage и product contracts не сломаны.</td>
+                </tr>
+                <tr>
+                  <td><code>pnpm build</code></td>
+                  <td>green</td>
+                  <td>Production bundle собирается.</td>
+                </tr>
+                <tr>
+                  <td><code>pnpm check:bundle</code></td>
+                  <td>green</td>
+                  <td>Initial bundle остается в заданном лимите.</td>
+                </tr>
+                <tr>
+                  <td><code>pnpm test:e2e</code></td>
+                  <td>needs follow-up</td>
+                  <td>Локальный Playwright runner зависает до вывода тестов, хотя <code>/api/health</code> отвечает.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="callout">
+            <strong>Остаточный риск:</strong>
+            полный локальный E2E-прогон нужно стабилизировать отдельно. Это не блокирует
+            уже проверенные unit/API/contract/build проверки, но не должно быть скрыто
+            в отчете как “все абсолютно зеленое”.
+          </div>
+        </section>
+
+        <section class="section">
+          <h2>Что сказать команде одним абзацем</h2>
+          <p>
+            За этот период Kognitika перешла от набора разрозненных быстрых исправлений
+            к более взрослой production-модели: boot умеет восстанавливаться, storage имеет
+            границы, Brain ID защищен как identity, сервер не доверяет клиентским данным,
+            feedback доходит до Telegram, база знаний стала частью продукта, а ручное QA
+            напрямую превращается в тесты и issues. Мы не переписали стек, но убрали несколько
+            причин, по которым продукт мог ломаться молча или терять доверие пользователя.
+          </p>
+        </section>
+      </div>
+
+      <footer class="footer">
+        <p>
+          Документ не содержит реальных пользовательских данных, raw Brain ID, токенов,
+          email пользователей или приватной telemetry. Подготовлено как статическая HTML-статья
+          для локального просмотра или публикации на сайте.
+        </p>
+      </footer>
+    </article>
+  </main>
+</body>
+</html>
