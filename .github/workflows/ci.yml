@@ -56,4 +56,4 @@ jobs:
           NODE_ENV: production
           NO_PROXY: 127.0.0.1,localhost,::1
           no_proxy: 127.0.0.1,localhost,::1
-        run: pnpm test:e2e:ci-attached
+        run: pnpm ci-e2e-attached
