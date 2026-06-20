@@ -13,8 +13,14 @@ export interface TypingState {
   errors: number;
 }
 
+function selectTextIndex(textCount: number, previousIndex: number | null) {
+  if (textCount <= 1) return 0;
+  const randomIndex = Math.floor(Math.random() * textCount);
+  return randomIndex === previousIndex ? (randomIndex + 1) % textCount : randomIndex;
+}
+
 export function useTypingEngine(texts: string[]) {
-  const nextTextIndexRef = useRef(0);
+  const previousTextIndexRef = useRef<number | null>(null);
   const [state, setState] = useState<TypingState>({
     text: '',
     userInput: '',
@@ -28,9 +34,9 @@ export function useTypingEngine(texts: string[]) {
 
   const startTest = useCallback(() => {
     const safeTexts = texts.length > 0 ? texts : [''];
-    const nextIndex = nextTextIndexRef.current % safeTexts.length;
-    const selectedText = safeTexts[nextIndex];
-    nextTextIndexRef.current = (nextIndex + 1) % safeTexts.length;
+    const selectedIndex = selectTextIndex(safeTexts.length, previousTextIndexRef.current);
+    const selectedText = safeTexts[selectedIndex];
+    previousTextIndexRef.current = selectedIndex;
 
     setState({
       text: selectedText,

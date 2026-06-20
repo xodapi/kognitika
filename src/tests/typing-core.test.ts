@@ -77,7 +77,12 @@ describe('Typing Core Engine (Event-Driven)', () => {
     expect(result.current.state.errors).toBe(1);
   });
 
-  it('должен ротировать банк текстов между попытками', () => {
+  it('должен выбирать случайный текст без немедленного повтора', () => {
+    const randomSpy = vi.spyOn(Math, 'random');
+    randomSpy.mockReturnValueOnce(0.05);
+    randomSpy.mockReturnValueOnce(0.05);
+    randomSpy.mockReturnValueOnce(0.95);
+
     const { result } = renderHook(() => useTypingEngine(['Первый текст', 'Второй текст', 'Третий текст']));
 
     act(() => result.current.startTest());
@@ -89,8 +94,7 @@ describe('Typing Core Engine (Event-Driven)', () => {
     act(() => result.current.startTest());
     expect(result.current.state.text).toBe('Третий текст');
 
-    act(() => result.current.startTest());
-    expect(result.current.state.text).toBe('Первый текст');
+    randomSpy.mockRestore();
   });
 
   it('должен форматировать пользовательские метрики без длинных дробей', () => {
