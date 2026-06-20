@@ -145,7 +145,7 @@ Production health check:
 curl https://kognitika.syntog.ru/api/health
 ```
 
-The response includes `buildId`, which should match the deployed commit short hash.
+The response includes `buildId`, which should match the deployed commit short hash. The deploy workflow reads the internal health-check port from the server `.env` `PORT` value and falls back to `3006`, so production-only port overrides do not break deploy verification.
 
 ## CI
 
