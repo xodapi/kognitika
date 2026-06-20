@@ -122,7 +122,7 @@ Known non-blocking local warnings currently include Recharts zero-size container
 ## Runtime Contracts
 
 - Canonical port: `3006`.
-- Public feedback submissions use the Prisma-backed `/api/feedback` route as the runtime source of truth.
+- Public feedback submissions use the Prisma-backed `/api/feedback` route as the runtime source of truth; operator verification is documented in `docs/feedback-operations.md`.
 - Public identity is Brain ID-first; do not expose raw Brain ID, email, token, or password hashes in UI/API responses.
 - Brain ID storage/recovery boundaries are defined in `docs/brain-id-identity.md`.
 - PWA/offline-first must remain disabled until `docs/pwa-offline-strategy.md` acceptance gates are met.
