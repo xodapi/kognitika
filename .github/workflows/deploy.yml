@@ -127,9 +127,13 @@ jobs:
 
           systemctl restart kognitika
 
+          health_port="$(node -e 'require("dotenv").config({ quiet: true }); process.stdout.write(process.env.PORT || "3006")')"
+          health_url="http://127.0.0.1:${health_port}/api/health"
+          echo "health_url=$health_url"
+
           health=""
           for attempt in $(seq 1 30); do
-            if health="$(curl -fsS http://127.0.0.1:3006/api/health 2>/dev/null)"; then
+            if health="$(curl -fsS "$health_url" 2>/dev/null)"; then
               break
             fi
             echo "Waiting for kognitika health check ($attempt/30)..."
