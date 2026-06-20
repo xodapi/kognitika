@@ -11,6 +11,24 @@ import { createSafeLogger, safeError } from '../lib/safe-logger';
 const COLORS = ['hsl(var(--primary))', 'hsl(var(--destructive))', 'hsl(var(--accent))', '#8b5cf6'];
 const logger = createSafeLogger('numerical-analysis');
 
+function renderShareLabel({ name, value, x, y, cx }: any) {
+  if (typeof x !== 'number' || typeof y !== 'number' || typeof cx !== 'number') return null;
+
+  return (
+    <text
+      x={x}
+      y={y}
+      fill="hsl(var(--foreground))"
+      textAnchor={x >= cx ? 'start' : 'end'}
+      dominantBaseline="central"
+      fontSize={12}
+      fontWeight={700}
+    >
+      {`${name}: ${value}`}
+    </text>
+  );
+}
+
 export function NumericalAnalysis() {
   const { state, startGame, stopGame, answerQuestion } = useNumericalEngine();
   const [showCalc, setShowCalc] = useState(false);
@@ -123,8 +141,15 @@ export function NumericalAnalysis() {
                      <XAxis dataKey="name" tick={{fill: 'hsl(var(--muted-foreground))'}} axisLine={false} tickLine={false} />
                      <YAxis tick={{fill: 'hsl(var(--muted-foreground))'}} axisLine={false} tickLine={false} />
                      <Tooltip contentStyle={{ backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))', borderRadius: '0.5rem' }} />
-                     <Bar dataKey="value" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]}>
-                       <LabelList dataKey="value" position="top" fill="hsl(var(--foreground))" formatter={(value: number) => `${value} млн`} />
+                     <Bar dataKey="value" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} minPointSize={4} isAnimationActive={false}>
+                       <LabelList
+                        dataKey="value"
+                        position="top"
+                        fill="hsl(var(--foreground))"
+                        fontSize={12}
+                        fontWeight={700}
+                        formatter={(value: number) => `${value} млн`}
+                       />
                      </Bar>
                    </BarChart>
                  </ResponsiveContainer>
@@ -142,10 +167,11 @@ export function NumericalAnalysis() {
                        dataKey="value"
                        nameKey="name"
                        labelLine={false}
-                       label={({ name, value }) => `${name}: ${value}`}
+                       label={renderShareLabel}
+                       isAnimationActive={false}
                      >
                        {curQ.data.parts.map((_: any, index: number) => (
-                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} stroke="hsl(var(--background))" strokeWidth={2} />
                        ))}
                      </Pie>
                      <Legend verticalAlign="bottom" iconSize={10} wrapperStyle={{ fontSize: 11 }} />
@@ -176,16 +202,46 @@ export function NumericalAnalysis() {
                  </div>
               )}
               </div>
-              <div className="mt-3 rounded-lg border border-border/60 bg-card/50 px-3 py-2 text-[11px] text-muted-foreground">
+              <div
+                className="mt-3 rounded-lg border border-border/60 bg-card/50 px-3 py-2 text-xs text-foreground"
+                aria-label="Данные вопроса"
+                data-testid="numerical-data-fallback"
+              >
+                <p className="mb-2 text-[10px] font-black uppercase tracking-[0.18em] text-muted-foreground">
+                  Данные вопроса
+                </p>
                 {curQ.type === 'percentage_change' && (
-                  <span>
-                    Данные: 2022 - {curQ.data.oldVal} млн; 2023 - {curQ.data.newVal} млн.
-                  </span>
+                  <table className="w-full table-fixed text-left">
+                    <caption className="sr-only">Данные выручки по годам</caption>
+                    <tbody>
+                      <tr className="border-b border-border/40">
+                        <th scope="row" className="py-1 pr-2 font-medium text-muted-foreground">2022</th>
+                        <td className="py-1 text-right font-mono tabular-nums">{curQ.data.oldVal} млн</td>
+                      </tr>
+                      <tr>
+                        <th scope="row" className="py-1 pr-2 font-medium text-muted-foreground">2023</th>
+                        <td className="py-1 text-right font-mono tabular-nums">{curQ.data.newVal} млн</td>
+                      </tr>
+                    </tbody>
+                  </table>
                 )}
                 {curQ.type === 'share' && (
-                  <span>
-                    Данные: {curQ.data.parts.map((part: any) => `${part.name} - ${part.value}`).join('; ')}. Цель: {curQ.data.target}.
-                  </span>
+                  <div>
+                    <table className="w-full table-fixed text-left">
+                      <caption className="sr-only">Данные бюджета подразделений</caption>
+                      <tbody>
+                        {curQ.data.parts.map((part: any) => (
+                          <tr key={part.name} className="border-b border-border/40 last:border-0">
+                            <th scope="row" className="py-1 pr-2 font-medium text-muted-foreground">{part.name}</th>
+                            <td className="py-1 text-right font-mono tabular-nums">{part.value}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    <p className="mt-2 text-[11px] text-muted-foreground">
+                      Цель: <span className="font-semibold text-foreground">{curQ.data.target}</span>
+                    </p>
+                  </div>
                 )}
                 {curQ.type === 'weighted_average' && (
                   <span>
