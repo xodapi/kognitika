@@ -75,6 +75,17 @@ async function postSync(baseUrl: string, authToken?: string) {
   };
 }
 
+async function getLeaderboard(baseUrl: string, period?: string) {
+  const url = new URL(`${baseUrl}/api/leaderboard`);
+  if (period) url.searchParams.set('period', period);
+  const response = await fetch(url);
+
+  return {
+    status: response.status,
+    body: await response.json(),
+  };
+}
+
 describe('leaderboard sync authorization', () => {
   it('rejects unauthenticated sync requests', async () => {
     const baseUrl = await createLeaderboardHarness();
@@ -105,5 +116,65 @@ describe('leaderboard sync authorization', () => {
 
     expect(response.status).toBe(200);
     expect(response.body).toEqual({ message: 'Sync started' });
+  });
+});
+
+describe('weekly leaderboard XP contract', () => {
+  it('uses recent XpEvent sums for weekly leaderboard ordering', async () => {
+    prismaMock.xpEvent.groupBy.mockResolvedValue([
+      { userId: 'user_synthetic_top', _sum: { amount: 120 } },
+      { userId: 'user_synthetic_runner', _sum: { amount: 75 } },
+    ]);
+    prismaMock.user.findMany.mockResolvedValue([
+      {
+        id: 'user_synthetic_runner',
+        pseudonym: 'Brain Runner',
+        level: 2,
+        rating: 1020,
+        _count: { sessions: 4 },
+      },
+      {
+        id: 'user_synthetic_top',
+        pseudonym: 'Brain Top',
+        level: 3,
+        rating: 1110,
+        _count: { sessions: 7 },
+      },
+    ]);
+
+    const baseUrl = await createLeaderboardHarness();
+    const response = await getLeaderboard(baseUrl, 'weekly');
+
+    expect(response.status).toBe(200);
+    expect(prismaMock.xpEvent.groupBy).toHaveBeenCalledWith(expect.objectContaining({
+      by: ['userId'],
+      orderBy: { _sum: { amount: 'desc' } },
+      take: 50,
+    }));
+    expect(prismaMock.user.findMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: {
+        id: { in: ['user_synthetic_top', 'user_synthetic_runner'] },
+      },
+    }));
+    expect(response.body).toEqual([
+      {
+        id: 'user_synthetic_top',
+        name: 'Brain Top',
+        pseudonym: 'Brain Top',
+        experience: 120,
+        level: 3,
+        rating: 1110,
+        _count: { sessions: 7 },
+      },
+      {
+        id: 'user_synthetic_runner',
+        name: 'Brain Runner',
+        pseudonym: 'Brain Runner',
+        experience: 75,
+        level: 2,
+        rating: 1020,
+        _count: { sessions: 4 },
+      },
+    ]);
   });
 });
