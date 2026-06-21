@@ -384,7 +384,7 @@ function AppContent() {
                       <div className="min-w-0">
                          <p className="font-bold text-base truncate">{user.pseudonym || user.name || 'Аноним'}</p>
                          <p className="text-[10px] text-muted-foreground uppercase font-medium">
-                           {user.brainId ? `Brain ID ${user.brainId.slice(0, 10)}...` : 'Brain ID Session'}
+                           {user.brainId ? 'Приватный Brain ID' : 'Brain ID Session'}
                          </p>
                       </div>
                    </div>
