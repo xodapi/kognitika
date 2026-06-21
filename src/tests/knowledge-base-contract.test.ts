@@ -3,6 +3,7 @@ import { APP_ROUTE_PATHS } from '../lib/routes';
 import {
   KNOWLEDGE_ARTICLE_BY_ID,
   KNOWLEDGE_ARTICLES,
+  TAG_GLOSSARY,
   TRAINING_KNOWLEDGE_ROUTE_IDS,
 } from '../lib/knowledge-base';
 
@@ -27,6 +28,15 @@ describe('knowledge-base contract', () => {
       const article = KNOWLEDGE_ARTICLE_BY_ID.get(id);
       expect(article, `${id} must have a knowledge-base article`).toBeDefined();
       expect(article?.route).toBe(`/wiki/${id}`);
+    }
+  });
+
+  it('explains every tag used by knowledge-base articles', () => {
+    const usedTags = new Set(KNOWLEDGE_ARTICLES.flatMap(article => article.tags));
+
+    for (const tag of usedTags) {
+      expect(TAG_GLOSSARY[tag], `${tag} must have a glossary definition`).toBeDefined();
+      expect(TAG_GLOSSARY[tag].trim().length, `${tag} glossary definition`).toBeGreaterThan(20);
     }
   });
 

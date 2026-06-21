@@ -85,3 +85,12 @@ Each report must include:
 - verification commands and results;
 - whether production/server was touched;
 - confirmation that no real user data, secrets, tokens, raw Brain ID, or private telemetry were added.
+## 9. Knowledge Base Contract
+
+When adding, renaming, or exposing a public training/test module, update the knowledge base in the same PR:
+
+- Add or update the route in `APP_ROUTE_PATHS` and `RECOMMENDED_GAME_ROUTES` when applicable.
+- Add or update the matching `KnowledgeArticle` in `src/lib/knowledge-base.ts` with a stable `/wiki/<module-id>` route.
+- Include what the test trains, how to pass it, what the metrics mean, why it matters scientifically, and a short safety/limitations note.
+- Add glossary definitions for every article tag in `TAG_GLOSSARY`; do not leave opaque tags without an explanation.
+- Run `pnpm test src/tests/knowledge-base-contract.test.ts` before handing off.
