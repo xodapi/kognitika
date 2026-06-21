@@ -13,6 +13,12 @@ Run:
 cargo test --manifest-path crates/kognitika-core/Cargo.toml
 ```
 
+Benchmark the TypeScript fallback against Rust/WASM through a Worker boundary:
+
+```bash
+pnpm benchmark:analyze-session
+```
+
 Next steps after parity:
 
 1. Export shared JSON fixtures for TypeScript and Rust.

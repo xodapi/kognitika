@@ -12,6 +12,7 @@
     "preview": "vite preview",
     "clean": "node scripts/clean-dist.mjs",
     "lint": "prisma generate && tsc --noEmit",
+    "benchmark:analyze-session": "tsx scripts/benchmark-analyze-session-worker.ts",
     "test": "vitest run",
     "test:e2e": "playwright test",
     "validate": "vitest run",

@@ -2,6 +2,8 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::BTreeSet;
+#[cfg(target_arch = "wasm32")]
+use wasm_bindgen::prelude::*;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
@@ -149,6 +151,19 @@ pub fn analyze_session(input: &AnalyzeSessionInput) -> AnalyzeSessionOutput {
             engagement_index,
         ),
     }
+}
+
+#[cfg(target_arch = "wasm32")]
+#[wasm_bindgen(js_name = analyzeSessionJson)]
+pub fn analyze_session_json(input_json: &str) -> Result<String, JsValue> {
+    let value = serde_json::from_str::<Value>(input_json)
+        .map_err(|error| JsValue::from_str(&format!("Invalid JSON: {error}")))?;
+    let input = parse_analyze_session_input(value)
+        .map_err(|error| JsValue::from_str(&format!("Invalid AnalyzeSession input: {error:?}")))?;
+    let output = analyze_session(&input);
+
+    serde_json::to_string(&output)
+        .map_err(|error| JsValue::from_str(&format!("Failed to serialize output: {error}")))
 }
 
 fn validate_input(input: &AnalyzeSessionInput) -> Result<(), AnalyzeSessionError> {
