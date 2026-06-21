@@ -31,6 +31,40 @@ function jsonResponse(body: unknown, ok = true, status = 200) {
   } as Response;
 }
 
+describe('feedback modal delivery UX', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    authState.user = {
+      id: 'synthetic-user',
+      pseudonym: 'Synthetic Brain',
+    };
+    authState.token = 'synthetic-token';
+  });
+
+  it('shows a tracking number after successful feedback submission', async () => {
+    global.fetch = vi.fn(async () => jsonResponse({ success: true, trackingNum: 'FB-SYNTH01' }, true, 201)) as typeof fetch;
+
+    render(<FeedbackModal isOpen onClose={() => {}} />);
+
+    fireEvent.change(screen.getByPlaceholderText(/Опишите вашу идею или проблему/i), {
+      target: { value: 'Synthetic feedback without personal data.' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /Отправить предложение/i }));
+
+    expect(await screen.findByText(/Получено/i)).toBeInTheDocument();
+    expect(screen.getByText(/Номер обращения/i)).toBeInTheDocument();
+    expect(screen.getByText('FB-SYNTH01')).toBeInTheDocument();
+    expect(global.fetch).toHaveBeenCalledWith('/api/feedback', expect.objectContaining({
+      method: 'POST',
+      headers: expect.objectContaining({
+        'Content-Type': 'application/json',
+        Authorization: 'Bearer synthetic-token',
+      }),
+      body: JSON.stringify({ type: 'idea', content: 'Synthetic feedback without personal data.' }),
+    }));
+  });
+});
+
 describe('feedback and ideas network failure UX', () => {
   beforeEach(() => {
     vi.clearAllMocks();
