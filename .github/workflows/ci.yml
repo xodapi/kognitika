@@ -43,6 +43,7 @@ jobs:
           cache-dependency-path: pnpm-lock.yaml
 
       - run: pnpm install --frozen-lockfile
+      - run: cargo test --manifest-path crates/kognitika-core/Cargo.toml
       - run: pnpm lint
       - run: pnpm test
       - run: pnpm validate
