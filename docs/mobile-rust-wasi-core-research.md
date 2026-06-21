@@ -119,6 +119,25 @@ Acceptance for the first kernel:
 - Server can call the same contract for verification.
 - Mobile can call either TypeScript fallback or native Rust binding later.
 
+## Research-To-Code Spike
+
+The first contract is now represented in TypeScript under
+`src/core/analyze-session/`:
+
+- `AnalyzeSessionInput` and `AnalyzeSessionOutput` Zod schemas define the
+  stable JSON boundary.
+- `analyzeSession(input)` is a pure TypeScript fallback with no React, Express,
+  Prisma, browser, storage, or network dependency.
+- Synthetic golden fixtures cover CELL_CLICK-style sessions, PracticeFlow-style
+  sessions, and suspicious fast/uniform reaction patterns.
+- Contract tests verify p50/p95 reaction time, speed slope, fatigue index,
+  engagement index, suspicious-pattern score, recommendation signals, and
+  privacy rejection for identity/token/raw-storage fields.
+
+The Rust/WASM/WASI/native-mobile implementation should be treated as a
+drop-in replacement behind the same input/output schemas, not as a new product
+contract.
+
 ## WASI Findings For Kognitika
 
 WASI is valuable, but not in the same place as browser WASM or mobile native
