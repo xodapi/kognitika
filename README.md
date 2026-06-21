@@ -126,6 +126,7 @@ Known non-blocking local warnings currently include Recharts zero-size container
 - Public identity is Brain ID-first; do not expose raw Brain ID, email, token, or password hashes in UI/API responses.
 - Brain ID storage/recovery boundaries are defined in `docs/brain-id-identity.md`.
 - PWA/offline-first must remain disabled until `docs/pwa-offline-strategy.md` acceptance gates are met.
+- Rust/WASM and 60 FPS work must pass the frame-budget gate in `docs/frame-budget-benchmark.md` before implementation.
 - Client analytics `ClickEvent` uses `{ cellId, reactionTimeMs }`.
 - Direct production file patches are forbidden outside documented emergency hotfixes.
 
