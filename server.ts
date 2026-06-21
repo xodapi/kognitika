@@ -43,6 +43,7 @@ import dashboardRoutes from './src/server/routes/dashboard.ts';
 import observabilityRoutes from './src/server/routes/observability.ts';
 import ideasRoutes from './src/server/routes/ideas.ts';
 import feedbackRoutes from './src/server/routes/feedback.ts';
+import practiceFlowRoutes from './src/server/routes/practice-flow.ts';
 import { authenticate } from './src/server/middleware/auth.ts';
 import { privacyGuard } from './src/server/middleware/privacy.ts';
 
@@ -103,6 +104,7 @@ async function startServer() {
   app.use('/api/admin', authenticate, adminRoutes);
   app.use('/api/chat', apiLimiter, chatRoutes);
   app.use('/api/leaderboard', leaderboardRoutes);
+  app.use('/api/analytics/practice-flow', apiLimiter, practiceFlowRoutes);
   app.use('/api/analytics', apiLimiter, analyticsRoutes);
   app.use('/api/dashboard', apiLimiter, dashboardRoutes);
   app.use('/api/client-error', apiLimiter, observabilityRoutes);

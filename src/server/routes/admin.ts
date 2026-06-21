@@ -5,6 +5,7 @@ import { sanitizeAdminUserIdentity, sanitizePublicUserIdentity } from '../utils/
 import { createSafeLogger, safeError } from '../../lib/safe-logger.ts';
 import { feedbackResponseSchema } from '../schemas/feedback.ts';
 import { normalizeIdeaStatus, parseIdeaStatus } from '../utils/idea-status.ts';
+import { getPracticeFlowSummary } from '../services/practice-flow-store.ts';
 
 const router = Router();
 const logger = createSafeLogger('admin-route');
@@ -73,6 +74,10 @@ router.get('/stats', async (req, res) => {
     _avg: { score: true }
   });
   res.json({ userCount, sessionCount, averageScore: averageScore._avg.score });
+});
+
+router.get('/practice-flow', (_req, res) => {
+  res.json(getPracticeFlowSummary());
 });
 
 router.get('/feedback', async (req, res) => {

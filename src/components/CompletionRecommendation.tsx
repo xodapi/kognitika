@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef } from 'react';
 import { ArrowRight, CheckCircle2, Menu, RotateCcw, Sparkles, Target } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { emitEvent } from '../hooks/useEventBus';
+import { completePracticeFlow, recordPracticeRecommendedFlow } from '../lib/practice-flow-client';
 import { routeForRecommendedGame } from '../lib/routes';
 import {
   buildPracticeRecommendation,
@@ -88,13 +89,20 @@ export function CompletionRecommendation(props: CompletionRecommendationProps) {
     if (emittedKey.current === key) return;
     emittedKey.current = key;
 
+    completePracticeFlow(normalizePracticeModuleId(props.sourceModuleId));
     emitEvent('PRACTICE_RECOMMENDED', {
       category: recommendation.category,
       moduleId: recommendation.moduleId,
       reason: recommendation.reason,
       sourceSessionId,
     });
-  }, [recommendation.category, recommendation.moduleId, recommendation.reason, sourceSessionId]);
+    recordPracticeRecommendedFlow({
+      category: recommendation.category,
+      moduleId: recommendation.moduleId,
+      reason: recommendation.reason,
+      sourceSessionId,
+    });
+  }, [recommendation.category, recommendation.moduleId, recommendation.reason, props.sourceModuleId, sourceSessionId]);
 
   const startRecommended = () => {
     navigate(routeForRecommendedGame(recommendation.moduleId));

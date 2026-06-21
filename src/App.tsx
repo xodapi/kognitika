@@ -16,6 +16,7 @@ import {
 import { Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom';
 
 import { AuthProvider, useAuth } from './hooks/useAuth';
+import { usePracticeFlowAnalytics } from './hooks/usePracticeFlowAnalytics';
 import { AuthModal } from './components/AuthModal';
 import { FeedbackModal } from './components/FeedbackModal';
 import { AppErrorBoundary } from './components/AppErrorBoundary';
@@ -211,6 +212,7 @@ function AppContent() {
   const [isChatEnabled, setIsChatEnabled] = useState(false);
   const { user, logout, token } = useAuth();
   const isAdmin = (user as any)?.role === 'ADMIN';
+  usePracticeFlowAnalytics(location.pathname);
 
   useEffect(() => {
     const title = tabTitles[location.pathname] || 'Когнитика';
