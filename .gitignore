@@ -5,6 +5,7 @@ coverage/
 playwright-report/
 .turbo/
 test-results/
+target/
 .DS_Store
 *.log
 .env*
