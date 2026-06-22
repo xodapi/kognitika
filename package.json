@@ -13,6 +13,7 @@
     "clean": "node scripts/clean-dist.mjs",
     "lint": "prisma generate && tsc --noEmit",
     "benchmark:analyze-session": "tsx scripts/benchmark-analyze-session-worker.ts",
+    "benchmark:analyze-session:browser": "tsx scripts/benchmark-analyze-session-browser.ts",
     "test": "vitest run",
     "test:e2e": "playwright test",
     "validate": "vitest run",
