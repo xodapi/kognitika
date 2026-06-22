@@ -472,6 +472,164 @@ mod tests {
         .expect("synthetic fixture is valid")
     }
 
+    fn reaction_event(
+        index: u32,
+        t_ms: u32,
+        kind: AnalyzeSessionEventKind,
+        reaction_time_ms: u32,
+        is_correct: bool,
+    ) -> AnalyzeSessionEvent {
+        let normalized = (index % 100) as f64 / 99.0;
+        AnalyzeSessionEvent {
+            t_ms,
+            kind,
+            reaction_time_ms: Some(reaction_time_ms),
+            is_correct: Some(is_correct),
+            x: Some((normalized * 1000.0).round() / 1000.0),
+            y: Some(((1.0 - normalized) * 1000.0).round() / 1000.0),
+            checkpoint: None,
+        }
+    }
+
+    fn checkpoint(t_ms: u32, name: &str) -> AnalyzeSessionEvent {
+        AnalyzeSessionEvent {
+            t_ms,
+            kind: AnalyzeSessionEventKind::Checkpoint,
+            reaction_time_ms: None,
+            is_correct: None,
+            x: None,
+            y: None,
+            checkpoint: Some(name.to_string()),
+        }
+    }
+
+    fn v2_session(
+        session_id: &str,
+        module_id: &str,
+        completed_at: Option<&str>,
+        events: Vec<AnalyzeSessionEvent>,
+    ) -> AnalyzeSessionInput {
+        AnalyzeSessionInput {
+            schema_version: 1,
+            session_id: session_id.to_string(),
+            module_id: module_id.to_string(),
+            category: AnalyzeSessionCategory::Cognitive,
+            started_at: "2026-01-02T00:00:00.000Z".to_string(),
+            completed_at: completed_at.map(str::to_string),
+            events,
+        }
+    }
+
+    fn v2_thousand_click_session() -> AnalyzeSessionInput {
+        let mut events = vec![checkpoint(0, "route_loaded")];
+
+        for index in 0..1_000 {
+            let jitter = ((index * 17) % 36) as i32 - 18;
+            let reaction = (210_i32 + jitter).clamp(120, 420) as u32;
+            events.push(reaction_event(
+                index,
+                180 + (index * 180),
+                AnalyzeSessionEventKind::Click,
+                reaction,
+                index % 37 != 0,
+            ));
+        }
+
+        events.push(checkpoint(181_000, "completed"));
+        v2_session(
+            "synthetic-v2-thousand-clicks",
+            "schulte",
+            Some("2026-01-02T00:03:01.000Z"),
+            events,
+        )
+    }
+
+    fn v2_ten_thousand_mixed_session() -> AnalyzeSessionInput {
+        let mut events = Vec::with_capacity(10_000);
+
+        for index in 0..10_000 {
+            let t_ms = index * 60;
+            if index % 500 == 0 {
+                events.push(checkpoint(t_ms, &format!("batch:{index}")));
+                continue;
+            }
+
+            let drift = ((index % 97) as i32) - 48;
+            let reaction = (260_i32 + drift).clamp(90, 720) as u32;
+            let kind = if index % 3 == 0 {
+                AnalyzeSessionEventKind::Answer
+            } else {
+                AnalyzeSessionEventKind::Click
+            };
+            events.push(reaction_event(index, t_ms, kind, reaction, index % 29 != 0));
+        }
+
+        v2_session(
+            "synthetic-v2-ten-thousand-mixed",
+            "dispatcher",
+            Some("2026-01-02T00:09:59.940Z"),
+            events,
+        )
+    }
+
+    fn v2_fatigue_curve_session() -> AnalyzeSessionInput {
+        let mut events = vec![checkpoint(0, "route_loaded"), checkpoint(120_000, "midpoint")];
+
+        for index in 0..800 {
+            let reaction = 180 + ((index * 230) / 799);
+            events.push(reaction_event(
+                index,
+                400 + (index * 420),
+                AnalyzeSessionEventKind::Click,
+                reaction,
+                index % 23 != 0,
+            ));
+        }
+
+        v2_session(
+            "synthetic-v2-fatigue-curve",
+            "nback",
+            Some("2026-01-02T00:05:36.000Z"),
+            events,
+        )
+    }
+
+    fn v2_suspicious_burst_session() -> AnalyzeSessionInput {
+        let events = (0..300)
+            .map(|index| {
+                reaction_event(
+                    index,
+                    80 + (index * 90),
+                    AnalyzeSessionEventKind::Click,
+                    48 + (index % 3),
+                    true,
+                )
+            })
+            .collect();
+
+        v2_session(
+            "synthetic-v2-suspicious-burst",
+            "schulte",
+            Some("2026-01-02T00:00:27.000Z"),
+            events,
+        )
+    }
+
+    fn v2_abandoned_session() -> AnalyzeSessionInput {
+        v2_session(
+            "synthetic-v2-abandoned-checkpoints",
+            "numerical",
+            None,
+            vec![
+                checkpoint(0, "route_loaded"),
+                checkpoint(2_000, "instructions_viewed"),
+                reaction_event(0, 3_000, AnalyzeSessionEventKind::Click, 920, false),
+                reaction_event(1, 4_500, AnalyzeSessionEventKind::Click, 1_100, false),
+                checkpoint(5_000, "abandoned:route_change"),
+            ],
+        )
+    }
+
     #[test]
     fn matches_cell_click_golden_output() {
         let result = analyze_session(&synthetic_cell_click_session());
@@ -544,5 +702,44 @@ mod tests {
                 Err(AnalyzeSessionError::SensitiveField)
             );
         }
+    }
+
+    #[test]
+    fn handles_golden_v2_thousand_clicks() {
+        let result = analyze_session(&v2_thousand_click_session());
+
+        assert_eq!(result.click_count, 1_000);
+        assert_eq!(result.suspicious_pattern_score, 0.0);
+        assert!(result.p50_reaction_ms >= 190);
+        assert!(result.p95_reaction_ms <= 230);
+    }
+
+    #[test]
+    fn handles_golden_v2_ten_thousand_mixed_boundary() {
+        let session = v2_ten_thousand_mixed_session();
+        let result = analyze_session(&session);
+
+        assert_eq!(session.events.len(), 10_000);
+        assert_eq!(result.duration_ms, 599_940);
+        assert!(result.click_count > 6_000);
+        assert!(result.accuracy > 0.9);
+    }
+
+    #[test]
+    fn handles_golden_v2_fatigue_suspicious_and_abandoned_cases() {
+        let fatigue = analyze_session(&v2_fatigue_curve_session());
+        assert!(fatigue.fatigue_index > 0.45);
+        assert!(fatigue
+            .recommendation_signals
+            .contains(&RecommendationSignal::Recovery));
+
+        let suspicious = analyze_session(&v2_suspicious_burst_session());
+        assert_eq!(suspicious.suspicious_pattern_score, 1.0);
+
+        let abandoned = analyze_session(&v2_abandoned_session());
+        assert!(abandoned.engagement_index < 0.35);
+        assert!(abandoned
+            .recommendation_signals
+            .contains(&RecommendationSignal::WeakArea));
     }
 }
