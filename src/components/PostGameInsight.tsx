@@ -1,11 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'motion/react';
-import { TrendingUp, TrendingDown, Award, Brain, Heart } from 'lucide-react';
+import { TrendingUp, TrendingDown, Award, Brain, Heart, Sparkles, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { LuscherTest } from './LuscherTest';
 import { EmotionalBarometer } from './EmotionalBarometer';
 import { createSafeLogger, safeError } from '../lib/safe-logger';
 import { CompletionRecommendation } from './CompletionRecommendation';
+import { CognitiveTrendCurve } from './CognitiveTrendCurve';
+import { buildPraise, type PraiseOutput } from '../lib/praise-engine';
 
 const logger = createSafeLogger('post-game-insight');
 
@@ -138,6 +140,21 @@ export function PostGameInsight({
     return titles[type] || type;
   };
 
+  const accuracy = useMemo(() => Math.max(0, Math.min(100, 100 - errors * 8)), [errors]);
+  const reactionMs = useMemo(() => Math.round(timeMs / Math.max(1, score || 1)), [timeMs, score]);
+
+  const praise: PraiseOutput | null = useMemo(() => {
+    if (loading || !insight) return null;
+
+    return buildPraise({
+      currentAccuracy: accuracy / 100,
+      currentReactionMs: reactionMs,
+      currentFatigueIndex: insight.trend === 'down' ? 0.3 : insight.trend === 'up' ? -0.1 : 0.05,
+      currentEngagementIndex: insight.trend === 'up' ? 0.9 : 0.7,
+      historicalAvgAccuracy: insight.trend !== 'stable' ? undefined : accuracy / 100,
+    });
+  }, [loading, insight, accuracy, reactionMs]);
+
   if (showPostTest) {
     return (
       <LuscherTest 
@@ -216,6 +233,57 @@ export function PostGameInsight({
                   </p>
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* Praise Section */}
+          {praise && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.3, delay: 0.1 }}
+              className="bg-gradient-to-r from-primary/5 to-secondary/5 border border-primary/10 rounded-2xl p-5"
+            >
+              <div className="flex items-center gap-2 mb-3">
+                <Sparkles className="w-4 h-4 text-primary" />
+                <h4 className="text-xs font-black uppercase tracking-widest text-primary">{praise.headline}</h4>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3">
+                {praise.metricHighlights.map((h) => (
+                  <div key={h.metric} className="text-center">
+                    <p className="text-[9px] text-muted-foreground uppercase font-black tracking-wider mb-1">{h.label}</p>
+                    <p className={`text-lg font-black ${h.isPositive ? 'text-emerald-500' : h.direction === 'stable' ? 'text-foreground' : 'text-amber-500'}`}>
+                      {h.metric === 'accuracy' ? `${h.value}%` : h.metric === 'reaction' ? `${h.value}мс` : h.value}
+                    </p>
+                    {h.delta !== undefined && h.delta !== 0 && (
+                      <p className={`text-[9px] font-bold ${h.isPositive ? 'text-emerald-500' : 'text-amber-500'}`}>
+                        {h.delta > 0 ? '+' : ''}{h.delta}{h.metric === 'accuracy' ? '%' : 'мс'}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+              {praise.details.length > 0 && (
+                <div className="space-y-1.5">
+                  {praise.details.map((d, i) => (
+                    <div key={i} className="flex items-start gap-2">
+                      {d.includes('усталость') || d.includes('снизилась') ? (
+                        <AlertTriangle className="w-3 h-3 text-amber-500 shrink-0 mt-0.5" />
+                      ) : (
+                        <CheckCircle2 className="w-3 h-3 text-emerald-500 shrink-0 mt-0.5" />
+                      )}
+                      <p className="text-xs text-muted-foreground leading-relaxed">{d}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </motion.div>
+          )}
+
+          {/* Compact Cognitive Trend */}
+          {token && (
+            <div className="bg-card/30 border border-border/50 rounded-2xl p-4">
+              <CognitiveTrendCurve moduleId={gameType} days={14} compact />
             </div>
           )}
 

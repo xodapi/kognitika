@@ -44,6 +44,7 @@ import observabilityRoutes from './src/server/routes/observability.ts';
 import ideasRoutes from './src/server/routes/ideas.ts';
 import feedbackRoutes from './src/server/routes/feedback.ts';
 import practiceFlowRoutes from './src/server/routes/practice-flow.ts';
+import dailyTrajectoryRoutes from './src/server/routes/daily-trajectory.ts';
 import { authenticate } from './src/server/middleware/auth.ts';
 import { privacyGuard } from './src/server/middleware/privacy.ts';
 
@@ -110,6 +111,7 @@ async function startServer() {
   app.use('/api/client-error', apiLimiter, observabilityRoutes);
   app.use('/api/ideas', apiLimiter, ideasRoutes);
   app.use('/api/feedback', apiLimiter, feedbackRoutes);
+  app.use('/api/daily-trajectory', apiLimiter, dailyTrajectoryRoutes);
 
   app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString(), buildId: BUILD_ID });

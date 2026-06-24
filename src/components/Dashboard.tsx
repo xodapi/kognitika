@@ -11,6 +11,7 @@ import { LeagueBadge } from './LeagueBadge';
 import { ShareCard } from './ShareCard';
 import { DuelsView } from './DuelsView';
 import { createSafeLogger, safeError } from '../lib/safe-logger';
+import { DailyTrajectoryPanel } from './DailyTrajectoryPanel';
 
 const logger = createSafeLogger('dashboard');
 import { CognitiveProfile } from './CognitiveProfile';
@@ -297,6 +298,9 @@ export function Dashboard({ onStartGame }: { onStartGame: (game: string) => void
 
                {/* Right Sidebar */}
                <div className="lg:col-span-4 space-y-6">
+                  {/* Daily Trajectory */}
+                  <DailyTrajectoryPanel onStartGame={onStartGame} />
+
                   <div className="bg-card/40 border border-border rounded-3xl p-6">
                      <h3 className="text-xs font-black uppercase tracking-widest text-muted-foreground mb-6">Ваш Путь</h3>
                      <div className="space-y-6">

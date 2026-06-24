@@ -162,3 +162,40 @@ model Message {
   room      String   @default("global")
   createdAt DateTime @default(now())
 }
+
+model SessionAnalyticsSummary {
+  id                     String   @id @default(cuid())
+  jobId                  String   @unique
+  sourceSessionId        String
+  moduleId               String
+  category               String
+  completed              Boolean
+  createdAt              DateTime @default(now())
+  eventCount             Int
+  clickCount             Int
+  durationMs             Int
+  p50ReactionMs          Int
+  p95ReactionMs          Int
+  speedSlope             Float
+  accuracy               Float
+  fatigueIndex           Float
+  engagementIndex        Float
+  suspiciousPatternScore Float
+  recommendationSignals  Json
+
+  @@index([moduleId])
+  @@index([category])
+  @@index([createdAt])
+  @@map("session_analytics_summaries")
+}
+
+model DailyPracticePlan {
+  id        String   @id @default(cuid())
+  userId    String
+  date      DateTime @db.Date
+  items     Json
+  createdAt DateTime @default(now())
+
+  @@unique([userId, date])
+  @@map("daily_practice_plans")
+}

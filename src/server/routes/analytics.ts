@@ -4,6 +4,14 @@ import { authenticate } from '../middleware/auth.ts';
 import jwt from 'jsonwebtoken';
 import { createSafeLogger, safeError } from '../../lib/safe-logger.ts';
 import { brainLabelForIdentity, displayNameForIdentity } from '../utils/privacy.ts';
+import {
+  persistSessionAnalyticsSummary,
+  getSessionAnalyticsSummaries,
+  getModuleTrendData,
+  getAggregateTrendData,
+  computeCognitiveTrend,
+} from '../services/analytics-persistence.ts';
+import { createSessionAnalyticsSummary, parseSessionAnalyticsJob } from '../../core/analyze-session/index.ts';
 
 const router = Router();
 const logger = createSafeLogger('analytics-route');
@@ -268,5 +276,89 @@ function calculateTrend(recent: any[], previous: any[]) {
     const avgPrev = previous.reduce((a, b) => a + b.score, 0) / previous.length;
     return Math.round(((avgRecent - avgPrev) / (avgPrev || 1)) * 100);
 }
+
+/**
+ * POST /api/analytics/summaries — persist a SessionAnalyticsSummaryRecord
+ */
+router.post('/summaries', async (req, res) => {
+  try {
+    const parsed = parseSessionAnalyticsJob(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ error: 'Invalid session analytics job', details: String(parsed.error) });
+    }
+
+    const summary = createSessionAnalyticsSummary(parsed.data);
+    await persistSessionAnalyticsSummary(summary);
+
+    res.status(201).json({ ok: true, jobId: summary.jobId });
+  } catch (err) {
+    logger.error('Failed to persist analytics summary', { error: safeError(err) });
+    res.status(500).json({ error: 'Failed to persist analytics summary' });
+  }
+});
+
+/**
+ * GET /api/analytics/summaries — query persisted summaries
+ * Query params: moduleId, category, from, to, limit
+ */
+router.get('/summaries', authenticate, async (req: any, res) => {
+  try {
+    const { moduleId, category, from, to, limit } = req.query;
+
+    const summaries = await getSessionAnalyticsSummaries({
+      moduleId: moduleId as string | undefined,
+      category: category as string | undefined,
+      from: from ? new Date(from as string) : undefined,
+      to: to ? new Date(to as string) : undefined,
+      limit: limit ? parseInt(limit as string, 10) : undefined,
+    });
+
+    res.json({ summaries });
+  } catch (err) {
+    logger.error('Failed to query analytics summaries', { error: safeError(err) });
+    res.status(500).json({ error: 'Failed to query analytics summaries' });
+  }
+});
+
+/**
+ * GET /api/analytics/summaries/trend — trend-ready aggregated data
+ * Query params: moduleId (optional), days (default 30)
+ */
+router.get('/summaries/trend', authenticate, async (req: any, res) => {
+  try {
+    const { moduleId, days } = req.query;
+    const daysNum = days ? parseInt(days as string, 10) : 30;
+
+    const trend = moduleId
+      ? await getModuleTrendData(moduleId as string, daysNum)
+      : await getAggregateTrendData(daysNum);
+
+    res.json({ trend, days: daysNum, moduleId: moduleId || null });
+  } catch (err) {
+    logger.error('Failed to compute trend data', { error: safeError(err) });
+    res.status(500).json({ error: 'Failed to compute trend data' });
+  }
+});
+
+/**
+ * GET /api/analytics/cognitive-trend — full CognitiveTrend with direction detection
+ * Query params: moduleId (optional), days (default 30)
+ */
+router.get('/cognitive-trend', authenticate, async (req: any, res) => {
+  try {
+    const { moduleId, days } = req.query;
+    const daysNum = days ? parseInt(days as string, 10) : 30;
+
+    const trend = await computeCognitiveTrend(
+      moduleId ? (moduleId as string) : null,
+      daysNum,
+    );
+
+    res.json(trend);
+  } catch (err) {
+    logger.error('Failed to compute cognitive trend', { error: safeError(err) });
+    res.status(500).json({ error: 'Failed to compute cognitive trend' });
+  }
+});
 
 export default router;

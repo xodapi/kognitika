@@ -7,6 +7,7 @@ import {
 } from 'recharts';
 import { ArrowRight, Download, Brain, TrendingUp, History, Info, Activity } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
+import { CognitiveTrendCurve } from './CognitiveTrendCurve';
 
 interface ProfileData {
   profile: Record<string, number> | null;
@@ -202,6 +203,9 @@ export function CognitiveProfile() {
           </div>
         </div>
       </div>
+
+      {/* Cognitive Trend Curve */}
+      <CognitiveTrendCurve days={30} />
 
       {/* Smart Interpretation Card */}
       <motion.div
