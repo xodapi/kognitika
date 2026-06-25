@@ -29,7 +29,7 @@ router.post('/save', authenticate, async (req: any, res) => {
   if (validationError) return validationError;
 
   try {
-    const { gameType, timeMs, metadata } = result.data;
+    const { gameType, timeMs, metadata } = result.data!;
 
     if (!timeMs || timeMs < 100) {
       return res.status(400).json({ error: 'Invalid performance data' });

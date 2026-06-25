@@ -95,7 +95,7 @@ router.post('/restore', async (req, res) => {
   if (validationError) return validationError;
 
   try {
-    const { brainId } = result.data;
+    const { brainId } = result.data!;
     const user = await prisma.user.findUnique({ where: { brainId } });
     
     if (!user) {

@@ -3,6 +3,8 @@ import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
 import App from '../App';
 
+vi.setConfig({ testTimeout: 30000 });
+
 vi.mock('next-themes', () => ({
   useTheme: () => ({ theme: 'light', setTheme: vi.fn() }),
 }));

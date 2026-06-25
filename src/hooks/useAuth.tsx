@@ -15,8 +15,8 @@ interface User {
   id: string;
   name: string;
   email?: string | null;
-  pseudonym?: string;
-  brainId?: string;
+  pseudonym?: string | null;
+  brainId?: string | null;
   level?: number;
   experience?: number;
   rating?: number;
@@ -27,7 +27,7 @@ interface User {
   };
 }
 
-const userSchema: z.ZodType<User> = z.object({
+const userSchema = z.object({
   id: z.string(),
   name: z.string(),
   email: z.string().nullable().optional(),

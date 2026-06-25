@@ -148,7 +148,7 @@ export function NumericalAnalysis() {
                         fill="hsl(var(--foreground))"
                         fontSize={12}
                         fontWeight={700}
-                        formatter={(value: number) => `${value} млн`}
+                        formatter={(label: unknown) => `${label ?? ''} млн`}
                        />
                      </Bar>
                    </BarChart>

@@ -93,7 +93,7 @@ function GraphView({ nodes, edges, interactive, userAnswers, onSetAnswer }: {
         </defs>
         {/* Nodes */}
         {nodes.map(node => {
-          const displayState = interactive && userAnswers ? (userAnswers[node.id] || 'idle') : node.state;
+          const displayState: NodeState = interactive && userAnswers ? (userAnswers[node.id] || 'idle') : (node.state || 'idle');
           const dotClass = STATE_DOT[displayState];
           return (
             <g key={node.id}>

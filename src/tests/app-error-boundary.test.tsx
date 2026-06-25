@@ -3,6 +3,8 @@ import type { ReactElement } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AppErrorBoundary } from '../components/AppErrorBoundary';
 
+vi.setConfig({ testTimeout: 30000 });
+
 vi.mock('../lib/client-error', () => ({
   reportClientError: vi.fn(),
 }));

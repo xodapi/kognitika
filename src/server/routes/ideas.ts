@@ -79,8 +79,8 @@ router.post('/', authenticate, async (req: any, res) => {
     const idea = await prisma.idea.create({
       data: {
         userId: req.user.id,
-        title: result.data.title,
-        description: result.data.description,
+        title: result.data!.title,
+        description: result.data!.description,
         status: 'PENDING',
       },
       include: {
