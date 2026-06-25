@@ -96,4 +96,53 @@ describe('BrowserStorageGateway', () => {
     expect(window.localStorage.getItem(BRAIN_ID_KEY)).toBe('"BR-SYNTHETIC-001"');
     expect(window.localStorage.getItem(STORAGE_SCHEMA_VERSION_KEY)).toBe(String(STORAGE_SCHEMA_VERSION));
   });
+
+  it('get returns null for non-existent key', () => {
+    const result = gateway.get('kognitika:nonexistent', z.string());
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value).toBeNull();
+    }
+  });
+
+  it('set rejects schema-invalid values', () => {
+    const result = gateway.set('kognitika:ui:theme', 'invalid-value', z.enum(['light', 'dark']));
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error.code).toBe('schema_mismatch');
+    }
+  });
+
+  it('returns storage_unavailable error when storage provider returns null', () => {
+    const noop = () => null;
+    const offline = new BrowserStorageGateway(noop);
+
+    const getResult = offline.get('kognitika:test', z.string());
+    expect(getResult.ok).toBe(false);
+    if (!getResult.ok) {
+      expect(getResult.error.code).toBe('storage_unavailable');
+    }
+
+    const setResult = offline.set('kognitika:test', 'value', z.string());
+    expect(setResult.ok).toBe(false);
+    if (!setResult.ok) {
+      expect(setResult.error.code).toBe('storage_unavailable');
+    }
+
+    const removeResult = offline.remove('kognitika:test');
+    expect(removeResult.ok).toBe(false);
+    if (!removeResult.ok) {
+      expect(removeResult.error.code).toBe('storage_unavailable');
+    }
+  });
+
+  it('ensureSchemaVersion is a no-op when schema is current', () => {
+    window.localStorage.setItem(STORAGE_SCHEMA_VERSION_KEY, String(STORAGE_SCHEMA_VERSION));
+    window.localStorage.setItem('kognitika:ui:theme', '"dark"');
+
+    gateway.ensureSchemaVersion();
+
+    expect(window.localStorage.getItem('kognitika:ui:theme')).toBe('"dark"');
+    expect(window.localStorage.getItem(STORAGE_SCHEMA_VERSION_KEY)).toBe(String(STORAGE_SCHEMA_VERSION));
+  });
 });

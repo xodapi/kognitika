@@ -8,6 +8,8 @@ import {
   RuleCategory
 } from '../lib/content-db';
 
+const KNOWN_RULESET_IDS = RULE_SETS.map((rs) => rs.id);
+
 describe('content-db: static database integrity', () => {
   it('has 11 rule sets with correct categories', () => {
     expect(RULE_SETS).toHaveLength(11);
@@ -92,5 +94,48 @@ describe('content-db: static database integrity', () => {
         expect(['obvious', 'moderate', 'expert']).toContain(card.subtlety);
       }
     }
+  });
+
+  it('throws for unknown ruleSetId in getUniqueSession', () => {
+    expect(() => getUniqueSession('nonexistent', 1)).toThrow('RuleSet nonexistent not found');
+    expect(() => getUniqueSession('', 1)).toThrow();
+    expect(() => getUniqueSession(' ', 1)).toThrow();
+  });
+
+  it('getSessionForLevel cycles through all rule sets for levels 1-11', () => {
+    const seen = new Set<string>();
+    for (let lvl = 1; lvl <= RULE_SETS.length; lvl++) {
+      const session = getSessionForLevel(lvl, 1);
+      expect(session.rules.length).toBeGreaterThan(0);
+      expect(session.cards.length).toBeGreaterThan(0);
+      seen.add(session.ruleSetId);
+    }
+    expect(seen.size).toBe(RULE_SETS.length);
+  });
+
+  it('getSessionForLevel wraps around for levels exceeding rule set count', () => {
+    const l1 = getSessionForLevel(1, 1);
+    const l12 = getSessionForLevel(RULE_SETS.length + 1, 1);
+    expect(l12.ruleSetId).toBe(l1.ruleSetId);
+    expect(l12.cards).not.toEqual(l1.cards);
+  });
+
+  it('getSessionForLevel throws for level 0 or negative due to out-of-bounds index', () => {
+    expect(() => getSessionForLevel(0, 1)).toThrow();
+    expect(() => getSessionForLevel(-1, 1)).toThrow();
+    expect(() => getSessionForLevel(-100, 1)).toThrow();
+  });
+
+  it('getScannerSessionForLevel throws for level 0 or negative', () => {
+    expect(() => getScannerSessionForLevel(0, 1)).toThrow();
+    expect(() => getScannerSessionForLevel(-1, 1)).toThrow();
+  });
+
+  it('getScannerSessionForLevel cycles through semantic sets', () => {
+    const seen = new Set<string>();
+    for (let lvl = 1; lvl <= 6; lvl++) {
+      seen.add(getScannerSessionForLevel(lvl, 1).ruleSetId);
+    }
+    expect(seen.size).toBe(3);
   });
 });
