@@ -37,6 +37,7 @@ model User {
 
   @@index([brainId])
   @@index([pseudonym])
+  @@index([experience(sort: Desc)])
 }
 
 model XpEvent {
@@ -47,7 +48,7 @@ model XpEvent {
   reason    String
   createdAt DateTime @default(now())
 
-  @@index([userId])
+  @@index([userId, createdAt])
 }
 
 model LeaderboardEntry {
@@ -70,6 +71,8 @@ model Feedback {
   status        String   @default("new")
   adminResponse String?
   createdAt     DateTime @default(now())
+
+  @@index([userId])
 }
 
 enum GameType {
@@ -108,6 +111,9 @@ model GameSession {
   metadata      Json     
   
   createdAt     DateTime @default(now())
+
+  @@index([userId, isCompleted, createdAt])
+  @@index([gameType, isCompleted, score])
 }
 
 model Idea {
@@ -161,6 +167,8 @@ model Message {
   content   String
   room      String   @default("global")
   createdAt DateTime @default(now())
+
+  @@index([room, createdAt])
 }
 
 model SessionAnalyticsSummary {
