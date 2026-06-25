@@ -6,6 +6,7 @@ import { execSync } from 'child_process';
 import { createServer as createViteServer } from 'vite';
 import prisma from './src/lib/prisma.ts';
 import cors from 'cors';
+import helmet from 'helmet';
 import { rateLimit } from 'express-rate-limit';
 import { createSafeLogger } from './src/lib/safe-logger.ts';
 import { createExpressCorsOptions, createSocketCorsOptions, resolveCorsConfig } from './src/server/config/cors.ts';
@@ -89,6 +90,7 @@ async function startServer() {
 
   registerDuelHandlers(io, { prisma, jwtSecret: JWT_SECRET });
 
+  app.use(helmet());
   app.use(cors(createExpressCorsOptions(corsConfig)));
   app.use(express.json());
   app.use((_req, res, next) => {

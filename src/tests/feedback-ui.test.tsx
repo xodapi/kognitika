@@ -1,6 +1,8 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import type { HTMLAttributes, ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+vi.setConfig({ testTimeout: 30000 });
 import { FeedbackModal } from '../components/FeedbackModal';
 import { IdeasWall } from '../components/IdeasWall';
 

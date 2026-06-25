@@ -3,7 +3,7 @@ import { z } from 'zod';
 import prisma from '../../lib/prisma.ts';
 import { handleValidationError } from '../utils/validation.ts';
 import { authenticate } from '../middleware/auth.ts';
-import { saveGameSchema } from '../schemas/game.ts';
+import { saveGameSchema, updateMetadataSchema } from '../schemas/game.ts';
 import { eventBus } from '../events/event-bus.ts';
 import { computeServerScore } from '../services/game-score.ts';
 import { createSafeLogger, safeError } from '../../lib/safe-logger.ts';
@@ -105,9 +105,14 @@ router.post('/save', authenticate, async (req: any, res) => {
 });
 
 router.post('/session/:id/metadata', authenticate, async (req: any, res) => {
+  const parsed = updateMetadataSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ error: 'Invalid metadata payload' });
+  }
+  const { metadata } = parsed.data;
+
   try {
     const { id } = req.params;
-    const { metadata } = req.body;
 
     const session = await prisma.gameSession.findUnique({
       where: { id }

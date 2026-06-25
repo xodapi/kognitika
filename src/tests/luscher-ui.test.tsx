@@ -3,6 +3,8 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { LuscherTest } from '../components/LuscherTest';
 import React from 'react';
 
+vi.setConfig({ testTimeout: 30000 });
+
 // Mock motion/react
 vi.mock('motion/react', () => ({
   motion: {

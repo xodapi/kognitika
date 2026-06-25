@@ -2,8 +2,14 @@ import { Router } from 'express';
 import { EventEmitter } from 'events';
 import { v4 as uuidv4 } from 'uuid';
 import jwt from 'jsonwebtoken';
+import { z } from 'zod';
 import prisma from '../../lib/prisma.ts';
 import { createSafeLogger, safeError } from '../../lib/safe-logger.ts';
+
+const messageSchema = z.object({
+  content: z.string().min(1).max(500).trim(),
+  userName: z.string().optional(),
+});
 
 const router = Router();
 const chatBus = new EventEmitter();
@@ -52,11 +58,13 @@ router.get('/stream', async (req, res) => {
 });
 
 router.post('/messages', async (req: any, res) => {
+  const parsed = messageSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ error: 'Invalid message' });
+  }
+  const { content } = parsed.data;
+
   try {
-    const { content, userName } = req.body;
-    if (!content || typeof content !== 'string' || content.trim().length === 0) {
-      return res.status(400).json({ error: 'Content required' });
-    }
 
     let userId = 'anon';
     let resolvedName = 'Гость';

@@ -6,3 +6,7 @@ export const saveGameSchema = z.object({
   isCompleted: z.boolean().optional(),
   metadata: z.record(z.string(), z.unknown()).optional()
 }).strict();
+
+export const updateMetadataSchema = z.object({
+  metadata: z.record(z.string(), z.unknown())
+}).strict();

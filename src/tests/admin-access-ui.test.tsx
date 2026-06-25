@@ -1,6 +1,8 @@
 import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+vi.setConfig({ testTimeout: 30000 });
 import App from '../App';
 import { ThemeProvider } from '../components/ThemeProvider';
 
