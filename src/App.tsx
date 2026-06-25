@@ -3,12 +3,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { lazy, Suspense, useState, useEffect, type ComponentType, type ReactNode } from 'react';
+import { Suspense, useState, useEffect, type ReactNode } from 'react';
 import { useTheme } from 'next-themes';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Moon, Sun, Code2, Play, LayoutDashboard, LogIn, LogOut, 
-  Calculator, Cog, Grid3x3, BrainCircuit, 
+  Calculator, Grid3x3, BrainCircuit, 
   Users, Menu, X, Info, MessageSquare, Lock, Trophy, 
   ExternalLink, ChevronRight, Settings, Heart, Lightbulb, Palette,
   GitBranch, Filter, Cpu, VolumeX, Leaf, Search, Shield, Network, Target
@@ -21,97 +21,21 @@ import { AuthModal } from './components/AuthModal';
 import { FeedbackModal } from './components/FeedbackModal';
 import { AppErrorBoundary } from './components/AppErrorBoundary';
 import { DonateButton } from './components/DonateButton';
+import {
+  Dashboard, LeaderboardView, SchulteGrid, NumericalAnalysis,
+  LogicalMatrix, StroopTest, NBackTest, SituationalJudgmentTest,
+  SpeedTyping, SpatialConcealment, ObjectiveFilter, ProfilingRICE,
+  AnomalyDetector, SocialEQ, AdminPanel, IdeasWall, TopologyMemory,
+  CollisionDetector, AsyncDispatcher, NoiseReduction, LanguageScanner,
+  Decryptor, RealityCheck, NeuroSilence, CognitiveTrashFilter, HypeFilter,
+  Reframing, RejectionImmunity, Storytelling, DeepFocus, SymbolChat, Wiki,
+  getRouteTitle,
+  HEADER_NAV_ITEMS, MOBILE_NAV_ITEMS, BOTTOM_NAV_ITEMS,
+} from './lib/route-config';
 
 type Tab = 'dashboard' | 'schulte' | 'numerical' | 'logical' | 'stroop' | 'nback' | 'situational' | 'typing' | 'spatial' | 'admin' | 'ideas' | 'wiki' | 'objective' | 'profiling' | 'anomaly' | 'dialogue' | 'leaderboard' | 'topology' | 'collision' | 'dispatcher' | 'noise' | 'scanner' | 'decryptor' | 'reality' | 'silence' | 'filter' | 'hype' | 'reframing' | 'rejection' | 'storytelling' | 'focus';
 
-const tabTitles: Record<string, string> = {
-  '/': 'Обзор',
-  '/dashboard': 'Обзор',
-  '/leaderboard': 'Рейтинг лидеров',
-  '/schulte': 'Таблицы Шульте',
-  '/numerical': 'Числовой анализ',
-  '/logical': 'Системная логика',
-  '/stroop': 'Эффект Струпа',
-  '/nback': 'N-назад (Память)',
-  '/situational': 'Ситуационный тест',
-  '/typing': 'Скоростная печать',
-  '/spatial': 'Пространство',
-  '/topology': 'Архитектура контекста',
-  '/collision': 'Детектор коллизий',
-  '/dispatcher': 'Асинхронный диспетчер',
-  '/noise': 'Редукция шума',
-  '/scanner': 'Смысловой сканер',
-  '/decryptor': 'Декриптор',
-  '/reality': 'Верификация реальности',
-  '/ideas': 'Предложения',
-  '/admin': 'Админ-панель',
-  '/objective': 'Объективный фильтр',
-  '/profiling': 'Профилирование RICE',
-  '/anomaly': 'Детектор аномалий',
-  '/dialogue': 'Архитектура диалога',
-  '/silence': 'Нейрорегуляция: «Тишина»',
-  '/filter': 'Когнитивный фильтр',
-  '/hype': 'Фактчек или Хайп',
-  '/reframing': 'Фича, а не баг',
-  '/rejection': 'Иммунитет к отказам',
-  '/storytelling': 'Смысловые связи',
-  '/focus': 'Глубокий Фокус',
-  '/wiki': 'База знаний'
-};
-
 const appBuildId = import.meta.env.VITE_BUILD_ID || import.meta.env.VITE_GIT_COMMIT || 'dev';
-
-function lazyNamed<TProps extends object = Record<string, never>>(
-  loader: () => Promise<unknown>,
-  exportName: string,
-) {
-  return lazy(async () => {
-    const module = await loader() as Record<string, ComponentType<TProps>>;
-    return { default: module[exportName] };
-  });
-}
-
-const Dashboard = lazyNamed<{ onStartGame: (game: string) => void }>(
-  () => import('./components/Dashboard'),
-  'Dashboard',
-);
-const LeaderboardView = lazyNamed(() => import('./components/LeaderboardView'), 'LeaderboardView');
-const SchulteGrid = lazyNamed(() => import('./components/SchulteGrid'), 'SchulteGrid');
-const NumericalAnalysis = lazyNamed(() => import('./components/NumericalAnalysis'), 'NumericalAnalysis');
-const LogicalMatrix = lazyNamed(() => import('./components/LogicalMatrix'), 'LogicalMatrix');
-const StroopTest = lazyNamed(() => import('./components/StroopTest'), 'StroopTest');
-const NBackTest = lazyNamed(() => import('./components/NBackTest'), 'NBackTest');
-const SituationalJudgmentTest = lazyNamed(() => import('./components/SituationalJudgmentTest'), 'SituationalJudgmentTest');
-const SpeedTyping = lazyNamed(() => import('./components/SpeedTyping'), 'SpeedTyping');
-const SpatialConcealment = lazyNamed(() => import('./components/SpatialConcealment'), 'SpatialConcealment');
-const ObjectiveFilter = lazyNamed(() => import('./components/ObjectiveFilter'), 'ObjectiveFilter');
-const ProfilingRICE = lazyNamed(() => import('./components/ProfilingRICE'), 'ProfilingRICE');
-const AnomalyDetector = lazyNamed(() => import('./components/AnomalyDetector'), 'AnomalyDetector');
-const SocialEQ = lazyNamed<{ onFinish?: () => void }>(() => import('./components/SocialEQ'), 'SocialEQ');
-const AdminPanel = lazyNamed<{ token: string | null }>(() => import('./components/AdminPanel'), 'AdminPanel');
-const IdeasWall = lazyNamed<{ token: string | null }>(() => import('./components/IdeasWall'), 'IdeasWall');
-const TopologyMemory = lazyNamed(() => import('./components/TopologyMemory'), 'TopologyMemory');
-const CollisionDetector = lazyNamed(() => import('./components/CollisionDetector'), 'CollisionDetector');
-const AsyncDispatcher = lazyNamed(() => import('./components/AsyncDispatcher'), 'AsyncDispatcher');
-const NoiseReduction = lazyNamed<{ level?: number }>(() => import('./components/NoiseReduction'), 'NoiseReduction');
-const LanguageScanner = lazyNamed(() => import('./components/LanguageScanner'), 'LanguageScanner');
-const Decryptor = lazyNamed(() => import('./components/Decryptor'), 'Decryptor');
-const RealityCheck = lazyNamed<{ onFinish: (results?: unknown) => void }>(
-  () => import('./components/RealityCheck'),
-  'RealityCheck',
-);
-const NeuroSilence = lazyNamed(() => import('./components/NeuroSilence'), 'NeuroSilence');
-const CognitiveTrashFilter = lazyNamed(() => import('./components/CognitiveTrashFilter'), 'CognitiveTrashFilter');
-const HypeFilter = lazyNamed<{ onFinish: (results?: unknown) => void }>(() => import('./components/HypeFilter'), 'HypeFilter');
-const Reframing = lazyNamed<{ onFinish?: () => void }>(() => import('./components/Reframing'), 'Reframing');
-const RejectionImmunity = lazyNamed<{ onFinish?: () => void }>(
-  () => import('./components/RejectionImmunity'),
-  'RejectionImmunity',
-);
-const Storytelling = lazyNamed<{ onFinish?: () => void }>(() => import('./components/Storytelling'), 'Storytelling');
-const DeepFocus = lazyNamed<{ onFinish?: () => void }>(() => import('./components/DeepFocus'), 'DeepFocus');
-const SymbolChat = lazyNamed(() => import('./components/SymbolChat'), 'SymbolChat');
-const Wiki = lazyNamed(() => import('./components/Wiki'), 'Wiki');
 
 function SectionFallback() {
   return (
@@ -204,7 +128,7 @@ function AppContent() {
   const navigate = useNavigate();
   const location = useLocation();
   const activeTab = (location.pathname.slice(1) || 'dashboard') as Tab;
-  
+
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
@@ -215,8 +139,7 @@ function AppContent() {
   usePracticeFlowAnalytics(location.pathname);
 
   useEffect(() => {
-    const title = tabTitles[location.pathname] || 'Когнитика';
-    document.title = `${title} | Когнитика`;
+    document.title = `${getRouteTitle(location.pathname)} | Когнитика`;
   }, [location.pathname]);
 
   return (
@@ -229,13 +152,13 @@ function AppContent() {
 
       <header className="flex justify-between items-center bg-card/50 border-b border-border px-4 sm:px-8 py-3 sm:py-4 flex-shrink-0 backdrop-blur-md relative z-50">
         <div className="flex items-center gap-3">
-          <button 
+          <button
             onClick={() => setIsMobileMenuOpen(true)}
             className="2xl:hidden p-2 hover:bg-secondary rounded-lg transition-colors"
           >
             <Menu className="w-5 h-5" />
           </button>
-          
+
           <div className="flex items-center gap-2 sm:gap-3 cursor-pointer" onClick={() => navigate('/')}>
             <div className="w-8 h-8 sm:w-10 sm:h-10 bg-primary border border-primary/50 text-white rounded-xl flex items-center justify-center shadow-lg shadow-primary/20">
               <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-current rotate-45"></div>
@@ -248,66 +171,20 @@ function AppContent() {
         </div>
 
         <nav className="hidden 2xl:flex items-center gap-1 bg-secondary/50 p-1 rounded-xl border border-border">
-          <button 
-            onClick={() => navigate('/')} 
-            className={`flex items-center gap-2 px-4 py-2 text-xs font-bold uppercase tracking-wider transition-all rounded-lg ${activeTab === 'dashboard' ? 'bg-primary text-primary-foreground shadow-md' : 'text-muted-foreground hover:text-foreground hover:bg-secondary'}`}
-          >
-            <LayoutDashboard className="w-4 h-4" /> Обзор
-          </button>
-          <button 
-            onClick={() => navigate('/leaderboard')} 
-            className={`flex items-center gap-2 px-4 py-2 text-xs font-bold uppercase tracking-wider transition-all rounded-lg ${activeTab === 'leaderboard' ? 'bg-primary text-primary-foreground shadow-md' : 'text-muted-foreground hover:text-foreground hover:bg-secondary'}`}
-          >
-            <Trophy className="w-4 h-4" /> Рейтинг
-          </button>
-          <div className="w-px h-4 bg-border mx-1"></div>
-          <button 
-            onClick={() => navigate('/schulte')} 
-            className={`flex items-center gap-2 px-4 py-2 text-xs font-bold uppercase tracking-wider transition-all rounded-lg ${activeTab === 'schulte' ? 'bg-primary text-primary-foreground shadow-md' : 'text-muted-foreground hover:text-foreground hover:bg-secondary'}`}
-          >
-            <Play className="w-4 h-4" /> Шульте
-          </button>
-          <button 
-            onClick={() => navigate('/numerical')} 
-            className={`flex items-center gap-2 px-4 py-2 text-xs font-bold uppercase tracking-wider transition-all rounded-lg ${activeTab === 'numerical' ? 'bg-primary text-primary-foreground shadow-md' : 'text-muted-foreground hover:text-foreground hover:bg-secondary'}`}
-          >
-            <Calculator className="w-4 h-4" /> Числа
-          </button>
-          <button 
-            onClick={() => navigate('/logical')} 
-            className={`flex items-center gap-2 px-4 py-2 text-xs font-bold uppercase tracking-wider transition-all rounded-lg ${activeTab === 'logical' ? 'bg-primary text-primary-foreground shadow-md' : 'text-muted-foreground hover:text-foreground hover:bg-secondary'}`}
-          >
-            <Grid3x3 className="w-4 h-4" /> Логика
-          </button>
-          <button 
-            onClick={() => navigate('/stroop')} 
-            className={`flex items-center gap-2 px-4 py-2 text-xs font-bold uppercase tracking-wider transition-all rounded-lg ${activeTab === 'stroop' ? 'bg-primary text-primary-foreground shadow-md' : 'text-muted-foreground hover:text-foreground hover:bg-secondary'}`}
-          >
-            <Palette className="w-4 h-4" /> Струп
-          </button>
-          <button 
-            onClick={() => navigate('/nback')} 
-            className={`flex items-center gap-2 px-4 py-2 text-xs font-bold uppercase tracking-wider transition-all rounded-lg ${activeTab === 'nback' ? 'bg-primary text-primary-foreground shadow-md' : 'text-muted-foreground hover:text-foreground hover:bg-secondary'}`}
-          >
-            <BrainCircuit className="w-4 h-4" /> Память
-          </button>
-          <button 
-            onClick={() => navigate('/typing')} 
-            className={`flex items-center gap-2 px-4 py-2 text-xs font-bold uppercase tracking-wider transition-all rounded-lg ${activeTab === 'typing' ? 'bg-primary text-primary-foreground shadow-md' : 'text-muted-foreground hover:text-foreground hover:bg-secondary'}`}
-          >
-            <Play className="w-4 h-4" /> Печать
-          </button>
-          <button 
-            onClick={() => navigate('/spatial')} 
-            className={`flex items-center gap-2 px-4 py-2 text-xs font-bold uppercase tracking-wider transition-all rounded-lg ${activeTab === 'spatial' ? 'bg-primary text-primary-foreground shadow-md' : 'text-muted-foreground hover:text-foreground hover:bg-secondary'}`}
-          >
-            <Grid3x3 className="w-4 h-4" /> Пространство
-          </button>
+          {HEADER_NAV_ITEMS.map((item) => (
+            <button
+              key={item.id}
+              onClick={() => navigate(item.path)}
+              className={`flex items-center gap-2 px-4 py-2 text-xs font-bold uppercase tracking-wider transition-all rounded-lg ${activeTab === item.id ? 'bg-primary text-primary-foreground shadow-md' : 'text-muted-foreground hover:text-foreground hover:bg-secondary'}`}
+            >
+              <item.icon className="w-4 h-4" /> {item.label}
+            </button>
+          ))}
         </nav>
 
         <div className="flex items-center gap-2 sm:gap-4 shrink-0">
           <div className="hidden sm:block">
-            <button 
+            <button
               onClick={() => setIsFeedbackOpen(true)}
               className="p-2 text-muted-foreground hover:text-primary transition-colors"
               title="Отправить отзыв"
@@ -318,9 +195,9 @@ function AppContent() {
           <div className="hidden sm:block">
             <ThemeToggle />
           </div>
-          
+
           {user ? (
-            <button 
+            <button
               onClick={() => setIsMobileMenuOpen(true)}
               className="flex min-w-0 max-w-[220px] items-center gap-2 pl-2 pr-1 py-1 bg-secondary rounded-full border border-border hover:border-primary/30 transition-all group"
               title={user.pseudonym || user.name || 'Аноним'}
@@ -414,30 +291,8 @@ function AppContent() {
               {/* Mobile Navigation */}
               <div className="space-y-1">
                  <p className="text-[10px] font-black text-muted-foreground uppercase px-3 mb-3 tracking-widest">Когнитивные тесты</p>
-                 {[
-                   { id: 'dashboard', icon: LayoutDashboard, label: 'Рабочий стол' },
-                   { id: 'leaderboard', icon: Trophy, label: 'Рейтинг лидеров' },
-                   { id: 'schulte', icon: Play, label: 'Таблицы Шульте' },
-                   { id: 'numerical', icon: Calculator, label: 'Анализ чисел' },
-                   { id: 'logical', icon: Grid3x3, label: 'Системная логика' },
-                   { id: 'stroop', icon: Palette, label: 'Эффект Струпа' },
-                   { id: 'nback', icon: BrainCircuit, label: 'N-назад (Память)' },
-                   { id: 'situational', icon: Users, label: 'Ситуации' },
-                   { id: 'typing', icon: Play, label: 'Скоростная печать' },
-                   { id: 'spatial', icon: Grid3x3, label: 'Пространство' },
-                   { id: 'topology', icon: GitBranch, label: 'Архитектура контекста' },
-                   { id: 'collision', icon: Filter, label: 'Детектор коллизий' },
-                   { id: 'dispatcher', icon: Cpu, label: 'Асинхр. диспетчер' },
-                   { id: 'noise', icon: VolumeX, label: 'Редукция шума' },
-                   { id: 'scanner', icon: Search, label: 'Смысловой сканер' },
-                   { id: 'hype', icon: Shield, label: 'Фактчек или Хайп' },
-                   { id: 'reframing', icon: Lightbulb, label: 'Фича, а не баг' },
-                   { id: 'rejection', icon: Shield, label: 'Иммунитет к отказам' },
-                   { id: 'storytelling', icon: Network, label: 'Смысловые связи' },
-                   { id: 'focus', icon: Target, label: 'Глубокий Фокус' },
-                   { id: 'ideas', icon: Lightbulb, label: 'Предложения' },
-                 ].map((item) => (
-                   <button 
+                 {MOBILE_NAV_ITEMS.map((item) => (
+                   <button
                       key={item.id}
                       onClick={() => { navigate(item.id === 'dashboard' ? '/' : `/${item.id}`); setIsMobileMenuOpen(false); }}
                       className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-bold transition-all ${activeTab === item.id ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'hover:bg-secondary text-muted-foreground hover:text-foreground'}`}
@@ -454,7 +309,7 @@ function AppContent() {
               <div className="pt-4 border-t border-border">
                  <p className="text-[10px] font-black text-muted-foreground uppercase px-3 mb-3 tracking-widest">Персонализация</p>
                  <div className="bg-secondary/30 rounded-2xl p-2 border border-border">
-                    <button 
+                    <button
                        onClick={() => { setIsFeedbackOpen(true); setIsMobileMenuOpen(false); }}
                        className="w-full flex items-center justify-between px-3 py-3 rounded-xl hover:bg-secondary transition-all"
                     >
@@ -466,7 +321,7 @@ function AppContent() {
                       </div>
                       <ChevronRight className="w-4 h-4 text-muted-foreground" />
                     </button>
-                    <button 
+                    <button
                        onClick={() => setIsChatEnabled(!isChatEnabled)}
                        className="w-full flex items-center justify-between px-3 py-3 rounded-xl hover:bg-secondary transition-all"
                     >
@@ -480,7 +335,7 @@ function AppContent() {
                          <div className={`absolute top-1 w-3 h-3 rounded-full bg-white shadow-sm transition-all duration-300 ${isChatEnabled ? 'right-1' : 'left-1'}`} />
                       </div>
                     </button>
-                    <button 
+                    <button
                        onClick={() => { setIsDonateOpen(true); setIsMobileMenuOpen(false); }}
                        className="w-full flex items-center justify-between px-3 py-3 rounded-xl hover:bg-secondary transition-all"
                     >
@@ -585,7 +440,7 @@ function AppContent() {
               </Routes>
             </LazySection>
          </div>
-         
+
          {/* Adaptive Chat Position */}
          {isChatEnabled && (
            <div className="fixed bottom-28 right-4 lg:relative lg:bottom-0 lg:right-0 lg:col-span-3 h-[450px] lg:h-full z-40 transition-all">
@@ -607,22 +462,16 @@ function AppContent() {
 
       {/* Floating Mobile Nav */}
       <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-sm h-16 bg-card/60 backdrop-blur-2xl border border-white/10 rounded-3xl lg:hidden z-50 flex items-center justify-around px-2 shadow-[0_15px_40px_-15px_rgba(0,0,0,0.3)]">
-         {[
-           { id: 'dashboard', icon: LayoutDashboard },
-           { id: 'schulte', icon: Play },
-           { id: 'logical', icon: Grid3x3 },
-           { id: 'nback', icon: BrainCircuit },
-           { id: 'situational', icon: Users },
-         ].map((item) => (
-           <button 
+         {BOTTOM_NAV_ITEMS.map((item) => (
+           <button
              key={item.id}
              onClick={() => navigate(item.id === 'dashboard' ? '/' : `/${item.id}`)}
              className={`p-3 rounded-2xl transition-all relative ${activeTab === item.id ? 'text-primary scale-110' : 'text-muted-foreground hover:text-foreground'}`}
            >
              <item.icon className="w-5 h-5" />
              {activeTab === item.id && (
-                <motion.div 
-                   layoutId="activeTabMobile" 
+                <motion.div
+                   layoutId="activeTabMobile"
                    className="absolute inset-0 bg-primary/10 rounded-2xl -z-10"
                    transition={{ type: 'spring', bounce: 0.3, duration: 0.6 }}
                 />
@@ -654,7 +503,7 @@ export default function App() {
 
 function ThemeToggle() {
   const { theme, setTheme } = useTheme();
-  
+
   return (
     <div className="flex items-center gap-1 bg-secondary/50 p-1 rounded-lg border border-border">
        <button onClick={() => setTheme('light')} className={`p-1.5 rounded-md transition-all ${theme === 'light' ? 'bg-background text-primary shadow-sm ring-1 ring-border' : 'text-muted-foreground hover:bg-background/50'}`} title="Светлая">
