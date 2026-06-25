@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   db:
     image: postgres:15
@@ -12,6 +10,12 @@ services:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d cognitika"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
   app:
     build: .
@@ -23,8 +27,11 @@ services:
       - JWT_SECRET=replace-with-strong-random-secret
       - NODE_ENV=production
       - PORT=3006
+      - CORS_ORIGIN=http://localhost:3006
+      - APP_URL=http://localhost:3006
     depends_on:
-      - db
+      db:
+        condition: service_healthy
 
 volumes:
   pgdata:
