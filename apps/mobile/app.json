@@ -1,0 +1,32 @@
+{
+  "expo": {
+    "name": "Kognitika",
+    "slug": "kognitika-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "scheme": "kognitika",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.kognitika.mobile"
+    },
+    "android": {
+      "package": "com.kognitika.mobile",
+      "adaptiveIcon": {
+        "backgroundColor": "#0A0E1A",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      }
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": ""
+      }
+    }
+  }
+}
