@@ -5,6 +5,7 @@ import jwt from 'jsonwebtoken';
 import { z } from 'zod';
 import prisma from '../../lib/prisma.ts';
 import { createSafeLogger, safeError } from '../../lib/safe-logger.ts';
+import { handleValidationError } from '../utils/validation.ts';
 
 const messageSchema = z.object({
   content: z.string().min(1).max(500).trim(),
@@ -60,7 +61,8 @@ router.get('/stream', async (req, res) => {
 router.post('/messages', async (req: any, res) => {
   const parsed = messageSchema.safeParse(req.body);
   if (!parsed.success) {
-    return res.status(400).json({ error: 'Invalid message' });
+    handleValidationError(parsed, res);
+    return;
   }
   const { content } = parsed.data;
 

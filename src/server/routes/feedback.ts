@@ -4,6 +4,7 @@ import prisma from '../../lib/prisma.ts';
 import { createSafeLogger, safeError } from '../../lib/safe-logger.ts';
 import { eventBus } from '../events/event-bus.ts';
 import { authenticate } from '../middleware/auth.ts';
+import { handleValidationError } from '../utils/validation.ts';
 import { feedbackSubmitSchema } from '../schemas/feedback.ts';
 
 const router = Router();
@@ -23,7 +24,8 @@ function isUniqueTrackingCollision(error: unknown) {
 router.post('/', authenticate, async (req: any, res) => {
   const parsed = feedbackSubmitSchema.safeParse(req.body);
   if (!parsed.success) {
-    return res.status(400).json({ error: 'Invalid feedback payload' });
+    handleValidationError(parsed, res);
+    return;
   }
 
   const { type, content, rating } = parsed.data;

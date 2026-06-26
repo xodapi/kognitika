@@ -34,6 +34,9 @@ vi.mock('../components/DuelsView', () => ({
 vi.mock('../components/CognitiveProfile', () => ({
   CognitiveProfile: () => <div data-testid="cognitive-profile">Profile Content</div>
 }));
+vi.mock('../components/CognitiveModuleGraph', () => ({
+  CognitiveModuleGraph: ({ className }) => <div className={className} data-testid="cognitive-module-graph">Graph</div>
+}));
 
 // Mock fetch
 global.fetch = vi.fn(() =>

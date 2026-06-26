@@ -3,6 +3,7 @@ import prisma from '../../lib/prisma.ts';
 import { authenticate, isAdmin } from '../middleware/auth.ts';
 import { sanitizeAdminUserIdentity, sanitizePublicUserIdentity } from '../utils/privacy.ts';
 import { createSafeLogger, safeError } from '../../lib/safe-logger.ts';
+import { handleValidationError } from '../utils/validation.ts';
 import { feedbackResponseSchema } from '../schemas/feedback.ts';
 import { normalizeIdeaStatus, parseIdeaStatus } from '../utils/idea-status.ts';
 import { getPracticeFlowSummary } from '../services/practice-flow-store.ts';
@@ -106,7 +107,8 @@ router.get('/feedback', async (req, res) => {
 async function saveFeedbackResponse(req: any, res: any) {
   const parsed = feedbackResponseSchema.safeParse(req.body);
   if (!parsed.success) {
-    return res.status(400).json({ error: 'Invalid feedback response payload' });
+    handleValidationError(parsed, res);
+    return;
   }
 
   try {

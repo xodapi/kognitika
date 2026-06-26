@@ -125,7 +125,8 @@ describe('feedback route persistence contract', () => {
     });
 
     expect(response.status).toBe(400);
-    expect(response.body).toEqual({ error: 'Invalid feedback payload' });
+    expect(response.body.error).toBeDefined();
+    expect(response.body.details).toBeDefined();
     expect(prismaMock.feedback.create).not.toHaveBeenCalled();
     expect(eventBusMock.emit).not.toHaveBeenCalled();
   });
