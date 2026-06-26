@@ -39,7 +39,7 @@ export const DonateButton: React.FC<DonateButtonProps> = ({ isOpen, onClose }) =
             {/* Decorative background */}
             <div className="absolute top-0 right-0 w-32 h-32 bg-rose-500/5 rounded-full blur-3xl -mr-16 -mt-16" />
 
-            <button onClick={onClose} className="absolute top-4 right-4 p-2 hover:bg-secondary rounded-full transition-colors">
+            <button onClick={onClose} aria-label="Закрыть" className="absolute top-4 right-4 p-2 hover:bg-secondary rounded-full transition-colors">
               <X className="w-5 h-5" />
             </button>
 
@@ -56,7 +56,7 @@ export const DonateButton: React.FC<DonateButtonProps> = ({ isOpen, onClose }) =
                 <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-2">ЮMoney</p>
                 <div className="flex items-center justify-between">
                   <code className="text-sm font-bold tracking-wider">{getWallet()}</code>
-                  <button onClick={() => copyToClipboard(getWallet(), 'wallet')} className="p-2 hover:bg-background rounded-lg transition-colors">
+                  <button onClick={() => copyToClipboard(getWallet(), 'wallet')} aria-label="Копировать кошелёк" className="p-2 hover:bg-background rounded-lg transition-colors">
                     {copied === 'wallet' ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
                   </button>
                 </div>

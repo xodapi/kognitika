@@ -155,6 +155,7 @@ function AppContent() {
         <div className="flex items-center gap-3">
           <button
             onClick={() => setIsMobileMenuOpen(true)}
+            aria-label="Открыть меню"
             className="2xl:hidden p-2 hover:bg-secondary rounded-lg transition-colors"
           >
             <Menu className="w-5 h-5" />
@@ -171,7 +172,7 @@ function AppContent() {
           </div>
         </div>
 
-        <nav className="hidden 2xl:flex items-center gap-1 bg-secondary/50 p-1 rounded-xl border border-border">
+        <nav aria-label="Основная навигация" className="hidden 2xl:flex items-center gap-1 bg-secondary/50 p-1 rounded-xl border border-border">
           {HEADER_NAV_ITEMS.map((item) => (
             <button
               key={item.id}
@@ -189,6 +190,7 @@ function AppContent() {
               onClick={() => setIsFeedbackOpen(true)}
               className="p-2 text-muted-foreground hover:text-primary transition-colors"
               title="Отправить отзыв"
+              aria-label="Отправить отзыв"
             >
               <MessageSquare className="w-5 h-5" />
             </button>
@@ -248,7 +250,7 @@ function AppContent() {
                  </div>
                  <span className="font-black uppercase tracking-tighter text-sm">Центр Управления</span>
               </div>
-              <button onClick={() => setIsMobileMenuOpen(false)} className="p-1.5 hover:bg-secondary rounded-full transition-colors">
+              <button onClick={() => setIsMobileMenuOpen(false)} aria-label="Закрыть меню" className="p-1.5 hover:bg-secondary rounded-full transition-colors">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -464,10 +466,13 @@ function AppContent() {
 
       {/* Floating Mobile Nav */}
       <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-sm h-16 bg-card/60 backdrop-blur-2xl border border-white/10 rounded-3xl lg:hidden z-50 flex items-center justify-around px-2 shadow-[0_15px_40px_-15px_rgba(0,0,0,0.3)]">
-         {BOTTOM_NAV_ITEMS.map((item) => (
+         {BOTTOM_NAV_ITEMS.map((item) => {
+           const label = item.id === 'dashboard' ? 'Главная' : (item.id === 'schulte' ? 'Таблицы Шульте' : item.id === 'logical' ? 'Логика' : item.id === 'nback' ? 'Память' : item.id === 'situational' ? 'Ситуации' : item.id);
+           return (
            <button
              key={item.id}
              onClick={() => navigate(item.id === 'dashboard' ? '/' : `/${item.id}`)}
+             aria-label={label}
              className={`p-3 rounded-2xl transition-all relative ${activeTab === item.id ? 'text-primary scale-110' : 'text-muted-foreground hover:text-foreground'}`}
            >
              <item.icon className="w-5 h-5" />
@@ -479,9 +484,10 @@ function AppContent() {
                 />
              )}
            </button>
-         ))}
+           );
+         })}
          <div className="w-px h-6 bg-border mx-1"></div>
-         <button onClick={() => setIsMobileMenuOpen(true)} className="p-3 text-muted-foreground hover:text-foreground">
+         <button onClick={() => setIsMobileMenuOpen(true)} aria-label="Открыть меню" className="p-3 text-muted-foreground hover:text-foreground">
             <Menu className="w-5 h-5" />
          </button>
       </div>
@@ -508,16 +514,16 @@ function ThemeToggle() {
 
   return (
     <div className="flex items-center gap-1 bg-secondary/50 p-1 rounded-lg border border-border">
-       <button onClick={() => setTheme('light')} className={`p-1.5 rounded-md transition-all ${theme === 'light' ? 'bg-background text-primary shadow-sm ring-1 ring-border' : 'text-muted-foreground hover:bg-background/50'}`} title="Светлая">
+       <button onClick={() => setTheme('light')} className={`p-1.5 rounded-md transition-all ${theme === 'light' ? 'bg-background text-primary shadow-sm ring-1 ring-border' : 'text-muted-foreground hover:bg-background/50'}`} title="Светлая" aria-label="Светлая тема">
          <Sun className="w-3.5 h-3.5" />
        </button>
-       <button onClick={() => setTheme('dark')} className={`p-1.5 rounded-md transition-all ${theme === 'dark' ? 'bg-background text-primary shadow-sm ring-1 ring-border' : 'text-muted-foreground hover:bg-background/50'}`} title="Темная">
+       <button onClick={() => setTheme('dark')} className={`p-1.5 rounded-md transition-all ${theme === 'dark' ? 'bg-background text-primary shadow-sm ring-1 ring-border' : 'text-muted-foreground hover:bg-background/50'}`} title="Темная" aria-label="Тёмная тема">
          <Moon className="w-3.5 h-3.5" />
        </button>
-       <button onClick={() => setTheme('matrix')} className={`p-1.5 rounded-md transition-all ${theme === 'matrix' ? 'bg-background text-primary shadow-sm ring-1 ring-border' : 'text-muted-foreground hover:bg-background/50'}`} title="Матрица">
+       <button onClick={() => setTheme('matrix')} className={`p-1.5 rounded-md transition-all ${theme === 'matrix' ? 'bg-background text-primary shadow-sm ring-1 ring-border' : 'text-muted-foreground hover:bg-background/50'}`} title="Матрица" aria-label="Матрица тема">
          <Code2 className="w-3.5 h-3.5" />
        </button>
-       <button onClick={() => setTheme('nature')} className={`p-1.5 rounded-md transition-all ${theme === 'nature' ? 'bg-background text-primary shadow-sm ring-1 ring-border' : 'text-muted-foreground hover:bg-background/50'}`} title="Позитив">
+       <button onClick={() => setTheme('nature')} className={`p-1.5 rounded-md transition-all ${theme === 'nature' ? 'bg-background text-primary shadow-sm ring-1 ring-border' : 'text-muted-foreground hover:bg-background/50'}`} title="Позитив" aria-label="Позитив тема">
          <Leaf className="w-3.5 h-3.5" />
        </button>
     </div>

@@ -321,12 +321,13 @@ export function SchulteGrid() {
                    <span className="text-[10px] text-foreground font-bold uppercase tracking-wider">Вращение цифр</span>
                    <span className="text-[8px] text-muted-foreground uppercase">Динамический наклон</span>
                  </div>
-                 <button 
-                   onClick={() => setSettings(size, mode, { digitRotation: !state.modifications.digitRotation })}
-                   className={`w-10 h-5 rounded-full transition-all relative ${state.modifications.digitRotation ? 'bg-primary' : 'bg-muted'}`}
-                 >
-                   <div className={`absolute top-1 w-3 h-3 rounded-full bg-white transition-all ${state.modifications.digitRotation ? 'left-6' : 'left-1'}`} />
-                 </button>
+                <button 
+                  onClick={() => setSettings(size, mode, { digitRotation: !state.modifications.digitRotation })}
+                  aria-label="Вращение цифр"
+                  className={`w-10 h-5 rounded-full transition-all relative ${state.modifications.digitRotation ? 'bg-primary' : 'bg-muted'}`}
+                >
+                  <div className={`absolute top-1 w-3 h-3 rounded-full bg-white transition-all ${state.modifications.digitRotation ? 'left-6' : 'left-1'}`} />
+                </button>
               </div>
 
               <div className="flex items-center justify-between p-3 rounded-2xl bg-secondary/30 border border-border/50 transition-all hover:border-primary/30">
@@ -334,12 +335,13 @@ export function SchulteGrid() {
                    <span className="text-[10px] text-foreground font-bold uppercase tracking-wider">Pro-режим</span>
                    <span className="text-[8px] text-muted-foreground uppercase">Лимит 60с + No Tips</span>
                  </div>
-                 <button 
-                   onClick={() => setIsHardcore(!isHardcore)}
-                   className={`w-10 h-5 rounded-full transition-all relative ${isHardcore ? 'bg-primary' : 'bg-muted'}`}
-                 >
-                   <div className={`absolute top-1 w-3 h-3 rounded-full bg-white transition-all ${isHardcore ? 'left-6' : 'left-1'}`} />
-                 </button>
+                <button 
+                  onClick={() => setIsHardcore(!isHardcore)}
+                  aria-label="Pro-режим (лимит 60с)"
+                  className={`w-10 h-5 rounded-full transition-all relative ${isHardcore ? 'bg-primary' : 'bg-muted'}`}
+                >
+                  <div className={`absolute top-1 w-3 h-3 rounded-full bg-white transition-all ${isHardcore ? 'left-6' : 'left-1'}`} />
+                </button>
               </div>
 
               {/* AI Адаптация toggle removed as per user request */}

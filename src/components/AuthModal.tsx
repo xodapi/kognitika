@@ -78,12 +78,13 @@ export function AuthModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
           
           <div className="bg-secondary/50 p-4 rounded-2xl border border-border flex items-center justify-between gap-3 mb-8 group transition-all hover:border-primary/50">
             <code className="text-xs font-mono text-primary break-all select-all">{successBrainId}</code>
-            <button 
-              onClick={() => copyToClipboard(successBrainId)}
-              className="p-2 bg-background border border-border rounded-lg text-muted-foreground hover:text-primary transition-colors shrink-0"
-            >
-              {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-            </button>
+        <button 
+          onClick={() => copyToClipboard(successBrainId)}
+          aria-label="Копировать Brain ID"
+          className="p-2 bg-background border border-border rounded-lg text-muted-foreground hover:text-primary transition-colors shrink-0"
+        >
+          {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+        </button>
           </div>
 
           <button 
@@ -103,6 +104,7 @@ export function AuthModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
         
         <button 
           onClick={onClose} 
+          aria-label="Закрыть"
           className="absolute top-6 right-6 p-2 rounded-full text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
         >
           <X className="w-4 h-4" />
