@@ -57,6 +57,7 @@ export const Storytelling = lazyNamed<{ onFinish?: () => void }>(() => import('.
 export const DeepFocus = lazyNamed<{ onFinish?: () => void }>(() => import('../components/DeepFocus'), 'DeepFocus');
 export const SymbolChat = lazyNamed(() => import('../components/SymbolChat'), 'SymbolChat');
 export const Wiki = lazyNamed(() => import('../components/Wiki'), 'Wiki');
+export const CognitiveMap = lazyNamed(() => import('../components/CognitiveMap'), 'CognitiveMap');
 
 export interface RouteEntry {
   path: string;
@@ -100,6 +101,7 @@ export const ROUTE_DEFINITIONS: RouteEntry[] = [
   { path: '/ideas', title: 'Предложения', icon: Lightbulb, navGroup: 'system' },
   { path: '/admin', title: 'Админ-панель', icon: Lock, navGroup: 'system', customRender: true },
   { path: '/wiki', title: 'База знаний', icon: Shield, navGroup: 'wiki', customRender: true },
+  { path: '/cognitive-map', title: 'Когнитивная карта', icon: Network, navGroup: 'cognitive' },
 ];
 
 const routeTitleMap = new Map<string, string>();

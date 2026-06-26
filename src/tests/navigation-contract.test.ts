@@ -71,7 +71,7 @@ describe('navigation contract', () => {
 
   it('keeps ROUTE_DEFINITIONS and APP_ROUTE_PATHS in sync', () => {
     const definitionPaths = new Set(ROUTE_DEFINITIONS.map((r) => r.path));
-    const appRouteSet = new Set(APP_ROUTE_PATHS);
+    const appRouteSet = new Set<string>(APP_ROUTE_PATHS as readonly string[]);
 
     for (const path of APP_ROUTE_PATHS) {
       expect(definitionPaths.has(path), `${path} should exist in ROUTE_DEFINITIONS`).toBe(true);

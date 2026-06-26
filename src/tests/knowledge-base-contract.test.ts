@@ -14,6 +14,7 @@ const NON_TRAINING_ROUTES = new Set([
   '/admin',
   '/ideas',
   '/wiki',
+  '/cognitive-map',
 ]);
 
 describe('knowledge-base contract', () => {

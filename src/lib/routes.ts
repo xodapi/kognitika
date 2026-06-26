@@ -31,6 +31,7 @@ export const APP_ROUTE_PATHS = [
   '/rejection',
   '/storytelling',
   '/focus',
+  '/cognitive-map',
 ] as const;
 
 export const RECOMMENDED_GAME_ROUTES = {

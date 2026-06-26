@@ -105,7 +105,7 @@ const MODULE_CATEGORIES: Record<string, DailyPracticeCategory> = {
   focus: 'cognitive',
 };
 
-const NEXT_MODULE: Record<string, string> = {
+export const NEXT_MODULE: Record<string, string> = {
   schulte: 'stroop',
   stroop: 'nback',
   nback: 'numerical',
@@ -133,7 +133,7 @@ const NEXT_MODULE: Record<string, string> = {
   silence: 'schulte',
 };
 
-const WEAK_AREA_MODULE: Record<string, string> = {
+export const WEAK_AREA_MODULE: Record<string, string> = {
   typing: 'stroop',
   spatial: 'nback',
   situational: 'dialogue',

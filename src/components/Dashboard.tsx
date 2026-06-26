@@ -6,6 +6,7 @@ import { Trophy, Zap, Target, Star, Lock, Activity, Award, Flame, CheckCircle2, 
 import { IdeasWall } from './IdeasWall';
 import { AdminPanel } from './AdminPanel';
 import { TrainingGallery } from './TrainingGallery';
+import { CognitiveModuleGraph } from './CognitiveModuleGraph';
 import { BrainIdBadge } from './BrainIdBadge';
 import { LeagueBadge } from './LeagueBadge';
 import { ShareCard } from './ShareCard';
@@ -211,6 +212,11 @@ export function Dashboard({ onStartGame }: { onStartGame: (game: string) => void
                  </div>
               </div>
               <TrainingGallery onStart={onStartGame} />
+            </div>
+
+            <div className="bg-card/20 border border-border rounded-2xl p-4">
+              <h3 className="text-[10px] text-muted-foreground uppercase tracking-widest font-black mb-3">Карта модулей</h3>
+              <CognitiveModuleGraph />
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">

@@ -4,6 +4,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useEffect } from 'react';
 import { GitBranch, ChevronRight, CheckCircle } from 'lucide-react';
 import { CompletionRecommendation } from './CompletionRecommendation';
+import { SessionFlowIndicator } from './SessionFlowIndicator';
 
 const STATE_COLORS: Record<NodeState, string> = {
   idle:    'bg-secondary border-border text-muted-foreground',
@@ -173,6 +174,16 @@ export function TopologyMemory() {
     return (
       <div className="col-span-12 grid grid-cols-1 lg:grid-cols-12 gap-4 h-full min-h-0">
         <div className="lg:col-start-3 lg:col-span-8 bg-card/20 border border-border rounded-3xl p-6 flex flex-col">
+          <SessionFlowIndicator
+            phases={[
+              { id: 'memorize', label: 'Запоминание' },
+              { id: 'events', label: 'События' },
+              { id: 'answer', label: 'Ответ' },
+              { id: 'result', label: 'Результат' },
+            ]}
+            currentPhase={state.phase}
+            className="-mx-2 mb-4"
+          />
           <div className="flex items-center justify-between mb-4">
             <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">Фаза 1 — Запоминание</span>
             <motion.div
@@ -206,6 +217,16 @@ export function TopologyMemory() {
     return (
       <div className="col-span-12 grid grid-cols-1 lg:grid-cols-12 gap-4 h-full min-h-0">
         <div className="lg:col-start-3 lg:col-span-8 bg-card/20 border border-border rounded-3xl p-6 flex flex-col">
+          <SessionFlowIndicator
+            phases={[
+              { id: 'memorize', label: 'Запоминание' },
+              { id: 'events', label: 'События' },
+              { id: 'answer', label: 'Ответ' },
+              { id: 'result', label: 'Результат' },
+            ]}
+            currentPhase={state.phase}
+            className="-mx-2 mb-4"
+          />
           <div className="flex items-center justify-between mb-4">
             <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">Фаза 2 — События</span>
             <span className="text-xs text-muted-foreground font-mono">{state.currentEventIdx + 1} / {state.events.length}</span>
@@ -241,6 +262,16 @@ export function TopologyMemory() {
     return (
       <div className="col-span-12 grid grid-cols-1 lg:grid-cols-12 gap-4 h-full min-h-0">
         <div className="lg:col-start-2 lg:col-span-10 bg-card/20 border border-border rounded-3xl p-6 flex flex-col gap-6">
+          <SessionFlowIndicator
+            phases={[
+              { id: 'memorize', label: 'Запоминание' },
+              { id: 'events', label: 'События' },
+              { id: 'answer', label: 'Ответ' },
+              { id: 'result', label: 'Результат' },
+            ]}
+            currentPhase={state.phase}
+            className="-mx-2 mb-2"
+          />
           <div className="flex items-center justify-between">
             <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">Фаза 3 — Восстановление</span>
             <span className="text-xs text-muted-foreground">Расставь финальные состояния узлов</span>

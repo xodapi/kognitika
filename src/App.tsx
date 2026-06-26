@@ -29,11 +29,12 @@ import {
   CollisionDetector, AsyncDispatcher, NoiseReduction, LanguageScanner,
   Decryptor, RealityCheck, NeuroSilence, CognitiveTrashFilter, HypeFilter,
   Reframing, RejectionImmunity, Storytelling, DeepFocus, SymbolChat, Wiki,
+  CognitiveMap,
   getRouteTitle,
   HEADER_NAV_ITEMS, MOBILE_NAV_ITEMS, BOTTOM_NAV_ITEMS,
 } from './lib/route-config';
 
-type Tab = 'dashboard' | 'schulte' | 'numerical' | 'logical' | 'stroop' | 'nback' | 'situational' | 'typing' | 'spatial' | 'admin' | 'ideas' | 'wiki' | 'objective' | 'profiling' | 'anomaly' | 'dialogue' | 'leaderboard' | 'topology' | 'collision' | 'dispatcher' | 'noise' | 'scanner' | 'decryptor' | 'reality' | 'silence' | 'filter' | 'hype' | 'reframing' | 'rejection' | 'storytelling' | 'focus';
+type Tab = 'dashboard' | 'schulte' | 'numerical' | 'logical' | 'stroop' | 'nback' | 'situational' | 'typing' | 'spatial' | 'admin' | 'ideas' | 'wiki' | 'objective' | 'profiling' | 'anomaly' | 'dialogue' | 'leaderboard' | 'topology' | 'collision' | 'dispatcher' | 'noise' | 'scanner' | 'decryptor' | 'reality' | 'silence' | 'filter' | 'hype' | 'reframing' | 'rejection' | 'storytelling' | 'focus' | 'cognitive-map';
 
 const appBuildId = import.meta.env.VITE_BUILD_ID || import.meta.env.VITE_GIT_COMMIT || 'dev';
 
@@ -421,6 +422,7 @@ function AppContent() {
                 <Route path="/ideas" element={<IdeasWall token={token} />} />
                 <Route path="/wiki" element={<Wiki />} />
                 <Route path="/wiki/:articleId" element={<Wiki />} />
+                <Route path="/cognitive-map" element={<CognitiveMap />} />
                 <Route path="/leaderboard" element={<LeaderboardView />} />
                 <Route path="/topology" element={<TopologyMemory />} />
                 <Route path="/collision" element={<CollisionDetector />} />

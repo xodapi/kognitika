@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Grid3x3, Target, Trophy, RefreshCw, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
+import { SessionFlowIndicator, type PhaseDef } from './SessionFlowIndicator';
 import { emitEvent } from '../hooks/useEventBus';
 import { useSessionRecording } from '../hooks/useSessionRecording';
 import { createSafeLogger, safeError } from '../lib/safe-logger';
@@ -78,6 +79,18 @@ export function SpatialConcealment() {
                   />
                 </div>
               </div>
+            )}
+
+            {phase !== 'idle' && phase !== 'result' && (
+              <SessionFlowIndicator
+                phases={[
+                  { id: 'memorize', label: 'Запомнить' },
+                  { id: 'recall', label: 'Воспроизвести' },
+                  { id: 'result', label: 'Результат' },
+                ]}
+                currentPhase={phase}
+                className="-mx-2"
+              />
             )}
           </div>
 
