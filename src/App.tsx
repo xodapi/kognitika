@@ -200,21 +200,31 @@ function AppContent() {
           </div>
 
           {user ? (
-            <button
-              onClick={() => setIsMobileMenuOpen(true)}
-              className="flex min-w-0 max-w-[220px] items-center gap-2 pl-2 pr-1 py-1 bg-secondary rounded-full border border-border hover:border-primary/30 transition-all group"
-              title={user.pseudonym || user.name || 'Аноним'}
-            >
-              <div className="text-right hidden md:block px-1 min-w-0">
-                <p className="max-w-[140px] truncate text-[10px] font-bold leading-none transition-colors group-hover:text-primary xl:max-w-[170px]">
-                  {user.pseudonym || user.name || 'Аноним'}
-                </p>
-                <p className="text-[8px] text-primary uppercase font-black tracking-tighter">LVL {user.level || 1}</p>
-              </div>
-              <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-xs ring-2 ring-primary/10 uppercase">
-                {(user.pseudonym || user.name || 'A')[0]}
-              </div>
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setIsMobileMenuOpen(true)}
+                className="flex min-w-0 max-w-[220px] items-center gap-2 pl-2 pr-1 py-1 bg-secondary rounded-full border border-border hover:border-primary/30 transition-all group"
+                title={user.pseudonym || user.name || 'Аноним'}
+              >
+                <div className="text-right hidden md:block px-1 min-w-0">
+                  <p className="max-w-[140px] truncate text-[10px] font-bold leading-none transition-colors group-hover:text-primary xl:max-w-[170px]">
+                    {user.pseudonym || user.name || 'Аноним'}
+                  </p>
+                  <p className="text-[8px] text-primary uppercase font-black tracking-tighter">LVL {user.level || 1}</p>
+                </div>
+                <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-xs ring-2 ring-primary/10 uppercase">
+                  {(user.pseudonym || user.name || 'A')[0]}
+                </div>
+              </button>
+              <button
+                onClick={logout}
+                className="p-2 text-muted-foreground hover:text-destructive transition-colors rounded-lg hover:bg-secondary"
+                title="Завершить сеанс"
+                aria-label="Завершить сеанс"
+              >
+                <LogOut className="w-4.5 h-4.5" />
+              </button>
+            </div>
           ) : (
             <button onClick={() => setIsAuthOpen(true)} className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground text-[10px] sm:text-xs uppercase tracking-wider rounded-lg font-bold hover:shadow-lg hover:shadow-primary/30 transition-all shadow-md">
               <LogIn className="w-4 h-4" /> <span className="hidden xs:inline">Войти</span>

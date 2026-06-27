@@ -8,9 +8,8 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
-  Alert,
 } from 'react-native';
-import { loginWithBrainId } from '../lib/api';
+import { loginWithBrainId, createNewBrainSession } from '../lib/api';
 
 interface BrainIdScreenProps {
   onAuthenticated: (brainId: string) => void;
@@ -18,8 +17,8 @@ interface BrainIdScreenProps {
 
 export default function BrainIdScreen({ onAuthenticated }: BrainIdScreenProps) {
   const [brainId, setBrainId] = useState('');
-  const [pin, setPin] = useState('');
   const [loading, setLoading] = useState(false);
+  const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const handleLogin = useCallback(async () => {
@@ -32,14 +31,28 @@ export default function BrainIdScreen({ onAuthenticated }: BrainIdScreenProps) {
     setError(null);
 
     try {
-      const result = await loginWithBrainId({ brainId: brainId.trim(), pin: pin || undefined });
+      const result = await loginWithBrainId({ brainId: brainId.trim() });
       onAuthenticated(result.brainId);
     } catch (err: any) {
       setError(err.message || 'Ошибка подключения к серверу');
     } finally {
       setLoading(false);
     }
-  }, [brainId, pin, onAuthenticated]);
+  }, [brainId, onAuthenticated]);
+
+  const handleCreateNew = useCallback(async () => {
+    setCreating(true);
+    setError(null);
+
+    try {
+      const result = await createNewBrainSession();
+      onAuthenticated(result.brainId);
+    } catch (err: any) {
+      setError(err.message || 'Ошибка создания сессии');
+    } finally {
+      setCreating(false);
+    }
+  }, [onAuthenticated]);
 
   return (
     <KeyboardAvoidingView
@@ -54,31 +67,19 @@ export default function BrainIdScreen({ onAuthenticated }: BrainIdScreenProps) {
           <Text style={styles.subtitle}>Когнитивная инженерия</Text>
         </View>
 
-        {/* Form */}
+        {/* Restore form */}
         <View style={styles.form}>
+          <Text style={styles.sectionTitle}>Войти по Brain ID</Text>
           <Text style={styles.label}>Brain ID</Text>
           <TextInput
             style={styles.input}
             value={brainId}
             onChangeText={setBrainId}
-            placeholder="Ваш уникальный Brain ID"
+            placeholder="Введите ваш Brain ID"
             placeholderTextColor="#555"
             autoCapitalize="none"
             autoCorrect={false}
-            editable={!loading}
-          />
-
-          <Text style={styles.label}>PIN (опционально)</Text>
-          <TextInput
-            style={styles.input}
-            value={pin}
-            onChangeText={setPin}
-            placeholder="4-значный PIN"
-            placeholderTextColor="#555"
-            keyboardType="number-pad"
-            maxLength={4}
-            secureTextEntry
-            editable={!loading}
+            editable={!loading && !creating}
           />
 
           {error && (
@@ -88,9 +89,9 @@ export default function BrainIdScreen({ onAuthenticated }: BrainIdScreenProps) {
           )}
 
           <TouchableOpacity
-            style={[styles.button, loading && styles.buttonDisabled]}
+            style={[styles.button, (loading || creating) && styles.buttonDisabled]}
             onPress={handleLogin}
-            disabled={loading}
+            disabled={loading || creating}
             activeOpacity={0.8}
           >
             {loading ? (
@@ -101,9 +102,30 @@ export default function BrainIdScreen({ onAuthenticated }: BrainIdScreenProps) {
           </TouchableOpacity>
         </View>
 
+        {/* Divider */}
+        <View style={styles.divider}>
+          <View style={styles.dividerLine} />
+          <Text style={styles.dividerText}>или</Text>
+          <View style={styles.dividerLine} />
+        </View>
+
+        {/* New session */}
+        <TouchableOpacity
+          style={[styles.buttonSecondary, (loading || creating) && styles.buttonDisabled]}
+          onPress={handleCreateNew}
+          disabled={loading || creating}
+          activeOpacity={0.8}
+        >
+          {creating ? (
+            <ActivityIndicator color="#4F46E5" />
+          ) : (
+            <Text style={styles.buttonSecondaryText}>🆕 Создать новую сессию</Text>
+          )}
+        </TouchableOpacity>
+
         <Text style={styles.hint}>
-          Используйте тот же Brain ID, что и в веб-версии,{'\n'}
-          чтобы синхронизировать ваш прогресс.
+          Новая сессия создаст анонимный Brain ID.{'\n'}
+          Сохраните его, чтобы войти снова.
         </Text>
       </View>
     </KeyboardAvoidingView>
@@ -141,8 +163,14 @@ const styles = StyleSheet.create({
     letterSpacing: 2,
     textTransform: 'uppercase',
   },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#E0E6FF',
+    marginBottom: 16,
+  },
   form: {
-    marginBottom: 32,
+    marginBottom: 24,
   },
   label: {
     fontSize: 13,
@@ -188,6 +216,34 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 17,
     fontWeight: '700',
+  },
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#2D3348',
+  },
+  dividerText: {
+    color: '#4B5563',
+    marginHorizontal: 12,
+    fontSize: 14,
+  },
+  buttonSecondary: {
+    borderWidth: 1,
+    borderColor: '#4F46E5',
+    borderRadius: 12,
+    paddingVertical: 16,
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  buttonSecondaryText: {
+    color: '#4F46E5',
+    fontSize: 16,
+    fontWeight: '600',
   },
   hint: {
     textAlign: 'center',

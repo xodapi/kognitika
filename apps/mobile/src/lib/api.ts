@@ -17,11 +17,12 @@ async function getHeaders(): Promise<Record<string, string>> {
   return headers;
 }
 
+// Войти по существующему Brain ID
 export async function loginWithBrainId(payload: BrainIdPayload): Promise<{ token: string; brainId: string }> {
-  const res = await fetch(`${API_URL}/api/auth/brain-id`, {
+  const res = await fetch(`${API_URL}/api/auth/restore`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
+    body: JSON.stringify({ brainId: payload.brainId }),
   });
 
   if (!res.ok) {
@@ -32,6 +33,24 @@ export async function loginWithBrainId(payload: BrainIdPayload): Promise<{ token
   const data = await res.json();
   await AsyncStorage.setItem(TOKEN_KEY, data.token);
   await AsyncStorage.setItem(BRAIN_ID_KEY, data.brainId || payload.brainId);
+  return data;
+}
+
+// Создать новую анонимную Brain сессию
+export async function createNewBrainSession(): Promise<{ token: string; brainId: string; pseudonym: string }> {
+  const res = await fetch(`${API_URL}/api/auth/brain`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ message: 'Network error' }));
+    throw new Error(err.message || `Failed to create session: ${res.status}`);
+  }
+
+  const data = await res.json();
+  await AsyncStorage.setItem(TOKEN_KEY, data.token);
+  await AsyncStorage.setItem(BRAIN_ID_KEY, data.brainId);
   return data;
 }
 

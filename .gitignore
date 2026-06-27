@@ -12,3 +12,5 @@ crates/**/pkg*/
 *.log
 .env*
 !.env.example
+dist-web/
+dist-web
