@@ -69,6 +69,28 @@ export async function getStoredToken(): Promise<string | null> {
   return AsyncStorage.getItem(TOKEN_KEY);
 }
 
+export async function fetchUserProfile(): Promise<any> {
+  const token = await AsyncStorage.getItem(TOKEN_KEY);
+  if (!token) return null;
+
+  const res = await fetch(`${API_URL}/api/me`, {
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+  });
+
+  if (!res.ok) {
+    throw new Error(`Profile fetch failed: ${res.status}`);
+  }
+
+  const data = await res.json();
+  if (data.user?.pseudonym) {
+    await AsyncStorage.setItem(PSEUDONYM_KEY, data.user.pseudonym);
+  }
+  return data;
+}
+
 export async function clearAuth(): Promise<void> {
   await AsyncStorage.multiRemove([TOKEN_KEY, BRAIN_ID_KEY, PSEUDONYM_KEY]);
 }

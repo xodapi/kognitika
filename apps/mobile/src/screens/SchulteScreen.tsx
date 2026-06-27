@@ -11,7 +11,7 @@ import {
   Alert,
 } from 'react-native';
 import { generateGrid, generateExpectedSequence, CellValue, GameMode } from '../lib/schulte-generator';
-import { submitGameResult, getStoredBrainId, getStoredPseudonym } from '../lib/api';
+import { submitGameResult, getStoredBrainId, getStoredPseudonym, fetchUserProfile } from '../lib/api';
 
 interface SchulteScreenProps {
   onLogout: () => void;
@@ -53,6 +53,15 @@ export default function SchulteScreen({ onLogout }: SchulteScreenProps) {
     Promise.all([getStoredBrainId(), getStoredPseudonym()]).then(([id, nick]) => {
       setBrainId(id);
       setDisplayName(nick || id);
+
+      // Sync profile from server in background
+      fetchUserProfile()
+        .then((data) => {
+          if (data?.user?.pseudonym) {
+            setDisplayName(data.user.pseudonym);
+          }
+        })
+        .catch((err) => console.warn('Failed to sync profile on mount:', err));
     });
   }, []);
 
@@ -166,9 +175,11 @@ export default function SchulteScreen({ onLogout }: SchulteScreenProps) {
 
   // Grid Layout
   const padding = 32;
+  const gridPadding = 6; // Inner padding of grid container
   const gridWidth = width - padding;
-  const cellSize = Math.floor(gridWidth / size);
-  const actualGridWidth = cellSize * size;
+  const availableWidth = gridWidth - (gridPadding * 2);
+  const cellSize = Math.floor(availableWidth / size);
+  const actualGridWidth = (cellSize * size) + (gridPadding * 2);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -500,7 +511,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#0F172A',
     borderRadius: 16,
-    padding: 2,
+    padding: 6, // Match gridPadding constant
     borderWidth: 1,
     borderColor: '#1E293B',
     shadowColor: '#000',
