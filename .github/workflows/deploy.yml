@@ -126,6 +126,17 @@ jobs:
           mkdir -p dist/assets
           cp -an "$asset_keep"/. dist/assets/ 2>/dev/null || true
 
+          # Сборка и деплой мобильной веб-версии
+          echo "=== Exporting mobile web version ==="
+          echo "EXPO_PUBLIC_API_URL=https://kognitika.syntog.ru" > apps/mobile/.env
+          CI=true pnpm --filter @kognitika/mobile exec expo export --platform web --output-dir dist-web
+          
+          echo "=== Deploying mobile web files ==="
+          sudo mkdir -p /var/www/m-kognitika
+          sudo cp -rf apps/mobile/dist-web/. /var/www/m-kognitika/
+          sudo chown -R www-data:www-data /var/www/m-kognitika
+          sudo chmod -R 755 /var/www/m-kognitika
+
           systemctl restart kognitika
 
           health_port="$(node -e 'require("dotenv").config({ quiet: true }); process.stdout.write(process.env.PORT || "3006")')"

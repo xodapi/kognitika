@@ -5,6 +5,7 @@ const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000';
 
 const TOKEN_KEY = '@kognitika/jwt';
 const BRAIN_ID_KEY = '@kognitika/brain-id';
+const PSEUDONYM_KEY = '@kognitika/pseudonym';
 
 async function getHeaders(): Promise<Record<string, string>> {
   const token = await AsyncStorage.getItem(TOKEN_KEY);
@@ -33,6 +34,7 @@ export async function loginWithBrainId(payload: BrainIdPayload): Promise<{ token
   const data = await res.json();
   await AsyncStorage.setItem(TOKEN_KEY, data.token);
   await AsyncStorage.setItem(BRAIN_ID_KEY, data.brainId || payload.brainId);
+  await AsyncStorage.setItem(PSEUDONYM_KEY, data.pseudonym || '');
   return data;
 }
 
@@ -51,6 +53,7 @@ export async function createNewBrainSession(): Promise<{ token: string; brainId:
   const data = await res.json();
   await AsyncStorage.setItem(TOKEN_KEY, data.token);
   await AsyncStorage.setItem(BRAIN_ID_KEY, data.brainId);
+  await AsyncStorage.setItem(PSEUDONYM_KEY, data.pseudonym || '');
   return data;
 }
 
@@ -58,12 +61,16 @@ export async function getStoredBrainId(): Promise<string | null> {
   return AsyncStorage.getItem(BRAIN_ID_KEY);
 }
 
+export async function getStoredPseudonym(): Promise<string | null> {
+  return AsyncStorage.getItem(PSEUDONYM_KEY);
+}
+
 export async function getStoredToken(): Promise<string | null> {
   return AsyncStorage.getItem(TOKEN_KEY);
 }
 
 export async function clearAuth(): Promise<void> {
-  await AsyncStorage.multiRemove([TOKEN_KEY, BRAIN_ID_KEY]);
+  await AsyncStorage.multiRemove([TOKEN_KEY, BRAIN_ID_KEY, PSEUDONYM_KEY]);
 }
 
 export async function submitGameResult(result: {

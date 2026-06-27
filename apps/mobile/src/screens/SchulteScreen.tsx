@@ -11,7 +11,7 @@ import {
   Alert,
 } from 'react-native';
 import { generateGrid, generateExpectedSequence, CellValue, GameMode } from '../lib/schulte-generator';
-import { submitGameResult, getStoredBrainId } from '../lib/api';
+import { submitGameResult, getStoredBrainId, getStoredPseudonym } from '../lib/api';
 
 interface SchulteScreenProps {
   onLogout: () => void;
@@ -20,6 +20,7 @@ interface SchulteScreenProps {
 export default function SchulteScreen({ onLogout }: SchulteScreenProps) {
   const { width } = useWindowDimensions();
   const [brainId, setBrainId] = useState<string | null>(null);
+  const [displayName, setDisplayName] = useState<string | null>(null);
 
   // Game Settings
   const [size, setSize] = useState<number>(5);
@@ -47,9 +48,12 @@ export default function SchulteScreen({ onLogout }: SchulteScreenProps) {
   const startTimeRef = useRef<number>(0);
   const feedbackTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Load Brain ID
+  // Load User Info
   useEffect(() => {
-    getStoredBrainId().then(setBrainId);
+    Promise.all([getStoredBrainId(), getStoredPseudonym()]).then(([id, nick]) => {
+      setBrainId(id);
+      setDisplayName(nick || id);
+    });
   }, []);
 
   // Timer clean up
@@ -163,14 +167,15 @@ export default function SchulteScreen({ onLogout }: SchulteScreenProps) {
   // Grid Layout
   const padding = 32;
   const gridWidth = width - padding;
-  const cellSize = gridWidth / size;
+  const cellSize = Math.floor(gridWidth / size);
+  const actualGridWidth = cellSize * size;
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <View style={styles.userInfo}>
-          <Text style={styles.userLabel}>Brain ID</Text>
-          <Text style={styles.userValue}>{brainId || 'Загрузка...'}</Text>
+          <Text style={styles.userLabel}>Профиль</Text>
+          <Text style={styles.userValue} numberOfLines={1}>{displayName || 'Загрузка...'}</Text>
         </View>
         <TouchableOpacity style={styles.logoutButton} onPress={onLogout}>
           <Text style={styles.logoutText}>Выйти</Text>
@@ -240,7 +245,7 @@ export default function SchulteScreen({ onLogout }: SchulteScreenProps) {
 
         {/* The Schulte Grid */}
         {isActive && (
-          <View style={[styles.gridContainer, { width: gridWidth, height: gridWidth }]}>
+          <View style={[styles.gridContainer, { width: actualGridWidth, height: actualGridWidth }]}>
             {grid.map((cell, idx) => {
               const isClicked = clickedCellId === cell.id;
               const cellStyle = [
