@@ -256,26 +256,30 @@ export default function SchulteScreen({ onLogout }: SchulteScreenProps) {
 
         {/* The Schulte Grid */}
         {isActive && (
-          <View style={[styles.gridContainer, { width: actualGridWidth, height: actualGridWidth }]}>
-            {grid.map((cell, idx) => {
-              const isClicked = clickedCellId === cell.id;
-              const cellStyle = [
-                styles.cell,
-                { width: cellSize - 4, height: cellSize - 4, margin: 2 },
-                isClicked && (isClickCorrect ? styles.cellCorrect : styles.cellError)
-              ];
+          <View style={[styles.gridContainer, { width: actualGridWidth }]}>
+            {Array.from({ length: size }).map((_, rowIndex) => (
+              <View key={rowIndex} style={styles.gridRow}>
+                {grid.slice(rowIndex * size, (rowIndex + 1) * size).map((cell) => {
+                  const isClicked = clickedCellId === cell.id;
+                  const cellStyle = [
+                    styles.cell,
+                    { width: cellSize - 4, height: cellSize - 4, margin: 2 },
+                    isClicked && (isClickCorrect ? styles.cellCorrect : styles.cellError)
+                  ];
 
-              return (
-                <TouchableOpacity
-                  key={cell.id}
-                  style={cellStyle}
-                  activeOpacity={0.7}
-                  onPress={() => handleCellPress(cell)}
-                >
-                  <Text style={styles.cellText}>{cell.num}</Text>
-                </TouchableOpacity>
-              );
-            })}
+                  return (
+                    <TouchableOpacity
+                      key={cell.id}
+                      style={cellStyle}
+                      activeOpacity={0.7}
+                      onPress={() => handleCellPress(cell)}
+                    >
+                      <Text style={styles.cellText}>{cell.num}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            ))}
           </View>
         )}
 
@@ -505,8 +509,7 @@ const styles = StyleSheet.create({
     color: '#10B981',
   },
   gridContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: 'column',
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#0F172A',
@@ -519,6 +522,12 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.4,
     shadowRadius: 12,
     elevation: 10,
+  },
+  gridRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: '100%',
   },
   cell: {
     backgroundColor: '#1E293B',
