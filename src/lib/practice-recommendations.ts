@@ -1,10 +1,11 @@
-export type DailyPracticeCategory = 'cognitive' | 'somatic' | 'safety';
+import type {
+  DailyPracticeCategory,
+  PracticeReason as PracticeRecommendationReason,
+  PracticeRecommendation as SharedPracticeRecommendation,
+  PracticeRecommendedPayload as SharedPracticeRecommendedPayload,
+} from '@kognitika/shared-types';
 
-export type PracticeRecommendationReason =
-  | 'weak_area'
-  | 'streak_maintenance'
-  | 'variety'
-  | 'recovery';
+export type { DailyPracticeCategory, PracticeRecommendationReason };
 
 export interface PracticeRecommendationInput {
   sourceModuleId: string;
@@ -15,22 +16,14 @@ export interface PracticeRecommendationInput {
   durationMs?: number | null;
 }
 
-export interface PracticeRecommendation {
-  category: DailyPracticeCategory;
-  moduleId: string;
+export interface PracticeRecommendation extends SharedPracticeRecommendation {
   title: string;
-  reason: PracticeRecommendationReason;
   reasonText: string;
   successText: string;
   improvementText: string;
 }
 
-export interface PracticeRecommendedPayload {
-  category: DailyPracticeCategory;
-  moduleId: string;
-  reason: PracticeRecommendationReason;
-  sourceSessionId: string;
-}
+export interface PracticeRecommendedPayload extends SharedPracticeRecommendedPayload {}
 
 export const MODULE_TITLES: Record<string, string> = {
   schulte: 'Таблицы Шульте',

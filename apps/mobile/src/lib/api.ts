@@ -114,3 +114,21 @@ export async function submitGameResult(result: {
     console.warn('Failed to submit game result:', res.status);
   }
 }
+
+export async function submitPracticeRecommended(payload: {
+  category: string;
+  moduleId: string;
+  reason: string;
+  sourceSessionId: string;
+}): Promise<void> {
+  const headers = await getHeaders();
+  const res = await fetch(`${API_URL}/api/events/practice-recommended`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) {
+    console.warn('Failed to submit practice recommendation event:', res.status);
+  }
+}

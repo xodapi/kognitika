@@ -12,6 +12,8 @@ import {
 } from 'react-native';
 import { generateGrid, generateExpectedSequence, CellValue, GameMode } from '../lib/schulte-generator';
 import { submitGameResult, getStoredBrainId, getStoredPseudonym, fetchUserProfile } from '../lib/api';
+import CompletionRecommendation from '../components/CompletionRecommendation';
+
 
 interface SchulteScreenProps {
   onLogout: () => void;
@@ -46,6 +48,7 @@ export default function SchulteScreen({ onLogout }: SchulteScreenProps) {
   // Refs for Timer
   const timerRef = useRef<ReturnType<typeof requestAnimationFrame> | null>(null);
   const startTimeRef = useRef<number>(0);
+  const sessionIdRef = useRef<string | null>(null);
   const feedbackTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Load User Info
@@ -87,6 +90,7 @@ export default function SchulteScreen({ onLogout }: SchulteScreenProps) {
     setSubmitSuccess(null);
 
     startTimeRef.current = Date.now();
+    sessionIdRef.current = `mobile:${brainId || 'anon'}:${startTimeRef.current}`;
 
     if (timerRef.current) cancelAnimationFrame(timerRef.current);
 
@@ -95,7 +99,7 @@ export default function SchulteScreen({ onLogout }: SchulteScreenProps) {
       timerRef.current = requestAnimationFrame(updateTime);
     };
     timerRef.current = requestAnimationFrame(updateTime);
-  }, [size, mode]);
+  }, [size, mode, brainId]);
 
   const resetGame = useCallback(() => {
     if (timerRef.current) cancelAnimationFrame(timerRef.current);
@@ -290,72 +294,26 @@ export default function SchulteScreen({ onLogout }: SchulteScreenProps) {
           </TouchableOpacity>
         )}
 
-        {/* Finished Screen / Stats Summary */}
         {isFinished && (
-          <View style={styles.resultCard}>
-            <Text style={styles.resultTitle}>🎉 Тренировка завершена!</Text>
-            
-            <View style={styles.resultRow}>
-              <Text style={styles.resultLabel}>Размер:</Text>
-              <Text style={styles.resultValue}>{size}x{size}</Text>
-            </View>
-            <View style={styles.resultRow}>
-              <Text style={styles.resultLabel}>Время:</Text>
-              <Text style={styles.resultValue}>{formatTime(timeMs)}</Text>
-            </View>
-            <View style={styles.resultRow}>
-              <Text style={styles.resultLabel}>Ошибки:</Text>
-              <Text style={[styles.resultValue, errors > 0 && styles.hudValueError]}>{errors}</Text>
-            </View>
-            <View style={styles.resultRow}>
-              <Text style={styles.resultLabel}>Точность:</Text>
-              <Text style={styles.resultValue}>
-                {((expectedSequence.length / (expectedSequence.length + errors)) * 100).toFixed(1)}%
-              </Text>
-            </View>
-            <View style={styles.resultRow}>
-              <Text style={styles.resultLabel}>Очки:</Text>
-              <Text style={styles.resultValueScore}>
-                {Math.max(0, 1000 - Math.floor(timeMs / 10))}
-              </Text>
-            </View>
-
-            {/* Sync status */}
-            <View style={styles.syncStatusContainer}>
-              {submitting ? (
-                <View style={styles.syncRow}>
-                  <ActivityIndicator size="small" color="#4F46E5" />
-                  <Text style={styles.syncText}>Синхронизация с сервером...</Text>
-                </View>
-              ) : submitSuccess === true ? (
-                <Text style={styles.syncTextSuccess}>✅ Результаты синхронизированы</Text>
-              ) : submitSuccess === false ? (
-                <View style={{ alignItems: 'center' }}>
-                  <Text style={styles.syncTextError}>❌ Ошибка синхронизации</Text>
-                  <TouchableOpacity 
-                    style={styles.retryButton} 
-                    onPress={() => submitResults(
-                      size, 
-                      timeMs, 
-                      (expectedSequence.length / (expectedSequence.length + errors)) * 100, 
-                      Math.max(0, 1000 - Math.floor(timeMs / 10)), 
-                      errors
-                    )}
-                  >
-                    <Text style={styles.retryButtonText}>Повторить попытку</Text>
-                  </TouchableOpacity>
-                </View>
-              ) : null}
-            </View>
-
-            <TouchableOpacity style={styles.startButton} onPress={startGame}>
-              <Text style={styles.startButtonText}>Играть еще раз</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.resetButton} onPress={resetGame}>
-              <Text style={styles.resetButtonText}>В главное меню</Text>
-            </TouchableOpacity>
-          </View>
+          <CompletionRecommendation
+            sourceModuleId="schulte"
+            sourceSessionId={sessionIdRef.current}
+            score={Math.max(0, 1000 - Math.floor(timeMs / 10))}
+            accuracy={(expectedSequence.length / (expectedSequence.length + errors)) * 100}
+            errors={errors}
+            durationMs={timeMs}
+            onRepeat={startGame}
+            onMenu={resetGame}
+            submitting={submitting}
+            submitSuccess={submitSuccess}
+            onRetrySync={() => submitResults(
+              size,
+              timeMs,
+              (expectedSequence.length / (expectedSequence.length + errors)) * 100,
+              Math.max(0, 1000 - Math.floor(timeMs / 10)),
+              errors
+            )}
+          />
         )}
       </ScrollView>
     </SafeAreaView>

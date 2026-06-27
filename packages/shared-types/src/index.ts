@@ -17,3 +17,19 @@ export interface BrainIdPayload {
   token?: string;
   pin?: string;
 }
+
+export type DailyPracticeCategory = 'cognitive' | 'somatic' | 'safety';
+export type PracticeReason = 'weak_area' | 'streak_maintenance' | 'variety' | 'recovery';
+
+export interface PracticeRecommendation {
+  moduleId: string;
+  category: DailyPracticeCategory;
+  reason: PracticeReason;
+}
+
+export interface PracticeRecommendedPayload {
+  category: DailyPracticeCategory;
+  moduleId: string;
+  reason: PracticeReason;
+  sourceSessionId: string;
+}
