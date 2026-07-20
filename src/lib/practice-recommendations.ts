@@ -55,12 +55,14 @@ export const MODULE_TITLES: Record<string, string> = {
 
 const GAME_TYPE_TO_MODULE: Record<string, string> = {
   SCHULTE: 'schulte',
+  SCHULTE_GORBOV: 'schulte',
   STROOP: 'stroop',
   N_BACK: 'nback',
   NBACK: 'nback',
   NUMERICAL_ANALYSIS: 'numerical',
   LOGICAL_SEQUENCE: 'logical',
   SITUATIONAL_JUDGMENT: 'situational',
+  ANOMALY_DETECTOR: 'anomaly',
   SPEED_TYPING: 'typing',
   TYPING: 'typing',
   SPATIAL_CONCEALMENT: 'spatial',
@@ -78,12 +80,28 @@ const GAME_TYPE_TO_MODULE: Record<string, string> = {
   PROFILING_RICE: 'profiling',
   HYPE_FILTER: 'hype',
   DIALOGUE: 'dialogue',
+  DIALOGUE_2_1: 'dialogue',
   SOCIAL_EQ: 'dialogue',
   REFRAMING: 'reframing',
   REJECTION_IMMUNITY: 'rejection',
   STORYTELLING: 'storytelling',
   DEEP_FOCUS: 'focus',
 };
+
+export function resolvePracticeModuleId(value: string | null | undefined): string | null {
+  const raw = String(value || '').trim();
+  if (!raw) return null;
+
+  const upper = raw.toUpperCase().replace(/-/g, '_');
+  if (GAME_TYPE_TO_MODULE[upper]) return GAME_TYPE_TO_MODULE[upper];
+
+  const lower = raw.toLowerCase().replace(/_/g, '-');
+  const compact = lower.replace(/-/g, '');
+  if (MODULE_TITLES[lower]) return lower;
+  if (MODULE_TITLES[compact]) return compact;
+
+  return null;
+}
 
 const MODULE_CATEGORIES: Record<string, DailyPracticeCategory> = {
   silence: 'somatic',
@@ -148,18 +166,7 @@ export function categoryForPracticeModule(moduleId: string): DailyPracticeCatego
 }
 
 export function normalizePracticeModuleId(value: string | null | undefined) {
-  const raw = String(value || '').trim();
-  if (!raw) return 'schulte';
-
-  const upper = raw.toUpperCase().replace(/-/g, '_');
-  if (GAME_TYPE_TO_MODULE[upper]) return GAME_TYPE_TO_MODULE[upper];
-
-  const lower = raw.toLowerCase().replace(/_/g, '-');
-  const compact = lower.replace(/-/g, '');
-  if (MODULE_TITLES[lower]) return lower;
-  if (MODULE_TITLES[compact]) return compact;
-
-  return 'schulte';
+  return resolvePracticeModuleId(value) || 'schulte';
 }
 
 function boundedAccuracy(input: PracticeRecommendationInput) {

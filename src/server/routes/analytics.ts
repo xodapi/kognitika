@@ -3,7 +3,11 @@ import prisma from '../../lib/prisma.ts';
 import { authenticate } from '../middleware/auth.ts';
 import jwt from 'jsonwebtoken';
 import { createSafeLogger, safeError } from '../../lib/safe-logger.ts';
-import { brainLabelForIdentity, displayNameForIdentity } from '../utils/privacy.ts';
+import {
+  KNOWLEDGE_ARTICLE_BY_ID,
+  TRAINING_KNOWLEDGE_ROUTE_IDS,
+} from '../../lib/knowledge-base.ts';
+import { resolvePracticeModuleId } from '../../lib/practice-recommendations.ts';
 import {
   persistSessionAnalyticsSummary,
   getSessionAnalyticsSummaries,
@@ -16,6 +20,96 @@ import { createSessionAnalyticsSummary, parseSessionAnalyticsJob } from '../../c
 const router = Router();
 const logger = createSafeLogger('analytics-route');
 const PROFILE_READY_SESSION_THRESHOLD = 5;
+const MAX_EXPORT_SESSIONS = 1000;
+
+function roundedAverage(values: number[]): number | null {
+  if (values.length === 0) return null;
+  return Math.round(values.reduce((sum, value) => sum + value, 0) / values.length);
+}
+
+function scoreTrendPercent(scores: number[]): number | null {
+  if (scores.length < 2) return null;
+
+  const splitAt = Math.ceil(scores.length / 2);
+  const earlier = roundedAverage(scores.slice(0, splitAt));
+  const recent = roundedAverage(scores.slice(splitAt));
+  if (earlier === null || recent === null || earlier === 0) return null;
+
+  return Math.round(((recent - earlier) / Math.abs(earlier)) * 100);
+}
+
+function createPrivacySafeAnalyticsExport(sessions: Array<{
+  gameType: string;
+  score: number;
+  timeMs: number;
+  createdAt: Date;
+}>, historyTruncated: boolean) {
+  const grouped = new Map<string, typeof sessions>();
+  let includedSessions = 0;
+
+  for (const session of sessions) {
+    const moduleId = resolvePracticeModuleId(String(session.gameType));
+    if (!moduleId) continue;
+    const current = grouped.get(moduleId) || [];
+    current.push(session);
+    grouped.set(moduleId, current);
+    includedSessions += 1;
+  }
+
+  const modules = TRAINING_KNOWLEDGE_ROUTE_IDS.map((moduleId) => {
+    const moduleSessions = (grouped.get(moduleId) || [])
+      .slice()
+      .reverse();
+    const scores = moduleSessions.map((session) => session.score);
+    const durations = moduleSessions.map((session) => session.timeMs).filter((value) => value > 0);
+    const article = KNOWLEDGE_ARTICLE_BY_ID.get(moduleId);
+
+    return {
+      module_id: moduleId,
+      trainer: article?.title || moduleId,
+      trains: article?.trains || '',
+      metrics_interpretation: article?.metrics || '',
+      completed_sessions: moduleSessions.length,
+      score: {
+        average: roundedAverage(scores),
+        best: scores.length > 0 ? Math.max(...scores) : null,
+        change_percent_early_vs_recent: scoreTrendPercent(scores),
+      },
+      duration_ms: {
+        average: roundedAverage(durations),
+        best: durations.length > 0 ? Math.min(...durations) : null,
+      },
+    };
+  });
+
+  return {
+    format: 'Kognitika Privacy-Safe Cognitive Analytics',
+    version: '2.0',
+    privacy: {
+      personal_identifiers_included: false,
+      raw_session_data_included: false,
+      exact_activity_timestamps_included: false,
+      safe_for_external_llm: true,
+    },
+    dataset: {
+      completed_sessions_analyzed: includedSessions,
+      modules_with_data: modules.filter((module) => module.completed_sessions > 0).length,
+      history_truncated: historyTruncated,
+      maximum_sessions_analyzed: MAX_EXPORT_SESSIONS,
+    },
+    modules,
+    instructions_for_llm: [
+      'Analyze only training dynamics and do not infer identity, diagnosis, IQ, or medical condition.',
+      'Compare modules with at least two completed sessions and treat small samples as uncertain.',
+      'Look for stable strengths and growth areas using score and duration trends supported by the aggregates.',
+      'Return a calm seven-day practice plan with rest periods and explain the evidence for each suggestion.',
+    ],
+    limitations: [
+      'Training results depend on sleep, stress, device, environment, and familiarity with the task.',
+      'This dataset supports wellness reflection and is not medical or psychological diagnosis.',
+    ],
+  };
+}
 
 /**
  * Сравнивает результаты текущей игры с историей пользователя
@@ -196,37 +290,22 @@ router.get('/profile', authenticate, async (req: any, res) => {
 router.get('/export', authenticate, async (req: any, res) => {
   try {
     const sessions = await prisma.gameSession.findMany({
-      where: { userId: req.user.id },
-      orderBy: { createdAt: 'asc' }
+      where: { userId: req.user.id, isCompleted: true },
+      orderBy: { createdAt: 'desc' },
+      take: MAX_EXPORT_SESSIONS + 1,
+      select: {
+        gameType: true,
+        score: true,
+        timeMs: true,
+        createdAt: true,
+      },
     });
 
-    const user = await prisma.user.findUnique({ where: { id: req.user.id } });
-
-    const exportData = {
-      version: "1.0",
-      subject: {
-        brain_label: user ? brainLabelForIdentity(user) : undefined,
-        pseudonym: user ? displayNameForIdentity(user) : undefined,
-        level: user?.level,
-        rating: user?.rating,
-        total_xp: user?.experience,
-        streak: user?.streakDays
-      },
-      exported_at: new Date().toISOString(),
-      data_structure: "Kognitika Cognitive Time-Series (KCTS)",
-      sessions: sessions.map(s => ({
-        id: s.id,
-        timestamp: s.createdAt,
-        type: s.gameType,
-        metrics: {
-          score: s.score,
-          duration_ms: s.timeMs,
-          performance_index: Math.round((s.score / (s.timeMs || 1)) * 1000)
-        },
-        payload: s.metadata
-      })),
-      instructions_for_llm: "Analyze the 'payload' field for specific error types and reaction latencies. 'performance_index' higher is better. Correlate 'type' across time to detect learning curves and fatigue thresholds."
-    };
+    const historyTruncated = sessions.length > MAX_EXPORT_SESSIONS;
+    const exportData = createPrivacySafeAnalyticsExport(
+      sessions.slice(0, MAX_EXPORT_SESSIONS),
+      historyTruncated,
+    );
 
     res.setHeader('Content-Type', 'application/json');
     res.setHeader('Content-Disposition', `attachment; filename=kognitika_export_${new Date().toISOString().split('T')[0]}.json`);

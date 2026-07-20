@@ -20,6 +20,7 @@
     "test:e2e:attached": "node scripts/run-playwright-attached.mjs"
   },
   "dependencies": {
+    "@kognitika/shared-types": "workspace:*",
     "@prisma/adapter-pg": "^7.2.0",
     "@prisma/client": "^7.2.0",
     "@xyflow/react": "^12.11.1",

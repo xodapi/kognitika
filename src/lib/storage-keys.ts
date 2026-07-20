@@ -17,6 +17,7 @@ export const SCHEMA_KEYS = [
 ] as const;
 
 export const STORAGE_SCHEMA_VERSION_KEY = SCHEMA_KEYS[0];
+export const ONBOARDING_STATE_KEY = 'kognitika:ui:onboarding:v1';
 export const AUTH_TOKEN_KEY = IDENTITY_KEYS[1];
 export const AUTH_REFRESH_KEY = IDENTITY_KEYS[2];
 export const BRAIN_ID_KEY = IDENTITY_KEYS[0];

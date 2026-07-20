@@ -211,6 +211,18 @@ test.describe('Kognitika production smoke', () => {
               !hasControlSemantics &&
               !text &&
               (style.position === 'absolute' || style.position === 'fixed');
+            const clippedByViewportContainer = (() => {
+              let ancestor = el.parentElement;
+              while (ancestor) {
+                const ancestorStyle = window.getComputedStyle(ancestor);
+                if (ancestorStyle.overflowX === 'hidden' || ancestorStyle.overflowX === 'clip') {
+                  const ancestorRect = ancestor.getBoundingClientRect();
+                  return ancestorRect.left >= -1 && ancestorRect.right <= viewportWidth + 1;
+                }
+                ancestor = ancestor.parentElement;
+              }
+              return false;
+            })();
 
             return {
               tag: el.tagName.toLowerCase(),
@@ -226,12 +238,14 @@ test.describe('Kognitika production smoke', () => {
                 style.visibility !== 'hidden' &&
                 style.opacity !== '0',
               decorativeOnly,
+              clippedByViewportContainer,
             };
           })
           .filter(
             (item) =>
               item.visible &&
               !item.decorativeOnly &&
+              !item.clippedByViewportContainer &&
               (item.left < -1 || item.right > viewportWidth + 1),
           )
           .slice(0, 5);

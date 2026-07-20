@@ -62,15 +62,47 @@ function userToken(payload: Record<string, unknown>) {
 }
 
 describe('analytics export privacy contract', () => {
-  it('exports cognitive data without raw Brain ID, email, token, or password fields', async () => {
+  it('exports only aggregated trainer analytics without identifiers or raw metadata', async () => {
     prismaMock.gameSession.findMany.mockResolvedValue([
+      {
+        id: 'session_unknown',
+        createdAt: new Date('2026-01-04T00:00:00.000Z'),
+        gameType: 'UNSUPPORTED_SYNTHETIC_TYPE',
+        score: 999,
+        timeMs: 1,
+        metadata: { userId: 'must-not-export' },
+      },
+      {
+        id: 'session_hype',
+        createdAt: new Date('2026-01-03T00:00:00.000Z'),
+        gameType: 'HYPE_FILTER',
+        score: 80,
+        timeMs: 30000,
+        metadata: {},
+      },
+      {
+        id: 'session_synthetic_2',
+        createdAt: new Date('2026-01-02T00:00:00.000Z'),
+        gameType: 'SCHULTE',
+        score: 120,
+        timeMs: 22000,
+        metadata: { password: 'nested-password' },
+      },
       {
         id: 'session_synthetic_1',
         createdAt: new Date('2026-01-01T00:00:00.000Z'),
         gameType: 'SCHULTE',
         score: 100,
         timeMs: 25000,
-        metadata: { synthetic: true, reactionTimeMs: 500 },
+        metadata: {
+          reactionTimeMs: 500,
+          nested: {
+            brainId: 'BR-SYNTHETIC-NESTED',
+            email: 'nested@example.test',
+            token: 'nested-token',
+            localStorage: '{"user":"private"}',
+          },
+        },
       },
     ]);
     prismaMock.user.findUnique.mockResolvedValue({
@@ -97,18 +129,65 @@ describe('analytics export privacy contract', () => {
     const serialized = JSON.stringify(body);
 
     expect(response.status).toBe(200);
-    expect(body.subject).toMatchObject({
-      brain_label: 'Brain BR-SYNTH',
-      pseudonym: 'Brain Export',
-      level: 3,
-      rating: 1010,
-      total_xp: 120,
-      streak: 4,
+    expect(body.privacy).toEqual({
+      personal_identifiers_included: false,
+      raw_session_data_included: false,
+      exact_activity_timestamps_included: false,
+      safe_for_external_llm: true,
     });
-    expect(body.subject).not.toHaveProperty('id');
+    expect(body).not.toHaveProperty('subject');
+    expect(body).not.toHaveProperty('sessions');
+    expect(body.dataset).toMatchObject({
+      completed_sessions_analyzed: 3,
+      modules_with_data: 2,
+      history_truncated: false,
+      maximum_sessions_analyzed: 1000,
+    });
+    expect(prismaMock.gameSession.findMany).toHaveBeenCalledWith({
+      where: { userId: 'user_synthetic_export', isCompleted: true },
+      orderBy: { createdAt: 'desc' },
+      take: 1001,
+      select: {
+        gameType: true,
+        score: true,
+        timeMs: true,
+        createdAt: true,
+      },
+    });
+    expect(body.modules).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        module_id: 'schulte',
+        trainer: 'Таблицы Шульте',
+        completed_sessions: 2,
+        score: {
+          average: 110,
+          best: 120,
+          change_percent_early_vs_recent: 20,
+        },
+        duration_ms: {
+          average: 23500,
+          best: 22000,
+        },
+      }),
+      expect.objectContaining({
+        module_id: 'hype',
+        completed_sessions: 1,
+      }),
+    ]));
+    expect(prismaMock.user.findUnique).not.toHaveBeenCalled();
     expect(serialized).not.toContain('BR-SYNTHETIC-EXPORT-SECRET');
+    expect(serialized).not.toContain('BR-SYNTHETIC-NESTED');
     expect(serialized).not.toContain('export@example.test');
+    expect(serialized).not.toContain('nested@example.test');
     expect(serialized).not.toContain('synthetic-token');
+    expect(serialized).not.toContain('nested-token');
     expect(serialized).not.toContain('synthetic-password-hash');
+    expect(serialized).not.toContain('nested-password');
+    expect(serialized).not.toContain('session_synthetic_1');
+    expect(serialized).not.toContain('session_unknown');
+    expect(serialized).not.toContain('must-not-export');
+    expect(serialized).not.toContain('UNSUPPORTED_SYNTHETIC_TYPE');
+    expect(serialized).not.toContain('2026-01-01');
+    expect(serialized).not.toContain('localStorage');
   });
 });

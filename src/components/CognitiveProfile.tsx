@@ -5,7 +5,7 @@ import {
   Radar, RadarChart, PolarGrid, PolarAngleAxis, 
   ResponsiveContainer 
 } from 'recharts';
-import { ArrowRight, Download, Brain, TrendingUp, History, Info, Activity } from 'lucide-react';
+import { ArrowRight, Brain, TrendingUp, History, Info, Activity, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { CognitiveTrendCurve } from './CognitiveTrendCurve';
 
@@ -24,6 +24,7 @@ export function CognitiveProfile() {
   const { token } = useAuth();
   const [data, setData] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [exportStatus, setExportStatus] = useState<'idle' | 'loading' | 'error'>('idle');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -39,17 +40,31 @@ export function CognitiveProfile() {
   }, [token]);
 
   const handleExport = async () => {
-    const res = await fetch('/api/analytics/export', {
-      headers: token ? { 'Authorization': `Bearer ${token}` } : undefined
-    });
-    const blob = await res.blob();
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `kognitika_export_${new Date().toISOString().split('T')[0]}.json`;
-    document.body.appendChild(a);
-    a.click();
-    window.URL.revokeObjectURL(url);
+    if (!token) {
+      setExportStatus('error');
+      return;
+    }
+
+    setExportStatus('loading');
+    try {
+      const res = await fetch('/api/analytics/export', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (!res.ok) throw new Error('Export request failed');
+
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `kognitika_export_${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+      setExportStatus('idle');
+    } catch {
+      setExportStatus('error');
+    }
   };
 
   if (loading) return <div className="p-8 text-center animate-pulse">Анализ нейронных связей...</div>;
@@ -176,18 +191,24 @@ export function CognitiveProfile() {
           <div className="bg-primary/5 border border-primary/20 rounded-3xl p-6 relative overflow-hidden group">
             <div className="relative z-10">
               <h4 className="text-sm font-black mb-2 flex items-center gap-2">
-                <Download className="w-4 h-4" /> Экспорт данных (JSON)
+                <ShieldCheck className="w-4 h-4" /> Обезличенный экспорт для LLM
               </h4>
               <p className="text-xs text-muted-foreground leading-relaxed mb-4">
-                Ваши данные в формате KCTS (Kognitika Cognitive Time-Series). 
-                Оптимизировано для анализа в ChatGPT, Claude или вашей собственной LLM.
+                JSON содержит агрегаты по каждому тренажёру и пояснения метрик. В нём нет имени,
+                псевдонима, Brain ID, email, токенов, session ID, точных дат и сырых metadata.
               </p>
               <button
                 onClick={handleExport}
-                className="w-full py-3 bg-primary text-primary-foreground rounded-xl text-xs font-black uppercase tracking-widest hover:scale-[1.02] transition-transform active:scale-95 shadow-lg shadow-primary/20"
+                disabled={exportStatus === 'loading' || !token}
+                className="w-full py-3 bg-primary text-primary-foreground rounded-xl text-xs font-black uppercase tracking-widest hover:scale-[1.02] transition-transform active:scale-95 shadow-lg shadow-primary/20 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                Скачать JSON
+                {exportStatus === 'loading' ? 'Подготовка JSON...' : 'Скачать JSON для LLM'}
               </button>
+              {exportStatus === 'error' && (
+                <p role="alert" className="mt-3 text-xs text-destructive">
+                  Не удалось подготовить экспорт. Проверьте вход через Brain ID и повторите попытку.
+                </p>
+              )}
             </div>
             <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
               <Brain className="w-24 h-24 rotate-12" />

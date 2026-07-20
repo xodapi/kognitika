@@ -48,6 +48,7 @@ const authTokenSchema = z.string().min(1);
 interface AuthContextType {
   user: User | null;
   token: string | null;
+  isReady: boolean;
   login: (token: string, user: User) => void;
   logout: () => void;
   refreshUser: () => Promise<void>;
@@ -56,6 +57,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType>({
   user: null, 
   token: null, 
+  isReady: false,
   login: () => {}, 
   logout: () => {},
   refreshUser: async () => {}
@@ -64,6 +66,7 @@ const AuthContext = createContext<AuthContextType>({
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
+  const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
     storageGateway.ensureSchemaVersion();
@@ -89,6 +92,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } else if (!legacyUser.ok) {
       storageGateway.remove(LEGACY_AUTH_USER_KEY);
     }
+    setIsReady(true);
   }, []);
 
   const refreshUser = async () => {
@@ -134,7 +138,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, login, logout, refreshUser }}>
+    <AuthContext.Provider value={{ user, token, isReady, login, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

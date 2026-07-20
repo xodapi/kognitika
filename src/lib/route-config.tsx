@@ -1,5 +1,6 @@
 import { lazy, type ComponentType } from 'react';
 import type { LucideIcon } from 'lucide-react';
+import type { DashboardTab } from '../components/Dashboard';
 import {
   LayoutDashboard, Play, Calculator, Grid3x3, Palette, BrainCircuit,
   Users, Trophy, Lightbulb, Shield, GitBranch, Filter, Cpu, VolumeX,
@@ -16,7 +17,10 @@ export function lazyNamed<TProps extends object = Record<string, never>>(
   });
 }
 
-export const Dashboard = lazyNamed<{ onStartGame: (game: string) => void }>(
+export const Dashboard = lazyNamed<{
+  onStartGame: (game: string) => void;
+  initialTab?: DashboardTab;
+}>(
   () => import('../components/Dashboard'),
   'Dashboard',
 );

@@ -20,7 +20,15 @@ import { Wiki } from './Wiki';
 import { StreakBanner } from './StreakBanner';
 import { Sword, LayoutDashboard, BookOpen } from 'lucide-react';
 
-export function Dashboard({ onStartGame }: { onStartGame: (game: string) => void }) {
+export type DashboardTab = 'training' | 'profile' | 'duels' | 'wiki' | 'ideas' | 'admin';
+
+export function Dashboard({
+  onStartGame,
+  initialTab = 'training',
+}: {
+  onStartGame: (game: string) => void;
+  initialTab?: DashboardTab;
+}) {
   const { user, token, refreshUser } = useAuth();
   const [data, setData] = useState<any[]>([]);
   const [leaderboard, setLeaderboard] = useState<any[]>([]);
@@ -28,8 +36,12 @@ export function Dashboard({ onStartGame }: { onStartGame: (game: string) => void
   const [levelProgress, setLevelProgress] = useState(0);
   const [userRole, setUserRole] = useState<string>('USER');
   const [streak, setStreak] = useState<any>(null);
-  const [activeTab, setActiveTab] = useState<'training' | 'profile' | 'duels' | 'wiki' | 'ideas' | 'admin'>('training');
+  const [activeTab, setActiveTab] = useState<DashboardTab>(initialTab);
   const [isShareOpen, setIsShareOpen] = useState(false);
+
+  useEffect(() => {
+    setActiveTab(initialTab);
+  }, [initialTab]);
 
   useEffect(() => {
      // Fetch leaderboard

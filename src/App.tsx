@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Suspense, useState, useEffect, type ReactNode } from 'react';
+import { lazy, Suspense, useCallback, useState, useEffect, type ReactNode } from 'react';
 import { useTheme } from 'next-themes';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
@@ -21,6 +21,7 @@ import { AuthModal } from './components/AuthModal';
 import { FeedbackModal } from './components/FeedbackModal';
 import { AppErrorBoundary } from './components/AppErrorBoundary';
 import { DonateButton } from './components/DonateButton';
+import { completeOnboarding, hasCompletedOnboarding } from './lib/onboarding-state';
 import {
   Dashboard, LeaderboardView, SchulteGrid, NumericalAnalysis,
   LogicalMatrix, StroopTest, NBackTest, SituationalJudgmentTest,
@@ -35,6 +36,10 @@ import {
 } from './lib/route-config';
 
 type Tab = 'dashboard' | 'schulte' | 'numerical' | 'logical' | 'stroop' | 'nback' | 'situational' | 'typing' | 'spatial' | 'admin' | 'ideas' | 'wiki' | 'objective' | 'profiling' | 'anomaly' | 'dialogue' | 'leaderboard' | 'topology' | 'collision' | 'dispatcher' | 'noise' | 'scanner' | 'decryptor' | 'reality' | 'silence' | 'filter' | 'hype' | 'reframing' | 'rejection' | 'storytelling' | 'focus' | 'cognitive-map';
+
+const OnboardingModal = lazy(() => import('./components/OnboardingModal').then((module) => ({
+  default: module.OnboardingModal,
+})));
 
 const appBuildId = import.meta.env.VITE_BUILD_ID || import.meta.env.VITE_GIT_COMMIT || 'dev';
 
@@ -129,19 +134,32 @@ function AppContent() {
   const navigate = useNavigate();
   const location = useLocation();
   const activeTab = (location.pathname.slice(1) || 'dashboard') as Tab;
+  const dashboardInitialTab = location.state?.dashboardSection === 'profile' ? 'profile' : 'training';
 
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
   const [isDonateOpen, setIsDonateOpen] = useState(false);
+  const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
   const [isChatEnabled, setIsChatEnabled] = useState(false);
-  const { user, logout, token } = useAuth();
+  const { user, logout, token, isReady } = useAuth();
   const isAdmin = (user as any)?.role === 'ADMIN';
   usePracticeFlowAnalytics(location.pathname);
 
   useEffect(() => {
     document.title = `${getRouteTitle(location.pathname)} | Когнитика`;
   }, [location.pathname]);
+
+  useEffect(() => {
+    if (isReady && user && !isAuthOpen && !hasCompletedOnboarding()) {
+      setIsOnboardingOpen(true);
+    }
+  }, [isAuthOpen, isReady, user]);
+
+  const closeOnboarding = useCallback(() => {
+    completeOnboarding();
+    setIsOnboardingOpen(false);
+  }, []);
 
   return (
     <div className="min-h-screen flex flex-col font-sans transition-colors duration-300 bg-background text-foreground relative">
@@ -185,6 +203,16 @@ function AppContent() {
         </nav>
 
         <div className="flex items-center gap-2 sm:gap-4 shrink-0">
+          <div className="hidden sm:block">
+            <button
+              onClick={() => setIsOnboardingOpen(true)}
+              className="p-2 text-muted-foreground hover:text-primary transition-colors"
+              title="Как работает Когнитика"
+              aria-label="Открыть обучение"
+            >
+              <Info className="w-5 h-5" />
+            </button>
+          </div>
           <div className="hidden sm:block">
             <button
               onClick={() => setIsFeedbackOpen(true)}
@@ -323,6 +351,18 @@ function AppContent() {
                  <p className="text-[10px] font-black text-muted-foreground uppercase px-3 mb-3 tracking-widest">Персонализация</p>
                  <div className="bg-secondary/30 rounded-2xl p-2 border border-border">
                     <button
+                       onClick={() => { setIsOnboardingOpen(true); setIsMobileMenuOpen(false); }}
+                       className="w-full flex items-center justify-between px-3 py-3 rounded-xl hover:bg-secondary transition-all"
+                    >
+                      <div className="flex items-center gap-3">
+                         <div className="p-1.5 rounded-lg bg-primary/20 text-primary">
+                            <Info className="w-4 h-4" />
+                         </div>
+                         <span className="text-sm font-bold">Как это работает</span>
+                      </div>
+                      <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                    </button>
+                    <button
                        onClick={() => { setIsFeedbackOpen(true); setIsMobileMenuOpen(false); }}
                        className="w-full flex items-center justify-between px-3 py-3 rounded-xl hover:bg-secondary transition-all"
                     >
@@ -405,7 +445,15 @@ function AppContent() {
          <div className={`${isChatEnabled ? 'lg:col-span-9' : 'lg:col-span-12'} h-full`}>
             <LazySection>
               <Routes>
-                <Route path="/" element={<Dashboard onStartGame={(game) => navigate(`/${game}`)} />} />
+                <Route
+                  path="/"
+                  element={(
+                    <Dashboard
+                      initialTab={dashboardInitialTab}
+                      onStartGame={(game) => navigate(`/${game}`)}
+                    />
+                  )}
+                />
                 <Route path="/dashboard" element={<Navigate to="/" replace />} />
                 <Route path="/schulte" element={<SchulteGrid />} />
                 <Route path="/numerical" element={<NumericalAnalysis />} />
@@ -505,6 +553,16 @@ function AppContent() {
       <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />
       <FeedbackModal isOpen={isFeedbackOpen} onClose={() => setIsFeedbackOpen(false)} />
       <DonateButton isOpen={isDonateOpen} onClose={() => setIsDonateOpen(false)} />
+      {isOnboardingOpen && (
+        <Suspense fallback={null}>
+          <OnboardingModal
+            isOpen
+            onComplete={closeOnboarding}
+            onStartTraining={() => navigate('/schulte')}
+            onOpenProfile={() => navigate('/', { state: { dashboardSection: 'profile' } })}
+          />
+        </Suspense>
+      )}
     </div>
   );
 }
