@@ -51,6 +51,7 @@ export const MODULE_TITLES: Record<string, string> = {
   rejection: 'Иммунитет к отказам',
   storytelling: 'Смысловые связи',
   focus: 'Глубокий фокус',
+  'mental-math': 'Быстрые вычисления',
 };
 
 const GAME_TYPE_TO_MODULE: Record<string, string> = {
@@ -86,6 +87,8 @@ const GAME_TYPE_TO_MODULE: Record<string, string> = {
   REJECTION_IMMUNITY: 'rejection',
   STORYTELLING: 'storytelling',
   DEEP_FOCUS: 'focus',
+  MENTAL_MATH: 'mental-math',
+  SCHULTE_90: 'schulte',
 };
 
 export function resolvePracticeModuleId(value: string | null | undefined): string | null {
@@ -142,6 +145,7 @@ export const NEXT_MODULE: Record<string, string> = {
   filter: 'scanner',
   hype: 'scanner',
   silence: 'schulte',
+  'mental-math': 'schulte',
 };
 
 export const WEAK_AREA_MODULE: Record<string, string> = {

@@ -135,7 +135,8 @@ export function PostGameInsight({
       DECRYPTOR: 'Декриптор',
       REALITY_CHECK: 'Проверка реальности',
       OBJECTIVE_FILTER: 'Объективный фильтр',
-      PROFILING_RICE: 'Профайлинг RICE'
+      PROFILING_RICE: 'Профайлинг RICE',
+      MENTAL_MATH: 'Быстрые вычисления',
     };
     return titles[type] || type;
   };

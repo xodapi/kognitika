@@ -98,6 +98,7 @@ export const PUBLIC_PRACTICE_ROUTES = {
   '/rejection': { moduleId: 'rejection', category: 'safety' },
   '/storytelling': { moduleId: 'storytelling', category: 'cognitive' },
   '/focus': { moduleId: 'focus', category: 'cognitive' },
+  '/mental-math': { moduleId: 'mental-math', category: 'cognitive' },
 } as const satisfies Record<string, { moduleId: string; category: PracticeFlowCategory }>;
 
 export type PublicPracticeRoute = keyof typeof PUBLIC_PRACTICE_ROUTES;

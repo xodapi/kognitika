@@ -32,6 +32,7 @@ export const APP_ROUTE_PATHS = [
   '/storytelling',
   '/focus',
   '/cognitive-map',
+  '/mental-math',
 ] as const;
 
 export const RECOMMENDED_GAME_ROUTES = {
@@ -60,6 +61,7 @@ export const RECOMMENDED_GAME_ROUTES = {
   rejection: '/rejection',
   storytelling: '/storytelling',
   focus: '/focus',
+  'mental-math': '/mental-math',
 } as const satisfies Record<string, (typeof APP_ROUTE_PATHS)[number]>;
 
 const appRouteSet = new Set<string>(APP_ROUTE_PATHS);

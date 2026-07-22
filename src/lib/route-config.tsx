@@ -4,7 +4,7 @@ import type { DashboardTab } from '../components/Dashboard';
 import {
   LayoutDashboard, Play, Calculator, Grid3x3, Palette, BrainCircuit,
   Users, Trophy, Lightbulb, Shield, GitBranch, Filter, Cpu, VolumeX,
-  Search, Network, Target, MessageSquare, Lock,
+  Search, Network, Target, MessageSquare, Lock, Hash,
 } from 'lucide-react';
 
 export function lazyNamed<TProps extends object = Record<string, never>>(
@@ -62,6 +62,7 @@ export const DeepFocus = lazyNamed<{ onFinish?: () => void }>(() => import('../c
 export const SymbolChat = lazyNamed(() => import('../components/SymbolChat'), 'SymbolChat');
 export const Wiki = lazyNamed(() => import('../components/Wiki'), 'Wiki');
 export const CognitiveMap = lazyNamed(() => import('../components/CognitiveMap'), 'CognitiveMap');
+export const MentalMathTrainer = lazyNamed(() => import('../components/MentalMathTrainer'), 'MentalMathTrainer');
 
 export interface RouteEntry {
   path: string;
@@ -106,6 +107,7 @@ export const ROUTE_DEFINITIONS: RouteEntry[] = [
   { path: '/admin', title: 'Админ-панель', icon: Lock, navGroup: 'system', customRender: true },
   { path: '/wiki', title: 'База знаний', icon: Shield, navGroup: 'wiki', customRender: true },
   { path: '/cognitive-map', title: 'Когнитивная карта', icon: Network, navGroup: 'cognitive' },
+  { path: '/mental-math', title: 'Быстрые вычисления', icon: Hash, navGroup: 'cognitive' },
 ];
 
 const routeTitleMap = new Map<string, string>();

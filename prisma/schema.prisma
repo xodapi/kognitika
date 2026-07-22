@@ -96,6 +96,8 @@ enum GameType {
   LANGUAGE_SCANNER
   DECRYPTOR
   REALITY_CHECK
+  MENTAL_MATH
+  SCHULTE_90
 }
 
 model GameSession {
