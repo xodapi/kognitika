@@ -52,6 +52,7 @@ export const MODULE_TITLES: Record<string, string> = {
   storytelling: 'Смысловые связи',
   focus: 'Глубокий фокус',
   'mental-math': 'Быстрые вычисления',
+  'schulte-90': 'Таблица 1-90',
 };
 
 const GAME_TYPE_TO_MODULE: Record<string, string> = {
@@ -88,7 +89,7 @@ const GAME_TYPE_TO_MODULE: Record<string, string> = {
   STORYTELLING: 'storytelling',
   DEEP_FOCUS: 'focus',
   MENTAL_MATH: 'mental-math',
-  SCHULTE_90: 'schulte',
+  SCHULTE_90: 'schulte-90',
 };
 
 export function resolvePracticeModuleId(value: string | null | undefined): string | null {
@@ -146,6 +147,7 @@ export const NEXT_MODULE: Record<string, string> = {
   hype: 'scanner',
   silence: 'schulte',
   'mental-math': 'schulte',
+  'schulte-90': 'schulte',
 };
 
 export const WEAK_AREA_MODULE: Record<string, string> = {

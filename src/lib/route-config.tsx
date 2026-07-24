@@ -63,6 +63,7 @@ export const SymbolChat = lazyNamed(() => import('../components/SymbolChat'), 'S
 export const Wiki = lazyNamed(() => import('../components/Wiki'), 'Wiki');
 export const CognitiveMap = lazyNamed(() => import('../components/CognitiveMap'), 'CognitiveMap');
 export const MentalMathTrainer = lazyNamed(() => import('../components/MentalMathTrainer'), 'MentalMathTrainer');
+export const SchulteTable90 = lazyNamed(() => import('../components/SchulteTable90'), 'SchulteTable90');
 
 export interface RouteEntry {
   path: string;
@@ -108,6 +109,7 @@ export const ROUTE_DEFINITIONS: RouteEntry[] = [
   { path: '/wiki', title: 'База знаний', icon: Shield, navGroup: 'wiki', customRender: true },
   { path: '/cognitive-map', title: 'Когнитивная карта', icon: Network, navGroup: 'cognitive' },
   { path: '/mental-math', title: 'Быстрые вычисления', icon: Hash, navGroup: 'cognitive' },
+  { path: '/schulte-90', title: 'Таблица 1-90', icon: Grid3x3, navGroup: 'cognitive' },
 ];
 
 const routeTitleMap = new Map<string, string>();

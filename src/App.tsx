@@ -30,7 +30,7 @@ import {
   CollisionDetector, AsyncDispatcher, NoiseReduction, LanguageScanner,
   Decryptor, RealityCheck, NeuroSilence, CognitiveTrashFilter, HypeFilter,
   Reframing, RejectionImmunity, Storytelling, DeepFocus, SymbolChat, Wiki,
-  CognitiveMap, MentalMathTrainer,
+  CognitiveMap, MentalMathTrainer, SchulteTable90,
   getRouteTitle,
   HEADER_NAV_ITEMS, MOBILE_NAV_ITEMS, BOTTOM_NAV_ITEMS,
 } from './lib/route-config';
@@ -484,6 +484,7 @@ function AppContent() {
                 <Route path="/wiki/:articleId" element={<Wiki />} />
                 <Route path="/cognitive-map" element={<CognitiveMap />} />
                 <Route path="/mental-math" element={<MentalMathTrainer />} />
+                <Route path="/schulte-90" element={<SchulteTable90 />} />
                 <Route path="/leaderboard" element={<LeaderboardView />} />
                 <Route path="/topology" element={<TopologyMemory />} />
                 <Route path="/collision" element={<CollisionDetector />} />

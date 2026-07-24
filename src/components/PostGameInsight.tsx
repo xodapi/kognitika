@@ -137,6 +137,7 @@ export function PostGameInsight({
       OBJECTIVE_FILTER: 'Объективный фильтр',
       PROFILING_RICE: 'Профайлинг RICE',
       MENTAL_MATH: 'Быстрые вычисления',
+      SCHULTE_90: 'Таблица Шульте 1-90',
     };
     return titles[type] || type;
   };

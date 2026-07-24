@@ -1,13 +1,18 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion } from 'motion/react';
 import { Grid3x3, Info, Activity, AlertCircle } from 'lucide-react';
-import { useSchulte90Engine, type Schulte90State } from '../hooks/useSchulte90Engine';
+import { useSchulte90Engine } from '../hooks/useSchulte90Engine';
 import { useAuth } from '../hooks/useAuth';
 import { useSessionRecording } from '../hooks/useSessionRecording';
 import { useNavigate } from 'react-router-dom';
 import { PostGameInsight } from './PostGameInsight';
 import { createSafeLogger, safeError } from '../lib/safe-logger';
-import { SCHULTE_90_ROWS, SCHULTE_90_COLS, SCHULTE_90_TOTAL } from '../lib/schulte90-generator';
+import {
+  computeSchulte90Score,
+  SCHULTE_90_ROWS,
+  SCHULTE_90_COLS,
+  SCHULTE_90_TOTAL,
+} from '../lib/schulte90-generator';
 
 const logger = createSafeLogger('schulte-90');
 
@@ -18,24 +23,20 @@ export function SchulteTable90() {
   const { token, refreshUser } = useAuth();
   const navigate = useNavigate();
   const [showBriefing, setShowBriefing] = useState(false);
-  const [bonusAwarded, setBonusAwarded] = useState(0);
+  const savedRunRef = useRef(false);
 
   useSessionRecording(state.isActive, state.isFinished);
 
-  // Auto-stop at 180s hard limit
   useEffect(() => {
     if (state.isActive && state.timeMs > 180000) {
-      stopGame();
+      stopGame('timed_out');
     }
   }, [state.isActive, state.timeMs, stopGame]);
 
-  // Save score on finish
   useEffect(() => {
-    if (state.isFinished && state.timeMs > 0 && token) {
-      const finalScore = Math.max(
-        0,
-        Math.floor(1000 - state.timeMs / 10) - state.errors * 50
-      );
+    if (state.outcome === 'completed' && state.timeMs > 0 && token && !savedRunRef.current) {
+      savedRunRef.current = true;
+      const accuracy = (SCHULTE_90_TOTAL / (SCHULTE_90_TOTAL + state.errors)) * 100;
 
       fetch('/api/game/save', {
         method: 'POST',
@@ -47,9 +48,12 @@ export function SchulteTable90() {
           gameType: 'SCHULTE_90',
           timeMs: state.timeMs,
           metadata: {
-            score: finalScore,
             rows: SCHULTE_90_ROWS,
             cols: SCHULTE_90_COLS,
+            size: SCHULTE_90_COLS,
+            accuracy,
+            correctAnswers: SCHULTE_90_TOTAL,
+            totalQuestions: SCHULTE_90_TOTAL,
             errors: state.errors,
             clickHistory: state.clickHistory,
           },
@@ -58,7 +62,6 @@ export function SchulteTable90() {
         .then((res) => res.json())
         .then((resData) => {
           if (resData.session?.score) {
-            setBonusAwarded(resData.session.score);
             refreshUser();
           }
         })
@@ -66,7 +69,18 @@ export function SchulteTable90() {
           logger.error('Session save failed', { error: safeError(err), gameType: 'SCHULTE_90' })
         );
     }
-  }, [state.isFinished, state.timeMs, token, refreshUser, state.errors, state.clickHistory]);
+  }, [state.outcome, state.timeMs, token, refreshUser, state.errors, state.clickHistory]);
+
+  const beginGame = useCallback(() => {
+    savedRunRef.current = false;
+    setShowBriefing(false);
+    startGame();
+  }, [startGame]);
+
+  const handleReset = useCallback(() => {
+    savedRunRef.current = false;
+    resetGame();
+  }, [resetGame]);
 
   const handleSuccess = useCallback(() => {
     if (navigator.vibrate) navigator.vibrate(15);
@@ -149,10 +163,7 @@ export function SchulteTable90() {
             <motion.button
               whileHover={{ scale: 1.02, boxShadow: '0 20px 40px -10px rgba(var(--primary-rgb), 0.3)' }}
               whileTap={{ scale: 0.98 }}
-              onClick={() => {
-                setShowBriefing(false);
-                startGame();
-              }}
+              onClick={beginGame}
               className="w-full py-5 bg-primary text-primary-foreground rounded-[1.5rem] font-black text-sm uppercase tracking-[0.3em] shadow-2xl shadow-primary/20 transition-all"
             >
               Инициализировать тест
@@ -294,7 +305,41 @@ export function SchulteTable90() {
 
   // Result screen
   if (state.isFinished) {
-    const finalScore = Math.max(0, Math.floor(1000 - state.timeMs / 10) - state.errors * 50);
+    if (state.outcome !== 'completed') {
+      return (
+        <div className="col-span-12 flex items-center justify-center h-full min-h-[500px]">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="max-w-xl w-full bg-card/70 border border-border rounded-[2.5rem] p-10 text-center shadow-2xl"
+          >
+            <AlertCircle className="w-12 h-12 text-amber-500 mx-auto mb-5" />
+            <h2 className="text-2xl font-black uppercase tracking-tight mb-3">
+              {state.outcome === 'timed_out' ? 'Время истекло' : 'Тренировка остановлена'}
+            </h2>
+            <p className="text-sm text-muted-foreground mb-8">
+              Найдено {state.expectedIndex} из {SCHULTE_90_TOTAL}. Незавершённая попытка не сохраняется как результат.
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <button
+                onClick={handleReset}
+                className="py-3 rounded-xl bg-primary text-primary-foreground text-xs font-black uppercase tracking-widest"
+              >
+                Попробовать снова
+              </button>
+              <button
+                onClick={() => navigate('/')}
+                className="py-3 rounded-xl border border-border text-xs font-black uppercase tracking-widest"
+              >
+                В меню
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      );
+    }
+
+    const finalScore = computeSchulte90Score(state.timeMs, state.errors);
 
     return (
       <div className="col-span-12 grid grid-cols-1 lg:grid-cols-12 gap-8 h-full min-h-0 relative pb-10">
@@ -308,7 +353,7 @@ export function SchulteTable90() {
             score={finalScore}
             timeMs={state.timeMs}
             errors={state.errors}
-            onPlayAgain={resetGame}
+            onPlayAgain={handleReset}
             onBackToMenu={() => navigate('/')}
           />
         </motion.div>
@@ -400,12 +445,12 @@ export function SchulteTable90() {
       <motion.div
         animate={state.errors > 0 ? { x: [0, -10, 10, -10, 10, 0] } : {}}
         transition={{ duration: 0.4 }}
-        className="lg:col-span-6 border border-border rounded-[2.5rem] p-4 sm:p-6 flex flex-col items-center justify-center relative min-h-[400px] overflow-hidden lg:h-full shadow-2xl bg-card/30 backdrop-blur-sm"
+        className="lg:col-span-6 border border-border rounded-[2.5rem] p-4 sm:p-6 flex flex-col items-start sm:items-center justify-center relative min-h-[400px] overflow-x-auto overflow-y-hidden lg:h-full shadow-2xl bg-card/30 backdrop-blur-sm"
       >
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="grid gap-1.5 w-full max-w-[700px] relative z-10"
+          className="grid gap-1.5 w-full min-w-[440px] sm:min-w-0 max-w-[700px] relative z-10"
           style={{ gridTemplateColumns: `repeat(${SCHULTE_90_COLS}, 1fr)` }}
         >
           {state.grid.map((cell, idx) => (
@@ -460,7 +505,7 @@ export function SchulteTable90() {
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            onClick={stopGame}
+            onClick={() => stopGame('aborted')}
             className="w-full py-4 bg-destructive/10 border border-destructive/20 text-destructive text-xs uppercase font-black tracking-widest rounded-2xl hover:bg-destructive hover:text-white transition-all shadow-lg shadow-destructive/5"
           >
             Завершить досрочно

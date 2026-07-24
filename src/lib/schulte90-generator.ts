@@ -21,6 +21,22 @@ export const SCHULTE_90_ROWS = 9;
 export const SCHULTE_90_COLS = 10;
 export const SCHULTE_90_TOTAL = SCHULTE_90_ROWS * SCHULTE_90_COLS; // 90
 
+const MIN_SCORE = 10;
+const MAX_SCORE = 1000;
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value));
+}
+
+export function computeSchulte90Score(timeMs: number, errors: number): number {
+  const safeTimeMs = Math.max(1, timeMs);
+  const safeErrors = Math.max(0, errors);
+  const speedScore = clamp(Math.floor(100000 / safeTimeMs), MIN_SCORE, MAX_SCORE);
+  const accuracy = clamp(SCHULTE_90_TOTAL / (SCHULTE_90_TOTAL + safeErrors), 0.2, 1);
+  const complexity = 1.31;
+  return clamp(Math.round(speedScore * accuracy * complexity - safeErrors * 5), MIN_SCORE, MAX_SCORE);
+}
+
 /**
  * Generate a shuffled 9x10 grid of numbers 1-90.
  */
