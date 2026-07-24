@@ -5,19 +5,35 @@ export interface NeurotrainerAnalysis {
   recommendations: string[];
 }
 
-async function postJson<T>(path: string, token: string, body: unknown): Promise<T> {
-  const response = await fetch(path, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify(body),
-  });
-  if (!response.ok) {
-    throw new Error(`Neurotrainer request failed with HTTP ${response.status}`);
+async function postJson<T>(
+  path: string,
+  token: string,
+  body: unknown,
+  signal?: AbortSignal,
+): Promise<T> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 12000);
+  const abortFromCaller = () => controller.abort();
+  signal?.addEventListener('abort', abortFromCaller, { once: true });
+  if (signal?.aborted) controller.abort();
+  try {
+    const response = await fetch(path, {
+      method: 'POST',
+      signal: controller.signal,
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(body),
+    });
+    if (!response.ok) {
+      throw new Error(`Neurotrainer request failed with HTTP ${response.status}`);
+    }
+    return response.json() as Promise<T>;
+  } finally {
+    clearTimeout(timeout);
+    signal?.removeEventListener('abort', abortFromCaller);
   }
-  return response.json() as Promise<T>;
 }
 
 export function requestMentalMathSet(
@@ -41,10 +57,12 @@ export function requestNeurotrainerAnalysis(
     totalQuestions?: number;
     level?: number;
   },
+  signal?: AbortSignal,
 ) {
   return postJson<{ analysis: NeurotrainerAnalysis; source: 'llm' | 'fallback' }>(
     '/api/neurotrainer/analyze',
     token,
     input,
+    signal,
   );
 }

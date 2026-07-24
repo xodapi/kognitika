@@ -17,6 +17,8 @@ describe('TrainingGallery UI', () => {
   it('должен отображать базовые модули по умолчанию', () => {
     render(<TrainingGallery onStart={() => {}} />);
     expect(screen.getByText(/Таблицы Шульте/i)).toBeDefined();
+    expect(screen.getByText(/Таблица 1-90/i)).toBeDefined();
+    expect(screen.getByText(/Быстрые вычисления/i)).toBeDefined();
     expect(screen.getByText(/Числовой анализ/i)).toBeDefined();
     // Engineering module should NOT be visible
     expect(screen.queryByText(/Архитектура контекста/i)).toBeNull();
@@ -52,5 +54,16 @@ describe('TrainingGallery UI', () => {
     if (schulteModule) fireEvent.click(schulteModule);
     
     expect(onStart).toHaveBeenCalledWith('schulte');
+  });
+
+  it('открывает оба новых тренажёра из базовой галереи', () => {
+    const onStart = vi.fn();
+    render(<TrainingGallery onStart={onStart} />);
+
+    fireEvent.click(screen.getByText('Быстрые вычисления').closest('button')!);
+    fireEvent.click(screen.getByText('Таблица 1-90').closest('button')!);
+
+    expect(onStart).toHaveBeenNthCalledWith(1, 'mental-math');
+    expect(onStart).toHaveBeenNthCalledWith(2, 'schulte-90');
   });
 });

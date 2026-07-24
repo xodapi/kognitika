@@ -4,6 +4,7 @@ import {
   Users, Shield, Activity, MessageSquare, Zap, Target,
   GitBranch, Filter, Cpu, VolumeX
 } from 'lucide-react';
+import { MODULE_TITLES } from '../lib/practice-recommendations';
 
 interface TrainingModule {
   id: string;
@@ -19,7 +20,8 @@ interface TrainingModule {
 const MODULES: TrainingModule[] = [
   // BASE DOMAIN
   { id: 'schulte', title: 'Таблицы Шульте', description: 'Развитие периферического зрения и концентрации.', icon: Play, color: 'text-blue-500', category: 'Внимание', domain: 'base', level: 1 },
-  { id: 'schulte-90', title: 'Таблица 1-90', description: 'Расширенный поиск на поле 9x10 для периферического внимания.', icon: Grid3x3, color: 'text-sky-500', category: 'Внимание', domain: 'base', level: 4 },
+  { id: 'schulte-90', title: MODULE_TITLES['schulte-90'], description: 'Расширенный поиск на поле 9x10 для периферического внимания.', icon: Grid3x3, color: 'text-sky-500', category: 'Внимание', domain: 'base', level: 4 },
+  { id: 'mental-math', title: MODULE_TITLES['mental-math'], description: 'Скоростной счёт, рабочая память и устойчивость внимания.', icon: Calculator, color: 'text-emerald-500', category: 'Логика', domain: 'base', level: 3 },
   { id: 'numerical', title: 'Числовой анализ', description: 'Скорость обработки числовой информации.', icon: Calculator, color: 'text-emerald-500', category: 'Логика', domain: 'base', level: 1 },
   { id: 'logical', title: 'Логические матрицы', description: 'Поиск закономерностей в сложных системах.', icon: Grid3x3, color: 'text-purple-500', category: 'Логика', domain: 'base', level: 3 },
   { id: 'stroop', title: 'Эффект Струпа', description: 'Тренировка когнитивного контроля и гибкости.', icon: Palette, color: 'text-amber-500', category: 'Внимание', domain: 'base', level: 2 },

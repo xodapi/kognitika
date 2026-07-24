@@ -4,7 +4,7 @@ export const MentalMathLevelSchema = z.union([z.literal(1), z.literal(2)]);
 
 export const GenerateMentalMathRequestSchema = z.object({
   level: MentalMathLevelSchema,
-  count: z.number().int().min(10).max(30),
+  count: z.number().int().min(20).max(30),
 }).strict();
 
 export const MathLegendSchema = z.record(

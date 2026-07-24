@@ -11,6 +11,8 @@ import { routeForRecommendedGame } from '../lib/routes';
 
 const completionContracts = [
   ['schulte', 'src/components/SchulteGrid.tsx', 'PostGameInsight'],
+  ['schulte-90', 'src/components/SchulteTable90.tsx', 'PostGameInsight'],
+  ['mental-math', 'src/components/MentalMathTrainer.tsx', 'PostGameInsight'],
   ['numerical', 'src/components/NumericalAnalysis.tsx', 'PostGameInsight'],
   ['logical', 'src/components/LogicalMatrix.tsx', 'PostGameInsight'],
   ['stroop', 'src/components/StroopTest.tsx', 'PostGameInsight'],

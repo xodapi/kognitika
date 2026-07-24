@@ -88,6 +88,18 @@ describe('neurotrainer route', () => {
     expect(serviceMock.generateMentalMathTraining).not.toHaveBeenCalled();
   });
 
+  it('enforces the 20-question minimum', async () => {
+    const baseUrl = await createHarness();
+    const token = jwt.sign({ id: 'synthetic-user' }, JWT_SECRET);
+    const response = await postJson(baseUrl, '/api/neurotrainer/mental-math/generate', {
+      level: 1,
+      count: 10,
+    }, token);
+
+    expect(response.status).toBe(400);
+    expect(serviceMock.generateMentalMathTraining).not.toHaveBeenCalled();
+  });
+
   it('rejects extra identity fields', async () => {
     const baseUrl = await createHarness();
     const token = jwt.sign({ id: 'synthetic-user' }, JWT_SECRET);

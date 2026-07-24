@@ -9,7 +9,7 @@ import {
   SCHULTE_90_COLS,
 } from '../lib/schulte90-generator';
 
-export type Schulte90Outcome = 'idle' | 'active' | 'completed' | 'aborted' | 'timed_out';
+export type Schulte90Outcome = 'idle' | 'active' | 'completed' | 'aborted';
 
 export interface Schulte90State {
   grid: CellValue[];
@@ -52,6 +52,7 @@ export function useSchulte90Engine() {
   const [state, setState] = useState<Schulte90State>(DEFAULT_STATE);
   const timerRef = useRef<number | null>(null);
   const startTimeRef = useRef<number>(0);
+  const displayedTimeRef = useRef(0);
   const activeRef = useRef(false);
   const expectedIndexRef = useRef(0);
   const errorsRef = useRef(0);
@@ -73,6 +74,7 @@ export function useSchulte90Engine() {
     errorsRef.current = 0;
     lastClickTimeRef.current = 0;
     sequenceRef.current = seq;
+    displayedTimeRef.current = 0;
 
     setState({
       ...DEFAULT_STATE,
@@ -87,23 +89,24 @@ export function useSchulte90Engine() {
 
     const updateTime = () => {
       if (!activeRef.current) return;
-      setState((prev) => ({
-        ...prev,
-        timeMs: Math.floor(performance.now() - startTimeRef.current),
-      }));
+      const elapsed = Math.floor(performance.now() - startTimeRef.current);
+      if (elapsed - displayedTimeRef.current >= 100) {
+        displayedTimeRef.current = elapsed;
+        setState((prev) => ({ ...prev, timeMs: elapsed }));
+      }
       timerRef.current = requestAnimationFrame(updateTime);
     };
     timerRef.current = requestAnimationFrame(updateTime);
   }, []);
 
-  const stopGame = useCallback((outcome: 'aborted' | 'timed_out' = 'aborted') => {
+  const stopGame = useCallback(() => {
     activeRef.current = false;
     if (timerRef.current) cancelAnimationFrame(timerRef.current);
     setState((s) => ({
       ...s,
       isActive: false,
       isFinished: true,
-      outcome,
+      outcome: 'aborted',
       timeMs: Math.floor(performance.now() - startTimeRef.current),
     }));
   }, []);
@@ -114,6 +117,7 @@ export function useSchulte90Engine() {
     errorsRef.current = 0;
     lastClickTimeRef.current = 0;
     sequenceRef.current = [];
+    displayedTimeRef.current = 0;
     if (timerRef.current) cancelAnimationFrame(timerRef.current);
     setState(DEFAULT_STATE);
   }, []);

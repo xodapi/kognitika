@@ -16,7 +16,18 @@ import {
 
 const logger = createSafeLogger('schulte-90');
 
-const TARGET_TIME_S = 120;
+const NORMATIVE_RANGE = '5–25 мин';
+
+const CELL_VARIANTS = [
+  'rounded-none bg-card font-mono text-xs',
+  'rounded-lg bg-secondary/45 font-sans text-sm',
+  'rounded-full bg-primary/5 font-serif text-base',
+  'rounded-md bg-muted/55 font-mono text-sm',
+] as const;
+
+function getCellVariant(number: number) {
+  return CELL_VARIANTS[number % CELL_VARIANTS.length];
+}
 
 export function SchulteTable90() {
   const { state, startGame, stopGame, resetGame, clickCell } = useSchulte90Engine();
@@ -26,12 +37,6 @@ export function SchulteTable90() {
   const savedRunRef = useRef(false);
 
   useSessionRecording(state.isActive, state.isFinished);
-
-  useEffect(() => {
-    if (state.isActive && state.timeMs > 180000) {
-      stopGame('timed_out');
-    }
-  }, [state.isActive, state.timeMs, stopGame]);
 
   useEffect(() => {
     if (state.outcome === 'completed' && state.timeMs > 0 && token && !savedRunRef.current) {
@@ -139,7 +144,7 @@ export function SchulteTable90() {
                   <span className="text-[10px] text-muted-foreground uppercase font-black">
                     Норматив
                   </span>
-                  <span className="text-sm font-mono font-black text-primary">{TARGET_TIME_S}s</span>
+                  <span className="text-sm font-mono font-black text-primary">{NORMATIVE_RANGE}</span>
                 </div>
                 <div className="h-px bg-border/50 w-full" />
                 <div className="flex justify-between items-center">
@@ -153,9 +158,9 @@ export function SchulteTable90() {
                 <div className="h-px bg-border/50 w-full" />
                 <div className="flex justify-between items-center">
                   <span className="text-[10px] text-muted-foreground uppercase font-black">
-                    Лимит
+                    Отсчёт
                   </span>
-                  <span className="text-[10px] font-black uppercase text-muted-foreground">180с</span>
+                  <span className="text-[10px] font-black uppercase text-muted-foreground">без лимита</span>
                 </div>
               </div>
             </div>
@@ -292,8 +297,7 @@ export function SchulteTable90() {
                   Норматив
                 </p>
                 <div className="flex items-baseline gap-1">
-                  <span className="text-2xl font-mono font-bold text-foreground">{TARGET_TIME_S}</span>
-                  <span className="text-xs font-mono text-muted-foreground uppercase">секунд</span>
+                  <span className="text-2xl font-mono font-bold text-foreground">{NORMATIVE_RANGE}</span>
                 </div>
               </div>
             </div>
@@ -315,7 +319,7 @@ export function SchulteTable90() {
           >
             <AlertCircle className="w-12 h-12 text-amber-500 mx-auto mb-5" />
             <h2 className="text-2xl font-black uppercase tracking-tight mb-3">
-              {state.outcome === 'timed_out' ? 'Время истекло' : 'Тренировка остановлена'}
+              Тренировка остановлена
             </h2>
             <p className="text-sm text-muted-foreground mb-8">
               Найдено {state.expectedIndex} из {SCHULTE_90_TOTAL}. Незавершённая попытка не сохраняется как результат.
@@ -390,7 +394,14 @@ export function SchulteTable90() {
                   {state.expectedIndex}/{SCHULTE_90_TOTAL}
                 </span>
               </div>
-              <div className="h-1.5 w-full bg-secondary rounded-full overflow-hidden">
+              <div
+                role="progressbar"
+                aria-label="Прогресс поиска чисел"
+                aria-valuemin={0}
+                aria-valuemax={SCHULTE_90_TOTAL}
+                aria-valuenow={state.expectedIndex}
+                className="h-1.5 w-full bg-secondary rounded-full overflow-hidden"
+              >
                 <motion.div
                   className="h-full bg-primary"
                   initial={{ width: 0 }}
@@ -411,9 +422,9 @@ export function SchulteTable90() {
               </div>
               <div className="flex flex-col items-end">
                 <span className="text-[8px] text-muted-foreground uppercase font-black">
-                  Норматив
+                  Ориентир
                 </span>
-                <span className="text-sm font-mono font-bold text-primary">{TARGET_TIME_S}s</span>
+                <span className="text-sm font-mono font-bold text-primary">{NORMATIVE_RANGE}</span>
               </div>
             </div>
           </div>
@@ -452,17 +463,21 @@ export function SchulteTable90() {
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="grid gap-1.5 w-full min-w-[440px] sm:min-w-0 max-w-[700px] relative z-10"
+          className="grid gap-1.5 w-full min-w-[494px] max-w-[700px] relative z-10"
           style={{ gridTemplateColumns: `repeat(${SCHULTE_90_COLS}, 1fr)` }}
         >
-          {state.grid.map((cell, idx) => (
-            <motion.button
+          {state.grid.map((cell, idx) => {
+            const isConsumed = cell.num <= state.expectedIndex;
+            return (
+              <motion.button
               key={cell.id}
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ delay: idx * 0.003 }}
-              whileHover={{ scale: 1.1, zIndex: 30 }}
+              whileHover={isConsumed ? undefined : { scale: 1.1, zIndex: 30 }}
               whileTap={{ scale: 0.9, backgroundColor: 'var(--primary)', color: 'var(--primary-foreground)' }}
+              disabled={isConsumed}
+              aria-label={isConsumed ? `Число ${cell.num}, найдено` : `Число ${cell.num}`}
               onClick={(e) => {
                 const rect = e.currentTarget.parentElement?.getBoundingClientRect();
                 if (rect) {
@@ -473,11 +488,16 @@ export function SchulteTable90() {
                   clickCell(cell, idx, undefined, handleSuccess, handleError);
                 }
               }}
-              className="aspect-square bg-card border border-border flex items-center justify-center font-mono font-bold text-xs sm:text-sm text-foreground transition-all cursor-pointer select-none shadow-sm hover:ring-2 hover:ring-primary/20 hover:border-primary"
+              className={`aspect-square min-h-11 min-w-11 border flex items-center justify-center font-bold text-foreground transition-all select-none shadow-sm ${getCellVariant(cell.num)} ${
+                isConsumed
+                  ? 'border-border/30 opacity-20 grayscale cursor-default'
+                  : 'border-border cursor-pointer hover:ring-2 hover:ring-primary/20 hover:border-primary'
+              }`}
             >
               {cell.num}
             </motion.button>
-          ))}
+            );
+          })}
         </motion.div>
 
         <div className="mt-4 flex gap-4 z-10 opacity-40">
@@ -507,7 +527,7 @@ export function SchulteTable90() {
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            onClick={() => stopGame('aborted')}
+            onClick={stopGame}
             className="w-full py-4 bg-destructive/10 border border-destructive/20 text-destructive text-xs uppercase font-black tracking-widest rounded-2xl hover:bg-destructive hover:text-white transition-all shadow-lg shadow-destructive/5"
           >
             Завершить досрочно

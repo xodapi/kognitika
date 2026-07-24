@@ -66,7 +66,7 @@ export function MentalMathTrainer() {
   }, [isGenerating, token, level, questionCount, startGame]);
 
   useEffect(() => {
-    const completed = state.questions.length > 0 && state.currentIndex >= state.questions.length;
+    const completed = state.outcome === 'completed';
     if (completed && state.timeMs > 0 && token && !savedRunRef.current) {
       savedRunRef.current = true;
       const finalScore = Math.floor(
@@ -105,7 +105,7 @@ export function MentalMathTrainer() {
           logger.error('Session save failed', { error: safeError(err), gameType: 'MENTAL_MATH' })
         );
     }
-  }, [state.currentIndex, state.timeMs, token, refreshUser, state.correctAnswers, state.errors, state.questions.length, state.level]);
+  }, [state.outcome, state.timeMs, token, refreshUser, state.correctAnswers, state.errors, state.questions.length, state.level]);
 
   const handleReset = useCallback(() => {
     savedRunRef.current = false;
@@ -168,6 +168,9 @@ export function MentalMathTrainer() {
                     ? 'Вычислите результат арифметического выражения как можно быстрее. Сложение и вычитание, ответ всегда положительный.'
                     : 'Считайте по Legend-таблице: операторы заменены символами. Расшифруйте и вычислите.'}
                 </p>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  Здесь важен темп: лучше дать ответ и двигаться дальше, чем надолго остановиться на одном примере.
+                </p>
                 <div className="flex items-center gap-3 pt-2">
                   <AlertCircle className="w-4 h-4 text-primary" />
                   <span className="text-[10px] text-muted-foreground uppercase font-bold">
@@ -209,6 +212,11 @@ export function MentalMathTrainer() {
             >
               {isGenerating ? 'Генерация заданий...' : 'Инициализировать тест'}
             </motion.button>
+            {isGenerating && (
+              <p role="status" aria-live="polite" className="sr-only">
+                Генерация набора заданий
+              </p>
+            )}
           </div>
         </motion.div>
       </div>
@@ -235,10 +243,11 @@ export function MentalMathTrainer() {
 
             <div className="space-y-4">
               <div>
-                <label className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider mb-2 block">
+                <label htmlFor="mental-math-level" className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider mb-2 block">
                   Уровень сложности
                 </label>
                 <select
+                  id="mental-math-level"
                   value={level}
                   onChange={(e) => setLevel(Number(e.target.value) as MathLevel)}
                   className="w-full p-3 text-xs rounded-xl border bg-background/50 border-border focus:ring-2 focus:ring-primary/20 outline-none text-foreground font-bold transition-all"
@@ -250,14 +259,15 @@ export function MentalMathTrainer() {
 
               <div>
                 <div className="flex justify-between items-center mb-2">
-                  <label className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">
+                  <label htmlFor="mental-math-question-count" className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">
                     Количество вопросов
                   </label>
                   <span className="text-xs font-mono font-bold text-primary">{questionCount}</span>
                 </div>
                 <input
+                  id="mental-math-question-count"
                   type="range"
-                  min={10}
+                  min={20}
                   max={30}
                   step={5}
                   value={questionCount}
@@ -366,6 +376,30 @@ export function MentalMathTrainer() {
     );
   }
 
+  if (state.outcome === 'aborted') {
+    return (
+      <div className="col-span-12 flex min-h-[500px] items-center justify-center">
+        <div className="w-full max-w-xl space-y-6 rounded-[2.5rem] border border-border bg-card/60 p-8 text-center shadow-2xl sm:p-12">
+          <AlertCircle className="mx-auto h-12 w-12 text-amber-500" />
+          <div>
+            <h2 className="text-2xl font-black uppercase tracking-tight">Попытка остановлена</h2>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Пройдено {state.currentIndex} из {state.questions.length}. Неполная попытка не сохраняется в прогресс.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <button onClick={handleReset} className="min-h-11 rounded-2xl bg-primary px-5 py-3 text-xs font-black uppercase tracking-widest text-primary-foreground">
+              Начать заново
+            </button>
+            <button onClick={() => navigate('/')} className="min-h-11 rounded-2xl border border-border px-5 py-3 text-xs font-black uppercase tracking-widest">
+              В меню
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // Result screen
   if (state.isFinished) {
     const finalScore = Math.floor(
@@ -427,7 +461,14 @@ export function MentalMathTrainer() {
                   {state.currentIndex}/{state.questions.length}
                 </span>
               </div>
-              <div className="h-1.5 w-full bg-secondary rounded-full overflow-hidden">
+              <div
+                role="progressbar"
+                aria-label="Прогресс вычислений"
+                aria-valuemin={0}
+                aria-valuemax={state.questions.length}
+                aria-valuenow={state.currentIndex}
+                className="h-1.5 w-full bg-secondary rounded-full overflow-hidden"
+              >
                 <motion.div
                   className="h-full bg-primary"
                   initial={{ width: 0 }}
@@ -460,7 +501,7 @@ export function MentalMathTrainer() {
 
         {/* Legend (level 2) */}
         {state.level === 2 && Object.keys(state.legend).length > 0 && (
-          <div className="bg-primary/10 backdrop-blur-md border border-primary/20 rounded-3xl p-4 shadow-sm shadow-primary/5">
+          <div className="sticky top-3 z-20 bg-primary/10 backdrop-blur-md border border-primary/20 rounded-3xl p-4 shadow-sm shadow-primary/5">
             <p className="text-[10px] text-primary uppercase mb-3 font-black tracking-[0.3em]">
               Legend
             </p>
@@ -511,6 +552,7 @@ export function MentalMathTrainer() {
           {/* Input */}
           <form onSubmit={handleSubmit} className="w-full flex flex-col items-center gap-4">
             <input
+              aria-label="Ответ на текущий пример"
               ref={inputRef}
               type="number"
               inputMode="numeric"

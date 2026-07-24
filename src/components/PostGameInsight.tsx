@@ -12,6 +12,7 @@ import {
   requestNeurotrainerAnalysis,
   type NeurotrainerAnalysis,
 } from '../lib/neurotrainer-client';
+import { deriveTrainingMetrics } from '../lib/training-metrics';
 
 const logger = createSafeLogger('post-game-insight');
 
@@ -58,6 +59,7 @@ export function PostGameInsight({
   const [showPostTest, setShowPostTest] = useState(false);
   const [savingPostTest, setSavingPostTest] = useState(false);
   const [neurotrainerAnalysis, setNeurotrainerAnalysis] = useState<NeurotrainerAnalysis | null>(null);
+  const [neurotrainerUnavailable, setNeurotrainerUnavailable] = useState(false);
 
   const handlePostLuscherFinish = async (seq: number[]) => {
     setLocalPostSequence(seq);
@@ -89,9 +91,12 @@ export function PostGameInsight({
 
   useEffect(() => {
     let active = true;
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), 10000);
     
     // Fetch comparison insight from server
     fetch(`/api/analytics/compare?gameType=${gameType}&score=${score}&timeMs=${timeMs}&errors=${errors}`, {
+      signal: controller.signal,
       headers: {
         ...(token ? { 'Authorization': `Bearer ${token}` } : {})
       }
@@ -126,12 +131,17 @@ export function PostGameInsight({
 
     return () => {
       active = false;
+      window.clearTimeout(timeout);
+      controller.abort();
     };
   }, [gameType, score, timeMs, errors, token]);
 
   useEffect(() => {
     if (!token || (gameType !== 'MENTAL_MATH' && gameType !== 'SCHULTE_90')) return;
     let active = true;
+    const controller = new AbortController();
+    setNeurotrainerAnalysis(null);
+    setNeurotrainerUnavailable(false);
 
     requestNeurotrainerAnalysis(token, {
       gameType,
@@ -140,19 +150,25 @@ export function PostGameInsight({
       correctAnswers,
       totalQuestions,
       level,
-    })
+    }, controller.signal)
       .then((result) => {
-        if (active) setNeurotrainerAnalysis(result.analysis);
+        if (active) {
+          setNeurotrainerAnalysis(result.analysis);
+          setNeurotrainerUnavailable(false);
+        }
       })
       .catch((err) => {
+        if (!active) return;
         logger.warn('Neurotrainer analysis unavailable', {
           error: safeError(err),
           gameType,
         });
+        setNeurotrainerUnavailable(true);
       });
 
     return () => {
       active = false;
+      controller.abort();
     };
   }, [token, gameType, timeMs, errors, correctAnswers, totalQuestions, level]);
 
@@ -180,8 +196,10 @@ export function PostGameInsight({
     return titles[type] || type;
   };
 
-  const accuracy = useMemo(() => Math.max(0, Math.min(100, 100 - errors * 8)), [errors]);
-  const reactionMs = useMemo(() => Math.round(timeMs / Math.max(1, score || 1)), [timeMs, score]);
+  const { accuracy, reactionMs } = useMemo(
+    () => deriveTrainingMetrics({ timeMs, score, errors, correctAnswers, totalQuestions }),
+    [timeMs, score, errors, correctAnswers, totalQuestions]
+  );
 
   const praise: PraiseOutput | null = useMemo(() => {
     if (loading || !insight) return null;
@@ -205,18 +223,20 @@ export function PostGameInsight({
   }
 
   return (
-    <div className="w-full max-w-2xl mx-auto bg-card/20 border border-border rounded-3xl p-8 backdrop-blur-md shadow-2xl relative overflow-hidden">
+    <div className="w-full max-w-2xl mx-auto bg-card/20 border border-border rounded-3xl p-5 sm:p-8 backdrop-blur-md shadow-2xl relative overflow-hidden">
       {/* Background radial gradient */}
       <div className="absolute -top-40 -right-40 w-80 h-80 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-secondary/10 rounded-full blur-3xl pointer-events-none" />
 
-      <h2 className="text-[10px] text-muted-foreground uppercase tracking-[0.2em] font-black text-center mb-2">Анализ завершен</h2>
+      <h2 className="text-[10px] text-muted-foreground uppercase tracking-[0.2em] font-black text-center mb-2">
+        {loading ? 'Формирование анализа' : 'Анализ завершен'}
+      </h2>
       <h3 className="text-2xl font-black text-center uppercase tracking-tight text-foreground mb-8">
         {getGameTitle(gameType)}
       </h3>
 
       {/* Raw stats grid */}
-      <div className="grid grid-cols-3 gap-4 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-8">
         <div className="bg-card/30 border border-border/50 rounded-2xl p-4 text-center">
           <p className="text-[9px] text-muted-foreground uppercase font-black tracking-widest mb-1">Счет</p>
           <p className="text-2xl sm:text-3xl font-mono font-bold text-primary tabular-nums">{score}</p>
@@ -232,9 +252,19 @@ export function PostGameInsight({
       </div>
 
       {loading ? (
-        <div className="flex flex-col items-center justify-center py-12 gap-3">
-          <div className="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
-          <p className="text-xs text-muted-foreground uppercase tracking-widest animate-pulse">Генерация когнитивных выводов...</p>
+        <div className="flex flex-col items-center justify-center py-8 gap-5">
+          <div role="status" aria-live="polite" className="flex flex-col items-center gap-3">
+            <div className="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
+            <p className="text-xs text-muted-foreground uppercase tracking-widest animate-pulse">Генерация когнитивных выводов...</p>
+          </div>
+          <div className="grid w-full grid-cols-1 gap-3 sm:grid-cols-2">
+            <button onClick={onPlayAgain} className="min-h-11 rounded-xl bg-primary px-4 py-3 text-xs font-black uppercase tracking-widest text-primary-foreground">
+              Повторить
+            </button>
+            <button onClick={onBackToMenu} className="min-h-11 rounded-xl border border-border px-4 py-3 text-xs font-black uppercase tracking-widest">
+              В меню
+            </button>
+          </div>
         </div>
       ) : (
         <motion.div
@@ -297,6 +327,12 @@ export function PostGameInsight({
             </div>
           )}
 
+          {neurotrainerUnavailable && (
+            <p role="status" className="text-center text-xs text-muted-foreground">
+              Персональный отчёт временно недоступен. Показан базовый анализ результата.
+            </p>
+          )}
+
           {/* Praise Section */}
           {praise && (
             <motion.div
@@ -353,7 +389,7 @@ export function PostGameInsight({
               sourceModuleId={gameType}
               sourceSessionId={sessionId}
               score={score}
-              accuracy={100 - errors * 8}
+              accuracy={accuracy}
               errors={errors}
               durationMs={timeMs}
               recommendedModuleId={insight.recommendedGame}
