@@ -121,6 +121,7 @@ jobs:
 
           build_id="$(git rev-parse --short HEAD)"
           CI=true pnpm install --frozen-lockfile
+          CI=true pnpm exec prisma migrate deploy
           BUILD_HASH="$build_id" VITE_BUILD_ID="$build_id" pnpm build
 
           mkdir -p dist/assets
