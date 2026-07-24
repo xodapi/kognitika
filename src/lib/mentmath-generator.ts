@@ -105,9 +105,23 @@ export function generateMathSet(
   const rng = new SeededRandom(seed ?? Math.floor(Math.random() * 1000000));
   const legend = level === 2 ? generateLegend(rng) : {};
   const questions: MathQuestion[] = [];
+  const equations = new Set<string>();
 
-  for (let i = 0; i < count; i++) {
-    questions.push(generateQuestion(rng, level, level === 2 ? legend : null));
+  for (let attempt = 0; questions.length < count && attempt < count * 20; attempt++) {
+    const question = generateQuestion(rng, level, level === 2 ? legend : null);
+    if (equations.has(question.equation)) continue;
+    equations.add(question.equation);
+    questions.push(question);
+  }
+
+  while (questions.length < count) {
+    const left = 10 + questions.length;
+    const symbol = level === 2
+      ? Object.entries(legend).find(([, operator]) => operator === '+')?.[0] ?? '+'
+      : '+';
+    const equation = `${left} ${symbol} 1`;
+    equations.add(equation);
+    questions.push({ equation, answer: left + 1, display: `${equation} = ?` });
   }
 
   return { legend, questions };

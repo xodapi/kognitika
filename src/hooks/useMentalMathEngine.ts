@@ -41,8 +41,13 @@ export function useMentalMathEngine() {
     };
   }, []);
 
-  const startGame = useCallback((level: MathLevel = 1, count: number = 20, seed?: number) => {
-    const set = generateMathSet(count, level, seed);
+  const startGame = useCallback((
+    level: MathLevel = 1,
+    count: number = 20,
+    generatedSet?: GeneratedMathSet,
+    seed?: number,
+  ) => {
+    const set = generatedSet ?? generateMathSet(count, level, seed);
     setState({
       questions: set.questions,
       legend: set.legend,

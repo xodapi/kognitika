@@ -8,6 +8,10 @@ import { createSafeLogger, safeError } from '../lib/safe-logger';
 import { CompletionRecommendation } from './CompletionRecommendation';
 import { CognitiveTrendCurve } from './CognitiveTrendCurve';
 import { buildPraise, type PraiseOutput } from '../lib/praise-engine';
+import {
+  requestNeurotrainerAnalysis,
+  type NeurotrainerAnalysis,
+} from '../lib/neurotrainer-client';
 
 const logger = createSafeLogger('post-game-insight');
 
@@ -20,6 +24,9 @@ interface PostGameInsightProps {
   onBackToMenu: () => void;
   preSequence?: number[] | null;
   sessionId?: string | null;
+  correctAnswers?: number;
+  totalQuestions?: number;
+  level?: number;
 }
 
 interface ComparisonData {
@@ -39,7 +46,10 @@ export function PostGameInsight({
   onPlayAgain,
   onBackToMenu,
   preSequence = null,
-  sessionId = null
+  sessionId = null,
+  correctAnswers,
+  totalQuestions,
+  level,
 }: PostGameInsightProps) {
   const { token } = useAuth();
   const [loading, setLoading] = useState(true);
@@ -47,6 +57,7 @@ export function PostGameInsight({
   const [localPostSequence, setLocalPostSequence] = useState<number[] | null>(null);
   const [showPostTest, setShowPostTest] = useState(false);
   const [savingPostTest, setSavingPostTest] = useState(false);
+  const [neurotrainerAnalysis, setNeurotrainerAnalysis] = useState<NeurotrainerAnalysis | null>(null);
 
   const handlePostLuscherFinish = async (seq: number[]) => {
     setLocalPostSequence(seq);
@@ -117,6 +128,33 @@ export function PostGameInsight({
       active = false;
     };
   }, [gameType, score, timeMs, errors, token]);
+
+  useEffect(() => {
+    if (!token || (gameType !== 'MENTAL_MATH' && gameType !== 'SCHULTE_90')) return;
+    let active = true;
+
+    requestNeurotrainerAnalysis(token, {
+      gameType,
+      timeMs,
+      errors,
+      correctAnswers,
+      totalQuestions,
+      level,
+    })
+      .then((result) => {
+        if (active) setNeurotrainerAnalysis(result.analysis);
+      })
+      .catch((err) => {
+        logger.warn('Neurotrainer analysis unavailable', {
+          error: safeError(err),
+          gameType,
+        });
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [token, gameType, timeMs, errors, correctAnswers, totalQuestions, level]);
 
   // Game translation helper
   const getGameTitle = (type: string) => {
@@ -235,6 +273,27 @@ export function PostGameInsight({
                   </p>
                 </div>
               </div>
+            </div>
+          )}
+
+          {neurotrainerAnalysis && (
+            <div className="bg-primary/5 border border-primary/15 rounded-2xl p-5">
+              <div className="flex items-center gap-2 mb-3">
+                <Brain className="w-4 h-4 text-primary" />
+                <h4 className="text-xs font-black uppercase tracking-widest text-primary">
+                  Нейротренер
+                </h4>
+              </div>
+              <p className="text-sm text-foreground leading-relaxed">
+                {neurotrainerAnalysis.feedback}
+              </p>
+              <ul className="mt-3 space-y-1.5">
+                {neurotrainerAnalysis.recommendations.map((recommendation) => (
+                  <li key={recommendation} className="text-xs text-muted-foreground">
+                    • {recommendation}
+                  </li>
+                ))}
+              </ul>
             </div>
           )}
 

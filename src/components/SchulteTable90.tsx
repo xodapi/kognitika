@@ -353,6 +353,8 @@ export function SchulteTable90() {
             score={finalScore}
             timeMs={state.timeMs}
             errors={state.errors}
+            correctAnswers={SCHULTE_90_TOTAL}
+            totalQuestions={SCHULTE_90_TOTAL}
             onPlayAgain={handleReset}
             onBackToMenu={() => navigate('/')}
           />

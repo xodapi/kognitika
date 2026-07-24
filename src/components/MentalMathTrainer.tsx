@@ -7,6 +7,7 @@ import { useSessionRecording } from '../hooks/useSessionRecording';
 import { useNavigate } from 'react-router-dom';
 import { PostGameInsight } from './PostGameInsight';
 import { createSafeLogger, safeError } from '../lib/safe-logger';
+import { requestMentalMathSet } from '../lib/neurotrainer-client';
 import type { MathLevel } from '../lib/mentmath-generator';
 
 const logger = createSafeLogger('mental-math');
@@ -20,7 +21,9 @@ export function MentalMathTrainer() {
   const [level, setLevel] = useState<MathLevel>(1);
   const [questionCount, setQuestionCount] = useState(20);
   const [showBriefing, setShowBriefing] = useState(false);
-  const [bonusAwarded, setBonusAwarded] = useState(0);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generationSource, setGenerationSource] = useState<'llm' | 'fallback' | null>(null);
+  const savedRunRef = useRef(false);
 
   useSessionRecording(state.isActive, state.isFinished);
 
@@ -35,14 +38,37 @@ export function MentalMathTrainer() {
     setShowBriefing(true);
   }, []);
 
-  const confirmStart = useCallback(() => {
-    setShowBriefing(false);
-    startGame(level, questionCount);
-  }, [startGame, level, questionCount]);
+  const confirmStart = useCallback(async () => {
+    if (isGenerating) return;
+    setIsGenerating(true);
+    savedRunRef.current = false;
 
-  // Save score on finish
+    try {
+      if (token) {
+        const generated = await requestMentalMathSet(token, { level, count: questionCount });
+        setGenerationSource(generated.source);
+        startGame(level, questionCount, generated.set);
+      } else {
+        setGenerationSource('fallback');
+        startGame(level, questionCount);
+      }
+      setShowBriefing(false);
+    } catch (err) {
+      logger.warn('Remote generation unavailable, using local fallback', {
+        error: safeError(err),
+      });
+      setGenerationSource('fallback');
+      startGame(level, questionCount);
+      setShowBriefing(false);
+    } finally {
+      setIsGenerating(false);
+    }
+  }, [isGenerating, token, level, questionCount, startGame]);
+
   useEffect(() => {
-    if (state.isFinished && state.timeMs > 0 && token) {
+    const completed = state.questions.length > 0 && state.currentIndex >= state.questions.length;
+    if (completed && state.timeMs > 0 && token && !savedRunRef.current) {
+      savedRunRef.current = true;
       const finalScore = Math.floor(
         (state.correctAnswers / Math.max(1, state.questions.length)) *
         1000 *
@@ -63,6 +89,8 @@ export function MentalMathTrainer() {
             level: state.level,
             questionCount: state.questions.length,
             correctAnswers: state.correctAnswers,
+            totalQuestions: state.questions.length,
+            accuracy: (state.correctAnswers / Math.max(1, state.questions.length)) * 100,
             errors: state.errors,
           },
         }),
@@ -70,7 +98,6 @@ export function MentalMathTrainer() {
         .then((res) => res.json())
         .then((resData) => {
           if (resData.session?.score) {
-            setBonusAwarded(resData.session.score);
             refreshUser();
           }
         })
@@ -78,7 +105,13 @@ export function MentalMathTrainer() {
           logger.error('Session save failed', { error: safeError(err), gameType: 'MENTAL_MATH' })
         );
     }
-  }, [state.isFinished, state.timeMs, token, refreshUser, state.correctAnswers, state.errors, state.questions.length, state.level]);
+  }, [state.currentIndex, state.timeMs, token, refreshUser, state.correctAnswers, state.errors, state.questions.length, state.level]);
+
+  const handleReset = useCallback(() => {
+    savedRunRef.current = false;
+    setGenerationSource(null);
+    resetGame();
+  }, [resetGame]);
 
   const handleSubmit = useCallback(
     (e: React.FormEvent) => {
@@ -171,9 +204,10 @@ export function MentalMathTrainer() {
               whileHover={{ scale: 1.02, boxShadow: '0 20px 40px -10px rgba(var(--primary-rgb), 0.3)' }}
               whileTap={{ scale: 0.98 }}
               onClick={confirmStart}
-              className="w-full py-5 bg-primary text-primary-foreground rounded-[1.5rem] font-black text-sm uppercase tracking-[0.3em] shadow-2xl shadow-primary/20 transition-all"
+              disabled={isGenerating}
+              className="w-full py-5 bg-primary text-primary-foreground rounded-[1.5rem] font-black text-sm uppercase tracking-[0.3em] shadow-2xl shadow-primary/20 transition-all disabled:opacity-60"
             >
-              Инициализировать тест
+              {isGenerating ? 'Генерация заданий...' : 'Инициализировать тест'}
             </motion.button>
           </div>
         </motion.div>
@@ -352,7 +386,10 @@ export function MentalMathTrainer() {
             score={finalScore}
             timeMs={state.timeMs}
             errors={state.errors}
-            onPlayAgain={resetGame}
+            correctAnswers={state.correctAnswers}
+            totalQuestions={state.questions.length}
+            level={state.level}
+            onPlayAgain={handleReset}
             onBackToMenu={() => navigate('/')}
           />
         </motion.div>
@@ -514,6 +551,12 @@ export function MentalMathTrainer() {
                   className={`text-sm font-mono font-bold ${accuracy >= 80 ? 'text-emerald-500' : accuracy >= 50 ? 'text-amber-500' : 'text-destructive'}`}
                 >
                   {accuracy}%
+                </span>
+              </div>
+              <div className="flex justify-between items-center p-3 rounded-2xl bg-secondary/30 border border-border/50">
+                <span className="text-[10px] text-muted-foreground uppercase font-black">Генератор</span>
+                <span className="text-[10px] font-black uppercase text-primary">
+                  {generationSource === 'llm' ? 'LLM' : 'Локальный'}
                 </span>
               </div>
             </div>
