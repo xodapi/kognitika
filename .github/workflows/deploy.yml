@@ -121,7 +121,23 @@ jobs:
 
           build_id="$(git rev-parse --short HEAD)"
           CI=true pnpm install --frozen-lockfile
-          CI=true pnpm exec prisma migrate deploy
+
+          migration_log="$(mktemp)"
+          if ! CI=true pnpm exec prisma migrate deploy 2>&1 | tee "$migration_log"; then
+            if ! grep -q "P3005" "$migration_log"; then
+              rm -f "$migration_log"
+              exit 1
+            fi
+
+            echo "Baselining the existing production schema with the first committed migration"
+            CI=true pnpm exec prisma db execute \
+              --file prisma/migrations/20260724180000_add_express_knowledge_game_types/migration.sql
+            CI=true pnpm exec prisma migrate resolve \
+              --applied 20260724180000_add_express_knowledge_game_types
+            CI=true pnpm exec prisma migrate deploy
+          fi
+          rm -f "$migration_log"
+
           BUILD_HASH="$build_id" VITE_BUILD_ID="$build_id" pnpm build
 
           mkdir -p dist/assets
