@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { MentalMathTrainer } from '../components/MentalMathTrainer';
 import { PostGameInsight } from '../components/PostGameInsight';
 import { SchulteTable90 } from '../components/SchulteTable90';
+import { AlphabetTableTrainer } from '../components/AlphabetTableTrainer';
 import { deriveTrainingMetrics } from '../lib/training-metrics';
 
 vi.mock('../hooks/useAuth', () => ({
@@ -94,6 +95,28 @@ describe('new trainer UI contract', () => {
     expect(screen.getByRole('button', { name: 'Число 1, найдено' })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Число 1, найдено' })).toHaveClass('min-h-11', 'min-w-11');
     expect(screen.getByRole('button', { name: 'Число 2' })).toBeEnabled();
+  });
+
+  it('keeps alphabet actions accessible by touch and keyboard', () => {
+    render(React.createElement(AlphabetTableTrainer));
+
+    const count = screen.getByRole('slider', { name: 'Количество букв' });
+    expect(count).toHaveAttribute('min', '9');
+    expect(count).toHaveAttribute('max', '33');
+    expect(screen.getByRole('combobox', { name: 'Режим' })).toBeEnabled();
+    expect(screen.getByText(/не использует камеру или микрофон/i)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Начать тренировку' }));
+
+    expect(screen.getByRole('progressbar', { name: 'Прогресс таблицы алфавита' }))
+      .toHaveAttribute('aria-valuemax', '33');
+    expect(screen.getByRole('button', { name: 'П — Правая рука' })).toHaveClass('min-h-24');
+    expect(screen.getByRole('button', { name: 'Л — Левая рука' })).toHaveClass('min-h-24');
+    expect(screen.getByRole('button', { name: 'О — Обе руки' })).toHaveClass('min-h-24');
+
+    fireEvent.keyDown(window, { key: 'ArrowRight' });
+    expect(screen.getByRole('progressbar', { name: 'Прогресс таблицы алфавита' }))
+      .toHaveAttribute('aria-valuenow', '1');
   });
 
   it('keeps navigation available while result analytics load', () => {

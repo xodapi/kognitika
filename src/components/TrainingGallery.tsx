@@ -2,7 +2,7 @@ import { motion } from 'motion/react';
 import { 
   Play, Calculator, Grid3x3, Palette, BrainCircuit, 
   Users, Shield, Activity, MessageSquare, Zap, Target,
-  GitBranch, Filter, Cpu, VolumeX
+  GitBranch, Filter, Cpu, VolumeX, Languages
 } from 'lucide-react';
 import { MODULE_TITLES } from '../lib/practice-recommendations';
 
@@ -22,6 +22,7 @@ const MODULES: TrainingModule[] = [
   { id: 'schulte', title: 'Таблицы Шульте', description: 'Развитие периферического зрения и концентрации.', icon: Play, color: 'text-blue-500', category: 'Внимание', domain: 'base', level: 1 },
   { id: 'schulte-90', title: MODULE_TITLES['schulte-90'], description: 'Расширенный поиск на поле 9x10 для периферического внимания.', icon: Grid3x3, color: 'text-sky-500', category: 'Внимание', domain: 'base', level: 4 },
   { id: 'mental-math', title: MODULE_TITLES['mental-math'], description: 'Скоростной счёт, рабочая память и устойчивость внимания.', icon: Calculator, color: 'text-emerald-500', category: 'Логика', domain: 'base', level: 3 },
+  { id: 'alphabet-table', title: MODULE_TITLES['alphabet-table'], description: 'Русский алфавит и переключение между командами П, Л и О.', icon: Languages, color: 'text-violet-500', category: 'Внимание', domain: 'base', level: 2 },
   { id: 'numerical', title: 'Числовой анализ', description: 'Скорость обработки числовой информации.', icon: Calculator, color: 'text-emerald-500', category: 'Логика', domain: 'base', level: 1 },
   { id: 'logical', title: 'Логические матрицы', description: 'Поиск закономерностей в сложных системах.', icon: Grid3x3, color: 'text-purple-500', category: 'Логика', domain: 'base', level: 3 },
   { id: 'stroop', title: 'Эффект Струпа', description: 'Тренировка когнитивного контроля и гибкости.', icon: Palette, color: 'text-amber-500', category: 'Внимание', domain: 'base', level: 2 },

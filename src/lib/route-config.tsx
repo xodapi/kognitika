@@ -4,7 +4,7 @@ import type { DashboardTab } from '../components/Dashboard';
 import {
   LayoutDashboard, Play, Calculator, Grid3x3, Palette, BrainCircuit,
   Users, Trophy, Lightbulb, Shield, GitBranch, Filter, Cpu, VolumeX,
-  Search, Network, Target, MessageSquare, Lock, Hash,
+  Search, Network, Target, MessageSquare, Lock, Hash, Languages,
 } from 'lucide-react';
 
 export function lazyNamed<TProps extends object = Record<string, never>>(
@@ -64,6 +64,7 @@ export const Wiki = lazyNamed(() => import('../components/Wiki'), 'Wiki');
 export const CognitiveMap = lazyNamed(() => import('../components/CognitiveMap'), 'CognitiveMap');
 export const MentalMathTrainer = lazyNamed(() => import('../components/MentalMathTrainer'), 'MentalMathTrainer');
 export const SchulteTable90 = lazyNamed(() => import('../components/SchulteTable90'), 'SchulteTable90');
+export const AlphabetTableTrainer = lazyNamed(() => import('../components/AlphabetTableTrainer'), 'AlphabetTableTrainer');
 
 export interface RouteEntry {
   path: string;
@@ -110,6 +111,7 @@ export const ROUTE_DEFINITIONS: RouteEntry[] = [
   { path: '/cognitive-map', title: 'Когнитивная карта', icon: Network, navGroup: 'cognitive' },
   { path: '/mental-math', title: 'Быстрые вычисления', icon: Hash, navGroup: 'cognitive' },
   { path: '/schulte-90', title: 'Таблица 1-90', icon: Grid3x3, navGroup: 'cognitive' },
+  { path: '/alphabet-table', title: 'Таблица Алфавит', icon: Languages, navGroup: 'cognitive' },
 ];
 
 const routeTitleMap = new Map<string, string>();

@@ -30,12 +30,12 @@ import {
   CollisionDetector, AsyncDispatcher, NoiseReduction, LanguageScanner,
   Decryptor, RealityCheck, NeuroSilence, CognitiveTrashFilter, HypeFilter,
   Reframing, RejectionImmunity, Storytelling, DeepFocus, SymbolChat, Wiki,
-  CognitiveMap, MentalMathTrainer, SchulteTable90,
+  CognitiveMap, MentalMathTrainer, SchulteTable90, AlphabetTableTrainer,
   getRouteTitle,
   HEADER_NAV_ITEMS, MOBILE_NAV_ITEMS, BOTTOM_NAV_ITEMS,
 } from './lib/route-config';
 
-type Tab = 'dashboard' | 'schulte' | 'numerical' | 'logical' | 'stroop' | 'nback' | 'situational' | 'typing' | 'spatial' | 'admin' | 'ideas' | 'wiki' | 'objective' | 'profiling' | 'anomaly' | 'dialogue' | 'leaderboard' | 'topology' | 'collision' | 'dispatcher' | 'noise' | 'scanner' | 'decryptor' | 'reality' | 'silence' | 'filter' | 'hype' | 'reframing' | 'rejection' | 'storytelling' | 'focus' | 'cognitive-map';
+type Tab = 'dashboard' | 'schulte' | 'numerical' | 'logical' | 'stroop' | 'nback' | 'situational' | 'typing' | 'spatial' | 'admin' | 'ideas' | 'wiki' | 'objective' | 'profiling' | 'anomaly' | 'dialogue' | 'leaderboard' | 'topology' | 'collision' | 'dispatcher' | 'noise' | 'scanner' | 'decryptor' | 'reality' | 'silence' | 'filter' | 'hype' | 'reframing' | 'rejection' | 'storytelling' | 'focus' | 'cognitive-map' | 'mental-math' | 'schulte-90' | 'alphabet-table';
 
 const OnboardingModal = lazy(() => import('./components/OnboardingModal').then((module) => ({
   default: module.OnboardingModal,
@@ -485,6 +485,7 @@ function AppContent() {
                 <Route path="/cognitive-map" element={<CognitiveMap />} />
                 <Route path="/mental-math" element={<MentalMathTrainer />} />
                 <Route path="/schulte-90" element={<SchulteTable90 />} />
+                <Route path="/alphabet-table" element={<AlphabetTableTrainer />} />
                 <Route path="/leaderboard" element={<LeaderboardView />} />
                 <Route path="/topology" element={<TopologyMemory />} />
                 <Route path="/collision" element={<CollisionDetector />} />

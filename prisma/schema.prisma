@@ -98,6 +98,7 @@ enum GameType {
   REALITY_CHECK
   MENTAL_MATH
   SCHULTE_90
+  ALPHABET_TABLE
 }
 
 model GameSession {

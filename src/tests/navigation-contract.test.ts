@@ -53,6 +53,12 @@ describe('navigation contract', () => {
     }
   });
 
+  it('mounts the Alphabet Table trainer on its public route', () => {
+    const appSource = readRepoFile('src/App.tsx');
+
+    expect(appSource).toContain('<Route path="/alphabet-table" element={<AlphabetTableTrainer />} />');
+  });
+
   it('keeps every TrainingGallery module id routable from Dashboard', () => {
     const declaredRoutes = new Set(ROUTE_DEFINITIONS.map((r) => r.path));
 
