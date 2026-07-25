@@ -26,6 +26,7 @@ const MODULES: TrainingModule[] = [
   { id: 'numerical', title: 'Числовой анализ', description: 'Скорость обработки числовой информации.', icon: Calculator, color: 'text-emerald-500', category: 'Логика', domain: 'base', level: 1 },
   { id: 'logical', title: 'Логические матрицы', description: 'Поиск закономерностей в сложных системах.', icon: Grid3x3, color: 'text-purple-500', category: 'Логика', domain: 'base', level: 3 },
   { id: 'stroop', title: 'Эффект Струпа', description: 'Тренировка когнитивного контроля и гибкости.', icon: Palette, color: 'text-amber-500', category: 'Внимание', domain: 'base', level: 2 },
+  { id: 'stroop-alphabet', title: 'Струп + Алфавит', description: 'Подавление чтения слова и переключение между командами П, Л и О.', icon: Palette, color: 'text-orange-500', category: 'Внимание', domain: 'base', level: 4 },
   { id: 'nback', title: 'N-назад', description: 'Развитие рабочей памяти и фокуса.', icon: BrainCircuit, color: 'text-rose-500', category: 'Память', domain: 'base', level: 5 },
   { id: 'typing', title: 'Скоростная печать', description: 'Тренировка моторной реакции и грамотности.', icon: Play, color: 'text-blue-600', category: 'Внимание', domain: 'base', level: 2 },
   { id: 'spatial', title: 'Пространство', description: 'Запоминание паттернов в динамических сетках.', icon: Grid3x3, color: 'text-indigo-600', category: 'Память', domain: 'base', level: 3 },

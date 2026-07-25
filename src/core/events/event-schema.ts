@@ -6,7 +6,7 @@ import { z } from 'zod';
  */
 
 export const TrainingCompleteSchema = z.object({
-  type: z.enum(['SCHULTE', 'TYPING', 'SPATIAL', 'STROOP', 'NBACK', 'LOGICAL_SEQUENCE', 'NUMERICAL_ANALYSIS', 'GUARD', 'REALITY', 'MENTAL_MATH', 'SCHULTE_90', 'ALPHABET_TABLE']),
+  type: z.enum(['SCHULTE', 'TYPING', 'SPATIAL', 'STROOP', 'NBACK', 'LOGICAL_SEQUENCE', 'NUMERICAL_ANALYSIS', 'GUARD', 'REALITY', 'MENTAL_MATH', 'SCHULTE_90', 'ALPHABET_TABLE', 'STROOP_ALPHABET']),
   size: z.number().optional(),
   timeMs: z.number(),
   accuracy: z.number().optional(),

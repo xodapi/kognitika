@@ -5,6 +5,7 @@ import { MentalMathTrainer } from '../components/MentalMathTrainer';
 import { PostGameInsight } from '../components/PostGameInsight';
 import { SchulteTable90 } from '../components/SchulteTable90';
 import { AlphabetTableTrainer } from '../components/AlphabetTableTrainer';
+import { StroopAlphabetTrainer } from '../components/StroopAlphabetTrainer';
 import { deriveTrainingMetrics } from '../lib/training-metrics';
 
 vi.mock('../hooks/useAuth', () => ({
@@ -117,6 +118,21 @@ describe('new trainer UI contract', () => {
     fireEvent.keyDown(window, { key: 'ArrowRight' });
     expect(screen.getByRole('progressbar', { name: 'Прогресс таблицы алфавита' }))
       .toHaveAttribute('aria-valuenow', '1');
+  });
+
+  it('keeps combined Stroop responses accessible in a stable order', () => {
+    render(React.createElement(StroopAlphabetTrainer));
+
+    expect(screen.getByText(/сначала выберите фактический цвет текста/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Начать тренировку' }));
+
+    expect(screen.getByRole('progressbar', { name: 'Прогресс комбинированного Струпа' }))
+      .toHaveAttribute('aria-valuemax', '18');
+    expect(screen.getByRole('button', { name: /КРАСНЫЙ/i })).toBeEnabled();
+
+    fireEvent.click(screen.getByRole('button', { name: /КРАСНЫЙ/i }));
+    expect(screen.getByRole('button', { name: /П — Правая рука/ })).toBeEnabled();
+    expect(screen.getByText(/выполните команду/i)).toBeInTheDocument();
   });
 
   it('keeps navigation available while result analytics load', () => {

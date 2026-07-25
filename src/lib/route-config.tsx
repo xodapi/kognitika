@@ -65,6 +65,7 @@ export const CognitiveMap = lazyNamed(() => import('../components/CognitiveMap')
 export const MentalMathTrainer = lazyNamed(() => import('../components/MentalMathTrainer'), 'MentalMathTrainer');
 export const SchulteTable90 = lazyNamed(() => import('../components/SchulteTable90'), 'SchulteTable90');
 export const AlphabetTableTrainer = lazyNamed(() => import('../components/AlphabetTableTrainer'), 'AlphabetTableTrainer');
+export const StroopAlphabetTrainer = lazyNamed(() => import('../components/StroopAlphabetTrainer'), 'StroopAlphabetTrainer');
 
 export interface RouteEntry {
   path: string;
@@ -112,6 +113,7 @@ export const ROUTE_DEFINITIONS: RouteEntry[] = [
   { path: '/mental-math', title: 'Быстрые вычисления', icon: Hash, navGroup: 'cognitive' },
   { path: '/schulte-90', title: 'Таблица 1-90', icon: Grid3x3, navGroup: 'cognitive' },
   { path: '/alphabet-table', title: 'Таблица Алфавит', icon: Languages, navGroup: 'cognitive' },
+  { path: '/stroop-alphabet', title: 'Струп + Алфавит', icon: Palette, navGroup: 'cognitive' },
 ];
 
 const routeTitleMap = new Map<string, string>();

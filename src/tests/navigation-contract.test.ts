@@ -59,6 +59,12 @@ describe('navigation contract', () => {
     expect(appSource).toContain('<Route path="/alphabet-table" element={<AlphabetTableTrainer />} />');
   });
 
+  it('mounts the combined Stroop trainer on its public route', () => {
+    const appSource = readRepoFile('src/App.tsx');
+
+    expect(appSource).toContain('<Route path="/stroop-alphabet" element={<StroopAlphabetTrainer />} />');
+  });
+
   it('keeps every TrainingGallery module id routable from Dashboard', () => {
     const declaredRoutes = new Set(ROUTE_DEFINITIONS.map((r) => r.path));
 

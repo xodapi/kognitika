@@ -1,15 +1,16 @@
 import { useEffect, useState } from 'react';
 import { useStroopEngine } from '../hooks/useStroopEngine';
 import { useAuth } from '../hooks/useAuth';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { PostGameInsight } from './PostGameInsight';
 import { LuscherTest } from './LuscherTest';
 import { StressOverlay } from './StressOverlay';
 import { createSafeLogger, safeError } from '../lib/safe-logger';
+import { StroopAlphabetTrainer } from './StroopAlphabetTrainer';
 
 const logger = createSafeLogger('stroop-test');
 
-export function StroopTest() {
+function ClassicStroopTest() {
   const { state, startGame, answerQuestion, colors } = useStroopEngine();
   const { token } = useAuth();
   const navigate = useNavigate();
@@ -219,4 +220,11 @@ export function StroopTest() {
 
     </div>
   );
+}
+
+export function StroopTest() {
+  const { search } = useLocation();
+  return new URLSearchParams(search).get('mode') === 'combined'
+    ? <StroopAlphabetTrainer />
+    : <ClassicStroopTest />;
 }

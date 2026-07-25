@@ -15,6 +15,7 @@ import { useSessionRecording } from '../hooks/useSessionRecording';
 import {
   ALPHABET_TABLE_PRESETS,
   ALPHABET_ACTION_CUES,
+  alphabetActionFromKey,
   DEFAULT_ALPHABET_QUESTION_COUNT,
   MAX_ALPHABET_QUESTION_COUNT,
   MIN_ALPHABET_QUESTION_COUNT,
@@ -78,10 +79,7 @@ export function AlphabetTableTrainer() {
         return;
       }
 
-      let action: AlphabetAction | null = null;
-      if (event.key === 'ArrowRight' || event.key.toLowerCase() === 'd') action = 'RIGHT';
-      if (event.key === 'ArrowLeft' || event.key.toLowerCase() === 'a') action = 'LEFT';
-      if (event.key === ' ' || event.key.toLowerCase() === 'o') action = 'BOTH';
+      const action = alphabetActionFromKey(event.key);
 
       if (action) {
         event.preventDefault();

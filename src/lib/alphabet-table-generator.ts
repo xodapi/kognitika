@@ -27,6 +27,14 @@ export const ALPHABET_ACTION_CUES: Record<AlphabetAction, AlphabetActionCue> = {
   BOTH: 'О',
 };
 
+export function alphabetActionFromKey(key: string): AlphabetAction | null {
+  const normalizedKey = key.toLowerCase();
+  if (key === 'ArrowRight' || normalizedKey === 'd') return 'RIGHT';
+  if (key === 'ArrowLeft' || normalizedKey === 'a') return 'LEFT';
+  if (key === ' ' || normalizedKey === 'o') return 'BOTH';
+  return null;
+}
+
 export const ALPHABET_TABLE_PRESETS: ReadonlyArray<{
   id: AlphabetTablePreset;
   title: string;

@@ -54,6 +54,7 @@ export const MODULE_TITLES: Record<string, string> = {
   'mental-math': 'Быстрые вычисления',
   'schulte-90': 'Таблица 1-90',
   'alphabet-table': 'Таблица Алфавит',
+  'stroop-alphabet': 'Струп + Алфавит',
 };
 
 const GAME_TYPE_TO_MODULE: Record<string, string> = {
@@ -92,6 +93,7 @@ const GAME_TYPE_TO_MODULE: Record<string, string> = {
   MENTAL_MATH: 'mental-math',
   SCHULTE_90: 'schulte-90',
   ALPHABET_TABLE: 'alphabet-table',
+  STROOP_ALPHABET: 'stroop-alphabet',
 };
 
 export function resolvePracticeModuleId(value: string | null | undefined): string | null {
@@ -151,6 +153,7 @@ export const NEXT_MODULE: Record<string, string> = {
   'mental-math': 'schulte',
   'schulte-90': 'schulte',
   'alphabet-table': 'stroop',
+  'stroop-alphabet': 'alphabet-table',
 };
 
 export const WEAK_AREA_MODULE: Record<string, string> = {

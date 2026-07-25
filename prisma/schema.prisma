@@ -99,6 +99,7 @@ enum GameType {
   MENTAL_MATH
   SCHULTE_90
   ALPHABET_TABLE
+  STROOP_ALPHABET
 }
 
 model GameSession {

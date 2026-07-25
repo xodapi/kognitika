@@ -101,6 +101,7 @@ export const PUBLIC_PRACTICE_ROUTES = {
   '/mental-math': { moduleId: 'mental-math', category: 'cognitive' },
   '/schulte-90': { moduleId: 'schulte-90', category: 'cognitive' },
   '/alphabet-table': { moduleId: 'alphabet-table', category: 'cognitive' },
+  '/stroop-alphabet': { moduleId: 'stroop-alphabet', category: 'cognitive' },
 } as const satisfies Record<string, { moduleId: string; category: PracticeFlowCategory }>;
 
 export type PublicPracticeRoute = keyof typeof PUBLIC_PRACTICE_ROUTES;
