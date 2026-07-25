@@ -181,10 +181,39 @@
   body,
   #root {
     max-width: 100%;
+    min-height: 100%;
   }
   body {
     @apply bg-background text-foreground font-sans transition-colors duration-300;
+    min-height: 100dvh;
     overflow-x: clip;
+    padding:
+      env(safe-area-inset-top)
+      env(safe-area-inset-right)
+      env(safe-area-inset-bottom)
+      env(safe-area-inset-left);
+  }
+  #root {
+    min-height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  }
+  html.native-runtime {
+    touch-action: pan-x pan-y;
+    -webkit-text-size-adjust: 100%;
+  }
+  html.native-runtime body {
+    overscroll-behavior: none;
+    scrollbar-width: none;
+  }
+  html.native-runtime body::-webkit-scrollbar {
+    display: none;
+  }
+  html.native-runtime button,
+  html.native-runtime [role='button'] {
+    touch-action: manipulation;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent;
   }
 }
 

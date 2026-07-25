@@ -20,10 +20,13 @@
     "test:e2e:attached": "node scripts/run-playwright-attached.mjs"
   },
   "dependencies": {
+    "@capacitor/app": "8.1.1",
+    "@capacitor/core": "8.4.2",
     "@kognitika/shared-types": "workspace:*",
     "@prisma/adapter-pg": "^7.2.0",
     "@prisma/client": "^7.2.0",
     "@xyflow/react": "^12.11.1",
+    "capacitor-secure-storage-plugin": "0.13.0",
     "clsx": "^2.1.1",
     "cors": "^2.8.6",
     "dotenv": "^17.2.3",

@@ -16,6 +16,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Send, Hash, Sparkles, Wifi, WifiOff } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { createSafeLogger, safeError } from '../lib/safe-logger';
+import { apiUrl } from '../lib/runtime-platform';
 
 const logger = createSafeLogger('symbol-chat');
 
@@ -41,14 +42,18 @@ export function SymbolChat() {
   const [isSending, setIsSending] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const esRef = useRef<EventSource | null>(null);
+  const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // ── Подключение к SSE потоку ───────────────────────────
   useEffect(() => {
+    let disposed = false;
+
     // Загрузить историю и подписаться на поток
     const connect = () => {
+      if (disposed) return;
       if (esRef.current) esRef.current.close();
 
-      const es = new EventSource('/api/chat/stream');
+      const es = new EventSource(apiUrl('/api/chat/stream'));
       esRef.current = es;
 
       es.onopen = () => setIsConnected(true);
@@ -68,17 +73,22 @@ export function SymbolChat() {
       });
 
       es.onerror = () => {
+        if (disposed) return;
         setIsConnected(false);
         es.close();
         // Переподключение через 3 секунды
-        setTimeout(connect, 3000);
+        reconnectTimerRef.current = setTimeout(connect, 3000);
       };
     };
 
     connect();
 
     return () => {
+      disposed = true;
+      if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
+      reconnectTimerRef.current = null;
       esRef.current?.close();
+      esRef.current = null;
     };
   }, []);
 

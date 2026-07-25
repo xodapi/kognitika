@@ -60,4 +60,26 @@ describe('CORS runtime config', () => {
     expect(allowed).toBe(false);
     expect(isOriginAllowed(undefined, config)).toBe(true);
   });
+
+  it('allows fixed Capacitor origins without widening the web allowlist', () => {
+    const config = resolveCorsConfig({
+      NODE_ENV: 'production',
+      CORS_ORIGIN: 'https://kognitika.syntog.ru',
+    });
+
+    expect(isOriginAllowed('capacitor://localhost', config)).toBe(true);
+    expect(isOriginAllowed('https://localhost', config)).toBe(true);
+    expect(isOriginAllowed('http://localhost', config)).toBe(false);
+  });
+
+  it('supports explicitly disabling native app origins', () => {
+    const config = resolveCorsConfig({
+      NODE_ENV: 'production',
+      CORS_ORIGIN: 'https://kognitika.syntog.ru',
+      CORS_ALLOW_NATIVE_APP: 'false',
+    });
+
+    expect(isOriginAllowed('capacitor://localhost', config)).toBe(false);
+    expect(isOriginAllowed('https://localhost', config)).toBe(false);
+  });
 });

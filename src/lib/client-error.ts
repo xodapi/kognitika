@@ -1,4 +1,5 @@
 import { STORAGE_SCHEMA_VERSION } from './storage-keys';
+import { sendApiBeacon } from './runtime-platform';
 
 type ClientErrorInput = {
   name?: string;
@@ -56,10 +57,8 @@ export function reportClientError(error: unknown, context: ClientErrorContext = 
   const body = JSON.stringify(payload);
 
   try {
-    if (navigator.sendBeacon) {
-      const blob = new Blob([body], { type: 'application/json' });
-      if (navigator.sendBeacon('/api/client-error', blob)) return;
-    }
+    const blob = new Blob([body], { type: 'application/json' });
+    if (sendApiBeacon('/api/client-error', blob)) return;
 
     void fetch('/api/client-error', {
       method: 'POST',

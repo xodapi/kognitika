@@ -6,6 +6,7 @@ import {
   routeToPracticeMeta,
 } from './practice-flow-analytics';
 import { STORAGE_SCHEMA_VERSION } from './storage-keys';
+import { sendApiBeacon } from './runtime-platform';
 
 interface ActivePractice {
   category: PracticeFlowCategory;
@@ -58,10 +59,8 @@ function sendPracticeFlowEvent(event: PracticeFlowEvent) {
   if (!parsed.success || typeof window === 'undefined') return;
 
   const body = JSON.stringify(parsed.data);
-  if (navigator.sendBeacon) {
-    const blob = new Blob([body], { type: 'application/json' });
-    if (navigator.sendBeacon('/api/analytics/practice-flow', blob)) return;
-  }
+  const blob = new Blob([body], { type: 'application/json' });
+  if (sendApiBeacon('/api/analytics/practice-flow', blob)) return;
 
   void fetch('/api/analytics/practice-flow', {
     method: 'POST',

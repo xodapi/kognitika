@@ -431,7 +431,7 @@ function AppContent() {
 
             {user && (
               <div className="p-4 border-t border-border bg-secondary/10">
-                <button onClick={() => { logout(); setIsMobileMenuOpen(false); }} className="w-full flex items-center justify-center gap-2 px-4 py-3 text-destructive hover:bg-destructive/10 rounded-xl transition-all font-black text-xs uppercase tracking-widest border border-transparent hover:border-destructive/20">
+                <button onClick={() => { void logout().then((loggedOut) => { if (loggedOut) setIsMobileMenuOpen(false); }); }} className="w-full flex items-center justify-center gap-2 px-4 py-3 text-destructive hover:bg-destructive/10 rounded-xl transition-all font-black text-xs uppercase tracking-widest border border-transparent hover:border-destructive/20">
                   <LogOut className="w-4 h-4" /> Завершить сеанс
                 </button>
               </div>

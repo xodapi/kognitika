@@ -1,0 +1,23 @@
+{
+  "name": "@kognitika/capacitor",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build:web": "pnpm --dir ../.. build",
+    "sync": "cap sync",
+    "sync:android": "cap sync android",
+    "open:android": "cap open android",
+    "build:android:debug": "pnpm build:web && pnpm sync:android && cd android && gradlew.bat assembleDebug",
+    "build:android:bundle": "pnpm build:web && pnpm sync:android && cd android && gradlew.bat bundleRelease"
+  },
+  "dependencies": {
+    "@capacitor/android": "8.4.2",
+    "@capacitor/app": "8.1.1",
+    "@capacitor/core": "8.4.2",
+    "capacitor-secure-storage-plugin": "0.13.0"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "8.4.2",
+    "typescript": "~5.8.2"
+  }
+}

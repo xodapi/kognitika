@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { X, Copy, Check, Brain, Key } from 'lucide-react';
+import { apiUrl } from '../lib/runtime-platform';
 
 export function AuthModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
   const [brainIdInput, setBrainIdInput] = useState('');
@@ -23,12 +24,12 @@ export function AuthModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
     setError('');
     setLoading(true);
     try {
-      const res = await fetch('/api/auth/brain', { method: 'POST' });
+      const res = await fetch(apiUrl('/api/auth/brain'), { method: 'POST' });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to init');
       
       setSuccessBrainId(data.brainId);
-      login(data.token, data.user);
+      await login(data.token, data.user);
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -42,7 +43,7 @@ export function AuthModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
     setLoading(true);
 
     try {
-      const res = await fetch('/api/auth/restore', {
+      const res = await fetch(apiUrl('/api/auth/restore'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ brainId: brainIdInput.trim() })
@@ -54,7 +55,7 @@ export function AuthModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
         return;
       }
       
-      login(data.token, data.user);
+      await login(data.token, data.user);
       onClose();
     } catch (err) {
       setError('Ошибка сети. Проверьте подключение.');

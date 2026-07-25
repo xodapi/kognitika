@@ -1,8 +1,7 @@
 import { io } from 'socket.io-client';
+import { socketUrl } from './runtime-platform';
 
-const SOCKET_URL = window.location.origin;
-
-export const socket = io(SOCKET_URL, {
+export const socket = io(socketUrl(), {
   autoConnect: false,
 });
 

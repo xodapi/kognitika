@@ -3,9 +3,11 @@ import {StrictMode} from 'react';
 import {createRoot} from 'react-dom/client';
 import App from './App.tsx';
 import { ThemeProvider } from './components/ThemeProvider.tsx';
-import { BrowserRouter } from 'react-router-dom';
+import { BrowserRouter, HashRouter } from 'react-router-dom';
 import './index.css';
 import { setupGlobalErrorReporting } from './lib/client-error.ts';
+import { installNativeNetworkBridge, isNativeRuntime } from './lib/runtime-platform.ts';
+import { initializeNativeAppLifecycle } from './lib/native-navigation.ts';
 
 declare global {
   interface Window {
@@ -16,15 +18,22 @@ declare global {
   }
 }
 
+installNativeNetworkBridge();
+initializeNativeAppLifecycle();
 setupGlobalErrorReporting();
 window.__KOGNITIKA_BOOT__?.markModuleStarted?.();
+
+const nativeRuntime = isNativeRuntime();
+if (nativeRuntime) document.documentElement.classList.add('native-runtime');
+
+const Router = nativeRuntime ? HashRouter : BrowserRouter;
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ThemeProvider attribute="data-theme" defaultTheme="light" enableSystem={false}>
-      <BrowserRouter>
+      <Router>
         <App />
-      </BrowserRouter>
+      </Router>
     </ThemeProvider>
   </StrictMode>,
 );

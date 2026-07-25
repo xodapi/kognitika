@@ -8,6 +8,11 @@ export interface CorsRuntimeConfig {
   warning?: string;
 }
 
+export const NATIVE_APP_ORIGINS = [
+  'capacitor://localhost',
+  'https://localhost',
+] as const;
+
 function normalizeOrigin(origin: string) {
   return origin.trim().replace(/\/+$/, '');
 }
@@ -25,9 +30,16 @@ function isLocalDevEnv(nodeEnv: NodeEnv) {
 
 export function resolveCorsConfig(env: NodeJS.ProcessEnv = process.env): CorsRuntimeConfig {
   const nodeEnv = env.NODE_ENV || 'development';
-  const origins = parseOrigins(env.CORS_ORIGIN);
+  const configuredOrigins = parseOrigins(env.CORS_ORIGIN);
+  const nativeOrigins = env.CORS_ALLOW_NATIVE_APP === 'false'
+    ? []
+    : [...NATIVE_APP_ORIGINS];
+  const origins = [...new Set([
+    ...configuredOrigins,
+    ...nativeOrigins,
+  ])];
   const explicitWildcard = env.CORS_ALLOW_DEV_WILDCARD === 'true';
-  const hasWildcard = origins.includes('*');
+  const hasWildcard = configuredOrigins.includes('*');
   const allowWildcard = explicitWildcard && hasWildcard && isLocalDevEnv(nodeEnv);
   const allowedOrigins = origins.filter(origin => origin !== '*');
 
@@ -41,7 +53,7 @@ export function resolveCorsConfig(env: NodeJS.ProcessEnv = process.env): CorsRun
     };
   }
 
-  if (nodeEnv === 'production' && allowedOrigins.length === 0) {
+  if (nodeEnv === 'production' && configuredOrigins.length === 0) {
     return {
       allowedOrigins,
       allowWildcard: false,
