@@ -21,6 +21,19 @@ export const SCHULTE_90_ROWS = 9;
 export const SCHULTE_90_COLS = 10;
 export const SCHULTE_90_TOTAL = SCHULTE_90_ROWS * SCHULTE_90_COLS; // 90
 
+export type GorbovRuleId = 'black-red' | 'red-black' | 'black-pairs' | 'red-pairs';
+
+export const GORBOV_RULES: ReadonlyArray<{
+  id: GorbovRuleId;
+  title: string;
+  description: string;
+}> = [
+  { id: 'black-red', title: 'Чёрный → красный', description: 'Чередование цветов, начиная с чёрного.' },
+  { id: 'red-black', title: 'Красный → чёрный', description: 'Чередование цветов, начиная с красного.' },
+  { id: 'black-pairs', title: 'Пары: чёрный → красный', description: 'Две чёрные, затем две красные клетки.' },
+  { id: 'red-pairs', title: 'Пары: красный → чёрный', description: 'Две красные, затем две чёрные клетки.' },
+] as const;
+
 const MIN_SCORE = 10;
 const MAX_SCORE = 1000;
 
@@ -67,4 +80,27 @@ export function generateSchulte90Sequence(): CellValue[] {
     seq.push({ id: i - 1, num: i, color: 'black' });
   }
   return seq;
+}
+
+export function generateGorbov90Table(
+  rule: GorbovRuleId = 'black-red',
+  seed?: number,
+): { grid: CellValue[]; sequence: CellValue[] } {
+  const sequence = generateSchulte90Sequence().map((cell, index) => ({
+    ...cell,
+    color: getGorbovColor(rule, index),
+  }));
+  const grid = generateSchulte90Grid(seed).map((cell) => ({
+    ...cell,
+    color: sequence[cell.num - 1].color,
+  }));
+  return { grid, sequence };
+}
+
+export function getGorbovColor(rule: GorbovRuleId, index: number): 'black' | 'red' {
+  const groupSize = rule.endsWith('pairs') ? 2 : 1;
+  const startsRed = rule.startsWith('red');
+  const group = Math.floor(index / groupSize);
+  const isRed = (group + (startsRed ? 1 : 0)) % 2 === 1;
+  return isRed ? 'red' : 'black';
 }

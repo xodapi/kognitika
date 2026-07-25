@@ -6,6 +6,8 @@ import {
   computeSchulte90Score,
   generateSchulte90Grid,
   generateSchulte90Sequence,
+  generateGorbov90Table,
+  GORBOV_RULES,
   SCHULTE_90_COLS,
   SCHULTE_90_ROWS,
   SCHULTE_90_TOTAL,
@@ -50,6 +52,23 @@ describe('Schulte 1-90', () => {
       );
     });
 
+    it.each(GORBOV_RULES)('generates the $id color sequence', (rule) => {
+      const table = generateGorbov90Table(rule.id, 42);
+      expect(table.grid).toHaveLength(SCHULTE_90_TOTAL);
+      expect(table.sequence).toHaveLength(SCHULTE_90_TOTAL);
+      expect(table.grid.map((cell) => cell.num).sort((a, b) => a - b)).toEqual(
+        Array.from({ length: SCHULTE_90_TOTAL }, (_, index) => index + 1),
+      );
+      const expectedColors = Array.from({ length: SCHULTE_90_TOTAL }, (_, index) => {
+        const groupSize = rule.id.endsWith('pairs') ? 2 : 1;
+        const startsRed = rule.id.startsWith('red');
+        return (Math.floor(index / groupSize) + (startsRed ? 1 : 0)) % 2 === 1 ? 'red' : 'black';
+      });
+      expect(table.sequence.map((cell) => cell.color)).toEqual(expectedColors);
+      expect(table.grid.find((cell) => cell.num === 1)?.color).toBe(table.sequence[0].color);
+      expect(table.grid.find((cell) => cell.num === 90)?.color).toBe(table.sequence[89].color);
+    });
+
     it('matches the authoritative server score inputs', () => {
       const timeMs = 120000;
       const errors = 2;
@@ -83,6 +102,21 @@ describe('Schulte 1-90', () => {
       expect(result.current.state.expectedIndex).toBe(1);
       expect(result.current.state.errors).toBe(1);
       expect(result.current.state.clickHistory).toHaveLength(1);
+    });
+
+    it('rejects an impossible color-number click in a Gorbov mode', () => {
+      const { result } = renderHook(() => useSchulte90Engine());
+      act(() => result.current.startGame('red-black', 42));
+      const first = result.current.state.grid.find((cell) => cell.num === 1)!;
+      const impossible = { ...first, color: first.color === 'red' ? 'black' : 'red' } as typeof first;
+
+      act(() => result.current.clickCell(impossible, 0));
+
+      expect(result.current.state.expectedIndex).toBe(0);
+      expect(result.current.state.errors).toBe(1);
+
+      act(() => result.current.clickCell(first, 0));
+      expect(result.current.state.expectedIndex).toBe(1);
     });
 
     it('accepts sequential batched clicks in order', () => {
@@ -132,7 +166,11 @@ describe('Schulte 1-90', () => {
       expect(result.current.state.expectedIndex).toBe(90);
       expect(completeSpy).toHaveBeenCalledTimes(1);
       expect(completeSpy).toHaveBeenCalledWith(
-        expect.objectContaining({ type: 'SCHULTE_90', errors: 0 }),
+        expect.objectContaining({
+          type: 'SCHULTE_90',
+          errors: 0,
+          metadata: expect.objectContaining({ rule: 'classic' }),
+        }),
       );
       unsubscribe();
     });

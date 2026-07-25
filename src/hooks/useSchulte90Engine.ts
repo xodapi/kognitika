@@ -5,6 +5,8 @@ import {
   computeSchulte90Score,
   generateSchulte90Grid,
   generateSchulte90Sequence,
+  generateGorbov90Table,
+  type GorbovRuleId,
   SCHULTE_90_ROWS,
   SCHULTE_90_COLS,
 } from '../lib/schulte90-generator';
@@ -32,6 +34,7 @@ export interface Schulte90State {
     x?: number;
     y?: number;
   }[];
+  rule: GorbovRuleId | 'classic';
 }
 
 const DEFAULT_STATE: Schulte90State = {
@@ -46,6 +49,7 @@ const DEFAULT_STATE: Schulte90State = {
   rows: SCHULTE_90_ROWS,
   cols: SCHULTE_90_COLS,
   clickHistory: [],
+  rule: 'classic',
 };
 
 export function useSchulte90Engine() {
@@ -58,6 +62,7 @@ export function useSchulte90Engine() {
   const errorsRef = useRef(0);
   const lastClickTimeRef = useRef(0);
   const sequenceRef = useRef<CellValue[]>([]);
+  const ruleRef = useRef<GorbovRuleId | 'classic'>('classic');
 
   useEffect(() => {
     return () => {
@@ -66,14 +71,18 @@ export function useSchulte90Engine() {
     };
   }, []);
 
-  const startGame = useCallback((seed?: number) => {
-    const grid = generateSchulte90Grid(seed);
-    const seq = generateSchulte90Sequence();
+  const startGame = useCallback((ruleOrSeed: GorbovRuleId | 'classic' | number = 'classic', seed?: number) => {
+    const rule = typeof ruleOrSeed === 'number' ? 'classic' : ruleOrSeed;
+    const actualSeed = typeof ruleOrSeed === 'number' ? ruleOrSeed : seed;
+    const gorbov = rule === 'classic' ? null : generateGorbov90Table(rule, actualSeed);
+    const grid = gorbov?.grid ?? generateSchulte90Grid(actualSeed);
+    const seq = gorbov?.sequence ?? generateSchulte90Sequence();
     activeRef.current = true;
     expectedIndexRef.current = 0;
     errorsRef.current = 0;
     lastClickTimeRef.current = 0;
     sequenceRef.current = seq;
+    ruleRef.current = rule;
     displayedTimeRef.current = 0;
 
     setState({
@@ -82,6 +91,7 @@ export function useSchulte90Engine() {
       expectedSequence: seq,
       isActive: true,
       outcome: 'active',
+      rule,
     });
 
     startTimeRef.current = performance.now();
@@ -117,6 +127,7 @@ export function useSchulte90Engine() {
     errorsRef.current = 0;
     lastClickTimeRef.current = 0;
     sequenceRef.current = [];
+    ruleRef.current = 'classic';
     displayedTimeRef.current = 0;
     if (timerRef.current) cancelAnimationFrame(timerRef.current);
     setState(DEFAULT_STATE);
@@ -135,7 +146,8 @@ export function useSchulte90Engine() {
       const expected = sequenceRef.current[expectedIndexRef.current];
       if (!expected) return;
 
-      const isMatch = cell.num === expected.num;
+      const isMatch = cell.num === expected.num
+        && (ruleRef.current === 'classic' || cell.color === expected.color);
       const currentTime = Math.floor(performance.now() - startTimeRef.current);
       const reactionTimeMs = currentTime - lastClickTimeRef.current;
 
@@ -170,6 +182,7 @@ export function useSchulte90Engine() {
             score: computeSchulte90Score(currentTime, errors),
             errors,
             metadata: {
+              rule: ruleRef.current,
               rows: SCHULTE_90_ROWS,
               cols: SCHULTE_90_COLS,
               size: SCHULTE_90_COLS,

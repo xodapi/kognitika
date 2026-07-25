@@ -12,11 +12,14 @@ import {
   SCHULTE_90_ROWS,
   SCHULTE_90_COLS,
   SCHULTE_90_TOTAL,
+  GORBOV_RULES,
+  getGorbovColor,
+  type GorbovRuleId,
 } from '../lib/schulte90-generator';
 
 const logger = createSafeLogger('schulte-90');
 
-const NORMATIVE_RANGE = '5–25 мин';
+const NORMATIVE_RANGE = '90–150 с';
 
 const CELL_VARIANTS = [
   'rounded-none bg-card font-mono text-xs',
@@ -29,12 +32,18 @@ function getCellVariant(number: number) {
   return CELL_VARIANTS[number % CELL_VARIANTS.length];
 }
 
+function isGorbovRuleId(value: string): value is GorbovRuleId {
+  return GORBOV_RULES.some((rule) => rule.id === value);
+}
+
 export function SchulteTable90() {
   const { state, startGame, stopGame, resetGame, clickCell } = useSchulte90Engine();
   const { token, refreshUser } = useAuth();
   const navigate = useNavigate();
   const [showBriefing, setShowBriefing] = useState(false);
+  const [selectedRule, setSelectedRule] = useState<GorbovRuleId>('black-red');
   const savedRunRef = useRef(false);
+  const selectedRuleConfig = GORBOV_RULES.find((rule) => rule.id === selectedRule) ?? GORBOV_RULES[0];
 
   useSessionRecording(state.isActive, state.isFinished);
 
@@ -56,6 +65,7 @@ export function SchulteTable90() {
             rows: SCHULTE_90_ROWS,
             cols: SCHULTE_90_COLS,
             size: SCHULTE_90_COLS,
+            rule: state.rule,
             accuracy,
             correctAnswers: SCHULTE_90_TOTAL,
             totalQuestions: SCHULTE_90_TOTAL,
@@ -79,8 +89,8 @@ export function SchulteTable90() {
   const beginGame = useCallback(() => {
     savedRunRef.current = false;
     setShowBriefing(false);
-    startGame();
-  }, [startGame]);
+    startGame(selectedRule);
+  }, [selectedRule, startGame]);
 
   const handleReset = useCallback(() => {
     savedRunRef.current = false;
@@ -129,7 +139,7 @@ export function SchulteTable90() {
                   Алгоритм
                 </h4>
                 <p className="text-sm text-foreground leading-relaxed font-medium">
-                  ПРЯМОЙ ПОРЯДОК: Найдите последовательно все числа от 1 до {SCHULTE_90_TOTAL} в сетке {SCHULTE_90_ROWS}x{SCHULTE_90_COLS}.
+                  Найдите последовательно числа от 1 до {SCHULTE_90_TOTAL}, соблюдая цветовое правило «{selectedRuleConfig.title}».
                 </p>
                 <div className="flex items-center gap-3 pt-2">
                   <AlertCircle className="w-4 h-4 text-primary" />
@@ -203,11 +213,34 @@ export function SchulteTable90() {
                   Режим
                 </label>
                 <select
-                  disabled
-                  className="w-full p-3 text-xs rounded-xl border bg-background/50 border-border outline-none text-foreground font-bold transition-all opacity-60"
+                  value={selectedRule}
+                  onChange={(event) => {
+                    if (isGorbovRuleId(event.target.value)) setSelectedRule(event.target.value);
+                  }}
+                  className="w-full p-3 text-xs rounded-xl border bg-background/50 border-border outline-none text-foreground font-bold transition-all"
                 >
-                  <option>Прямой (1-{SCHULTE_90_TOTAL})</option>
+                  {GORBOV_RULES.map((rule) => (
+                    <option key={rule.id} value={rule.id}>{rule.title}</option>
+                  ))}
                 </select>
+                <p className="mt-2 text-[10px] leading-relaxed text-muted-foreground">
+                  {GORBOV_RULES.find((rule) => rule.id === selectedRule)?.description}
+                </p>
+                <div
+                  role="img"
+                  aria-label={`Предпросмотр: ${selectedRuleConfig.description}`}
+                  className="flex items-center gap-1.5"
+                >
+                  {Array.from({ length: 8 }, (_, index) => {
+                    const color = getGorbovColor(selectedRule, index);
+                    return (
+                      <span
+                        key={index}
+                        className={`h-3 w-3 rounded-full ${color === 'red' ? 'bg-red-500' : 'bg-neutral-900'}`}
+                      />
+                    );
+                  })}
+                </div>
               </div>
             </div>
 
@@ -241,10 +274,10 @@ export function SchulteTable90() {
             </div>
             <div className="space-y-2">
               <p className="text-sm font-black text-foreground uppercase tracking-[0.3em]">
-                Таблица Шульте 1-90
+                {selectedRuleConfig.title}
               </p>
               <p className="text-xs text-muted-foreground uppercase tracking-widest max-w-xs mx-auto leading-relaxed">
-                Расширенная сетка {SCHULTE_90_ROWS}x{SCHULTE_90_COLS} для тренировки периферического зрения и концентрации внимания.
+                Сетка {SCHULTE_90_ROWS}x{SCHULTE_90_COLS}, 90 чисел, чередование цветов по выбранному правилу.
               </p>
             </div>
           </div>
@@ -478,6 +511,7 @@ export function SchulteTable90() {
               whileTap={{ scale: 0.9, backgroundColor: 'var(--primary)', color: 'var(--primary-foreground)' }}
               disabled={isConsumed}
               aria-label={isConsumed ? `Число ${cell.num}, найдено` : `Число ${cell.num}`}
+              aria-description={`${cell.color === 'red' ? 'Красная' : 'Чёрная'} клетка`}
               onClick={(e) => {
                 const rect = e.currentTarget.parentElement?.getBoundingClientRect();
                 if (rect) {
@@ -488,7 +522,7 @@ export function SchulteTable90() {
                   clickCell(cell, idx, undefined, handleSuccess, handleError);
                 }
               }}
-              className={`aspect-square min-h-11 min-w-11 border flex items-center justify-center font-bold text-foreground transition-all select-none shadow-sm ${getCellVariant(cell.num)} ${
+              className={`aspect-square min-h-11 min-w-11 border flex items-center justify-center font-bold transition-all select-none shadow-sm ${cell.color === 'red' ? 'text-red-600' : 'text-foreground'} ${getCellVariant(cell.num)} ${
                 isConsumed
                   ? 'border-border/30 opacity-20 grayscale cursor-default'
                   : 'border-border cursor-pointer hover:ring-2 hover:ring-primary/20 hover:border-primary'
