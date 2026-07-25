@@ -1,10 +1,15 @@
 import { z } from 'zod';
 
-export const MentalMathLevelSchema = z.union([z.literal(1), z.literal(2)]);
+export const MentalMathLevelSchema = z.union([
+  z.literal(1),
+  z.literal(2),
+  z.literal(3),
+  z.literal(4),
+]);
 
 export const GenerateMentalMathRequestSchema = z.object({
   level: MentalMathLevelSchema,
-  count: z.number().int().min(20).max(30),
+  count: z.number().int().min(20).max(48),
 }).strict();
 
 export const MathLegendSchema = z.record(
@@ -14,13 +19,13 @@ export const MathLegendSchema = z.record(
 
 export const MathQuestionSchema = z.object({
   equation: z.string().min(3).max(80),
-  answer: z.number().int().min(1).max(200),
+  answer: z.number().int().min(-200).max(200),
   display: z.string().min(5).max(90),
 }).strict();
 
 export const GeneratedMentalMathSetSchema = z.object({
   legend: MathLegendSchema,
-  questions: z.array(MathQuestionSchema).min(1).max(30),
+  questions: z.array(MathQuestionSchema).min(1).max(48),
 }).strict();
 
 export const NeurotrainerGameTypeSchema = z.enum(['MENTAL_MATH', 'SCHULTE_90']);

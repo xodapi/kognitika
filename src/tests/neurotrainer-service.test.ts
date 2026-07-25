@@ -69,6 +69,15 @@ describe('neurotrainer service', () => {
     expect(validateGeneratedMentalMathSet(valid, 1, 10)).not.toBeNull();
     expect(validateGeneratedMentalMathSet({
       ...valid,
+      questions: valid.questions.map((question, index) => ({
+        ...question,
+        equation: `${index + 1} * 2`,
+        answer: (index + 1) * 2,
+        display: `${index + 1} * 2 = ?`,
+      })),
+    }, 1, 10)).toBeNull();
+    expect(validateGeneratedMentalMathSet({
+      ...valid,
       questions: valid.questions.map((question) => ({
         ...question,
         equation: '201 + 1',
@@ -76,6 +85,20 @@ describe('neurotrainer service', () => {
         display: '201 + 1 = ?',
       })),
     }, 1, 10)).toBeNull();
+  });
+
+  it('accepts negative intermediate values and the expanded request contract', () => {
+    const set = {
+      legend: { '@': '-', '#': '+' },
+      questions: [{
+        equation: '10 @ 20 # 15',
+        answer: 5,
+        display: '10 @ 20 # 15 = ?',
+      }],
+    };
+
+    expect(validateGeneratedMentalMathSet(set, 3, 1)).not.toBeNull();
+    expect(GenerateMentalMathRequestSchema.safeParse({ level: 4, count: 48 }).success).toBe(true);
   });
 
   it('sends only strict aggregate metrics to the analysis provider', async () => {

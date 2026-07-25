@@ -75,16 +75,17 @@ describe('new trainer UI contract', () => {
 
     const count = screen.getByRole('slider', { name: 'Количество вопросов' });
     expect(count).toHaveAttribute('min', '20');
-    expect(count).toHaveAttribute('max', '30');
+    expect(count).toHaveAttribute('max', '48');
+    expect(screen.getByRole('button', { name: /5-минутный пресет: 48 вопросов/i })).toBeEnabled();
     fireEvent.change(screen.getByRole('combobox', { name: 'Уровень сложности' }), {
-      target: { value: '2' },
+      target: { value: '4' },
     });
 
     fireEvent.click(screen.getByRole('button', { name: 'Начать тест' }));
     expect(screen.getByText(/лучше дать ответ и двигаться дальше/i)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Инициализировать тест' }));
 
-    expect(screen.getByRole('progressbar', { name: 'Прогресс вычислений' })).toHaveAttribute('aria-valuemax', '20');
+    expect(screen.getByRole('progressbar', { name: 'Прогресс вычислений' })).toHaveAttribute('aria-valuemax', '48');
     expect(screen.getByRole('spinbutton', { name: 'Ответ на текущий пример' })).toBeEnabled();
     expect(screen.getByText('Legend').parentElement).toHaveClass('sticky');
   });

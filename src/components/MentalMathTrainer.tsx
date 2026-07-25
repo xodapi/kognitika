@@ -8,7 +8,11 @@ import { useNavigate } from 'react-router-dom';
 import { PostGameInsight } from './PostGameInsight';
 import { createSafeLogger, safeError } from '../lib/safe-logger';
 import { requestMentalMathSet } from '../lib/neurotrainer-client';
-import type { MathLevel } from '../lib/mentmath-generator';
+import {
+  computeMentalMathScore,
+  MENTAL_MATH_PRESETS,
+  type MathLevel,
+} from '../lib/mentmath-generator';
 
 const logger = createSafeLogger('mental-math');
 
@@ -19,13 +23,24 @@ export function MentalMathTrainer() {
   const inputRef = useRef<HTMLInputElement>(null);
   const [inputValue, setInputValue] = useState('');
   const [level, setLevel] = useState<MathLevel>(1);
-  const [questionCount, setQuestionCount] = useState(20);
+  const [questionCount, setQuestionCount] = useState(48);
   const [showBriefing, setShowBriefing] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generationSource, setGenerationSource] = useState<'llm' | 'fallback' | null>(null);
   const savedRunRef = useRef(false);
+  const generationControllerRef = useRef<AbortController | null>(null);
+  const isMountedRef = useRef(true);
+  const selectedPreset = MENTAL_MATH_PRESETS.find((preset) => preset.level === level)!;
 
   useSessionRecording(state.isActive, state.isFinished);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+      generationControllerRef.current?.abort();
+    };
+  }, []);
 
   // Auto-focus input during game
   useEffect(() => {
@@ -42,18 +57,28 @@ export function MentalMathTrainer() {
     if (isGenerating) return;
     setIsGenerating(true);
     savedRunRef.current = false;
+    generationControllerRef.current?.abort();
+    const controller = new AbortController();
+    generationControllerRef.current = controller;
 
     try {
       if (token) {
-        const generated = await requestMentalMathSet(token, { level, count: questionCount });
+        const generated = await requestMentalMathSet(
+          token,
+          { level, count: questionCount },
+          controller.signal,
+        );
+        if (!isMountedRef.current || controller.signal.aborted) return;
         setGenerationSource(generated.source);
         startGame(level, questionCount, generated.set);
       } else {
+        if (!isMountedRef.current) return;
         setGenerationSource('fallback');
         startGame(level, questionCount);
       }
       setShowBriefing(false);
     } catch (err) {
+      if (!isMountedRef.current || controller.signal.aborted) return;
       logger.warn('Remote generation unavailable, using local fallback', {
         error: safeError(err),
       });
@@ -61,7 +86,7 @@ export function MentalMathTrainer() {
       startGame(level, questionCount);
       setShowBriefing(false);
     } finally {
-      setIsGenerating(false);
+      if (isMountedRef.current) setIsGenerating(false);
     }
   }, [isGenerating, token, level, questionCount, startGame]);
 
@@ -69,10 +94,10 @@ export function MentalMathTrainer() {
     const completed = state.outcome === 'completed';
     if (completed && state.timeMs > 0 && token && !savedRunRef.current) {
       savedRunRef.current = true;
-      const finalScore = Math.floor(
-        (state.correctAnswers / Math.max(1, state.questions.length)) *
-        1000 *
-        Math.max(0.1, 1 - state.timeMs / 120000)
+      const finalScore = computeMentalMathScore(
+        state.timeMs,
+        (state.correctAnswers / Math.max(1, state.questions.length)) * 100,
+        state.errors,
       );
 
       fetch('/api/game/save', {
@@ -95,15 +120,19 @@ export function MentalMathTrainer() {
           },
         }),
       })
-        .then((res) => res.json())
+        .then((res) => {
+          if (!res.ok) throw new Error(`Session save failed with status ${res.status}`);
+          return res.json();
+        })
         .then((resData) => {
           if (resData.session?.score) {
             refreshUser();
           }
         })
-        .catch((err) =>
-          logger.error('Session save failed', { error: safeError(err), gameType: 'MENTAL_MATH' })
-        );
+        .catch((err) => {
+          savedRunRef.current = false;
+          logger.error('Session save failed', { error: safeError(err), gameType: 'MENTAL_MATH' });
+        });
     }
   }, [state.outcome, state.timeMs, token, refreshUser, state.correctAnswers, state.errors, state.questions.length, state.level]);
 
@@ -116,8 +145,8 @@ export function MentalMathTrainer() {
   const handleSubmit = useCallback(
     (e: React.FormEvent) => {
       e.preventDefault();
-      const num = parseInt(inputValue.trim(), 10);
-      if (!isNaN(num)) {
+      const num = Number(inputValue.trim());
+      if (Number.isInteger(num)) {
         submitAnswer(num);
         setInputValue('');
       }
@@ -152,7 +181,7 @@ export function MentalMathTrainer() {
                 </h2>
                 <div className="flex gap-2 mt-1">
                   <span className="text-[10px] bg-primary/10 text-primary px-3 py-1 rounded-full font-black uppercase tracking-widest border border-primary/20">
-                    {level === 1 ? 'Уровень 1: Базовый' : 'Уровень 2: Символы'}
+                    Режим {level}: {selectedPreset.title}
                   </span>
                 </div>
               </div>
@@ -164,9 +193,8 @@ export function MentalMathTrainer() {
                   Алгоритм
                 </h4>
                 <p className="text-sm text-foreground leading-relaxed font-medium">
-                  {level === 1
-                    ? 'Вычислите результат арифметического выражения как можно быстрее. Сложение и вычитание, ответ всегда положительный.'
-                    : 'Считайте по Legend-таблице: операторы заменены символами. Расшифруйте и вычислите.'}
+                  {selectedPreset.description} Вычисляйте строго слева направо. Промежуточный
+                  результат может быть отрицательным, деление всегда даёт целое число.
                 </p>
                 <p className="text-xs text-muted-foreground leading-relaxed">
                   Здесь важен темп: лучше дать ответ и двигаться дальше, чем надолго остановиться на одном примере.
@@ -198,7 +226,7 @@ export function MentalMathTrainer() {
                   <span className="text-[10px] text-muted-foreground uppercase font-black">
                     Лимит
                   </span>
-                  <span className="text-[10px] font-black uppercase text-muted-foreground">120с</span>
+                  <span className="text-[10px] font-black uppercase text-muted-foreground">ориентир 5 мин</span>
                 </div>
               </div>
             </div>
@@ -252,8 +280,11 @@ export function MentalMathTrainer() {
                   onChange={(e) => setLevel(Number(e.target.value) as MathLevel)}
                   className="w-full p-3 text-xs rounded-xl border bg-background/50 border-border focus:ring-2 focus:ring-primary/20 outline-none text-foreground font-bold transition-all"
                 >
-                  <option value={1}>Ур. 1: Базовый (+, -)</option>
-                  <option value={2}>Ур. 2: Символы (+, -, *, /)</option>
+                  {MENTAL_MATH_PRESETS.map((preset) => (
+                    <option key={preset.level} value={preset.level}>
+                      Режим {preset.level}: {preset.title}
+                    </option>
+                  ))}
                 </select>
               </div>
 
@@ -268,12 +299,19 @@ export function MentalMathTrainer() {
                   id="mental-math-question-count"
                   type="range"
                   min={20}
-                  max={30}
-                  step={5}
+                  max={48}
+                  step={4}
                   value={questionCount}
                   onChange={(e) => setQuestionCount(Number(e.target.value))}
                   className="w-full accent-primary h-1.5 rounded-full appearance-none bg-secondary cursor-pointer"
                 />
+                <button
+                  type="button"
+                  onClick={() => setQuestionCount(48)}
+                  className="mt-3 min-h-10 w-full rounded-xl border border-primary/20 bg-primary/5 px-3 text-[10px] font-black uppercase tracking-widest text-primary"
+                >
+                  5-минутный пресет: 48 вопросов
+                </button>
               </div>
             </div>
 
@@ -353,7 +391,8 @@ export function MentalMathTrainer() {
                     3
                   </div>
                   <p className="text-xs text-muted-foreground leading-relaxed">
-                    Считайте максимально быстро и точно. Все ответы положительные числа 1-200.
+                    Считайте максимально быстро и точно. Ответ может быть отрицательным;
+                    деление всегда выполняется без остатка.
                   </p>
                 </div>
               </div>
@@ -402,10 +441,10 @@ export function MentalMathTrainer() {
 
   // Result screen
   if (state.isFinished) {
-    const finalScore = Math.floor(
-      (state.correctAnswers / Math.max(1, state.questions.length)) *
-        1000 *
-        Math.max(0.1, 1 - state.timeMs / 120000)
+    const finalScore = computeMentalMathScore(
+      state.timeMs,
+      (state.correctAnswers / Math.max(1, state.questions.length)) * 100,
+      state.errors,
     );
 
     return (
@@ -499,8 +538,8 @@ export function MentalMathTrainer() {
           </div>
         </div>
 
-        {/* Legend (level 2) */}
-        {state.level === 2 && Object.keys(state.legend).length > 0 && (
+        {/* Symbol legend */}
+        {state.level >= 3 && Object.keys(state.legend).length > 0 && (
           <div className="sticky top-3 z-20 bg-primary/10 backdrop-blur-md border border-primary/20 rounded-3xl p-4 shadow-sm shadow-primary/5">
             <p className="text-[10px] text-primary uppercase mb-3 font-black tracking-[0.3em]">
               Legend
@@ -541,6 +580,7 @@ export function MentalMathTrainer() {
           {currentQuestion && (
             <motion.div
               key={state.currentIndex}
+              aria-live="polite"
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               className="text-4xl sm:text-6xl font-black text-foreground"
@@ -555,6 +595,7 @@ export function MentalMathTrainer() {
               aria-label="Ответ на текущий пример"
               ref={inputRef}
               type="number"
+              step={1}
               inputMode="numeric"
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}

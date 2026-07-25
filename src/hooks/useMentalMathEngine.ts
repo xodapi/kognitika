@@ -1,5 +1,12 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { generateMathSet, type MathLevel, type MathQuestion, type MathLegend, type GeneratedMathSet } from '../lib/mentmath-generator';
+import {
+  computeMentalMathScore,
+  generateMathSet,
+  type MathLevel,
+  type MathQuestion,
+  type MathLegend,
+  type GeneratedMathSet,
+} from '../lib/mentmath-generator';
 import { emitEvent } from './useEventBus';
 
 export interface MentalMathState {
@@ -29,7 +36,7 @@ const DEFAULT_STATE: MentalMathState = {
   isFinished: false,
   outcome: 'idle',
   level: 1,
-  questionCount: 20,
+  questionCount: 48,
 };
 
 export function useMentalMathEngine() {
@@ -48,7 +55,7 @@ export function useMentalMathEngine() {
 
   const startGame = useCallback((
     level: MathLevel = 1,
-    count: number = 20,
+    count: number = 48,
     generatedSet?: GeneratedMathSet,
     seed?: number,
   ) => {
@@ -67,7 +74,7 @@ export function useMentalMathEngine() {
       isFinished: false,
       outcome: 'active',
       level,
-      questionCount: count,
+      questionCount: set.questions.length,
     });
 
     startTimeRef.current = performance.now();
@@ -117,9 +124,8 @@ export function useMentalMathEngine() {
       const isDone = nextIndex >= s.questions.length;
       const currentTime = Math.floor(performance.now() - startTimeRef.current);
 
-      const speedBonus = Math.max(0, 1000 - Math.floor(currentTime / s.questions.length));
-      const accuracyMultiplier = s.questions.length > 0 ? newCorrect / (newCorrect + newErrors) : 0;
-      const newScore = Math.floor(speedBonus * accuracyMultiplier);
+      const accuracy = (newCorrect / s.questions.length) * 100;
+      const newScore = computeMentalMathScore(currentTime, accuracy, newErrors);
 
       if (isDone) {
         activeRef.current = false;

@@ -39,11 +39,13 @@ async function postJson<T>(
 export function requestMentalMathSet(
   token: string,
   input: { level: MathLevel; count: number },
+  signal?: AbortSignal,
 ) {
   return postJson<{ set: GeneratedMathSet; source: 'llm' | 'fallback' }>(
     '/api/neurotrainer/mental-math/generate',
     token,
     input,
+    signal,
   );
 }
 

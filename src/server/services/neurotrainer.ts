@@ -26,9 +26,21 @@ function applyOperator(left: number, right: number, operator: string): number | 
   return null;
 }
 
-function evaluateEquation(equation: string, legend: Record<string, string>) {
+function evaluateEquation(equation: string, legend: Record<string, string>, level: MathLevel) {
   const tokens = equation.trim().split(/\s+/);
-  if (tokens.length !== 3 && tokens.length !== 5) return null;
+  const expectedTokenCount = level <= 2 ? 3 : 5;
+  if (tokens.length !== expectedTokenCount) return null;
+  const allowedOperators = level === 1 || level === 3
+    ? ['+', '-']
+    : level === 2
+      ? ['*', '/']
+      : ['+', '-', '*', '/'];
+  const operatorTokens = tokens.filter((_, index) => index % 2 === 1);
+  for (const token of operatorTokens) {
+    const resolvedOperator = legend[token] || token;
+    if (!allowedOperators.includes(resolvedOperator)) return null;
+    if (level >= 3 ? !Object.hasOwn(legend, token) : Object.hasOwn(legend, token)) return null;
+  }
 
   let result = Number(tokens[0]);
   if (!Number.isInteger(result) || result < 1 || result > 200) return null;
@@ -39,7 +51,7 @@ function evaluateEquation(equation: string, legend: Record<string, string>) {
     if (!Number.isInteger(operand) || operand < 1 || operand > 200) return null;
 
     const next = applyOperator(result, operand, operator);
-    if (next === null || !Number.isInteger(next) || next < 1 || next > 200) return null;
+    if (next === null || !Number.isInteger(next) || next < -200 || next > 200) return null;
     result = next;
   }
 
@@ -56,12 +68,13 @@ export function validateGeneratedMentalMathSet(
 
   const legend = parsed.data.legend;
   const legendValues = Object.values(legend).sort();
-  if (level === 1 && Object.keys(legend).length !== 0) return null;
+  if (level <= 2 && Object.keys(legend).length !== 0) return null;
+  const expectedLegend = level === 3 ? ['+', '-'] : ['*', '+', '-', '/'];
   if (
-    level === 2
+    level >= 3
     && (
-      Object.keys(legend).length !== 4
-      || legendValues.join(',') !== ['*', '+', '-', '/'].sort().join(',')
+      Object.keys(legend).length !== expectedLegend.length
+      || legendValues.join(',') !== expectedLegend.sort().join(',')
     )
   ) {
     return null;
@@ -72,7 +85,7 @@ export function validateGeneratedMentalMathSet(
     if (equations.has(question.equation)) return null;
     equations.add(question.equation);
 
-    const evaluated = evaluateEquation(question.equation, legend);
+    const evaluated = evaluateEquation(question.equation, legend, level);
     if (evaluated === null || evaluated !== question.answer) return null;
     if (question.display !== `${question.equation} = ?`) return null;
   }
@@ -82,20 +95,24 @@ export function validateGeneratedMentalMathSet(
 
 function mentalMathPrompt(level: MathLevel, count: number) {
   return JSON.stringify({
-    task: level === 1 ? 'generate_math_level_1' : 'generate_math_level_2',
+    task: `generate_math_level_${level}`,
     level,
     count,
     constraints: [
       'Return one JSON object with legend and questions only.',
-      'Every operand, intermediate result, and final answer must be an integer from 1 to 200.',
+      'Every operand must be 1 to 200; intermediate results and final answers must be integers from -200 to 200.',
       'Evaluate operations strictly from left to right.',
       'Every division must have no remainder.',
       'Equations must be unique within this set.',
       'Use spaces between every number and operator.',
       'display must equal equation followed by " = ?".',
       level === 1
-        ? 'Use only + and - operators and return an empty legend.'
-        : 'Replace +, -, *, / with four unique symbols and return the complete symbol legend.',
+        ? 'Use one + or - operator and return an empty legend.'
+        : level === 2
+          ? 'Use one * or / operator, return an empty legend, and keep division exact.'
+          : level === 3
+            ? 'Use two + or - operators and replace them with two unique symbols.'
+            : 'Use two operators from +, -, *, / and replace all four operators with four unique symbols.',
     ],
     response_shape: {
       legend: { symbol: 'operator' },

@@ -1,3 +1,5 @@
+import { computeMentalMathScore } from '../../lib/mentmath-generator.ts';
+
 type GameScoreInput = {
   gameType: string;
   timeMs: number;
@@ -46,7 +48,18 @@ function errorPenalty(metadata: Record<string, unknown> | undefined) {
   return clamp(errors + misses + falsePositives, 0, 100) * 5;
 }
 
-export function computeServerScore({ timeMs, metadata }: GameScoreInput) {
+export function computeServerScore({ gameType, timeMs, metadata }: GameScoreInput) {
+  if (gameType === 'MENTAL_MATH') {
+    const storedAccuracy = numberFromMetadata(metadata, 'accuracy');
+    const correctAnswers = numberFromMetadata(metadata, 'correctAnswers');
+    const totalQuestions = numberFromMetadata(metadata, 'totalQuestions');
+    const accuracy = storedAccuracy
+      ?? (correctAnswers !== null && totalQuestions !== null && totalQuestions > 0
+        ? (correctAnswers / totalQuestions) * 100
+        : 100);
+    return computeMentalMathScore(timeMs, accuracy, numberFromMetadata(metadata, 'errors') ?? 0);
+  }
+
   const speedScore = clamp(Math.floor(100000 / timeMs), MIN_SCORE, MAX_SCORE);
   const score = Math.round(
     speedScore * accuracyMultiplier(metadata) * complexityMultiplier(metadata) - errorPenalty(metadata),
