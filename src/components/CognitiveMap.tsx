@@ -3,6 +3,7 @@ import {
   ReactFlow,
   Background,
   BackgroundVariant,
+  Controls,
   Position,
   type Node,
   type Edge,
@@ -54,6 +55,10 @@ const MODULE_DOMAIN_MAP: Record<string, DomainId[]> = {
   silence: ['resilience'],
   filter: ['logic'],
   hype: ['logic'],
+  'mental-math': ['logic'],
+  'schulte-90': ['attention'],
+  'alphabet-table': ['attention'],
+  'stroop-alphabet': ['attention'],
 };
 
 const MODULE_CATEGORY: Record<string, 'cognitive' | 'somatic' | 'safety'> = {
@@ -69,13 +74,25 @@ const CATEGORY_COLORS: Record<string, string> = {
   somatic: 'rgb(16, 185, 129)',
 };
 
-const allModuleIds = Object.keys(MODULE_DOMAIN_MAP).sort((a, b) => {
+export const allModuleIds = Object.keys(MODULE_DOMAIN_MAP).sort((a, b) => {
   const ca = CATEGORY_ORDER[MODULE_CATEGORY[a] || 'cognitive'] ?? 0;
   const cb = CATEGORY_ORDER[MODULE_CATEGORY[b] || 'cognitive'] ?? 0;
   return ca !== cb ? ca - cb : a.localeCompare(b);
 });
 
 const domainIds = Object.keys(DOMAIN_LABELS) as DomainId[];
+const MODULE_COLUMNS = 3;
+const MODULE_GAP_X = 220;
+const MODULE_GAP_Y = 58;
+const DOMAIN_X = MODULE_COLUMNS * MODULE_GAP_X + 120;
+const COGNITIVE_MAP_FIT_VIEW_OPTIONS = { padding: 0.15, minZoom: 0.25 };
+
+export function cognitiveMapModulePosition(index: number) {
+  return {
+    x: (index % MODULE_COLUMNS) * MODULE_GAP_X,
+    y: Math.floor(index / MODULE_COLUMNS) * MODULE_GAP_Y,
+  };
+}
 
 export function CognitiveMap({ className }: { className?: string }) {
   const { nodes, edges } = useMemo(() => {
@@ -84,7 +101,7 @@ export function CognitiveMap({ className }: { className?: string }) {
       return {
         id: `mod-${mid}`,
         type: 'default',
-        position: { x: 0, y: i * 34 },
+        position: cognitiveMapModulePosition(i),
         sourcePosition: Position.Right,
         data: { label: MODULE_TITLES[mid] || mid },
         style: {
@@ -92,12 +109,16 @@ export function CognitiveMap({ className }: { className?: string }) {
           border: `1px solid ${CATEGORY_COLORS[cat]}`,
           color: '#fff',
           borderRadius: '10px',
-          padding: '6px 14px',
+          width: 190,
+          minHeight: 42,
+          boxSizing: 'border-box',
+          padding: '6px 10px',
           fontSize: 10,
           fontWeight: 700,
           textTransform: 'uppercase',
           letterSpacing: '0.03em',
-          whiteSpace: 'nowrap' as const,
+          whiteSpace: 'normal' as const,
+          overflowWrap: 'anywhere' as const,
         },
       };
     });
@@ -105,7 +126,7 @@ export function CognitiveMap({ className }: { className?: string }) {
     const domainNodes: Node[] = domainIds.map((did, i) => ({
       id: `dom-${did}`,
       type: 'default',
-      position: { x: 380, y: i * 110 + 30 },
+      position: { x: DOMAIN_X, y: i * 110 + 30 },
       targetPosition: Position.Left,
       data: { label: DOMAIN_LABELS[did] },
       style: {
@@ -142,20 +163,22 @@ export function CognitiveMap({ className }: { className?: string }) {
   }, []);
 
   return (
-    <div className={className} style={{ minHeight: 500 }}>
+    <div className={className} style={{ height: 620, minWidth: 0 }}>
       <ReactFlow
         nodes={nodes}
         edges={edges}
         fitView
+        fitViewOptions={COGNITIVE_MAP_FIT_VIEW_OPTIONS}
         nodesDraggable={false}
-        panOnDrag={false}
+        panOnDrag
         zoomOnScroll={false}
-        zoomOnPinch={false}
+        zoomOnPinch
         zoomOnDoubleClick={false}
         preventScrolling={false}
         proOptions={{ hideAttribution: true }}
       >
         <Background variant={BackgroundVariant.Dots} gap={20} size={1} />
+        <Controls showInteractive={false} />
       </ReactFlow>
     </div>
   );
