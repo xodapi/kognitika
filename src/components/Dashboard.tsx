@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 import { motion, AnimatePresence } from 'motion/react';
 import { Trophy, Zap, Target, Star, Lock, Activity, Award, Flame, CheckCircle2, MessageSquare, Lightbulb, Shield, ArrowUpRight, Share2, Brain } from 'lucide-react';
 import { IdeasWall } from './IdeasWall';
@@ -13,6 +13,7 @@ import { ShareCard } from './ShareCard';
 import { DuelsView } from './DuelsView';
 import { createSafeLogger, safeError } from '../lib/safe-logger';
 import { DailyTrajectoryPanel } from './DailyTrajectoryPanel';
+import { SafeResponsiveContainer } from './SafeResponsiveContainer';
 
 const logger = createSafeLogger('dashboard');
 import { CognitiveProfile } from './CognitiveProfile';
@@ -295,7 +296,7 @@ export function Dashboard({
                         <h3 className="text-xs font-black uppercase tracking-widest text-muted-foreground">Динамика Шульте</h3>
                      </div>
                      <div className="h-[220px] w-full">
-                        <ResponsiveContainer width="100%" height="100%">
+                        <SafeResponsiveContainer width="100%" height="100%">
                            <LineChart data={data}>
                               <CartesianGrid strokeDasharray="3 3" stroke="#ffffff05" vertical={false} />
                               <XAxis dataKey="date" stroke="#888888" fontSize={10} tickLine={false} axisLine={false} />
@@ -309,7 +310,7 @@ export function Dashboard({
                               <Tooltip contentStyle={{ backgroundColor: '#18181b', border: '1px solid #27272a', borderRadius: '12px', fontSize: '10px' }} />
                               <Line type="monotone" dataKey="time" stroke="#3b82f6" strokeWidth={3} dot={{ fill: '#3b82f6', r: 4 }} activeDot={{ r: 6 }} />
                            </LineChart>
-                        </ResponsiveContainer>
+                        </SafeResponsiveContainer>
                      </div>
                   </div>
                </div>

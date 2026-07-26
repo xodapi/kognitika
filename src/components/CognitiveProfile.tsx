@@ -3,10 +3,10 @@ import { motion } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Radar, RadarChart, PolarGrid, PolarAngleAxis, 
-  ResponsiveContainer 
 } from 'recharts';
 import { ArrowRight, Brain, TrendingUp, History, Info, Activity, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
+import { SafeResponsiveContainer } from './SafeResponsiveContainer';
 import { CognitiveTrendCurve } from './CognitiveTrendCurve';
 
 interface ProfileData {
@@ -146,7 +146,7 @@ export function CognitiveProfile() {
           </div>
           
           <div className="w-full h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
+            <SafeResponsiveContainer width="100%" height="100%">
               <RadarChart cx="50%" cy="50%" outerRadius="80%" data={radarData}>
                 <PolarGrid stroke="#333" />
                 <PolarAngleAxis dataKey="subject" tick={{ fill: '#888', fontSize: 10, fontWeight: 900 }} />
@@ -158,7 +158,7 @@ export function CognitiveProfile() {
                   fillOpacity={0.5}
                 />
               </RadarChart>
-            </ResponsiveContainer>
+            </SafeResponsiveContainer>
           </div>
         </motion.div>
 

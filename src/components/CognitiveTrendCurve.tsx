@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 import { motion } from 'motion/react';
 import { TrendingUp, TrendingDown, Minus, Brain } from 'lucide-react';
+import { SafeResponsiveContainer } from './SafeResponsiveContainer';
 import { useAuth } from '../hooks/useAuth';
 import { createSafeLogger, safeError } from '../lib/safe-logger';
 
@@ -120,7 +121,7 @@ export function CognitiveTrendCurve({ moduleId, days = 30, compact = false }: Co
           </div>
         </div>
         <div className="h-[140px] w-full">
-          <ResponsiveContainer width="100%" height="100%">
+          <SafeResponsiveContainer width="100%" height="100%">
             <LineChart data={chartData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(var(--primary-rgb), 0.08)" />
               <XAxis dataKey="label" tick={{ fontSize: 8, fill: 'var(--muted-foreground)' }} axisLine={false} tickLine={false} />
@@ -140,7 +141,7 @@ export function CognitiveTrendCurve({ moduleId, days = 30, compact = false }: Co
               />
               <Line yAxisId="accuracy" type="monotone" dataKey="accuracyPct" stroke="var(--primary)" strokeWidth={2} dot={false} animationDuration={1200} />
             </LineChart>
-          </ResponsiveContainer>
+          </SafeResponsiveContainer>
         </div>
       </div>
     );
@@ -169,7 +170,7 @@ export function CognitiveTrendCurve({ moduleId, days = 30, compact = false }: Co
       </div>
 
       <div className="h-[220px] w-full">
-        <ResponsiveContainer width="100%" height="100%">
+        <SafeResponsiveContainer width="100%" height="100%">
           <LineChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
             <defs>
               <linearGradient id="trendAccuracy" x1="0" y1="0" x2="0" y2="1">
@@ -202,7 +203,7 @@ export function CognitiveTrendCurve({ moduleId, days = 30, compact = false }: Co
             <Line yAxisId="accuracy" type="monotone" dataKey="accuracyPct" name="accuracyPct" stroke="var(--primary)" strokeWidth={2.5} dot={{ r: 3, fill: 'var(--primary)' }} activeDot={{ r: 5 }} animationDuration={1500} />
             <Line yAxisId="reaction" type="monotone" dataKey="reactionSec" name="reactionSec" stroke="var(--muted-foreground)" strokeWidth={1.5} dot={false} strokeDasharray="4 4" animationDuration={1500} />
           </LineChart>
-        </ResponsiveContainer>
+        </SafeResponsiveContainer>
       </div>
 
       <div className="flex justify-between items-center mt-4 pt-3 border-t border-border/50">

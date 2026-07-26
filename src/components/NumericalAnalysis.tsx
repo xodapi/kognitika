@@ -3,9 +3,10 @@ import { useNumericalEngine } from '../hooks/useNumericalEngine';
 import { Calculator } from './Calculator';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from '../hooks/useAuth';
-import { BarChart, Bar, CartesianGrid, LabelList, Legend, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { BarChart, Bar, CartesianGrid, LabelList, Legend, XAxis, YAxis, Tooltip, PieChart, Pie, Cell } from 'recharts';
 import { useNavigate } from 'react-router-dom';
 import { PostGameInsight } from './PostGameInsight';
+import { SafeResponsiveContainer } from './SafeResponsiveContainer';
 import { createSafeLogger, safeError } from '../lib/safe-logger';
 
 const COLORS = ['hsl(var(--primary))', 'hsl(var(--destructive))', 'hsl(var(--accent))', '#8b5cf6'];
@@ -135,7 +136,7 @@ export function NumericalAnalysis() {
            <div className="w-full bg-background/50 border border-border rounded-xl p-4">
               <div className="h-[200px] lg:h-[240px]">
               {curQ.type === 'percentage_change' && (
-                 <ResponsiveContainer width="100%" height="100%">
+                 <SafeResponsiveContainer width="100%" height="100%">
                    <BarChart data={percentageData} margin={{ top: 24, right: 8, left: 0, bottom: 0 }}>
                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
                      <XAxis dataKey="name" tick={{fill: 'hsl(var(--muted-foreground))'}} axisLine={false} tickLine={false} />
@@ -152,10 +153,10 @@ export function NumericalAnalysis() {
                        />
                      </Bar>
                    </BarChart>
-                 </ResponsiveContainer>
+                 </SafeResponsiveContainer>
               )}
               {curQ.type === 'share' && (
-                 <ResponsiveContainer width="100%" height="100%">
+                 <SafeResponsiveContainer width="100%" height="100%">
                    <PieChart>
                      <Pie
                        data={curQ.data.parts}
@@ -177,7 +178,7 @@ export function NumericalAnalysis() {
                      <Legend verticalAlign="bottom" iconSize={10} wrapperStyle={{ fontSize: 11 }} />
                      <Tooltip contentStyle={{ backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))', borderRadius: '0.5rem' }} />
                    </PieChart>
-                 </ResponsiveContainer>
+                 </SafeResponsiveContainer>
               )}
               {curQ.type === 'weighted_average' && (
                  <div className="overflow-x-auto h-full flex flex-col justify-center">
