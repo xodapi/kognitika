@@ -1,4 +1,4 @@
-import { useMemo, useCallback } from 'react';
+import { useMemo, useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ReactFlow,
@@ -14,7 +14,14 @@ import {
 import '@xyflow/react/dist/style.css';
 import { NEXT_MODULE, MODULE_TITLES, categoryForPracticeModule, type DailyPracticeCategory } from '../lib/practice-recommendations';
 
-type ModuleNodeData = Record<string, unknown> & { moduleId: string; label: string };
+type ModuleNodeData = Record<string, unknown> & { moduleId: string; label: string; compact: boolean };
+type GraphLayout = {
+  columns: number;
+  gapX: number;
+  gapY: number;
+  nodeWidth: number;
+  nodeHeight: number;
+};
 
 const CATEGORY_COLORS: Record<DailyPracticeCategory, { bg: string; border: string; text: string }> = {
   cognitive: { bg: 'rgba(99, 102, 241, 0.12)', border: 'rgb(99, 102, 241)', text: '#e0e7ff' },
@@ -34,35 +41,46 @@ const MODULE_ICONS: Record<string, string> = {
 const MAIN_CHAIN = ['schulte', 'stroop', 'nback', 'numerical', 'logical', 'spatial', 'topology', 'collision', 'dispatcher', 'noise', 'scanner', 'decryptor', 'reality', 'objective', 'profiling', 'typing'] as const;
 const SIDE_CHAIN = ['situational', 'dialogue', 'reframing', 'rejection', 'storytelling', 'focus'] as const;
 const AUXILIARY_MODULES = ['silence', 'filter', 'hype', 'mental-math', 'schulte-90', 'alphabet-table', 'stroop-alphabet'] as const;
-const MAIN_COLUMNS = 4;
-const NODE_GAP_X = 210;
-const NODE_GAP_Y = 100;
-const SIDE_ROW_Y = 4 * NODE_GAP_Y + 40;
-const AUXILIARY_ROW_Y = SIDE_ROW_Y + NODE_GAP_Y;
+const WIDE_LAYOUT: GraphLayout = { columns: 4, gapX: 185, gapY: 82, nodeWidth: 170, nodeHeight: 68 };
+const COMPACT_LAYOUT: GraphLayout = { columns: 3, gapX: 145, gapY: 84, nodeWidth: 130, nodeHeight: 72 };
+const WIDE_FIT_VIEW_OPTIONS = { padding: 0.1, minZoom: 0.35 };
+const COMPACT_FIT_VIEW_OPTIONS = { padding: 0.08, minZoom: 0.45 };
 
-export function modulePosition(moduleId: string, fallbackIndex = 0): { x: number; y: number } {
+function gridPosition(index: number, firstRowY: number, layout: GraphLayout): { x: number; y: number } {
+  const row = Math.floor(index / layout.columns);
+  const column = row % 2 === 0
+    ? index % layout.columns
+    : layout.columns - 1 - (index % layout.columns);
+
+  return {
+    x: column * layout.gapX,
+    y: firstRowY + row * layout.gapY,
+  };
+}
+
+export function modulePosition(moduleId: string, fallbackIndex = 0, compact = false): { x: number; y: number } {
+  const layout = compact ? COMPACT_LAYOUT : WIDE_LAYOUT;
+  const mainRows = Math.ceil(MAIN_CHAIN.length / layout.columns);
+  const sideRows = Math.ceil(SIDE_CHAIN.length / layout.columns);
+  const auxiliaryRows = Math.ceil(AUXILIARY_MODULES.length / layout.columns);
+  const sideRowY = mainRows * layout.gapY + 36;
+  const auxiliaryRowY = sideRowY + sideRows * layout.gapY;
   const mainIdx = MAIN_CHAIN.indexOf(moduleId as typeof MAIN_CHAIN[number]);
   if (mainIdx !== -1) {
-    return {
-      x: (mainIdx % MAIN_COLUMNS) * NODE_GAP_X,
-      y: Math.floor(mainIdx / MAIN_COLUMNS) * NODE_GAP_Y,
-    };
+    return gridPosition(mainIdx, 0, layout);
   }
 
   const sideIdx = SIDE_CHAIN.indexOf(moduleId as typeof SIDE_CHAIN[number]);
   if (sideIdx !== -1) {
-    return { x: sideIdx * NODE_GAP_X, y: SIDE_ROW_Y };
+    return gridPosition(sideIdx, sideRowY, layout);
   }
 
   const auxiliaryIdx = AUXILIARY_MODULES.indexOf(moduleId as typeof AUXILIARY_MODULES[number]);
   if (auxiliaryIdx !== -1) {
-    return { x: auxiliaryIdx * NODE_GAP_X, y: AUXILIARY_ROW_Y };
+    return gridPosition(auxiliaryIdx, auxiliaryRowY, layout);
   }
 
-  return {
-    x: (fallbackIndex % MAIN_COLUMNS) * NODE_GAP_X,
-    y: AUXILIARY_ROW_Y + Math.floor(fallbackIndex / MAIN_COLUMNS) * NODE_GAP_Y,
-  };
+  return gridPosition(fallbackIndex, auxiliaryRowY + auxiliaryRows * layout.gapY, layout);
 }
 
 function ModuleNode({ data }: { data: ModuleNodeData }) {
@@ -75,19 +93,19 @@ function ModuleNode({ data }: { data: ModuleNodeData }) {
         border: `1.5px solid ${colors.border}`,
         color: colors.text,
         borderRadius: '14px',
-        padding: '10px 14px',
-        width: 170,
-        minHeight: 68,
+        padding: data.compact ? '8px' : '10px 14px',
+        width: data.compact ? COMPACT_LAYOUT.nodeWidth : WIDE_LAYOUT.nodeWidth,
+        minHeight: data.compact ? COMPACT_LAYOUT.nodeHeight : WIDE_LAYOUT.nodeHeight,
         boxSizing: 'border-box',
         cursor: 'pointer',
         textAlign: 'center',
       }}
     >
       <Handle type="target" position={Position.Left} style={{ background: colors.border }} />
-      <div style={{ fontSize: 16, fontWeight: 900, fontFamily: 'monospace', marginBottom: 2 }}>
+      <div style={{ fontSize: data.compact ? 14 : 16, fontWeight: 900, fontFamily: 'monospace', marginBottom: 2 }}>
         {MODULE_ICONS[data.moduleId] || '?'}
       </div>
-      <div style={{ fontSize: 10, fontWeight: 700, lineHeight: 1.2, textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'normal', overflowWrap: 'anywhere' }}>
+      <div style={{ fontSize: data.compact ? 11 : 10, fontWeight: 700, lineHeight: 1.2, textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'normal', overflowWrap: 'anywhere' }}>
         {data.label}
       </div>
       <Handle type="source" position={Position.Right} style={{ background: colors.border }} />
@@ -99,6 +117,17 @@ const nodeTypes = { moduleNode: ModuleNode };
 
 export function CognitiveModuleGraph({ className }: { className?: string }) {
   const navigate = useNavigate();
+  const [compact, setCompact] = useState(() => (
+    typeof window !== 'undefined' && window.matchMedia('(max-width: 640px)').matches
+  ));
+
+  useEffect(() => {
+    const media = window.matchMedia('(max-width: 640px)');
+    const updateLayout = (event: MediaQueryListEvent) => setCompact(event.matches);
+    media.addEventListener('change', updateLayout);
+
+    return () => media.removeEventListener('change', updateLayout);
+  }, []);
 
   const moduleIds = useMemo(() => {
     const keys = Object.keys(NEXT_MODULE) as string[];
@@ -110,8 +139,8 @@ export function CognitiveModuleGraph({ className }: { className?: string }) {
     const n: Node<ModuleNodeData>[] = moduleIds.map((mid, index) => ({
       id: mid,
       type: 'moduleNode',
-      position: modulePosition(mid, index),
-      data: { moduleId: mid, label: MODULE_TITLES[mid] || mid },
+      position: modulePosition(mid, index, compact),
+      data: { moduleId: mid, label: MODULE_TITLES[mid] || mid, compact },
     }));
 
     const seen = new Set<string>();
@@ -130,25 +159,26 @@ export function CognitiveModuleGraph({ className }: { className?: string }) {
     }
 
     return { nodes: n, edges: e };
-  }, [moduleIds]);
+  }, [compact, moduleIds]);
 
   const onNodeClick = useCallback((_event: React.MouseEvent, node: Node) => {
     navigate(`/${node.id}`);
   }, [navigate]);
 
   return (
-    <div className={className} style={{ height: 560, minWidth: 0 }}>
+    <div className={className} style={{ height: 720, minWidth: 0 }}>
       <ReactFlow
+        key={compact ? 'compact' : 'wide'}
         nodes={nodes}
         edges={edges}
         nodeTypes={nodeTypes}
         onNodeClick={onNodeClick}
         fitView
-        fitViewOptions={{ padding: 0.15, minZoom: 0.2 }}
+        fitViewOptions={compact ? COMPACT_FIT_VIEW_OPTIONS : WIDE_FIT_VIEW_OPTIONS}
         nodesDraggable={false}
         panOnDrag
         zoomOnScroll={false}
-        zoomOnPinch={false}
+        zoomOnPinch
         zoomOnDoubleClick={false}
         preventScrolling={false}
         proOptions={{ hideAttribution: true }}
