@@ -60,7 +60,7 @@ describe('Dashboard UI', () => {
   it('должен переключаться на вкладку профиля', async () => {
     render(<Dashboard onStartGame={() => {}} />);
     
-    const profileTab = screen.getByRole('button', { name: /Профиль/i });
+    const profileTab = screen.getAllByRole('button', { name: /Профиль/i })[0];
     fireEvent.click(profileTab);
 
     expect(await screen.findByTestId('cognitive-profile')).toBeDefined();
@@ -70,7 +70,7 @@ describe('Dashboard UI', () => {
   it('должен переключаться на вкладку дуэлей', async () => {
     render(<Dashboard onStartGame={() => {}} />);
     
-    const duelsTab = screen.getByRole('button', { name: /Дуэли/i });
+    const duelsTab = screen.getAllByRole('button', { name: /Дуэли/i })[0];
     fireEvent.click(duelsTab);
 
     expect(await screen.findByTestId('duels-view')).toBeDefined();
