@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Send, MessageSquare, Lightbulb, Bug, Info, CheckCircle2, Zap } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
+import { useToast } from '../hooks/useToast';
 import { createSafeLogger, safeError } from '../lib/safe-logger';
 
 const logger = createSafeLogger('feedback-modal');
@@ -15,6 +16,7 @@ type FeedbackType = 'idea' | 'bug' | 'improvement' | 'other';
 
 export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
   const { user, token } = useAuth();
+  const { toast } = useToast();
   const [content, setContent] = useState('');
   const [type, setType] = useState<FeedbackType>('idea');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -60,14 +62,17 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
       
       setTrackingNum(data.trackingNum);
       setIsSuccess(true);
+      toast({ title: 'Обращение отправлено', description: `Номер: ${data.trackingNum}`, variant: 'success' });
       
       // Clear content but stay on success screen long enough
       setContent('');
     } catch (error) {
       logger.error('Feedback submit failed', { error: safeError(error), type });
-      setErrorMessage(error instanceof Error && error.message !== 'Failed to fetch'
+      const message = error instanceof Error && error.message !== 'Failed to fetch'
         ? error.message
-        : 'Не удалось связаться с сервером. Проверьте подключение и попробуйте ещё раз.');
+        : 'Не удалось связаться с сервером. Проверьте подключение и попробуйте ещё раз.';
+      setErrorMessage(message);
+      toast({ title: 'Не удалось отправить обращение', description: message, variant: 'error' });
     } finally {
       setIsSubmitting(false);
     }

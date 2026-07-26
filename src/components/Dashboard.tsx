@@ -12,6 +12,7 @@ import { LeagueBadge } from './LeagueBadge';
 import { ShareCard } from './ShareCard';
 import { DuelsView } from './DuelsView';
 import { createSafeLogger, safeError } from '../lib/safe-logger';
+import { useToast } from '../hooks/useToast';
 import { DailyTrajectoryPanel } from './DailyTrajectoryPanel';
 import { SafeResponsiveContainer } from './SafeResponsiveContainer';
 
@@ -31,6 +32,7 @@ export function Dashboard({
   initialTab?: DashboardTab;
 }) {
   const { user, token, refreshUser } = useAuth();
+  const { toast } = useToast();
   const [data, setData] = useState<any[]>([]);
   const [leaderboard, setLeaderboard] = useState<any[]>([]);
   const [dailyTasks, setDailyTasks] = useState<any[]>([]);
@@ -51,7 +53,10 @@ export function Dashboard({
        .then(resData => {
           if (Array.isArray(resData)) setLeaderboard(resData);
        })
-       .catch(err => logger.error('Leaderboard fetch failed', { error: safeError(err) }));
+       .catch(err => {
+          logger.error('Leaderboard fetch failed', { error: safeError(err) });
+          toast({ title: 'Рейтинг недоступен', description: 'Не удалось загрузить таблицу лидеров.', variant: 'error' });
+       });
 
      if (!token) return;
 
@@ -66,7 +71,10 @@ export function Dashboard({
         if (resData.role) setUserRole(resData.role);
         if (resData.streak) setStreak(resData.streak);
      })
-     .catch(err => logger.error('Dashboard status fetch failed', { error: safeError(err) }));
+     .catch(err => {
+        logger.error('Dashboard status fetch failed', { error: safeError(err) });
+        toast({ title: 'Статус не загружен', description: 'Не удалось получить ежедневные задачи и стрик.', variant: 'error' });
+     });
 
      // Fetch user progress
      fetch('/api/progress', {
@@ -87,7 +95,10 @@ export function Dashboard({
              setData(chartData.reverse());
           }
      })
-     .catch(err => logger.error('Progress fetch failed', { error: safeError(err) }));
+     .catch(err => {
+        logger.error('Progress fetch failed', { error: safeError(err) });
+        toast({ title: 'История прогресса не загружена', description: 'Не удалось получить данные для графика.', variant: 'error' });
+     });
   }, [token]);
 
   const milestones = [

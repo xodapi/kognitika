@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Lightbulb, ThumbsUp, Plus, Send, X } from 'lucide-react';
+import { useToast } from '../hooks/useToast';
 import { createSafeLogger, safeError } from '../lib/safe-logger';
 
 const logger = createSafeLogger('ideas-wall');
@@ -16,6 +17,7 @@ interface Idea {
 }
 
 export const IdeasWall: React.FC<{ token: string | null }> = ({ token }) => {
+  const { toast } = useToast();
   const [ideas, setIdeas] = useState<Idea[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -78,7 +80,9 @@ export const IdeasWall: React.FC<{ token: string | null }> = ({ token }) => {
       }
     } catch (err) {
       logger.error('Idea vote failed', { error: safeError(err), ideaLabel: `Idea ${id.slice(0, 8)}` });
-      setErrorMessage(err instanceof Error && err.message !== 'Failed to fetch' ? err.message : networkMessage);
+      const message = err instanceof Error && err.message !== 'Failed to fetch' ? err.message : networkMessage;
+      setErrorMessage(message);
+      toast({ title: 'Не удалось проголосовать', description: message, variant: 'error' });
     }
   };
 
@@ -107,12 +111,15 @@ export const IdeasWall: React.FC<{ token: string | null }> = ({ token }) => {
         setNewDesc('');
         setShowAddModal(false);
         fetchIdeas();
+        toast({ title: 'Идея опубликована', description: 'Спасибо за предложение!', variant: 'success' });
       } else {
         throw new Error(await readResponseError(res, 'Не удалось опубликовать идею'));
       }
     } catch (err) {
       logger.error('Idea submit failed', { error: safeError(err) });
-      setSubmitError(err instanceof Error && err.message !== 'Failed to fetch' ? err.message : networkMessage);
+      const message = err instanceof Error && err.message !== 'Failed to fetch' ? err.message : networkMessage;
+      setSubmitError(message);
+      toast({ title: 'Не удалось опубликовать идею', description: message, variant: 'error' });
     } finally {
       setSubmitting(false);
     }

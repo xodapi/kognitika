@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { CheckCircle2, Circle, SkipForward, Target, Zap, Shield, Leaf } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
+import { useToast } from '../hooks/useToast';
 import { createSafeLogger, safeError } from '../lib/safe-logger';
 import {
   CATEGORY_LABELS,
@@ -30,6 +31,7 @@ const STATUS_ICONS: Record<string, React.ReactNode> = {
 
 export function DailyTrajectoryPanel({ onStartGame }: DailyTrajectoryPanelProps) {
   const { token } = useAuth();
+  const { toast } = useToast();
   const [items, setItems] = useState<DailyPracticeItem[]>([]);
   const [progress, setProgress] = useState({ completed: 0, total: 0, percent: 0 });
   const [loading, setLoading] = useState(true);
@@ -77,6 +79,7 @@ export function DailyTrajectoryPanel({ onStartGame }: DailyTrajectoryPanelProps)
       }
     } catch (err) {
       logger.error('Failed to update item status', { error: safeError(err) });
+      toast({ title: 'Не удалось обновить пункт плана', description: 'Проверьте подключение и попробуйте ещё раз.', variant: 'error' });
     } finally {
       setUpdatingId(null);
     }

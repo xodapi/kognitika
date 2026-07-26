@@ -16,6 +16,7 @@ import {
 import { Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom';
 
 import { AuthProvider, useAuth } from './hooks/useAuth';
+import { ToastProvider } from './hooks/useToast';
 import { usePracticeFlowAnalytics } from './hooks/usePracticeFlowAnalytics';
 import { AuthModal } from './components/AuthModal';
 import { FeedbackModal } from './components/FeedbackModal';
@@ -577,7 +578,9 @@ export default function App() {
   return (
     <AuthProvider>
       <AppErrorBoundary>
-        <AppContent />
+        <ToastProvider>
+          <AppContent />
+        </ToastProvider>
       </AppErrorBoundary>
     </AuthProvider>
   );

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Shield, MessageSquare, Lightbulb, CheckCircle, Clock, Send, ChevronRight, User } from 'lucide-react';
 import { createSafeLogger, safeError } from '../lib/safe-logger';
+import { useToast } from '../hooks/useToast';
 
 const logger = createSafeLogger('admin-panel');
 
@@ -25,6 +26,7 @@ interface Idea {
 }
 
 export const AdminPanel: React.FC<{ token: string | null }> = ({ token }) => {
+  const { toast } = useToast();
   const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
   const [ideas, setIdeas] = useState<Idea[]>([]);
   const [activeTab, setActiveTab] = useState<'feedback' | 'ideas'>('feedback');
@@ -53,6 +55,7 @@ export const AdminPanel: React.FC<{ token: string | null }> = ({ token }) => {
       setIsAuthorized(true);
     } catch (err) {
       logger.error('Admin fetch failed', { error: safeError(err) });
+      toast({ title: 'Не удалось загрузить данные', description: 'Попробуйте обновить страницу.', variant: 'error' });
     } finally {
       setLoading(false);
     }
@@ -81,6 +84,7 @@ export const AdminPanel: React.FC<{ token: string | null }> = ({ token }) => {
       }
     } catch (err) {
        logger.error('Feedback response failed', { error: safeError(err), feedbackLabel: `Feedback ${id.slice(0, 8)}` });
+       toast({ title: 'Не удалось отправить ответ', description: 'Проверьте соединение и попробуйте снова.', variant: 'error' });
     }
   };
 
@@ -98,6 +102,7 @@ export const AdminPanel: React.FC<{ token: string | null }> = ({ token }) => {
       if (res.ok) fetchAdminData();
     } catch (err) {
        logger.error('Idea status update failed', { error: safeError(err), ideaLabel: `Idea ${id.slice(0, 8)}`, status });
+       toast({ title: 'Не удалось изменить статус идеи', description: 'Попробуйте снова.', variant: 'error' });
     }
   };
 

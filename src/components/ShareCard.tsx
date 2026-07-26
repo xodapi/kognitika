@@ -6,6 +6,7 @@ import {
   ExternalLink, QrCode
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
+import { useToast } from '../hooks/useToast';
 import { LeagueBadge } from './LeagueBadge';
 import { createSafeLogger, safeError } from '../lib/safe-logger';
 
@@ -18,6 +19,7 @@ interface ShareCardProps {
 
 export function ShareCard({ isOpen, onClose }: ShareCardProps) {
   const { user } = useAuth();
+  const { toast } = useToast();
   const cardRef = useRef<HTMLDivElement>(null);
 
   if (!user) return null;
@@ -41,10 +43,12 @@ export function ShareCard({ isOpen, onClose }: ShareCardProps) {
         await navigator.share(shareData);
       } else {
         await navigator.clipboard.writeText(`${shareData.text} ${shareData.url}`);
-        alert('Ссылка скопирована в буфер обмена!');
+        toast({ title: 'Готово', description: 'Ссылка скопирована в буфер обмена', variant: 'success' });
       }
     } catch (err) {
+      if (err instanceof Error && err.name === 'AbortError') return;
       logger.error('Share failed', { error: safeError(err) });
+      toast({ title: 'Не удалось поделиться', description: 'Попробуйте ещё раз', variant: 'error' });
     }
   };
 
