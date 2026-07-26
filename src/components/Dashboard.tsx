@@ -99,9 +99,9 @@ export function Dashboard({
   ];
 
   return (
-    <div className="space-y-8 flex flex-col pb-12">
-      {/* Navigation Tabs - Decluttered: Only Training and Admin */}
-      <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+    <div className="space-y-8 flex flex-col pb-6 sm:pb-12">
+      {/* Navigation Tabs - hidden on mobile (replaced by bottom nav) */}
+      <div className="hidden sm:flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
         <div className="grid w-full grid-cols-2 gap-2 bg-card/30 p-1.5 border border-border rounded-2xl sm:w-fit sm:flex sm:flex-wrap">
           <button 
             onClick={() => setActiveTab('training')}
@@ -160,6 +160,18 @@ export function Dashboard({
             {/* Streak Banner */}
             <StreakBanner streak={streak} />
 
+            {/* Mobile Quick Start Hero */}
+            <button
+              onClick={() => {
+                const next = dailyTasks.find(t => !t.completed);
+                onStartGame(next?.id ? 'schulte' : 'schulte');
+              }}
+              className="sm:hidden w-full py-5 bg-primary text-primary-foreground rounded-2xl font-black text-lg uppercase tracking-wider flex items-center justify-center gap-3 shadow-xl shadow-primary/30 active:scale-[0.98] transition-transform"
+            >
+              <Zap className="w-6 h-6" />
+              Начать тренировку
+            </button>
+
             {/* Welcome Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
               <div>
@@ -175,8 +187,8 @@ export function Dashboard({
                   <Lightbulb className="w-5 h-5 text-primary" />
                 </div>
                 <div>
-                  <p className="text-[10px] text-primary uppercase font-black tracking-widest mb-0.5">Совет дня</p>
-                  <p className="text-[11px] text-muted-foreground leading-tight">
+                  <p className="text-xs text-primary uppercase font-black tracking-widest mb-0.5">Совет дня</p>
+                  <p className="text-xs text-muted-foreground leading-tight">
                     В режиме Горбова не ищите число глазами, старайтесь охватить взглядом всю таблицу сразу.
                   </p>
                 </div>
@@ -203,11 +215,11 @@ export function Dashboard({
                <div className="flex items-center gap-4 relative z-10 w-full md:w-auto overflow-x-auto pb-2 md:pb-0 scrollbar-hide">
                   {dailyTasks.map(task => (
                     <div key={task.id} className={`flex flex-col items-center px-4 py-2 border rounded-2xl min-w-[120px] ${task.completed ? 'bg-green-500/10 border-green-500/20' : 'bg-background/50 border-border'}`}>
-                       <span className="text-[9px] font-black uppercase text-foreground mb-1 text-center">
+                       <span className="text-xs font-black uppercase text-foreground mb-1 text-center">
                           {task.title}
                        </span>
                        <div className="flex items-center gap-2">
-                          <span className={`text-[8px] font-black uppercase ${task.completed ? 'text-green-500' : 'text-muted-foreground'}`}>
+                          <span className={`text-xs font-black uppercase ${task.completed ? 'text-green-500' : 'text-muted-foreground'}`}>
                              {task.completed ? 'БОНУС ПОЛУЧЕН' : `+${task.reward} XP`}
                           </span>
                           {task.completed && <CheckCircle2 className="w-4 h-4 text-green-500" />}
@@ -220,7 +232,7 @@ export function Dashboard({
             <div className="space-y-4">
               <div className="flex items-center justify-between px-2">
                  <h2 className="text-xs font-black uppercase tracking-widest text-muted-foreground">Библиотека симуляций</h2>
-                 <div className="flex items-center gap-2 text-[10px] text-primary font-bold uppercase">
+              <div className="flex items-center gap-2 text-xs text-primary font-bold uppercase">
                     <Activity className="w-3 h-3" /> 9 Доступных модулей
                  </div>
               </div>
@@ -228,7 +240,7 @@ export function Dashboard({
             </div>
 
             <div className="bg-card/20 border border-border rounded-2xl p-4">
-              <h3 className="text-[10px] text-muted-foreground uppercase tracking-widest font-black mb-3">Карта модулей</h3>
+              <h3 className="text-xs text-muted-foreground uppercase tracking-widest font-black mb-3">Карта модулей</h3>
               <CognitiveModuleGraph />
             </div>
 
@@ -245,7 +257,7 @@ export function Dashboard({
                           <Share2 className="w-3.5 h-3.5" />
                         </button>
                         <div className="flex items-center justify-between">
-                           <span className="text-[10px] text-muted-foreground uppercase font-black tracking-widest">Уровень {user?.level || 1}</span>
+                           <span className="text-xs text-muted-foreground uppercase font-black tracking-widest">Уровень {user?.level || 1}</span>
                            <Award className="w-4 h-4 text-primary opacity-50" />
                         </div>
                         <div className="text-2xl font-black text-foreground">{user?.experience || 0} <span className="text-xs text-muted-foreground">XP</span></div>
@@ -255,23 +267,23 @@ export function Dashboard({
                      </div>
                       <div className="bg-card/40 border border-border rounded-2xl p-5 flex flex-col gap-1">
                          <div className="flex items-center justify-between">
-                            <span className="text-[10px] text-muted-foreground uppercase font-black tracking-widest">Тренировки</span>
+                            <span className="text-xs text-muted-foreground uppercase font-black tracking-widest">Тренировки</span>
                             <Activity className="w-4 h-4 text-primary opacity-50" />
                          </div>
                          <div className="text-2xl font-black text-foreground">{user?._count?.sessions || 0}</div>
-                         <p className="text-[10px] text-muted-foreground mt-1">ВСЕГО СЕССИЙ</p>
+                         <p className="text-xs text-muted-foreground mt-1">ВСЕГО СЕССИЙ</p>
                       </div>
 
                       <div className="bg-orange-500/10 border border-orange-500/20 rounded-2xl p-5 flex flex-col gap-1 relative overflow-hidden group">
                          <div className="absolute -right-4 -bottom-4 w-16 h-16 bg-orange-500/20 rounded-full blur-2xl animate-pulse" />
                          <div className="flex items-center justify-between relative z-10">
-                            <span className="text-[10px] text-orange-500 uppercase font-black tracking-widest">Ударный режим</span>
+                            <span className="text-xs text-orange-500 uppercase font-black tracking-widest">Ударный режим</span>
                             <Flame className={`w-4 h-4 ${user?.streakDays ? 'text-orange-500 fill-orange-500' : 'text-muted-foreground'} transition-all`} />
                          </div>
                          <div className="text-2xl font-black text-foreground relative z-10">
                             {user?.streakDays || 0} <span className="text-xs text-muted-foreground uppercase">дней</span>
                          </div>
-                         <p className="text-[10px] text-muted-foreground mt-1 relative z-10">
+                         <p className="text-xs text-muted-foreground mt-1 relative z-10">
                             {user?.streakDays ? 'ВАШ РЕКОРД В ПУТИ' : 'НАЧНИТЕ СЕГОДНЯ'}
                          </p>
                       </div>
@@ -279,7 +291,7 @@ export function Dashboard({
                       <div className="bg-primary/10 border border-primary/20 rounded-2xl p-5 flex flex-col gap-1 relative overflow-hidden group">
                          <div className="absolute -right-4 -bottom-4 w-16 h-16 bg-primary/20 rounded-full blur-2xl" />
                          <div className="flex items-center justify-between relative z-10">
-                            <span className="text-[10px] text-primary uppercase font-black tracking-widest">Следующая цель</span>
+                            <span className="text-xs text-primary uppercase font-black tracking-widest">Следующая цель</span>
                             <Target className="w-4 h-4 text-primary" />
                          </div>
                          <div className="text-xl font-black text-foreground relative z-10">
@@ -287,7 +299,7 @@ export function Dashboard({
                               ? 'Выйти из 25с' 
                               : 'Выйти из 30с'}
                          </div>
-                         <p className="text-[10px] text-muted-foreground mt-1 relative z-10">ПРОФ. СТАНДАРТ</p>
+                         <p className="text-xs text-muted-foreground mt-1 relative z-10">ПРОФ. СТАНДАРТ</p>
                       </div>
                   </div>
 
@@ -330,7 +342,7 @@ export function Dashboard({
                               </div>
                               <div>
                                  <p className={`text-xs font-black uppercase tracking-wide ${m.level <= (user?.level || 1) ? 'text-foreground' : 'text-muted-foreground'}`}>{m.title}</p>
-                                 <p className="text-[10px] text-muted-foreground uppercase font-bold">Уровень {m.level}</p>
+                                 <p className="text-xs text-muted-foreground uppercase font-bold">Уровень {m.level}</p>
                               </div>
                               {m.level > (user?.level || 1) && <Lock className="w-3 h-3 text-muted-foreground/30 ml-auto" />}
                            </div>
@@ -341,18 +353,18 @@ export function Dashboard({
                    <div className="bg-card/40 border border-border rounded-3xl p-6">
                       <div className="flex items-center justify-between mb-4">
                          <h3 className="text-xs font-black uppercase tracking-widest text-muted-foreground">Лидеры</h3>
-                         <button onClick={() => onStartGame('leaderboard')} className="text-[9px] font-black uppercase text-primary hover:underline flex items-center gap-1">
-                            Весь список <ArrowUpRight className="w-2.5 h-2.5" />
+                         <button onClick={() => onStartGame('leaderboard')} className="text-xs font-black uppercase text-primary hover:underline flex items-center gap-1">
+                            Весь список <ArrowUpRight className="w-3 h-3" />
                          </button>
                       </div>
                      <div className="space-y-3">
                         {leaderboard.slice(0, 5).map((u, i) => (
                            <div key={i} className="flex items-center justify-between p-2 rounded-xl">
                               <div className="flex items-center gap-3">
-                                 <span className="text-[10px] font-black text-muted-foreground">{i + 1}</span>
+                                 <span className="text-xs font-black text-muted-foreground">{i + 1}</span>
                                  <span className="text-xs font-bold text-foreground">{u.name || 'Машинист'}</span>
                               </div>
-                              <div className="text-[10px] font-black text-primary">{u.experience} XP</div>
+                              <div className="text-xs font-black text-primary">{u.experience} XP</div>
                            </div>
                         ))}
                      </div>
@@ -406,6 +418,43 @@ export function Dashboard({
       </AnimatePresence>
 
       <ShareCard isOpen={isShareOpen} onClose={() => setIsShareOpen(false)} />
+
+      {/* Mobile Bottom Navigation */}
+      <nav
+        className="sm:hidden fixed bottom-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-xl border-t border-border"
+        style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+      >
+        <div className="flex items-center justify-around px-1 py-1.5">
+          {([
+            { id: 'training', icon: Activity, label: 'Тренировки' },
+            { id: 'profile', icon: Brain, label: 'Профиль' },
+            { id: 'duels', icon: Sword, label: 'Дуэли' },
+            { id: 'wiki', icon: BookOpen, label: 'Знания' },
+          ] as const).map(({ id, icon: Icon, label }) => (
+            <button
+              key={id}
+              onClick={() => setActiveTab(id)}
+              className={`flex flex-col items-center gap-0.5 px-3 py-2 rounded-xl transition-all min-w-[64px] active:scale-95 ${
+                activeTab === id ? 'text-primary bg-primary/10' : 'text-muted-foreground'
+              }`}
+            >
+              <Icon className="w-5 h-5" />
+              <span className="text-[10px] font-bold tracking-wide">{label}</span>
+            </button>
+          ))}
+          {userRole === 'ADMIN' && (
+            <button
+              onClick={() => setActiveTab('admin')}
+              className={`flex flex-col items-center gap-0.5 px-3 py-2 rounded-xl transition-all min-w-[64px] active:scale-95 ${
+                activeTab === 'admin' ? 'text-destructive bg-destructive/10' : 'text-muted-foreground'
+              }`}
+            >
+              <Shield className="w-5 h-5" />
+              <span className="text-[10px] font-bold tracking-wide">Админ</span>
+            </button>
+          )}
+        </div>
+      </nav>
     </div>
   );
 }

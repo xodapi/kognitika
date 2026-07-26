@@ -87,7 +87,7 @@ export function DailyTrajectoryPanel({ onStartGame }: DailyTrajectoryPanelProps)
       <div className="bg-card/40 border border-border rounded-3xl p-5">
         <div className="flex items-center justify-center py-6 gap-2">
           <div className="w-4 h-4 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
-          <span className="text-[10px] text-muted-foreground uppercase tracking-widest animate-pulse">
+          <span className="text-xs text-muted-foreground uppercase tracking-widest animate-pulse">
             Загрузка плана...
           </span>
         </div>
@@ -121,7 +121,7 @@ export function DailyTrajectoryPanel({ onStartGame }: DailyTrajectoryPanelProps)
           <h3 className="text-xs font-black uppercase tracking-widest text-foreground">
             Траектория дня
           </h3>
-          <p className="text-[10px] text-muted-foreground mt-0.5">
+          <p className="text-xs text-muted-foreground mt-0.5">
             {progress.completed} из {progress.total} выполнено
           </p>
         </div>
@@ -134,7 +134,7 @@ export function DailyTrajectoryPanel({ onStartGame }: DailyTrajectoryPanelProps)
               transition={{ duration: 0.6, ease: 'easeOut' }}
             />
           </div>
-          <span className="text-[10px] font-bold text-primary">{progress.percent}%</span>
+          <span className="text-xs font-bold text-primary">{progress.percent}%</span>
         </div>
       </div>
 
@@ -146,7 +146,7 @@ export function DailyTrajectoryPanel({ onStartGame }: DailyTrajectoryPanelProps)
             <div key={category}>
               <div className={`flex items-center gap-1.5 mb-2 px-1`}>
                 <span className={colors.text}>{CATEGORY_ICONS[category]}</span>
-                <span className={`text-[9px] font-black uppercase tracking-widest ${colors.text}`}>
+                <span className={`text-xs font-black uppercase tracking-widest ${colors.text}`}>
                   {CATEGORY_LABELS[category] || category}
                 </span>
               </div>
@@ -176,7 +176,7 @@ export function DailyTrajectoryPanel({ onStartGame }: DailyTrajectoryPanelProps)
                         >
                           {item.title}
                         </p>
-                        <p className="text-[9px] text-muted-foreground">
+                        <p className="text-xs text-muted-foreground">
                           +{item.xpReward} XP
                         </p>
                       </div>
@@ -185,7 +185,7 @@ export function DailyTrajectoryPanel({ onStartGame }: DailyTrajectoryPanelProps)
                           <>
                             <button
                               onClick={() => onStartGame?.(item.moduleId)}
-                              className="px-2.5 py-1 bg-primary text-primary-foreground text-[9px] font-black uppercase tracking-wider rounded-lg hover:bg-primary/90 transition-colors active:scale-95"
+                              className="px-2.5 py-1.5 bg-primary text-primary-foreground text-xs font-black uppercase tracking-wider rounded-lg hover:bg-primary/90 transition-colors active:scale-95"
                             >
                               Старт
                             </button>
@@ -199,10 +199,10 @@ export function DailyTrajectoryPanel({ onStartGame }: DailyTrajectoryPanelProps)
                           </>
                         )}
                         {item.status === 'completed' && (
-                          <span className="text-[9px] text-emerald-500 font-bold uppercase">Готово</span>
+                          <span className="text-xs text-emerald-500 font-bold uppercase">Готово</span>
                         )}
                         {item.status === 'skipped' && (
-                          <span className="text-[9px] text-muted-foreground font-bold uppercase">Пропущено</span>
+                          <span className="text-xs text-muted-foreground font-bold uppercase">Пропущено</span>
                         )}
                       </div>
                     </motion.div>
@@ -217,7 +217,7 @@ export function DailyTrajectoryPanel({ onStartGame }: DailyTrajectoryPanelProps)
       {/* Footer tip */}
       <div className="mt-4 pt-3 border-t border-border/50 flex items-center gap-2">
         <Zap className="w-3 h-3 text-primary" />
-        <p className="text-[9px] text-muted-foreground">
+        <p className="text-xs text-muted-foreground">
           Выполняйте план ежедневно для поддержания стрика и роста когнитивных способностей.
         </p>
       </div>
