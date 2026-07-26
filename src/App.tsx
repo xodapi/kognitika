@@ -526,8 +526,10 @@ function AppContent() {
         build {appBuildId}
       </footer>
 
-      {/* Floating Mobile Nav */}
-      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-sm h-16 bg-card/60 backdrop-blur-2xl border border-white/10 rounded-3xl lg:hidden z-50 flex items-center justify-around px-2 shadow-[0_15px_40px_-15px_rgba(0,0,0,0.3)]">
+      {/* Floating Mobile Nav (hidden below sm on the dashboard route, which has its own bottom nav) */}
+      <div
+        className={`fixed bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-sm h-16 bg-card/60 backdrop-blur-2xl border border-white/10 rounded-3xl lg:hidden z-50 items-center justify-around px-2 shadow-[0_15px_40px_-15px_rgba(0,0,0,0.3)] ${activeTab === 'dashboard' ? 'hidden sm:flex' : 'flex'}`}
+      >
          {BOTTOM_NAV_ITEMS.map((item) => {
            const label = item.id === 'dashboard' ? 'Главная' : (item.id === 'schulte' ? 'Таблицы Шульте' : item.id === 'logical' ? 'Логика' : item.id === 'nback' ? 'Память' : item.id === 'situational' ? 'Ситуации' : item.id);
            return (
