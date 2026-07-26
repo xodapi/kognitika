@@ -1,6 +1,6 @@
 import { Capacitor } from '@capacitor/core';
 
-export const PRODUCTION_API_ORIGIN = 'https://kognitika.syntog.ru';
+export const PRODUCTION_API_ORIGIN = 'https://kognitika.ru';
 const NATIVE_FETCH_BRIDGE_INSTALLED = '__kognitikaNativeFetchBridgeInstalled';
 
 function normalizeOrigin(value: string | undefined) {

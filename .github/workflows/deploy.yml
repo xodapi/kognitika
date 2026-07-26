@@ -122,6 +122,31 @@ jobs:
           build_id="$(git rev-parse --short HEAD)"
           CI=true pnpm install --frozen-lockfile
 
+          echo "=== Configuring kognitika.ru reverse proxy and TLS ==="
+          sudo cp deployment/nginx-kognitika.ru.conf /etc/nginx/sites-available/kognitika.ru
+          sudo ln -sf /etc/nginx/sites-available/kognitika.ru /etc/nginx/sites-enabled/kognitika.ru
+          sudo nginx -t
+          sudo systemctl reload nginx
+          sudo certbot --nginx -d kognitika.ru --non-interactive --agree-tos --email admin@syntog.ru --redirect --keep-until-expiring
+
+          production_env="/opt/kognitika/.env"
+          if [ -f "$production_env" ]; then
+            env_backup="/opt/kognitika-dist-backups/env-$(date -u +%Y%m%d%H%M%S)-${EXPECTED_SHA:0:7}"
+            sudo cp "$production_env" "$env_backup"
+            upsert_env() {
+              key="$1"
+              value="$2"
+              if sudo grep -q "^${key}=" "$production_env"; then
+                sudo sed -i "s|^${key}=.*|${key}=\"${value}\"|" "$production_env"
+              else
+                printf '%s="%s"\n' "$key" "$value" | sudo tee -a "$production_env" >/dev/null
+              fi
+            }
+            upsert_env APP_URL "https://kognitika.ru"
+            upsert_env FRONTEND_URL "https://kognitika.ru"
+            upsert_env CORS_ORIGIN "https://kognitika.ru,https://www.kognitika.ru,https://kognitika.syntog.ru,https://admin.kognitika.syntog.ru,https://m.kognitika.ru,https://m.kognitika.syntog.ru"
+          fi
+
           migration_log="$(mktemp)"
           if ! CI=true pnpm exec prisma migrate deploy 2>&1 | tee "$migration_log"; then
             if ! grep -q "P3005" "$migration_log"; then
@@ -145,7 +170,7 @@ jobs:
 
           # Сборка и деплой мобильной веб-версии
           echo "=== Exporting mobile web version ==="
-          echo "EXPO_PUBLIC_API_URL=https://kognitika.syntog.ru" > apps/mobile/.env
+          echo "EXPO_PUBLIC_API_URL=https://kognitika.ru" > apps/mobile/.env
           CI=true pnpm --filter @kognitika/mobile exec expo export --platform web --output-dir dist-web
           
           echo "=== Deploying mobile web files ==="

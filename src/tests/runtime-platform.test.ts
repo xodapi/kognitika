@@ -62,6 +62,9 @@ describe('runtime platform URLs', () => {
     expect(resolveNativeRoute('https://kognitika.syntog.ru/schulte-90')).toBe(
       '/schulte-90',
     );
+    expect(resolveNativeRoute('https://kognitika.ru/schulte-90')).toBe(
+      '/schulte-90',
+    );
     expect(resolveNativeRoute('https://example.test/mental-math')).toBeNull();
   });
 });

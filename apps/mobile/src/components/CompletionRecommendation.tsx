@@ -56,7 +56,7 @@ export default function CompletionRecommendation({
   };
 
   const handleOpenWeb = async () => {
-    const url = 'https://kognitika.syntog.ru';
+    const url = 'https://kognitika.ru';
     const supported = await Linking.canOpenURL(url);
     if (supported) {
       await Linking.openURL(url);
@@ -138,7 +138,7 @@ export default function CompletionRecommendation({
             Тренажер «{recommendation.title}» доступен в полной веб-версии!
           </Text>
           <TouchableOpacity onPress={handleOpenWeb} style={styles.webLinkButton}>
-            <Text style={styles.webLinkButtonText}>Открыть kognitika.syntog.ru 🌐</Text>
+            <Text style={styles.webLinkButtonText}>Открыть kognitika.ru 🌐</Text>
           </TouchableOpacity>
         </View>
       )}

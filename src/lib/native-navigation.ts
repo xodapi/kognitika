@@ -2,7 +2,7 @@ import { App as CapacitorApp } from '@capacitor/app';
 import { isAppRoute } from './routes';
 import { isNativeRuntime } from './runtime-platform';
 
-const DEEP_LINK_HOSTS = new Set(['kognitika.syntog.ru']);
+const DEEP_LINK_HOSTS = new Set(['kognitika.ru', 'kognitika.syntog.ru']);
 const NATIVE_LIFECYCLE_INSTALLED = '__kognitikaNativeLifecycleInstalled';
 
 export function resolveNativeRoute(url: string) {
