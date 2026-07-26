@@ -33,18 +33,36 @@ const MODULE_ICONS: Record<string, string> = {
 
 const MAIN_CHAIN = ['schulte', 'stroop', 'nback', 'numerical', 'logical', 'spatial', 'topology', 'collision', 'dispatcher', 'noise', 'scanner', 'decryptor', 'reality', 'objective', 'profiling', 'typing'] as const;
 const SIDE_CHAIN = ['situational', 'dialogue', 'reframing', 'rejection', 'storytelling', 'focus'] as const;
+const AUXILIARY_MODULES = ['silence', 'filter', 'hype', 'mental-math', 'schulte-90', 'alphabet-table', 'stroop-alphabet'] as const;
+const MAIN_COLUMNS = 4;
+const NODE_GAP_X = 210;
+const NODE_GAP_Y = 100;
+const SIDE_ROW_Y = 4 * NODE_GAP_Y + 40;
+const AUXILIARY_ROW_Y = SIDE_ROW_Y + NODE_GAP_Y;
 
-function modulePosition(moduleId: string): { x: number; y: number } {
+export function modulePosition(moduleId: string, fallbackIndex = 0): { x: number; y: number } {
   const mainIdx = MAIN_CHAIN.indexOf(moduleId as typeof MAIN_CHAIN[number]);
-  if (mainIdx !== -1) return { x: mainIdx * 140, y: 0 };
+  if (mainIdx !== -1) {
+    return {
+      x: (mainIdx % MAIN_COLUMNS) * NODE_GAP_X,
+      y: Math.floor(mainIdx / MAIN_COLUMNS) * NODE_GAP_Y,
+    };
+  }
 
   const sideIdx = SIDE_CHAIN.indexOf(moduleId as typeof SIDE_CHAIN[number]);
-  if (sideIdx !== -1) return { x: sideIdx * 140 + 70, y: 180 };
+  if (sideIdx !== -1) {
+    return { x: sideIdx * NODE_GAP_X, y: SIDE_ROW_Y };
+  }
 
-  if (moduleId === 'silence') return { x: -140, y: 0 };
-  if (moduleId === 'filter' || moduleId === 'hype') return { x: 140 * MAIN_CHAIN.length + 140, y: 0 };
+  const auxiliaryIdx = AUXILIARY_MODULES.indexOf(moduleId as typeof AUXILIARY_MODULES[number]);
+  if (auxiliaryIdx !== -1) {
+    return { x: auxiliaryIdx * NODE_GAP_X, y: AUXILIARY_ROW_Y };
+  }
 
-  return { x: 0, y: 0 };
+  return {
+    x: (fallbackIndex % MAIN_COLUMNS) * NODE_GAP_X,
+    y: AUXILIARY_ROW_Y + Math.floor(fallbackIndex / MAIN_COLUMNS) * NODE_GAP_Y,
+  };
 }
 
 function ModuleNode({ data }: { data: ModuleNodeData }) {
@@ -58,7 +76,9 @@ function ModuleNode({ data }: { data: ModuleNodeData }) {
         color: colors.text,
         borderRadius: '14px',
         padding: '10px 14px',
-        minWidth: 110,
+        width: 170,
+        minHeight: 68,
+        boxSizing: 'border-box',
         cursor: 'pointer',
         textAlign: 'center',
       }}
@@ -67,7 +87,7 @@ function ModuleNode({ data }: { data: ModuleNodeData }) {
       <div style={{ fontSize: 16, fontWeight: 900, fontFamily: 'monospace', marginBottom: 2 }}>
         {MODULE_ICONS[data.moduleId] || '?'}
       </div>
-      <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+      <div style={{ fontSize: 10, fontWeight: 700, lineHeight: 1.2, textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'normal', overflowWrap: 'anywhere' }}>
         {data.label}
       </div>
       <Handle type="source" position={Position.Right} style={{ background: colors.border }} />
@@ -87,10 +107,10 @@ export function CognitiveModuleGraph({ className }: { className?: string }) {
   }, []);
 
   const { nodes, edges } = useMemo(() => {
-    const n: Node<ModuleNodeData>[] = moduleIds.map((mid) => ({
+    const n: Node<ModuleNodeData>[] = moduleIds.map((mid, index) => ({
       id: mid,
       type: 'moduleNode',
-      position: modulePosition(mid),
+      position: modulePosition(mid, index),
       data: { moduleId: mid, label: MODULE_TITLES[mid] || mid },
     }));
 
@@ -105,7 +125,7 @@ export function CognitiveModuleGraph({ className }: { className?: string }) {
         source: from,
         target: to,
         type: 'smoothstep',
-        style: { stroke: 'rgba(148, 163, 184, 0.5)', strokeWidth: 1.5 },
+        style: { stroke: 'rgba(148, 163, 184, 0.8)', strokeWidth: 2 },
       });
     }
 
@@ -117,15 +137,16 @@ export function CognitiveModuleGraph({ className }: { className?: string }) {
   }, [navigate]);
 
   return (
-    <div className={className} style={{ height: 350 }}>
+    <div className={className} style={{ height: 560, minWidth: 0 }}>
       <ReactFlow
         nodes={nodes}
         edges={edges}
         nodeTypes={nodeTypes}
         onNodeClick={onNodeClick}
         fitView
+        fitViewOptions={{ padding: 0.15, minZoom: 0.2 }}
         nodesDraggable={false}
-        panOnDrag={false}
+        panOnDrag
         zoomOnScroll={false}
         zoomOnPinch={false}
         zoomOnDoubleClick={false}

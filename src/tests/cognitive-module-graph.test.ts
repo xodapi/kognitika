@@ -1,0 +1,18 @@
+import { describe, expect, it } from 'vitest';
+import { modulePosition } from '../components/CognitiveModuleGraph';
+import { NEXT_MODULE } from '../lib/practice-recommendations';
+
+describe('Cognitive module graph layout', () => {
+  it('keeps every module in a unique spaced position', () => {
+    const moduleIds = [...new Set([...Object.keys(NEXT_MODULE), ...Object.values(NEXT_MODULE)])];
+    const positions = moduleIds.map((moduleId, index) => modulePosition(moduleId, index));
+
+    expect(new Set(positions.map(({ x, y }) => `${x}:${y}`)).size).toBe(positions.length);
+    expect(positions[0]).toEqual({ x: 0, y: 0 });
+    expect(modulePosition('logical')).toEqual({ x: 0, y: 100 });
+  });
+
+  it('places side modules below the main grid', () => {
+    expect(modulePosition('situational').y).toBeGreaterThan(modulePosition('typing').y);
+  });
+});

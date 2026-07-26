@@ -1,4 +1,5 @@
 import './src/lib/env.ts';
+import './src/lib/zod-config.ts';
 import express from 'express';
 import { createServer } from 'http';
 import path from 'path';

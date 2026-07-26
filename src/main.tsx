@@ -1,6 +1,7 @@
 /// <reference types="vite/client" />
 import {StrictMode} from 'react';
 import {createRoot} from 'react-dom/client';
+import './lib/zod-config.ts';
 import App from './App.tsx';
 import { ThemeProvider } from './components/ThemeProvider.tsx';
 import { BrowserRouter, HashRouter } from 'react-router-dom';
