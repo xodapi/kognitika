@@ -77,7 +77,7 @@ export function CognitiveProfile() {
     return (
       <div className="p-8 bg-card/30 border border-border rounded-3xl text-center">
         <Brain className="w-12 h-12 mx-auto mb-4 text-muted-foreground opacity-20" />
-        <p className="text-[10px] font-black uppercase tracking-widest text-primary mb-2">
+        <p className="text-xs font-black uppercase tracking-widest text-primary mb-2">
           Профиль набирает точность
         </p>
         <h3 className="text-xl font-black tracking-tight text-foreground mb-3">
@@ -140,7 +140,7 @@ export function CognitiveProfile() {
         >
           <div className="flex items-center justify-between w-full mb-6">
             <h3 className="text-lg font-black tracking-tight">Когнитивный Профиль</h3>
-            <div className="flex items-center gap-2 px-3 py-1 bg-primary/10 rounded-full text-[10px] font-bold text-primary">
+            <div className="flex items-center gap-2 px-3 py-1 bg-primary/10 rounded-full text-xs font-bold text-primary">
               <Activity className="w-3 h-3 animate-pulse" /> ПОСЛЕДНИЕ {data.sessionsCount} СЕССИЙ
             </div>
           </div>
@@ -168,23 +168,23 @@ export function CognitiveProfile() {
             <div className="bg-card/40 border border-border rounded-3xl p-6">
               <div className="flex items-center gap-3 mb-2 text-muted-foreground">
                 <TrendingUp className="w-4 h-4" />
-                <span className="text-[10px] font-black uppercase tracking-widest">Динамика</span>
+                <span className="text-xs font-black uppercase tracking-widest">Динамика</span>
               </div>
               <div className={`text-2xl font-black ${data.trend >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
                 {data.trend > 0 ? '+' : ''}{data.trend}%
               </div>
-              <p className="text-[10px] text-muted-foreground mt-1">Относительно прошлых сессий</p>
+              <p className="text-xs text-muted-foreground mt-1">Относительно прошлых сессий</p>
             </div>
 
             <div className="bg-card/40 border border-border rounded-3xl p-6">
               <div className="flex items-center gap-3 mb-2 text-muted-foreground">
                 <History className="w-4 h-4" />
-                <span className="text-[10px] font-black uppercase tracking-widest">Прогресс</span>
+                <span className="text-xs font-black uppercase tracking-widest">Прогресс</span>
               </div>
               <div className="text-2xl font-black text-primary">
                 {data.sessionsCount}
               </div>
-              <p className="text-[10px] text-muted-foreground mt-1">Всего тренировок</p>
+              <p className="text-xs text-muted-foreground mt-1">Всего тренировок</p>
             </div>
           </div>
 
@@ -217,7 +217,7 @@ export function CognitiveProfile() {
 
           <div className="bg-card/40 border border-border rounded-3xl p-4 flex gap-3 items-start">
             <Info className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
-            <p className="text-[10px] text-muted-foreground leading-relaxed">
+            <p className="text-xs text-muted-foreground leading-relaxed">
               Профиль строится на основе алгоритма нормализации баллов по 5 ключевым векторам. 
               Данные за последние 100 сессий анализируются для выявления трендов когнитивной выносливости.
             </p>
@@ -264,7 +264,7 @@ export function CognitiveProfile() {
                     key={item.route}
                     type="button"
                     onClick={() => navigate(item.route)}
-                    className="inline-flex items-center gap-1.5 rounded-lg border border-destructive/20 bg-background/50 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-foreground transition-all hover:border-primary hover:text-primary"
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-destructive/20 bg-background/50 px-3 py-2 text-xs font-black uppercase tracking-widest text-foreground transition-all hover:border-primary hover:text-primary"
                   >
                     {item.label}
                     <ArrowRight className="w-3 h-3" />
@@ -276,7 +276,7 @@ export function CognitiveProfile() {
         </div>
 
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-border/50">
-          <p className="text-[10px] text-muted-foreground leading-relaxed">
+          <p className="text-xs text-muted-foreground leading-relaxed">
             Симуляции автоматически адаптируют сложность на основе слабых зон профиля. Прогресс пересчитывается после каждой игры.
           </p>
           <button

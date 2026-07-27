@@ -72,13 +72,13 @@ export function LeaderboardView() {
           <div className="flex bg-secondary/50 p-1 rounded-xl border border-border">
             <button 
               onClick={() => setPeriod('all')}
-              className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${period === 'all' ? 'bg-primary text-white shadow-md' : 'text-muted-foreground hover:text-foreground'}`}
+              className={`px-4 py-1.5 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${period === 'all' ? 'bg-primary text-white shadow-md' : 'text-muted-foreground hover:text-foreground'}`}
             >
               Весь период
             </button>
             <button 
               onClick={() => setPeriod('weekly')}
-              className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${period === 'weekly' ? 'bg-primary text-white shadow-md' : 'text-muted-foreground hover:text-foreground'}`}
+              className={`px-4 py-1.5 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${period === 'weekly' ? 'bg-primary text-white shadow-md' : 'text-muted-foreground hover:text-foreground'}`}
             >
               За неделю
             </button>
@@ -119,9 +119,9 @@ export function LeaderboardView() {
                 </div>
                 <div className="mt-8 text-center w-full">
                    <p className="font-black text-base lg:text-lg truncate px-2">{top3[1].name || 'Машинист'}</p>
-                   <p className="text-[10px] text-primary uppercase font-black tracking-widest mb-3"><span>Серебро</span> • Уровень {top3[1].level}</p>
+                   <p className="text-xs text-primary uppercase font-black tracking-widest mb-3"><span>Серебро</span> • Уровень {top3[1].level}</p>
                    <div className="bg-primary/10 px-3 py-1.5 lg:px-4 lg:py-2 rounded-xl border border-primary/20 inline-block">
-                      <p className="text-lg lg:text-xl font-black text-foreground">{top3[1].experience} <span className="text-[10px] text-muted-foreground">XP</span></p>
+                      <p className="text-lg lg:text-xl font-black text-foreground">{top3[1].experience} <span className="text-xs text-muted-foreground">XP</span></p>
                    </div>
                 </div>
               </div>
@@ -149,9 +149,9 @@ export function LeaderboardView() {
                 </div>
                 <div className="mt-12 lg:mt-14 text-center w-full">
                    <p className="font-black text-xl lg:text-2xl truncate px-2 mb-1">{top3[0].name || 'Машинист'}</p>
-                   <p className="text-[10px] lg:text-xs text-primary uppercase font-black tracking-[0.2em] mb-4 lg:mb-6"><span>Чемпион</span> • Уровень {top3[0].level}</p>
+                   <p className="text-xs lg:text-xs text-primary uppercase font-black tracking-[0.2em] mb-4 lg:mb-6"><span>Чемпион</span> • Уровень {top3[0].level}</p>
                    <div className="bg-primary text-white px-6 lg:px-8 py-2.5 lg:py-3 rounded-2xl shadow-lg shadow-primary/30 inline-block">
-                      <p className="text-xl lg:text-2xl font-black">{top3[0].experience} <span className="text-[10px] lg:text-xs opacity-70">XP</span></p>
+                      <p className="text-xl lg:text-2xl font-black">{top3[0].experience} <span className="text-xs lg:text-xs opacity-70">XP</span></p>
                    </div>
                 </div>
               </div>
@@ -177,9 +177,9 @@ export function LeaderboardView() {
                 </div>
                 <div className="mt-8 text-center w-full">
                    <p className="font-black text-base lg:text-lg truncate px-2">{top3[2].pseudonym || top3[2].name || 'Аноним'}</p>
-                   <p className="text-[10px] text-primary uppercase font-black tracking-widest mb-3"><span>Бронза</span> • Уровень {top3[2].level}</p>
+                   <p className="text-xs text-primary uppercase font-black tracking-widest mb-3"><span>Бронза</span> • Уровень {top3[2].level}</p>
                    <div className="bg-primary/10 px-3 py-1.5 lg:px-4 lg:py-2 rounded-xl border border-primary/20 inline-block">
-                      <p className="text-lg lg:text-xl font-black text-foreground">{top3[2].experience} <span className="text-[10px] text-muted-foreground">XP</span></p>
+                      <p className="text-lg lg:text-xl font-black text-foreground">{top3[2].experience} <span className="text-xs text-muted-foreground">XP</span></p>
                    </div>
                 </div>
               </div>
@@ -194,12 +194,12 @@ export function LeaderboardView() {
           <table className="w-full text-left">
             <thead>
               <tr className="border-b border-border bg-secondary/30">
-                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground">Место</th>
-                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground">Атлет</th>
-                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground text-center">Лига</th>
-                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground text-center">Уровень</th>
-                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground text-center">Сессии</th>
-                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground text-right">Опыт (XP)</th>
+                <th className="px-6 py-4 text-xs font-black uppercase tracking-widest text-muted-foreground">Место</th>
+                <th className="px-6 py-4 text-xs font-black uppercase tracking-widest text-muted-foreground">Атлет</th>
+                <th className="px-6 py-4 text-xs font-black uppercase tracking-widest text-muted-foreground text-center">Лига</th>
+                <th className="px-6 py-4 text-xs font-black uppercase tracking-widest text-muted-foreground text-center">Уровень</th>
+                <th className="px-6 py-4 text-xs font-black uppercase tracking-widest text-muted-foreground text-center">Сессии</th>
+                <th className="px-6 py-4 text-xs font-black uppercase tracking-widest text-muted-foreground text-right">Опыт (XP)</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border/50">
@@ -211,7 +211,7 @@ export function LeaderboardView() {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center text-[10px] font-black text-primary border border-border group-hover:border-primary/30 transition-colors uppercase">
+                        <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center text-xs font-black text-primary border border-border group-hover:border-primary/30 transition-colors uppercase">
                           {(user.pseudonym || user.name || 'A')[0]}
                         </div>
                         <span className="text-sm font-bold">{user.pseudonym || user.name || 'Аноним'}</span>
@@ -226,7 +226,7 @@ export function LeaderboardView() {
                     <td className="px-6 py-4 text-center">
                        <div className="flex flex-col items-center">
                           <span className="text-xs font-bold text-foreground">{user._count?.sessions || 0}</span>
-                          <span className="text-[8px] text-muted-foreground uppercase font-black">Служб</span>
+                          <span className="text-xs text-muted-foreground uppercase font-black">Служб</span>
                        </div>
                     </td>
                     <td className="px-6 py-4 text-right">

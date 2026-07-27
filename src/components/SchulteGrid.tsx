@@ -267,7 +267,7 @@ export function SchulteGrid() {
             <div className="space-y-4">
               <div>
                 <div className="flex justify-between items-center mb-2">
-                  <label className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Размер таблицы</label>
+                  <label className="text-xs text-muted-foreground uppercase font-bold tracking-wider">Размер таблицы</label>
                   <span className="text-xs font-mono font-bold text-primary">{size}x{size}</span>
                 </div>
                 <input 
@@ -280,7 +280,7 @@ export function SchulteGrid() {
               </div>
               
               <div>
-                <label className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider mb-2 block">Пресет сложности</label>
+                <label className="text-xs text-muted-foreground uppercase font-bold tracking-wider mb-2 block">Пресет сложности</label>
                 <select value={currentLevel} onChange={(e: any) => applyLevel(e.target.value)} className="w-full p-3 text-xs rounded-xl border bg-background/50 border-border focus:ring-2 focus:ring-primary/20 outline-none text-foreground font-bold transition-all">
                   <option value="classic">Классическая таблица</option>
                   <option value="level1">Ур. 1: Цветовой шум</option>
@@ -292,7 +292,7 @@ export function SchulteGrid() {
               </div>
 
               <div>
-                <label className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider mb-2 block">Алгоритм генерации</label>
+                <label className="text-xs text-muted-foreground uppercase font-bold tracking-wider mb-2 block">Алгоритм генерации</label>
                 <select value={mode} onChange={(e: any) => setSettings(e.target.value === 'gorbov' ? 7 : size, e.target.value)} className="w-full p-3 text-xs rounded-xl border bg-background/50 border-border outline-none text-foreground">
                   <option value="classic">Прямой (1-25)</option>
                   <option value="reverse">Обратный (25-1)</option>
@@ -305,7 +305,7 @@ export function SchulteGrid() {
               </div>
 
               <div>
-                <label className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider mb-2 block">Когнитивные помехи</label>
+                <label className="text-xs text-muted-foreground uppercase font-bold tracking-wider mb-2 block">Когнитивные помехи</label>
                 <select value={distraction} onChange={(e: any) => setDistraction(e.target.value)} className="w-full p-3 text-xs rounded-xl border bg-background/50 border-border outline-none text-foreground">
                   <option value="none">Без отвлечения</option>
                   <option value="audio">Аудио-фон (Слова + Числа)</option>
@@ -318,8 +318,8 @@ export function SchulteGrid() {
             <div className="pt-4 border-t border-border/50 space-y-3">
               <div className="flex items-center justify-between p-3 rounded-2xl bg-secondary/30 border border-border/50 transition-all hover:border-primary/30">
                  <div className="flex flex-col">
-                   <span className="text-[10px] text-foreground font-bold uppercase tracking-wider">Вращение цифр</span>
-                   <span className="text-[8px] text-muted-foreground uppercase">Динамический наклон</span>
+                   <span className="text-xs text-foreground font-bold uppercase tracking-wider">Вращение цифр</span>
+                   <span className="text-xs text-muted-foreground uppercase">Динамический наклон</span>
                  </div>
                 <button 
                   onClick={() => setSettings(size, mode, { digitRotation: !state.modifications.digitRotation })}
@@ -332,8 +332,8 @@ export function SchulteGrid() {
 
               <div className="flex items-center justify-between p-3 rounded-2xl bg-secondary/30 border border-border/50 transition-all hover:border-primary/30">
                  <div className="flex flex-col">
-                   <span className="text-[10px] text-foreground font-bold uppercase tracking-wider">Pro-режим</span>
-                   <span className="text-[8px] text-muted-foreground uppercase">Лимит 60с + No Tips</span>
+                   <span className="text-xs text-foreground font-bold uppercase tracking-wider">Pro-режим</span>
+                   <span className="text-xs text-muted-foreground uppercase">Лимит 60с + No Tips</span>
                  </div>
                 <button 
                   onClick={() => setIsHardcore(!isHardcore)}
@@ -377,7 +377,7 @@ export function SchulteGrid() {
                 <div className="w-20 h-20 rounded-3xl bg-primary/10 border border-primary/20 flex items-center justify-center animate-pulse">
                    <Target className="w-8 h-8 text-primary" />
                 </div>
-                <div className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-primary flex items-center justify-center text-[10px] font-black text-white shadow-lg">?</div>
+                <div className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-primary flex items-center justify-center text-xs font-black text-white shadow-lg">?</div>
               </div>
               <div className="space-y-2">
                 <p className="text-sm font-black text-foreground uppercase tracking-[0.3em]">Центрация внимания</p>
@@ -403,21 +403,21 @@ export function SchulteGrid() {
             <div className="space-y-6">
               <div className="space-y-4">
                 <div className="flex gap-4">
-                   <div className="w-6 h-6 rounded-lg bg-primary/10 flex items-center justify-center text-[10px] font-bold text-primary flex-shrink-0">1</div>
+                   <div className="w-6 h-6 rounded-lg bg-primary/10 flex items-center justify-center text-xs font-bold text-primary flex-shrink-0">1</div>
                    <p className="text-xs text-muted-foreground leading-relaxed">Фокусируйте взгляд на центральной точке таблицы.</p>
                 </div>
                 <div className="flex gap-4">
-                   <div className="w-6 h-6 rounded-lg bg-primary/10 flex items-center justify-center text-[10px] font-bold text-primary flex-shrink-0">2</div>
+                   <div className="w-6 h-6 rounded-lg bg-primary/10 flex items-center justify-center text-xs font-bold text-primary flex-shrink-0">2</div>
                    <p className="text-xs text-muted-foreground leading-relaxed">Используйте периферийное зрение для поиска чисел. Не двигайте зрачками.</p>
                 </div>
                 <div className="flex gap-4">
-                   <div className="w-6 h-6 rounded-lg bg-primary/10 flex items-center justify-center text-[10px] font-bold text-primary flex-shrink-0">3</div>
+                   <div className="w-6 h-6 rounded-lg bg-primary/10 flex items-center justify-center text-xs font-bold text-primary flex-shrink-0">3</div>
                    <p className="text-xs text-muted-foreground leading-relaxed">Находите числа максимально быстро. Система адаптирует сложность под ваш темп.</p>
                 </div>
               </div>
 
               <div className="p-5 rounded-2xl bg-primary/5 border border-primary/10">
-                 <p className="text-[10px] text-primary font-black uppercase tracking-widest mb-2">Норматив ({size}x{size})</p>
+                 <p className="text-xs text-primary font-black uppercase tracking-widest mb-2">Норматив ({size}x{size})</p>
                  <div className="flex items-baseline gap-1">
                    <span className="text-2xl font-mono font-bold text-foreground">{targetTime}</span>
                    <span className="text-xs font-mono text-muted-foreground uppercase">секунд</span>
@@ -449,11 +449,11 @@ export function SchulteGrid() {
               <div>
                 <h2 className="text-3xl font-black tracking-tight text-foreground uppercase">Когнитивный Брифинг</h2>
                 <div className="flex gap-2 mt-1">
-                  <span className="text-[10px] bg-primary/10 text-primary px-3 py-1 rounded-full font-black uppercase tracking-widest border border-primary/20">
+                  <span className="text-xs bg-primary/10 text-primary px-3 py-1 rounded-full font-black uppercase tracking-widest border border-primary/20">
                     {isGorbov ? 'Протокол Горбова' : `Протокол ${mode.toUpperCase()}`}
                   </span>
                   {isHardcore && (
-                    <span className="text-[10px] bg-destructive/10 text-destructive px-3 py-1 rounded-full font-black uppercase tracking-widest border border-destructive/20">Hardcore Mode</span>
+                    <span className="text-xs bg-destructive/10 text-destructive px-3 py-1 rounded-full font-black uppercase tracking-widest border border-destructive/20">Hardcore Mode</span>
                   )}
                 </div>
               </div>
@@ -461,7 +461,7 @@ export function SchulteGrid() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 mb-12">
                <div className="space-y-4">
-                  <h4 className="text-[10px] text-muted-foreground uppercase font-black tracking-[0.2em]">Целевой алгоритм</h4>
+                  <h4 className="text-xs text-muted-foreground uppercase font-black tracking-[0.2em]">Целевой алгоритм</h4>
                   <p className="text-sm text-foreground leading-relaxed font-medium">
                     {isGorbov 
                       ? "ЧЕРЕДОВАНИЕ: 1 Черное → 24 Красное → 2 Черное → 23 Красное... Это тест на переключение когнитивных установок."
@@ -472,24 +472,24 @@ export function SchulteGrid() {
                   </p>
                   <div className="flex items-center gap-3 pt-2">
                      <AlertCircle className="w-4 h-4 text-primary" />
-                     <span className="text-[10px] text-muted-foreground uppercase font-bold">Фокус строго в центр</span>
+                     <span className="text-xs text-muted-foreground uppercase font-bold">Фокус строго в центр</span>
                   </div>
                </div>
 
                <div className="bg-secondary/40 border border-border/50 rounded-3xl p-6 flex flex-col justify-center gap-4">
                   <div className="flex justify-between items-center">
-                    <span className="text-[10px] text-muted-foreground uppercase font-black">Норматив</span>
+                    <span className="text-xs text-muted-foreground uppercase font-black">Норматив</span>
                     <span className="text-sm font-mono font-black text-primary">{targetTime}s</span>
                   </div>
                   <div className="h-px bg-border/50 w-full" />
                   <div className="flex justify-between items-center opacity-30">
-                    <span className="text-[10px] text-muted-foreground uppercase font-black">Адаптивность</span>
-                    <span className="text-[10px] text-muted-foreground font-black uppercase">Выключена</span>
+                    <span className="text-xs text-muted-foreground uppercase font-black">Адаптивность</span>
+                    <span className="text-xs text-muted-foreground font-black uppercase">Выключена</span>
                   </div>
                   <div className="h-px bg-border/50 w-full" />
                   <div className="flex justify-between items-center">
-                    <span className="text-[10px] text-muted-foreground uppercase font-black">Помехи</span>
-                    <span className="text-[10px] font-black uppercase">{distraction === 'none' ? 'Нет' : 'Включены'}</span>
+                    <span className="text-xs text-muted-foreground uppercase font-black">Помехи</span>
+                    <span className="text-xs font-black uppercase">{distraction === 'none' ? 'Нет' : 'Включены'}</span>
                   </div>
                </div>
             </div>
@@ -562,7 +562,7 @@ export function SchulteGrid() {
       >
          <div className="bg-card/40 backdrop-blur-md border border-border rounded-3xl p-6 shadow-sm">
             <div className="flex items-center justify-between mb-4">
-              <span className="text-[10px] text-muted-foreground uppercase font-black tracking-widest">Прогресс</span>
+              <span className="text-xs text-muted-foreground uppercase font-black tracking-widest">Прогресс</span>
               <Activity className="w-4 h-4 text-primary opacity-50" />
             </div>
             <div className="space-y-4">
@@ -571,7 +571,7 @@ export function SchulteGrid() {
                     <p className="text-3xl font-mono font-black tabular-nums text-foreground">
                       {(state.timeMs / 1000).toFixed(2)}<span className="text-xs text-muted-foreground pl-1">s</span>
                     </p>
-                    <span className="text-[10px] font-mono text-muted-foreground uppercase">{(state.timeMs/targetTime/10).toFixed(0)}%</span>
+                    <span className="text-xs font-mono text-muted-foreground uppercase">{(state.timeMs/targetTime/10).toFixed(0)}%</span>
                   </div>
                   <div className="h-1.5 w-full bg-secondary rounded-full overflow-hidden">
                     <motion.div 
@@ -583,11 +583,11 @@ export function SchulteGrid() {
                </div>
                <div className="flex items-center justify-between pt-2">
                  <div className="flex flex-col">
-                    <span className="text-[8px] text-muted-foreground uppercase font-black">Ошибки</span>
+                    <span className="text-xs text-muted-foreground uppercase font-black">Ошибки</span>
                     <span className={`text-sm font-mono font-bold ${state.errors > 0 ? 'text-destructive' : 'text-foreground'}`}>{state.errors}</span>
                  </div>
                  <div className="flex flex-col items-end">
-                    <span className={`text-[8px] uppercase font-black ${state.modifications.chaosIntervalMs < 500 ? 'text-destructive' : 'text-muted-foreground'}`}>Интенсивность</span>
+                    <span className={`text-xs uppercase font-black ${state.modifications.chaosIntervalMs < 500 ? 'text-destructive' : 'text-muted-foreground'}`}>Интенсивность</span>
                     <span className="text-sm font-mono font-bold">{(1000 / state.modifications.chaosIntervalMs).toFixed(1)}x</span>
                  </div>
                </div>
@@ -595,7 +595,7 @@ export function SchulteGrid() {
          </div>
 
          <div className="bg-primary/10 backdrop-blur-md border border-primary/20 rounded-3xl p-8 flex flex-col items-center justify-center flex-1 shadow-sm shadow-primary/5">
-            <p className="text-[10px] text-primary uppercase mb-4 font-black tracking-[0.3em]">
+            <p className="text-xs text-primary uppercase mb-4 font-black tracking-[0.3em]">
                {isGorbov ? 'АКТИВНАЯ ЦЕЛЬ' : 'ТЕКУЩЕЕ ЧИСЛО'}
             </p>
             <div className="relative">
@@ -621,7 +621,7 @@ export function SchulteGrid() {
                 </div>
               )}
             </div>
-            <p className="text-[10px] text-muted-foreground uppercase mt-8 font-black tracking-widest text-center opacity-60">
+            <p className="text-xs text-muted-foreground uppercase mt-8 font-black tracking-widest text-center opacity-60">
               {isHardcore ? 'Pro-режим: Подсказки скрыты' : 'Визуальный трекер активен'}
             </p>
          </div>
@@ -681,8 +681,8 @@ export function SchulteGrid() {
          </motion.div>
 
          <div className="mt-8 flex gap-4 z-10 opacity-40">
-            <span className="px-4 py-1.5 bg-background border border-border text-foreground text-[10px] font-black uppercase rounded-full tracking-widest">{distraction !== 'none' ? 'Jammer Active' : 'Clear Link'}</span>
-            <span className="px-4 py-1.5 bg-background border border-border text-foreground text-[10px] font-black uppercase rounded-full tracking-widest">{size}x{size} Matrix</span>
+            <span className="px-4 py-1.5 bg-background border border-border text-foreground text-xs font-black uppercase rounded-full tracking-widest">{distraction !== 'none' ? 'Jammer Active' : 'Clear Link'}</span>
+            <span className="px-4 py-1.5 bg-background border border-border text-foreground text-xs font-black uppercase rounded-full tracking-widest">{size}x{size} Matrix</span>
          </div>
       </motion.div>
 
@@ -702,8 +702,8 @@ export function SchulteGrid() {
                 <AttentionMap clicks={state.clickHistory} width={220} height={220} />
              </div>
              <div className="text-center">
-                <p className="text-[10px] text-muted-foreground uppercase font-black tracking-[0.3em] mb-2">Оперативный Контроль</p>
-                <p className="text-[10px] text-muted-foreground/60 leading-relaxed uppercase tracking-tighter">Система ведет запись когнитивной активности и паттернов внимания.</p>
+                <p className="text-xs text-muted-foreground uppercase font-black tracking-[0.3em] mb-2">Оперативный Контроль</p>
+                <p className="text-xs text-muted-foreground/60 leading-relaxed uppercase tracking-tighter">Система ведет запись когнитивной активности и паттернов внимания.</p>
              </div>
           </div>
           <motion.button 

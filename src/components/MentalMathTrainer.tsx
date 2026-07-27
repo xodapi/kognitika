@@ -180,7 +180,7 @@ export function MentalMathTrainer() {
                   Быстрые вычисления
                 </h2>
                 <div className="flex gap-2 mt-1">
-                  <span className="text-[10px] bg-primary/10 text-primary px-3 py-1 rounded-full font-black uppercase tracking-widest border border-primary/20">
+                  <span className="text-xs bg-primary/10 text-primary px-3 py-1 rounded-full font-black uppercase tracking-widest border border-primary/20">
                     Режим {level}: {selectedPreset.title}
                   </span>
                 </div>
@@ -189,7 +189,7 @@ export function MentalMathTrainer() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 mb-12">
               <div className="space-y-4">
-                <h4 className="text-[10px] text-muted-foreground uppercase font-black tracking-[0.2em]">
+                <h4 className="text-xs text-muted-foreground uppercase font-black tracking-[0.2em]">
                   Алгоритм
                 </h4>
                 <p className="text-sm text-foreground leading-relaxed font-medium">
@@ -201,7 +201,7 @@ export function MentalMathTrainer() {
                 </p>
                 <div className="flex items-center gap-3 pt-2">
                   <AlertCircle className="w-4 h-4 text-primary" />
-                  <span className="text-[10px] text-muted-foreground uppercase font-bold">
+                  <span className="text-xs text-muted-foreground uppercase font-bold">
                     Нажмите Enter для отправки
                   </span>
                 </div>
@@ -209,24 +209,24 @@ export function MentalMathTrainer() {
 
               <div className="bg-secondary/40 border border-border/50 rounded-3xl p-6 flex flex-col justify-center gap-4">
                 <div className="flex justify-between items-center">
-                  <span className="text-[10px] text-muted-foreground uppercase font-black">
+                  <span className="text-xs text-muted-foreground uppercase font-black">
                     Вопросов
                   </span>
                   <span className="text-sm font-mono font-black text-primary">{questionCount}</span>
                 </div>
                 <div className="h-px bg-border/50 w-full" />
                 <div className="flex justify-between items-center">
-                  <span className="text-[10px] text-muted-foreground uppercase font-black">
+                  <span className="text-xs text-muted-foreground uppercase font-black">
                     Уровень
                   </span>
                   <span className="text-sm font-mono font-black text-primary">{level}</span>
                 </div>
                 <div className="h-px bg-border/50 w-full" />
                 <div className="flex justify-between items-center">
-                  <span className="text-[10px] text-muted-foreground uppercase font-black">
+                  <span className="text-xs text-muted-foreground uppercase font-black">
                     Лимит
                   </span>
-                  <span className="text-[10px] font-black uppercase text-muted-foreground">ориентир 5 мин</span>
+                  <span className="text-xs font-black uppercase text-muted-foreground">ориентир 5 мин</span>
                 </div>
               </div>
             </div>
@@ -271,7 +271,7 @@ export function MentalMathTrainer() {
 
             <div className="space-y-4">
               <div>
-                <label htmlFor="mental-math-level" className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider mb-2 block">
+                <label htmlFor="mental-math-level" className="text-xs text-muted-foreground uppercase font-bold tracking-wider mb-2 block">
                   Уровень сложности
                 </label>
                 <select
@@ -290,7 +290,7 @@ export function MentalMathTrainer() {
 
               <div>
                 <div className="flex justify-between items-center mb-2">
-                  <label htmlFor="mental-math-question-count" className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">
+                  <label htmlFor="mental-math-question-count" className="text-xs text-muted-foreground uppercase font-bold tracking-wider">
                     Количество вопросов
                   </label>
                   <span className="text-xs font-mono font-bold text-primary">{questionCount}</span>
@@ -308,7 +308,7 @@ export function MentalMathTrainer() {
                 <button
                   type="button"
                   onClick={() => setQuestionCount(48)}
-                  className="mt-3 min-h-10 w-full rounded-xl border border-primary/20 bg-primary/5 px-3 text-[10px] font-black uppercase tracking-widest text-primary"
+                  className="mt-3 min-h-10 w-full rounded-xl border border-primary/20 bg-primary/5 px-3 text-xs font-black uppercase tracking-widest text-primary"
                 >
                   5-минутный пресет: 48 вопросов
                 </button>
@@ -371,7 +371,7 @@ export function MentalMathTrainer() {
             <div className="space-y-6">
               <div className="space-y-4">
                 <div className="flex gap-4">
-                  <div className="w-6 h-6 rounded-lg bg-primary/10 flex items-center justify-center text-[10px] font-bold text-primary flex-shrink-0">
+                  <div className="w-6 h-6 rounded-lg bg-primary/10 flex items-center justify-center text-xs font-bold text-primary flex-shrink-0">
                     1
                   </div>
                   <p className="text-xs text-muted-foreground leading-relaxed">
@@ -379,7 +379,7 @@ export function MentalMathTrainer() {
                   </p>
                 </div>
                 <div className="flex gap-4">
-                  <div className="w-6 h-6 rounded-lg bg-primary/10 flex items-center justify-center text-[10px] font-bold text-primary flex-shrink-0">
+                  <div className="w-6 h-6 rounded-lg bg-primary/10 flex items-center justify-center text-xs font-bold text-primary flex-shrink-0">
                     2
                   </div>
                   <p className="text-xs text-muted-foreground leading-relaxed">
@@ -387,7 +387,7 @@ export function MentalMathTrainer() {
                   </p>
                 </div>
                 <div className="flex gap-4">
-                  <div className="w-6 h-6 rounded-lg bg-primary/10 flex items-center justify-center text-[10px] font-bold text-primary flex-shrink-0">
+                  <div className="w-6 h-6 rounded-lg bg-primary/10 flex items-center justify-center text-xs font-bold text-primary flex-shrink-0">
                     3
                   </div>
                   <p className="text-xs text-muted-foreground leading-relaxed">
@@ -398,7 +398,7 @@ export function MentalMathTrainer() {
               </div>
 
               <div className="p-5 rounded-2xl bg-primary/5 border border-primary/10">
-                <p className="text-[10px] text-primary font-black uppercase tracking-widest mb-2">
+                <p className="text-xs text-primary font-black uppercase tracking-widest mb-2">
                   Норматив
                 </p>
                 <div className="flex items-baseline gap-1">
@@ -484,7 +484,7 @@ export function MentalMathTrainer() {
       >
         <div className="bg-card/40 backdrop-blur-md border border-border rounded-3xl p-6 shadow-sm">
           <div className="flex items-center justify-between mb-4">
-            <span className="text-[10px] text-muted-foreground uppercase font-black tracking-widest">
+            <span className="text-xs text-muted-foreground uppercase font-black tracking-widest">
               Прогресс
             </span>
             <Activity className="w-4 h-4 text-primary opacity-50" />
@@ -496,7 +496,7 @@ export function MentalMathTrainer() {
                   {(state.timeMs / 1000).toFixed(2)}
                   <span className="text-xs text-muted-foreground pl-1">s</span>
                 </p>
-                <span className="text-[10px] font-mono text-muted-foreground uppercase">
+                <span className="text-xs font-mono text-muted-foreground uppercase">
                   {state.currentIndex}/{state.questions.length}
                 </span>
               </div>
@@ -517,7 +517,7 @@ export function MentalMathTrainer() {
             </div>
             <div className="flex items-center justify-between pt-2">
               <div className="flex flex-col">
-                <span className="text-[8px] text-muted-foreground uppercase font-black">
+                <span className="text-xs text-muted-foreground uppercase font-black">
                   Верных
                 </span>
                 <span className="text-sm font-mono font-bold text-emerald-500">
@@ -525,7 +525,7 @@ export function MentalMathTrainer() {
                 </span>
               </div>
               <div className="flex flex-col items-end">
-                <span className="text-[8px] text-muted-foreground uppercase font-black">
+                <span className="text-xs text-muted-foreground uppercase font-black">
                   Ошибок
                 </span>
                 <span
@@ -541,7 +541,7 @@ export function MentalMathTrainer() {
         {/* Symbol legend */}
         {state.level >= 3 && Object.keys(state.legend).length > 0 && (
           <div className="sticky top-3 z-20 bg-primary/10 backdrop-blur-md border border-primary/20 rounded-3xl p-4 shadow-sm shadow-primary/5">
-            <p className="text-[10px] text-primary uppercase mb-3 font-black tracking-[0.3em]">
+            <p className="text-xs text-primary uppercase mb-3 font-black tracking-[0.3em]">
               Legend
             </p>
             <div className="grid grid-cols-2 gap-2">
@@ -551,7 +551,7 @@ export function MentalMathTrainer() {
                   className="flex items-center gap-2 bg-background/50 rounded-xl px-3 py-2"
                 >
                   <span className="text-lg font-black text-primary">{symbol}</span>
-                  <span className="text-[10px] text-muted-foreground font-bold">=</span>
+                  <span className="text-xs text-muted-foreground font-bold">=</span>
                   <span className="text-lg font-black text-foreground">{op}</span>
                 </div>
               ))}
@@ -572,7 +572,7 @@ export function MentalMathTrainer() {
 
         <div className="text-center z-10 flex flex-col items-center gap-10 w-full max-w-md">
           {/* Question number */}
-          <p className="text-[10px] text-muted-foreground uppercase font-black tracking-[0.3em]">
+          <p className="text-xs text-muted-foreground uppercase font-black tracking-[0.3em]">
             Вопрос {state.currentIndex + 1} из {state.questions.length}
           </p>
 
@@ -625,11 +625,11 @@ export function MentalMathTrainer() {
           <div className="flex-1 space-y-6">
             <div className="space-y-4">
               <div className="flex justify-between items-center p-3 rounded-2xl bg-secondary/30 border border-border/50">
-                <span className="text-[10px] text-muted-foreground uppercase font-black">Уровень</span>
+                <span className="text-xs text-muted-foreground uppercase font-black">Уровень</span>
                 <span className="text-sm font-mono font-bold text-primary">{state.level}</span>
               </div>
               <div className="flex justify-between items-center p-3 rounded-2xl bg-secondary/30 border border-border/50">
-                <span className="text-[10px] text-muted-foreground uppercase font-black">Точность</span>
+                <span className="text-xs text-muted-foreground uppercase font-black">Точность</span>
                 <span
                   className={`text-sm font-mono font-bold ${accuracy >= 80 ? 'text-emerald-500' : accuracy >= 50 ? 'text-amber-500' : 'text-destructive'}`}
                 >
@@ -637,17 +637,17 @@ export function MentalMathTrainer() {
                 </span>
               </div>
               <div className="flex justify-between items-center p-3 rounded-2xl bg-secondary/30 border border-border/50">
-                <span className="text-[10px] text-muted-foreground uppercase font-black">Генератор</span>
-                <span className="text-[10px] font-black uppercase text-primary">
+                <span className="text-xs text-muted-foreground uppercase font-black">Генератор</span>
+                <span className="text-xs font-black uppercase text-primary">
                   {generationSource === 'llm' ? 'LLM' : 'Локальный'}
                 </span>
               </div>
             </div>
             <div className="text-center">
-              <p className="text-[10px] text-muted-foreground uppercase font-black tracking-[0.3em] mb-2">
+              <p className="text-xs text-muted-foreground uppercase font-black tracking-[0.3em] mb-2">
                 Оперативный Контроль
               </p>
-              <p className="text-[10px] text-muted-foreground/60 leading-relaxed uppercase tracking-tighter">
+              <p className="text-xs text-muted-foreground/60 leading-relaxed uppercase tracking-tighter">
                 Система ведет запись времени ответа и точности вычислений.
               </p>
             </div>

@@ -117,7 +117,7 @@ export function TrainingGallery({ onStart }: { onStart: (id: string) => void }) 
                 <div className={`p-3 rounded-2xl bg-background/80 border border-border group-hover:scale-110 group-hover:bg-primary/10 transition-all ${m.color}`}>
                   <m.icon className="w-6 h-6 shrink-0" />
                 </div>
-                <div className="bg-secondary/50 text-muted-foreground px-2 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest border border-border whitespace-nowrap">
+                <div className="bg-secondary/50 text-muted-foreground px-2 py-1 rounded-lg text-xs font-black uppercase tracking-widest border border-border whitespace-nowrap">
                   {m.category}
                 </div>
               </div>
@@ -130,9 +130,9 @@ export function TrainingGallery({ onStart }: { onStart: (id: string) => void }) 
               <div className="flex items-center justify-between mt-auto pt-2 border-t border-border/30">
                 <div className="flex items-center gap-1">
                    <Zap className="w-3 h-3 text-primary" />
-                   <span className="text-[10px] font-bold text-muted-foreground">LVL {m.level}</span>
+                   <span className="text-xs font-bold text-muted-foreground">LVL {m.level}</span>
                 </div>
-                <div className="flex items-center gap-2 text-primary font-black text-[10px] uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-all -translate-x-2 group-hover:translate-x-0">
+                <div className="flex items-center gap-2 text-primary font-black text-xs uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-all -translate-x-2 group-hover:translate-x-0">
                    Старт <Play className="w-3 h-3 fill-current" />
                 </div>
               </div>

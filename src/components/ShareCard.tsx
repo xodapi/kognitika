@@ -79,7 +79,7 @@ export function ShareCard({ isOpen, onClose }: ShareCardProps) {
                   </div>
                   <div>
                     <h3 className="text-sm font-black uppercase tracking-tighter">Kognitika Identity</h3>
-                    <p className="text-[9px] text-primary font-black uppercase tracking-[0.2em]">Cognitive-Protocol v2.1</p>
+                    <p className="text-xs text-primary font-black uppercase tracking-[0.2em]">Cognitive-Protocol v2.1</p>
                   </div>
                 </div>
                 <button 
@@ -106,7 +106,7 @@ export function ShareCard({ isOpen, onClose }: ShareCardProps) {
                   <div className="mt-2">
                     <LeagueBadge rating={user.rating || 0} size="md" />
                   </div>
-                  <p className="text-[10px] text-muted-foreground uppercase font-black tracking-[0.3em] mt-2">
+                  <p className="text-xs text-muted-foreground uppercase font-black tracking-[0.3em] mt-2">
                     Certified Intelligence Agent
                   </p>
                 </div>
@@ -118,7 +118,7 @@ export function ShareCard({ isOpen, onClose }: ShareCardProps) {
                   <div key={i} className="bg-secondary/30 border border-border/50 rounded-2xl p-4 flex flex-col gap-1 hover:border-primary/20 transition-colors">
                     <div className="flex items-center gap-2 mb-1">
                       <stat.icon className={`w-3.5 h-3.5 ${stat.color}`} />
-                      <span className="text-[8px] text-muted-foreground uppercase font-black tracking-widest">{stat.label}</span>
+                      <span className="text-xs text-muted-foreground uppercase font-black tracking-widest">{stat.label}</span>
                     </div>
                     <div className="text-lg font-black text-foreground">{stat.value}</div>
                   </div>
@@ -130,11 +130,11 @@ export function ShareCard({ isOpen, onClose }: ShareCardProps) {
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
                     <CheckCircle2 className="w-3.5 h-3.5 text-green-500" />
-                    <span className="text-[10px] font-bold uppercase tracking-wide">ID Verified by System</span>
+                    <span className="text-xs font-bold uppercase tracking-wide">ID Verified by System</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-                    <span className="text-[9px] text-muted-foreground font-medium uppercase tracking-tighter">
+                    <span className="text-xs text-muted-foreground font-medium uppercase tracking-tighter">
                       Registered: {new Date().toLocaleDateString()}
                     </span>
                   </div>

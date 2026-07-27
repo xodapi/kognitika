@@ -33,7 +33,7 @@ export function Wiki() {
               }`}
             >
               <div>
-                <div className={`text-[8px] font-black uppercase tracking-widest mb-1 ${selected?.id === article.id ? 'text-primary-foreground/70' : 'text-primary'}`}>
+                <div className={`text-xs font-black uppercase tracking-widest mb-1 ${selected?.id === article.id ? 'text-primary-foreground/70' : 'text-primary'}`}>
                   {article.category}
                 </div>
                 <div className="font-bold text-sm">{article.title}</div>
@@ -72,7 +72,7 @@ export function Wiki() {
                     ['Ограничения', selected.safety],
                   ].map(([label, body]) => (
                     <section key={label} className="rounded-2xl border border-border bg-background/40 p-4">
-                      <h3 className="mb-2 text-[10px] font-black uppercase tracking-widest text-primary">
+                      <h3 className="mb-2 text-xs font-black uppercase tracking-widest text-primary">
                         {label}
                       </h3>
                       <p className="text-sm leading-relaxed text-foreground/80">
@@ -89,7 +89,7 @@ export function Wiki() {
                     <span
                       key={tag}
                       title={TAG_GLOSSARY[tag] || tag}
-                      className="px-3 py-1 bg-secondary/50 border border-border rounded-lg text-[10px] font-bold text-muted-foreground uppercase tracking-widest"
+                      className="px-3 py-1 bg-secondary/50 border border-border rounded-lg text-xs font-bold text-muted-foreground uppercase tracking-widest"
                     >
                       #{tag}
                     </span>

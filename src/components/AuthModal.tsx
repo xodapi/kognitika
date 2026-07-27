@@ -119,7 +119,7 @@ export function AuthModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
 
         <div className="flex items-center justify-center gap-2 bg-secondary/30 p-3 rounded-xl mb-8 text-primary border border-primary/10">
           <Key className="w-4 h-4" />
-          <span className="text-[10px] font-bold uppercase tracking-widest">Brain ID доступ</span>
+          <span className="text-xs font-bold uppercase tracking-widest">Brain ID доступ</span>
         </div>
         
         <div className="space-y-6">
@@ -133,14 +133,14 @@ export function AuthModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
           <button 
             onClick={handleBrainInit}
             disabled={loading}
-            className="w-full py-4 bg-primary text-primary-foreground rounded-2xl font-bold uppercase tracking-widest text-[10px] hover:scale-[1.02] transition-transform shadow-lg shadow-primary/20 disabled:opacity-50"
+            className="w-full py-4 bg-primary text-primary-foreground rounded-2xl font-bold uppercase tracking-widest text-xs hover:scale-[1.02] transition-transform shadow-lg shadow-primary/20 disabled:opacity-50"
           >
             {loading ? 'Создание...' : 'Начать новую сессию'}
           </button>
 
           <div className="relative">
             <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-border"></div></div>
-            <div className="relative flex justify-center text-[9px] uppercase tracking-tighter"><span className="bg-card px-2 text-muted-foreground">Или восстановить</span></div>
+            <div className="relative flex justify-center text-xs uppercase tracking-tighter"><span className="bg-card px-2 text-muted-foreground">Или восстановить</span></div>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -156,7 +156,7 @@ export function AuthModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
             <button 
               type="submit" 
               disabled={loading || !brainIdInput.trim()}
-              className="w-full py-3 bg-secondary text-foreground rounded-xl font-bold uppercase tracking-widest text-[9px] hover:bg-secondary/80 transition-all disabled:opacity-50"
+              className="w-full py-3 bg-secondary text-foreground rounded-xl font-bold uppercase tracking-widest text-xs hover:bg-secondary/80 transition-all disabled:opacity-50"
             >
               Возобновить прогресс
             </button>
@@ -164,12 +164,12 @@ export function AuthModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
         </div>
 
         {error && (
-          <div className="mt-4 text-destructive text-[10px] uppercase tracking-wide text-center bg-destructive/10 p-3 rounded-xl border border-destructive/20 animate-in fade-in slide-in-from-top-1">
+          <div className="mt-4 text-destructive text-xs uppercase tracking-wide text-center bg-destructive/10 p-3 rounded-xl border border-destructive/20 animate-in fade-in slide-in-from-top-1">
             {error}
           </div>
         )}
 
-        <p className="mt-8 text-[9px] text-center text-muted-foreground uppercase tracking-tighter leading-relaxed">
+        <p className="mt-8 text-xs text-center text-muted-foreground uppercase tracking-tighter leading-relaxed">
           Используя сервис, вы соглашаетесь с тем, что мы <span className="text-primary">не собираем</span> ваши персональные данные в соответствии со 152-ФЗ.
         </p>
       </div>
