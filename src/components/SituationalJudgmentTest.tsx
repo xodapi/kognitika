@@ -33,7 +33,7 @@ export function SituationalJudgmentTest() {
             <p className="text-sm text-muted-foreground mb-8 text-balance">
               Оценка управленческого и эмоционального интеллекта. Вам будут предложены гипотетические рабочие ситуации. Выберите наиболее подходящий вариант действий.
             </p>
-            <button onClick={startGame} className="w-full max-w-[250px] px-4 py-3 bg-primary text-primary-foreground text-xs uppercase tracking-wider rounded-lg font-bold hover:bg-primary/90 transition-colors">
+            <button onClick={startGame} className="w-full max-w-[250px] min-h-11 px-4 py-3 bg-primary text-primary-foreground text-xs uppercase tracking-wider rounded-lg font-bold hover:bg-primary/90 transition-colors">
               Начать анализ
             </button>
         </div>
@@ -94,7 +94,7 @@ export function SituationalJudgmentTest() {
                   <button 
                     key={opt.id} 
                     onClick={() => answerQuestion(opt.score)}
-                    className="text-left bg-card hover:bg-secondary border border-border hover:border-primary p-3 sm:p-4 rounded-xl transition-all"
+                    className="text-left bg-card hover:bg-secondary border border-border hover:border-primary min-h-11 p-3 sm:p-4 rounded-xl transition-all"
                   >
                      <p className="text-xs sm:text-sm">{opt.text}</p>
                   </button>

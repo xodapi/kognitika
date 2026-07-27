@@ -82,7 +82,7 @@ export function AuthModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
         <button 
           onClick={() => copyToClipboard(successBrainId)}
           aria-label="Копировать Brain ID"
-          className="p-2 bg-background border border-border rounded-lg text-muted-foreground hover:text-primary transition-colors shrink-0"
+          className="min-h-11 min-w-11 bg-background border border-border rounded-lg text-muted-foreground hover:text-primary transition-colors shrink-0 flex items-center justify-center"
         >
           {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
         </button>
@@ -106,7 +106,7 @@ export function AuthModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
         <button 
           onClick={onClose} 
           aria-label="Закрыть"
-          className="absolute top-6 right-6 p-2 rounded-full text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
+          className="absolute top-6 right-6 min-h-11 min-w-11 rounded-full text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors flex items-center justify-center"
         >
           <X className="w-4 h-4" />
         </button>
@@ -156,7 +156,7 @@ export function AuthModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
             <button 
               type="submit" 
               disabled={loading || !brainIdInput.trim()}
-              className="w-full py-3 bg-secondary text-foreground rounded-xl font-bold uppercase tracking-widest text-xs hover:bg-secondary/80 transition-all disabled:opacity-50"
+              className="w-full min-h-11 py-3 bg-secondary text-foreground rounded-xl font-bold uppercase tracking-widest text-xs hover:bg-secondary/80 transition-all disabled:opacity-50"
             >
               Возобновить прогресс
             </button>

@@ -118,7 +118,7 @@ function ClassicStroopTest() {
             
             {/* Settings Selectors */}
             <div className="flex flex-col sm:flex-row gap-4 mb-8 w-full max-w-md mx-auto">
-              <div className="flex-1 flex items-center gap-3 bg-primary/5 border border-primary/10 px-4 py-3 rounded-xl cursor-pointer select-none" onClick={() => setUseLuscher(!useLuscher)}>
+              <div className="flex-1 flex items-center gap-3 bg-primary/5 border border-primary/10 px-4 min-h-11 rounded-xl cursor-pointer select-none" onClick={() => setUseLuscher(!useLuscher)}>
                 <input 
                   type="checkbox" 
                   checked={useLuscher} 
@@ -127,7 +127,7 @@ function ClassicStroopTest() {
                 />
                 <span className="text-[10px] font-black uppercase text-foreground">Барометр Люшера</span>
               </div>
-              <div className="flex-1 flex items-center gap-3 bg-destructive/5 border border-destructive/10 px-4 py-3 rounded-xl cursor-pointer select-none" onClick={() => setUseStress(!useStress)}>
+              <div className="flex-1 flex items-center gap-3 bg-destructive/5 border border-destructive/10 px-4 min-h-11 rounded-xl cursor-pointer select-none" onClick={() => setUseStress(!useStress)}>
                 <input 
                   type="checkbox" 
                   checked={useStress} 
@@ -138,7 +138,7 @@ function ClassicStroopTest() {
               </div>
             </div>
 
-            <button onClick={handleStartClick} className="w-full max-w-[250px] px-4 py-3 bg-primary text-primary-foreground text-xs uppercase tracking-wider rounded-lg font-bold hover:bg-primary/90 transition-colors">
+            <button onClick={handleStartClick} className="w-full max-w-[250px] min-h-11 px-4 py-3 bg-primary text-primary-foreground text-xs uppercase tracking-wider rounded-lg font-bold hover:bg-primary/90 transition-colors">
               Начать тест
             </button>
         </div>

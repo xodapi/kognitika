@@ -217,7 +217,7 @@ export const LanguageScanner: React.FC = () => {
                 key={rule.id}
                 onClick={() => flagCard(rule.id)}
                 disabled={!!state.lastFeedback}
-                className={`flex flex-col items-center justify-center gap-1.5 sm:gap-2 rounded-2xl border-2 p-2 sm:p-4 transition-all hover:scale-[1.03] active:scale-95 disabled:opacity-30 disabled:hover:scale-100 ${colorClass}`}
+                className={`flex flex-col items-center justify-center gap-1.5 sm:gap-2 rounded-2xl border-2 min-h-11 p-2 sm:p-4 transition-all hover:scale-[1.03] active:scale-95 disabled:opacity-30 disabled:hover:scale-100 ${colorClass}`}
               >
                 <Icon className="h-5 w-5 sm:h-7 sm:w-7 md:h-8 md:w-8" />
                 <span className="text-[11px] sm:text-sm md:text-base font-black uppercase tracking-tight leading-tight text-center">
@@ -287,7 +287,7 @@ export const LanguageScanner: React.FC = () => {
               <div className="pt-1 sm:pt-2">
                  <button 
                    onClick={() => flagCard(0)} 
-                   className="px-5 py-2 sm:px-6 sm:py-2.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl font-black text-xs sm:text-sm uppercase tracking-wider transition-all active:scale-95 shadow-md shadow-slate-200"
+                   className="min-h-11 px-5 py-2 sm:px-6 sm:py-2.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl font-black text-xs sm:text-sm uppercase tracking-wider transition-all active:scale-95 shadow-md shadow-slate-200"
                  >
                    Понятно
                  </button>

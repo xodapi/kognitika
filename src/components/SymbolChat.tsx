@@ -213,7 +213,7 @@ export function SymbolChat() {
           <button
             type="button"
             onClick={() => setShowSymbols(!showSymbols)}
-            className={`p-2 rounded-xl transition-all ${showSymbols ? 'bg-primary text-white' : 'bg-secondary hover:bg-secondary/80 text-muted-foreground'}`}
+            className={`min-h-11 min-w-11 rounded-xl transition-all flex items-center justify-center ${showSymbols ? 'bg-primary text-white' : 'bg-secondary hover:bg-secondary/80 text-muted-foreground'}`}
           >
             <Hash className="w-4 h-4" />
           </button>
@@ -235,7 +235,7 @@ export function SymbolChat() {
           <button
             type="submit"
             disabled={!input.trim() || !isConnected || isSending}
-            className="p-2.5 bg-primary text-white rounded-xl shadow-lg shadow-primary/20 disabled:opacity-50 disabled:shadow-none hover:scale-105 active:scale-95 transition-all"
+            className="min-h-11 min-w-11 bg-primary text-white rounded-xl shadow-lg shadow-primary/20 disabled:opacity-50 disabled:shadow-none hover:scale-105 active:scale-95 transition-all flex items-center justify-center"
           >
             <Send className="w-4 h-4" />
           </button>

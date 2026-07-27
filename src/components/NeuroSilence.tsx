@@ -187,7 +187,7 @@ export function NeuroSilence() {
         
         <button 
           onClick={() => navigate('/')}
-          className="px-6 py-2.5 bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all active:scale-95"
+          className="min-h-11 px-6 py-2.5 bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all active:scale-95"
         >
           Прервать сессию
         </button>

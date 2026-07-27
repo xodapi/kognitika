@@ -96,7 +96,7 @@ export function SpatialConcealment() {
 
           <button 
             onClick={startTraining} 
-            className="mt-auto w-full px-4 py-3 bg-primary text-primary-foreground text-xs uppercase tracking-wider rounded-lg font-bold hover:bg-primary/90 transition-colors flex items-center justify-center gap-2"
+            className="mt-auto w-full min-h-11 px-4 py-3 bg-primary text-primary-foreground text-xs uppercase tracking-wider rounded-lg font-bold hover:bg-primary/90 transition-colors flex items-center justify-center gap-2"
           >
             <RefreshCw className="w-4 h-4" /> Начать заново
           </button>
@@ -126,7 +126,7 @@ export function SpatialConcealment() {
                 </div>
                 <button 
                   onClick={startTraining}
-                  className="px-8 py-4 bg-primary text-primary-foreground rounded-2xl font-black uppercase tracking-widest text-xs shadow-lg shadow-primary/20 hover:scale-105 transition-transform"
+                  className="min-h-11 px-8 py-4 bg-primary text-primary-foreground rounded-2xl font-black uppercase tracking-widest text-xs shadow-lg shadow-primary/20 hover:scale-105 transition-transform"
                 >
                   Начать тренировку
                 </button>

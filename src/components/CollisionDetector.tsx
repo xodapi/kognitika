@@ -92,7 +92,7 @@ export function CollisionDetector() {
                 id={`collision-level-${lvl}`}
                 onClick={() => startWithGeneratedContent(lvl)}
                 disabled={isGenerating}
-                className="group relative flex flex-col items-center gap-1 px-3 py-4 bg-card/40 border border-border rounded-2xl hover:border-red-400/50 hover:bg-red-500/5 transition-all disabled:opacity-50"
+                className="group relative flex flex-col items-center gap-1 min-h-11 px-3 py-4 bg-card/40 border border-border rounded-2xl hover:border-red-400/50 hover:bg-red-500/5 transition-all disabled:opacity-50"
               >
                 <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground group-hover:text-red-400">Уровень</span>
                 <span className="text-2xl font-black">{lvl}</span>
@@ -205,7 +205,7 @@ export function CollisionDetector() {
                   <div className="flex gap-4 justify-center">
                     <button
                       onClick={() => flagCard(card)}
-                      className="flex items-center gap-2 px-6 py-3 bg-red-600 text-white rounded-xl text-sm font-bold hover:bg-red-500 transition-all active:scale-95"
+                      className="flex items-center gap-2 min-h-11 px-6 py-3 bg-red-600 text-white rounded-xl text-sm font-bold hover:bg-red-500 transition-all active:scale-95"
                     >
                       <AlertTriangle className="w-4 h-4" /> Нарушение!
                     </button>
@@ -214,7 +214,7 @@ export function CollisionDetector() {
                         // Skip — it will auto-expire, but let user manually pass
                         // We treat this as a "pass" (not flagging it)
                       }}
-                      className="flex items-center gap-2 px-6 py-3 bg-card border border-border rounded-xl text-sm font-bold hover:bg-secondary transition-all active:scale-95 text-muted-foreground"
+                      className="flex items-center gap-2 min-h-11 px-6 py-3 bg-card border border-border rounded-xl text-sm font-bold hover:bg-secondary transition-all active:scale-95 text-muted-foreground"
                     >
                       <CheckCircle className="w-4 h-4" /> Норма
                     </button>

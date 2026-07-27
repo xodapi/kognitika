@@ -26,7 +26,7 @@ export function Wiki() {
             <button
               key={article.id}
               onClick={() => navigate(article.route)}
-              className={`w-full p-4 text-left rounded-2xl border transition-all flex items-center justify-between group ${
+              className={`w-full min-h-11 p-4 text-left rounded-2xl border transition-all flex items-center justify-between group ${
                 selected?.id === article.id 
                   ? 'bg-primary border-primary text-primary-foreground shadow-lg shadow-primary/20 scale-[1.02]' 
                   : 'bg-card/40 border-border text-foreground hover:border-primary/40'

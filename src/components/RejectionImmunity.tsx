@@ -140,7 +140,7 @@ export function RejectionImmunity({ onFinish }: { onFinish?: () => void }) {
                   key={option.id}
                   disabled={!!lastFeedback}
                   onClick={() => submitAnswer(option.id)}
-                  className={`w-full text-left p-5 rounded-xl border-2 transition-all ${
+                  className={`w-full text-left min-h-11 p-5 rounded-xl border-2 transition-all ${
                     lastFeedback 
                       ? 'opacity-50 cursor-not-allowed border-zinc-200 dark:border-zinc-800' 
                       : 'border-zinc-200 dark:border-zinc-800 hover:border-red-500 hover:bg-red-50 dark:hover:bg-red-900/20'

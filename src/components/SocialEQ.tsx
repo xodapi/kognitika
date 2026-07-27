@@ -161,7 +161,7 @@ export function SocialEQ({ onFinish }: { onFinish?: () => void }) {
                   key={option.id}
                   disabled={!!lastFeedback}
                   onClick={() => submitAnswer(option)}
-                  className={`w-full text-left p-4 rounded-xl border transition-all ${
+                  className={`w-full text-left min-h-11 p-4 rounded-xl border transition-all ${
                     lastFeedback 
                       ? 'opacity-50 cursor-not-allowed border-zinc-200 dark:border-zinc-800' 
                       : 'border-zinc-200 dark:border-zinc-800 hover:border-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20'

@@ -42,7 +42,7 @@ export function AsyncDispatcher() {
               <button
                 key={lvl}
                 onClick={() => startGame(lvl)}
-                className={`px-6 py-3 rounded-xl text-xs uppercase font-bold transition-colors ${
+                className={`min-h-11 px-6 py-3 rounded-xl text-xs uppercase font-bold transition-colors ${
                   lvl === 1 ? 'bg-amber-600 text-white hover:bg-amber-500' :
                   lvl === 2 ? 'bg-orange-600 text-white hover:bg-orange-500' :
                   'bg-red-600 text-white hover:bg-red-500'
@@ -96,7 +96,7 @@ export function AsyncDispatcher() {
           />
           <div className="mt-4 flex gap-3">
             {state.score >= 80 && state.level < 3 && (
-              <button onClick={() => startGame(state.level + 1)} className="flex items-center gap-2 px-5 py-2.5 bg-amber-600 text-white rounded-xl text-xs font-bold hover:bg-amber-500 transition-colors">
+              <button onClick={() => startGame(state.level + 1)} className="flex items-center gap-2 min-h-11 px-5 py-2.5 bg-amber-600 text-white rounded-xl text-xs font-bold hover:bg-amber-500 transition-colors">
                 Уровень {state.level + 1} <ChevronRight className="w-3.5 h-3.5" />
               </button>
             )}

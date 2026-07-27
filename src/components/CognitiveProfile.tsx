@@ -200,7 +200,7 @@ export function CognitiveProfile() {
               <button
                 onClick={handleExport}
                 disabled={exportStatus === 'loading' || !token}
-                className="w-full py-3 bg-primary text-primary-foreground rounded-xl text-xs font-black uppercase tracking-widest hover:scale-[1.02] transition-transform active:scale-95 shadow-lg shadow-primary/20 disabled:cursor-not-allowed disabled:opacity-50"
+                className="w-full min-h-11 py-3 bg-primary text-primary-foreground rounded-xl text-xs font-black uppercase tracking-widest hover:scale-[1.02] transition-transform active:scale-95 shadow-lg shadow-primary/20 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {exportStatus === 'loading' ? 'Подготовка JSON...' : 'Скачать JSON для LLM'}
               </button>
@@ -264,7 +264,7 @@ export function CognitiveProfile() {
                     key={item.route}
                     type="button"
                     onClick={() => navigate(item.route)}
-                    className="inline-flex items-center gap-1.5 rounded-lg border border-destructive/20 bg-background/50 px-3 py-2 text-xs font-black uppercase tracking-widest text-foreground transition-all hover:border-primary hover:text-primary"
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-destructive/20 bg-background/50 px-3 py-2 text-xs font-black uppercase tracking-widest text-foreground transition-all hover:border-primary hover:text-primary min-h-11"
                   >
                     {item.label}
                     <ArrowRight className="w-3 h-3" />
@@ -281,7 +281,7 @@ export function CognitiveProfile() {
           </p>
           <button
             onClick={handleTrainWeakZone}
-            className="w-full sm:w-auto px-6 py-3 bg-primary text-primary-foreground font-black text-xs uppercase tracking-widest rounded-xl hover:scale-[1.02] active:scale-95 transition-transform shadow-lg shadow-primary/20 shrink-0"
+            className="w-full sm:w-auto min-h-11 px-6 py-3 bg-primary text-primary-foreground font-black text-xs uppercase tracking-widest rounded-xl hover:scale-[1.02] active:scale-95 transition-transform shadow-lg shadow-primary/20 shrink-0"
           >
             Тренировать зону роста
           </button>

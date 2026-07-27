@@ -165,7 +165,7 @@ export function ObjectiveFilter() {
             <div className="grid grid-cols-2 gap-4">
               <button 
                 onClick={() => handleAnswer(true)}
-                className="group relative py-6 bg-primary/5 hover:bg-primary/10 border border-primary/20 rounded-2xl transition-all overflow-hidden"
+                className="group relative min-h-11 py-6 bg-primary/5 hover:bg-primary/10 border border-primary/20 rounded-2xl transition-all overflow-hidden"
               >
                 <div className="absolute inset-0 bg-primary/5 scale-x-0 group-hover:scale-x-100 origin-left transition-transform duration-500" />
                 <div className="relative z-10 flex flex-col items-center gap-2">
@@ -176,7 +176,7 @@ export function ObjectiveFilter() {
 
               <button 
                 onClick={() => handleAnswer(false)}
-                className="group relative py-6 bg-destructive/5 hover:bg-destructive/10 border border-destructive/20 rounded-2xl transition-all overflow-hidden"
+                className="group relative min-h-11 py-6 bg-destructive/5 hover:bg-destructive/10 border border-destructive/20 rounded-2xl transition-all overflow-hidden"
               >
                 <div className="absolute inset-0 bg-destructive/5 scale-x-0 group-hover:scale-x-100 origin-left transition-transform duration-500" />
                 <div className="relative z-10 flex flex-col items-center gap-2">

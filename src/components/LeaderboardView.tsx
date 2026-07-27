@@ -72,13 +72,13 @@ export function LeaderboardView() {
           <div className="flex bg-secondary/50 p-1 rounded-xl border border-border">
             <button 
               onClick={() => setPeriod('all')}
-              className={`px-4 py-1.5 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${period === 'all' ? 'bg-primary text-white shadow-md' : 'text-muted-foreground hover:text-foreground'}`}
+              className={`min-h-11 px-4 py-1.5 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${period === 'all' ? 'bg-primary text-white shadow-md' : 'text-muted-foreground hover:text-foreground'}`}
             >
               Весь период
             </button>
             <button 
               onClick={() => setPeriod('weekly')}
-              className={`px-4 py-1.5 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${period === 'weekly' ? 'bg-primary text-white shadow-md' : 'text-muted-foreground hover:text-foreground'}`}
+              className={`min-h-11 px-4 py-1.5 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${period === 'weekly' ? 'bg-primary text-white shadow-md' : 'text-muted-foreground hover:text-foreground'}`}
             >
               За неделю
             </button>

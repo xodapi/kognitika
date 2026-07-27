@@ -67,7 +67,7 @@ export function TrainingGallery({ onStart }: { onStart: (id: string) => void }) 
           <button
             key={d.id}
             onClick={() => setActiveDomain(d.id as any)}
-            className={`flex items-center gap-2 px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${
+            className={`flex items-center gap-2 min-h-11 px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${
               activeDomain === d.id 
                 ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20' 
                 : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'

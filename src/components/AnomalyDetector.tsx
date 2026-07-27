@@ -126,7 +126,7 @@ export function AnomalyDetector() {
          <h2 className="text-[10px] text-muted-foreground uppercase tracking-widest mb-2">Отчет о дежурстве</h2>
          <div className="text-6xl font-black mb-2 text-primary">{score}</div>
          <div className="text-[10px] text-muted-foreground uppercase font-black mb-8">АНОМАЛИЙ ПРЕДОТВРАЩЕНО: {anomaliesFound}</div>
-         <button onClick={() => setGameState('idle')} className="px-8 py-3 bg-primary text-primary-foreground text-[10px] uppercase tracking-wider rounded-lg font-bold">
+         <button onClick={() => setGameState('idle')} className="min-h-11 px-8 py-3 bg-primary text-primary-foreground text-[10px] uppercase tracking-wider rounded-lg font-bold">
             В систему
          </button>
        </div>

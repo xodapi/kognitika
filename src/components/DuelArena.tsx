@@ -227,7 +227,7 @@ export const DuelArena: React.FC<DuelArenaProps> = ({ roomId, opponent, onFinish
 
               <button 
                 onClick={onClose}
-                className="w-full py-4 bg-primary text-white rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
+                className="w-full min-h-11 py-4 bg-primary text-white rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
               >
                 Вернуться в лобби
               </button>

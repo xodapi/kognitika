@@ -102,7 +102,7 @@ function AdminAccessGate({
             <button
               type="button"
               onClick={onBack}
-              className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-xs font-black uppercase tracking-widest text-primary-foreground shadow-md transition-all hover:shadow-lg"
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary min-h-11 px-5 py-3 text-xs font-black uppercase tracking-widest text-primary-foreground shadow-md transition-all hover:shadow-lg"
             >
               <LayoutDashboard className="h-4 w-4" />
               Вернуться к обзору
@@ -111,7 +111,7 @@ function AdminAccessGate({
             <button
               type="button"
               onClick={onLogin}
-              className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-xs font-black uppercase tracking-widest text-primary-foreground shadow-md transition-all hover:shadow-lg"
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary min-h-11 px-5 py-3 text-xs font-black uppercase tracking-widest text-primary-foreground shadow-md transition-all hover:shadow-lg"
             >
               <LogIn className="h-4 w-4" />
               Войти через Brain ID
@@ -120,7 +120,7 @@ function AdminAccessGate({
           <button
             type="button"
             onClick={onBack}
-            className="inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-background px-5 py-3 text-xs font-black uppercase tracking-widest text-muted-foreground transition-all hover:text-foreground"
+            className="inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-background min-h-11 px-5 py-3 text-xs font-black uppercase tracking-widest text-muted-foreground transition-all hover:text-foreground"
           >
             <ChevronRight className="h-4 w-4 rotate-180" />
             На главную
@@ -175,7 +175,7 @@ function AppContent() {
           <button
             onClick={() => setIsMobileMenuOpen(true)}
             aria-label="Открыть меню"
-            className="2xl:hidden p-2 hover:bg-secondary rounded-lg transition-colors"
+            className="2xl:hidden min-h-11 min-w-11 hover:bg-secondary rounded-lg transition-colors flex items-center justify-center"
           >
             <Menu className="w-5 h-5" />
           </button>
@@ -196,7 +196,7 @@ function AppContent() {
             <button
               key={item.id}
               onClick={() => navigate(item.path)}
-              className={`flex items-center gap-2 px-4 py-2 text-xs font-bold uppercase tracking-wider transition-all rounded-lg ${activeTab === item.id ? 'bg-primary text-primary-foreground shadow-md' : 'text-muted-foreground hover:text-foreground hover:bg-secondary'}`}
+              className={`flex items-center gap-2 min-h-11 px-4 py-2 text-xs font-bold uppercase tracking-wider transition-all rounded-lg ${activeTab === item.id ? 'bg-primary text-primary-foreground shadow-md' : 'text-muted-foreground hover:text-foreground hover:bg-secondary'}`}
             >
               <item.icon className="w-4 h-4" /> {item.label}
             </button>
@@ -207,7 +207,7 @@ function AppContent() {
           <div className="hidden sm:block">
             <button
               onClick={() => setIsOnboardingOpen(true)}
-              className="p-2 text-muted-foreground hover:text-primary transition-colors"
+              className="min-h-11 min-w-11 text-muted-foreground hover:text-primary transition-colors flex items-center justify-center"
               title="Как работает Когнитика"
               aria-label="Открыть обучение"
             >
@@ -217,7 +217,7 @@ function AppContent() {
           <div className="hidden sm:block">
             <button
               onClick={() => setIsFeedbackOpen(true)}
-              className="p-2 text-muted-foreground hover:text-primary transition-colors"
+              className="min-h-11 min-w-11 text-muted-foreground hover:text-primary transition-colors flex items-center justify-center"
               title="Отправить отзыв"
               aria-label="Отправить отзыв"
             >
@@ -247,7 +247,7 @@ function AppContent() {
               </button>
               <button
                 onClick={logout}
-                className="p-2 text-muted-foreground hover:text-destructive transition-colors rounded-lg hover:bg-secondary"
+                className="min-h-11 min-w-11 text-muted-foreground hover:text-destructive transition-colors rounded-lg hover:bg-secondary flex items-center justify-center"
                 title="Завершить сеанс"
                 aria-label="Завершить сеанс"
               >
@@ -255,7 +255,7 @@ function AppContent() {
               </button>
             </div>
           ) : (
-            <button onClick={() => setIsAuthOpen(true)} className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground text-[10px] sm:text-xs uppercase tracking-wider rounded-lg font-bold hover:shadow-lg hover:shadow-primary/30 transition-all shadow-md">
+            <button onClick={() => setIsAuthOpen(true)} className="flex items-center gap-2 min-h-11 px-4 py-2 bg-primary text-primary-foreground text-[10px] sm:text-xs uppercase tracking-wider rounded-lg font-bold hover:shadow-lg hover:shadow-primary/30 transition-all shadow-md">
               <LogIn className="w-4 h-4" /> <span className="hidden xs:inline">Войти</span>
             </button>
           )}
@@ -289,7 +289,7 @@ function AppContent() {
                  </div>
                  <span className="font-black uppercase tracking-tighter text-sm">Центр Управления</span>
               </div>
-              <button onClick={() => setIsMobileMenuOpen(false)} aria-label="Закрыть меню" className="p-1.5 hover:bg-secondary rounded-full transition-colors">
+              <button onClick={() => setIsMobileMenuOpen(false)} aria-label="Закрыть меню" className="min-h-11 min-w-11 hover:bg-secondary rounded-full transition-colors flex items-center justify-center">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -324,7 +324,7 @@ function AppContent() {
                 <div className="bg-primary/10 border border-primary/20 rounded-2xl p-6 text-center">
                   <Trophy className="w-8 h-8 text-primary mx-auto mb-3 opacity-50" />
                   <p className="text-xs font-bold uppercase tracking-widest mb-4">Войдите для сохранения прогресса</p>
-                  <button onClick={() => { setIsAuthOpen(true); setIsMobileMenuOpen(false); }} className="w-full py-2.5 bg-primary text-white rounded-xl font-bold text-xs uppercase tracking-widest shadow-md">
+                  <button onClick={() => { setIsAuthOpen(true); setIsMobileMenuOpen(false); }} className="w-full min-h-11 py-2.5 bg-primary text-white rounded-xl font-bold text-xs uppercase tracking-widest shadow-md">
                     Авторизация
                   </button>
                 </div>
@@ -337,7 +337,7 @@ function AppContent() {
                    <button
                       key={item.id}
                       onClick={() => { navigate(item.id === 'dashboard' ? '/' : `/${item.id}`); setIsMobileMenuOpen(false); }}
-                      className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-bold transition-all ${activeTab === item.id ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'hover:bg-secondary text-muted-foreground hover:text-foreground'}`}
+                      className={`w-full flex items-center justify-between min-h-11 px-4 py-3 rounded-xl text-sm font-bold transition-all ${activeTab === item.id ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'hover:bg-secondary text-muted-foreground hover:text-foreground'}`}
                    >
                       <div className="flex items-center gap-3">
                          <item.icon className="w-4 h-4" /> {item.label}
@@ -353,7 +353,7 @@ function AppContent() {
                  <div className="bg-secondary/30 rounded-2xl p-2 border border-border">
                     <button
                        onClick={() => { setIsOnboardingOpen(true); setIsMobileMenuOpen(false); }}
-                       className="w-full flex items-center justify-between px-3 py-3 rounded-xl hover:bg-secondary transition-all"
+                       className="w-full flex items-center justify-between min-h-11 px-3 py-3 rounded-xl hover:bg-secondary transition-all"
                     >
                       <div className="flex items-center gap-3">
                          <div className="p-1.5 rounded-lg bg-primary/20 text-primary">
@@ -365,7 +365,7 @@ function AppContent() {
                     </button>
                     <button
                        onClick={() => { setIsFeedbackOpen(true); setIsMobileMenuOpen(false); }}
-                       className="w-full flex items-center justify-between px-3 py-3 rounded-xl hover:bg-secondary transition-all"
+                       className="w-full flex items-center justify-between min-h-11 px-3 py-3 rounded-xl hover:bg-secondary transition-all"
                     >
                       <div className="flex items-center gap-3">
                          <div className="p-1.5 rounded-lg bg-primary/20 text-primary">
@@ -377,7 +377,7 @@ function AppContent() {
                     </button>
                     <button
                        onClick={() => setIsChatEnabled(!isChatEnabled)}
-                       className="w-full flex items-center justify-between px-3 py-3 rounded-xl hover:bg-secondary transition-all"
+                       className="w-full flex items-center justify-between min-h-11 px-3 py-3 rounded-xl hover:bg-secondary transition-all"
                     >
                       <div className="flex items-center gap-3">
                          <div className={`p-1.5 rounded-lg ${isChatEnabled ? 'bg-primary/20 text-primary' : 'bg-muted text-muted-foreground'}`}>
@@ -391,7 +391,7 @@ function AppContent() {
                     </button>
                     <button
                        onClick={() => { setIsDonateOpen(true); setIsMobileMenuOpen(false); }}
-                       className="w-full flex items-center justify-between px-3 py-3 rounded-xl hover:bg-secondary transition-all"
+                       className="w-full flex items-center justify-between min-h-11 px-3 py-3 rounded-xl hover:bg-secondary transition-all"
                     >
                       <div className="flex items-center gap-3">
                          <div className="p-1.5 rounded-lg bg-rose-500/20 text-rose-500">
@@ -432,7 +432,7 @@ function AppContent() {
 
             {user && (
               <div className="p-4 border-t border-border bg-secondary/10">
-                <button onClick={() => { void logout().then((loggedOut) => { if (loggedOut) setIsMobileMenuOpen(false); }); }} className="w-full flex items-center justify-center gap-2 px-4 py-3 text-destructive hover:bg-destructive/10 rounded-xl transition-all font-black text-xs uppercase tracking-widest border border-transparent hover:border-destructive/20">
+                <button onClick={() => { void logout().then((loggedOut) => { if (loggedOut) setIsMobileMenuOpen(false); }); }} className="w-full flex items-center justify-center gap-2 min-h-11 px-4 py-3 text-destructive hover:bg-destructive/10 rounded-xl transition-all font-black text-xs uppercase tracking-widest border border-transparent hover:border-destructive/20">
                   <LogOut className="w-4 h-4" /> Завершить сеанс
                 </button>
               </div>
@@ -538,7 +538,7 @@ function AppContent() {
              key={item.id}
              onClick={() => navigate(item.id === 'dashboard' ? '/' : `/${item.id}`)}
              aria-label={label}
-             className={`p-3 rounded-2xl transition-all relative ${activeTab === item.id ? 'text-primary scale-110' : 'text-muted-foreground hover:text-foreground'}`}
+             className={`min-h-11 min-w-11 p-3 rounded-2xl transition-all relative flex items-center justify-center ${activeTab === item.id ? 'text-primary scale-110' : 'text-muted-foreground hover:text-foreground'}`}
            >
              <item.icon className="w-5 h-5" />
              {activeTab === item.id && (
@@ -552,7 +552,7 @@ function AppContent() {
            );
          })}
          <div className="w-px h-6 bg-border mx-1"></div>
-         <button onClick={() => setIsMobileMenuOpen(true)} aria-label="Открыть меню" className="p-3 text-muted-foreground hover:text-foreground">
+         <button onClick={() => setIsMobileMenuOpen(true)} aria-label="Открыть меню" className="min-h-11 min-w-11 p-3 text-muted-foreground hover:text-foreground flex items-center justify-center">
             <Menu className="w-5 h-5" />
          </button>
       </div>
@@ -591,16 +591,16 @@ function ThemeToggle() {
 
   return (
     <div className="flex items-center gap-1 bg-secondary/50 p-1 rounded-lg border border-border">
-       <button onClick={() => setTheme('light')} className={`p-1.5 rounded-md transition-all ${theme === 'light' ? 'bg-background text-primary shadow-sm ring-1 ring-border' : 'text-muted-foreground hover:bg-background/50'}`} title="Светлая" aria-label="Светлая тема">
+       <button onClick={() => setTheme('light')} className={`min-h-11 min-w-11 p-1.5 rounded-md transition-all flex items-center justify-center ${theme === 'light' ? 'bg-background text-primary shadow-sm ring-1 ring-border' : 'text-muted-foreground hover:bg-background/50'}`} title="Светлая" aria-label="Светлая тема">
          <Sun className="w-3.5 h-3.5" />
        </button>
-       <button onClick={() => setTheme('dark')} className={`p-1.5 rounded-md transition-all ${theme === 'dark' ? 'bg-background text-primary shadow-sm ring-1 ring-border' : 'text-muted-foreground hover:bg-background/50'}`} title="Темная" aria-label="Тёмная тема">
+       <button onClick={() => setTheme('dark')} className={`min-h-11 min-w-11 p-1.5 rounded-md transition-all flex items-center justify-center ${theme === 'dark' ? 'bg-background text-primary shadow-sm ring-1 ring-border' : 'text-muted-foreground hover:bg-background/50'}`} title="Темная" aria-label="Тёмная тема">
          <Moon className="w-3.5 h-3.5" />
        </button>
-       <button onClick={() => setTheme('matrix')} className={`p-1.5 rounded-md transition-all ${theme === 'matrix' ? 'bg-background text-primary shadow-sm ring-1 ring-border' : 'text-muted-foreground hover:bg-background/50'}`} title="Матрица" aria-label="Матрица тема">
+       <button onClick={() => setTheme('matrix')} className={`min-h-11 min-w-11 p-1.5 rounded-md transition-all flex items-center justify-center ${theme === 'matrix' ? 'bg-background text-primary shadow-sm ring-1 ring-border' : 'text-muted-foreground hover:bg-background/50'}`} title="Матрица" aria-label="Матрица тема">
          <Code2 className="w-3.5 h-3.5" />
        </button>
-       <button onClick={() => setTheme('nature')} className={`p-1.5 rounded-md transition-all ${theme === 'nature' ? 'bg-background text-primary shadow-sm ring-1 ring-border' : 'text-muted-foreground hover:bg-background/50'}`} title="Позитив" aria-label="Позитив тема">
+       <button onClick={() => setTheme('nature')} className={`min-h-11 min-w-11 p-1.5 rounded-md transition-all flex items-center justify-center ${theme === 'nature' ? 'bg-background text-primary shadow-sm ring-1 ring-border' : 'text-muted-foreground hover:bg-background/50'}`} title="Позитив" aria-label="Позитив тема">
          <Leaf className="w-3.5 h-3.5" />
        </button>
     </div>

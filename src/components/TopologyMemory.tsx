@@ -160,7 +160,7 @@ export function TopologyMemory() {
           <p className="text-xs text-indigo-400 font-mono mb-8">Тренирует: топологическая память · удержание контекста · графовое мышление</p>
           <button
             onClick={() => startGame(1)}
-            className="px-8 py-3 bg-indigo-600 text-white text-xs uppercase font-bold rounded-xl hover:bg-indigo-500 transition-colors"
+            className="min-h-11 px-8 py-3 bg-indigo-600 text-white text-xs uppercase font-bold rounded-xl hover:bg-indigo-500 transition-colors"
           >
             Начать уровень 1
           </button>
@@ -247,7 +247,7 @@ export function TopologyMemory() {
           </AnimatePresence>
           <button
             onClick={nextEvent}
-            className="flex items-center gap-2 self-center px-6 py-3 bg-indigo-600 text-white text-xs uppercase font-bold rounded-xl hover:bg-indigo-500 transition-colors"
+            className="flex items-center gap-2 self-center min-h-11 px-6 py-3 bg-indigo-600 text-white text-xs uppercase font-bold rounded-xl hover:bg-indigo-500 transition-colors"
           >
             {state.currentEventIdx < state.events.length - 1 ? 'Следующее событие' : 'Восстановить граф'}
             <ChevronRight className="w-4 h-4" />
@@ -288,7 +288,7 @@ export function TopologyMemory() {
           </div>
           <button
             onClick={submitAnswers}
-            className="flex items-center gap-2 self-center px-8 py-3 bg-emerald-600 text-white text-xs uppercase font-bold rounded-xl hover:bg-emerald-500 transition-colors mt-2"
+            className="flex items-center gap-2 self-center min-h-11 px-8 py-3 bg-emerald-600 text-white text-xs uppercase font-bold rounded-xl hover:bg-emerald-500 transition-colors mt-2"
           >
             <CheckCircle className="w-4 h-4" /> Подтвердить
           </button>
@@ -321,7 +321,7 @@ export function TopologyMemory() {
         />
         <div className="mt-4 flex gap-3">
           {pct >= 70 && (
-            <button onClick={nextLevel} className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-xl text-xs font-bold hover:bg-indigo-500 transition-colors">
+            <button onClick={nextLevel} className="flex items-center gap-2 min-h-11 px-5 py-2.5 bg-indigo-600 text-white rounded-xl text-xs font-bold hover:bg-indigo-500 transition-colors">
               Уровень {state.level + 1} <ChevronRight className="w-3.5 h-3.5" />
             </button>
           )}

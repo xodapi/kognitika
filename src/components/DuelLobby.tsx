@@ -84,7 +84,7 @@ export const DuelLobby: React.FC<DuelLobbyProps> = ({ onMatchFound, onClose }) =
             </div>
           </div>
           {!isSearching && (
-            <button onClick={onClose} className="p-2 hover:bg-secondary rounded-full transition-colors">
+            <button onClick={onClose} className="min-h-11 min-w-11 hover:bg-secondary rounded-full transition-colors flex items-center justify-center">
               <X className="w-5 h-5" />
             </button>
           )}
@@ -139,7 +139,7 @@ export const DuelLobby: React.FC<DuelLobbyProps> = ({ onMatchFound, onClose }) =
 
           <button
             onClick={toggleSearch}
-            className={`w-full py-4 rounded-2xl font-black text-sm uppercase tracking-widest transition-all shadow-xl ${
+            className={`w-full min-h-11 py-4 rounded-2xl font-black text-sm uppercase tracking-widest transition-all shadow-xl ${
               isSearching 
                 ? 'bg-secondary text-foreground border border-border hover:bg-destructive hover:text-white hover:border-destructive' 
                 : 'bg-primary text-white shadow-primary/20 hover:scale-[1.02] active:scale-[0.98]'

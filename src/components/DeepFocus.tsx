@@ -148,21 +148,21 @@ export function DeepFocus({ onFinish }: { onFinish?: () => void }) {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <button
               onClick={() => logDistraction('external')}
-              className="flex flex-col items-center gap-2 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all group"
+              className="flex flex-col items-center gap-2 min-h-11 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all group"
             >
               <BellRing className="w-6 h-6 text-zinc-400 group-hover:text-blue-500" />
               <span className="text-xs font-bold text-zinc-600 dark:text-zinc-400">Внешнее</span>
             </button>
             <button
               onClick={() => logDistraction('internal')}
-              className="flex flex-col items-center gap-2 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 hover:border-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-all group"
+              className="flex flex-col items-center gap-2 min-h-11 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 hover:border-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-all group"
             >
               <Brain className="w-6 h-6 text-zinc-400 group-hover:text-amber-500" />
               <span className="text-xs font-bold text-zinc-600 dark:text-zinc-400">Мысли</span>
             </button>
             <button
               onClick={() => logDistraction('emotion')}
-              className="flex flex-col items-center gap-2 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 hover:border-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all group"
+              className="flex flex-col items-center gap-2 min-h-11 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 hover:border-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all group"
             >
               <MessageCircle className="w-6 h-6 text-zinc-400 group-hover:text-red-500" />
               <span className="text-xs font-bold text-zinc-600 dark:text-zinc-400">Эмоции</span>

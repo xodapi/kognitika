@@ -84,7 +84,7 @@ export function ShareCard({ isOpen, onClose }: ShareCardProps) {
                 </div>
                 <button 
                   onClick={onClose}
-                  className="p-2 hover:bg-secondary rounded-full transition-colors text-muted-foreground"
+                  className="min-h-11 min-w-11 hover:bg-secondary rounded-full transition-colors text-muted-foreground flex items-center justify-center"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -154,7 +154,7 @@ export function ShareCard({ isOpen, onClose }: ShareCardProps) {
                 <Share2 className="w-4 h-4" /> Поделиться
               </button>
               <button 
-                className="w-14 flex items-center justify-center bg-card border border-border text-muted-foreground rounded-2xl hover:text-foreground transition-colors"
+                className="min-h-11 min-w-14 flex items-center justify-center bg-card border border-border text-muted-foreground rounded-2xl hover:text-foreground transition-colors"
                 title="Скачать (в разработке)"
               >
                 <Download className="w-5 h-5" />

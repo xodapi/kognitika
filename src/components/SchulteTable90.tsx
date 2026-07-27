@@ -217,7 +217,7 @@ export function SchulteTable90() {
                   onChange={(event) => {
                     if (isGorbovRuleId(event.target.value)) setSelectedRule(event.target.value);
                   }}
-                  className="w-full p-3 text-xs rounded-xl border bg-background/50 border-border outline-none text-foreground font-bold transition-all"
+                  className="w-full min-h-11 p-3 text-xs rounded-xl border bg-background/50 border-border outline-none text-foreground font-bold transition-all"
                 >
                   {GORBOV_RULES.map((rule) => (
                     <option key={rule.id} value={rule.id}>{rule.title}</option>
@@ -360,13 +360,13 @@ export function SchulteTable90() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <button
                 onClick={handleReset}
-                className="py-3 rounded-xl bg-primary text-primary-foreground text-xs font-black uppercase tracking-widest"
+                className="min-h-11 py-3 rounded-xl bg-primary text-primary-foreground text-xs font-black uppercase tracking-widest"
               >
                 Попробовать снова
               </button>
               <button
                 onClick={() => navigate('/')}
-                className="py-3 rounded-xl border border-border text-xs font-black uppercase tracking-widest"
+                className="min-h-11 py-3 rounded-xl border border-border text-xs font-black uppercase tracking-widest"
               >
                 В меню
               </button>

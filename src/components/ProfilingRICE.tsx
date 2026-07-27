@@ -189,7 +189,7 @@ export function ProfilingRICE() {
                     <button 
                       key={m}
                       onClick={() => handleMotivationSelect(m)}
-                      className="py-4 rounded-xl border border-border bg-background/50 hover:border-primary hover:text-primary transition-all text-[10px] font-black uppercase tracking-widest"
+                      className="min-h-11 py-4 rounded-xl border border-border bg-background/50 hover:border-primary hover:text-primary transition-all text-[10px] font-black uppercase tracking-widest"
                     >
                       {m === 'REWARD' && 'Вознаграждение'}
                       {m === 'IDEOLOGY' && 'Идеология'}
@@ -212,7 +212,7 @@ export function ProfilingRICE() {
                     <button 
                       key={idx}
                       onClick={() => handlePhraseSelect(phrase)}
-                      className="p-6 rounded-2xl border border-border bg-background/50 hover:bg-primary/5 hover:border-primary transition-all text-sm text-left font-medium leading-snug group"
+                      className="min-h-11 p-6 rounded-2xl border border-border bg-background/50 hover:bg-primary/5 hover:border-primary transition-all text-sm text-left font-medium leading-snug group"
                     >
                       <span className="text-primary font-black mr-4 opacity-30">0{idx+1}</span>
                       {phrase}

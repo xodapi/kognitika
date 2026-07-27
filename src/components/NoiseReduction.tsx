@@ -84,7 +84,7 @@ export function NoiseReduction({ level = 1, onComplete }: NoiseReductionProps) {
                 key={lvl}
                 id={`noise-level-${lvl}`}
                 onClick={() => startGame(lvl)}
-                className={`px-6 py-3 rounded-2xl font-black text-sm border transition-all
+                className={`min-h-11 px-6 py-3 rounded-2xl font-black text-sm border transition-all
                   ${lvl === level
                     ? 'bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/20'
                     : 'bg-card/40 border-border hover:border-primary/50 hover:bg-primary/5'
@@ -152,7 +152,7 @@ export function NoiseReduction({ level = 1, onComplete }: NoiseReductionProps) {
           <button
             id="noise-next-level-btn"
             onClick={() => startGame(Math.min(state.level + 1, 4))}
-            className="px-8 py-3 bg-card/40 border border-border rounded-2xl font-bold hover:border-primary/50 transition-all"
+            className="min-h-11 px-8 py-3 bg-card/40 border border-border rounded-2xl font-bold hover:border-primary/50 transition-all"
           >
             Уровень {Math.min(state.level + 1, 4)}
           </button>
@@ -272,7 +272,7 @@ export function NoiseReduction({ level = 1, onComplete }: NoiseReductionProps) {
       <button
         id="noise-stop-btn"
         onClick={stopGame}
-        className="absolute bottom-8 right-4 z-20 px-3 py-1.5 bg-white/10 hover:bg-white/20 rounded-xl text-xs font-bold text-white/60 transition-all"
+        className="absolute bottom-8 right-4 z-20 min-h-11 px-3 py-1.5 bg-white/10 hover:bg-white/20 rounded-xl text-xs font-bold text-white/60 transition-all"
       >
         Стоп
       </button>

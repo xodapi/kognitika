@@ -110,7 +110,7 @@ export function NBackTest() {
             </p>
 
             {/* Luscher Checkbox */}
-            <div className="flex items-center gap-3 mb-8 bg-primary/5 border border-primary/10 px-4 py-3 rounded-xl cursor-pointer select-none" onClick={() => setUseLuscher(!useLuscher)}>
+            <div className="flex items-center gap-3 mb-8 bg-primary/5 border border-primary/10 min-h-11 px-4 rounded-xl cursor-pointer select-none" onClick={() => setUseLuscher(!useLuscher)}>
               <input 
                 type="checkbox" 
                 checked={useLuscher} 
@@ -120,7 +120,7 @@ export function NBackTest() {
               <span className="text-xs font-black uppercase text-foreground">Включить эмоциональный барометр Люшера</span>
             </div>
 
-            <button onClick={handleStartClick} className="w-full max-w-[250px] px-4 py-3 bg-primary text-primary-foreground text-xs uppercase tracking-wider rounded-lg font-bold hover:bg-primary/90 transition-colors">
+            <button onClick={handleStartClick} className="w-full max-w-[250px] min-h-11 px-4 py-3 bg-primary text-primary-foreground text-xs uppercase tracking-wider rounded-lg font-bold hover:bg-primary/90 transition-colors">
               Активировать
             </button>
         </div>
@@ -183,7 +183,7 @@ export function NBackTest() {
             
             <button 
               onClick={answerMatch} 
-              className="w-full max-w-[280px] sm:max-w-sm px-4 py-6 sm:py-8 bg-primary/10 hover:bg-primary/20 border-2 border-primary text-xl sm:text-2xl uppercase tracking-widest rounded-2xl font-black transition-all active:scale-95 text-primary"
+              className="w-full max-w-[280px] sm:max-w-sm min-h-11 px-4 py-6 sm:py-8 bg-primary/10 hover:bg-primary/20 border-2 border-primary text-xl sm:text-2xl uppercase tracking-widest rounded-2xl font-black transition-all active:scale-95 text-primary"
             >
               СОВПАДЕНИЕ
             </button>

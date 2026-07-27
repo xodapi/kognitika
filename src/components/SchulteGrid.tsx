@@ -281,7 +281,7 @@ export function SchulteGrid() {
               
               <div>
                 <label className="text-xs text-muted-foreground uppercase font-bold tracking-wider mb-2 block">Пресет сложности</label>
-                <select value={currentLevel} onChange={(e: any) => applyLevel(e.target.value)} className="w-full p-3 text-xs rounded-xl border bg-background/50 border-border focus:ring-2 focus:ring-primary/20 outline-none text-foreground font-bold transition-all">
+                <select value={currentLevel} onChange={(e: any) => applyLevel(e.target.value)} className="w-full min-h-11 p-3 text-xs rounded-xl border bg-background/50 border-border focus:ring-2 focus:ring-primary/20 outline-none text-foreground font-bold transition-all">
                   <option value="classic">Классическая таблица</option>
                   <option value="level1">Ур. 1: Цветовой шум</option>
                   <option value="level2">Ур. 2: Пространственный хаос</option>
@@ -293,7 +293,7 @@ export function SchulteGrid() {
 
               <div>
                 <label className="text-xs text-muted-foreground uppercase font-bold tracking-wider mb-2 block">Алгоритм генерации</label>
-                <select value={mode} onChange={(e: any) => setSettings(e.target.value === 'gorbov' ? 7 : size, e.target.value)} className="w-full p-3 text-xs rounded-xl border bg-background/50 border-border outline-none text-foreground">
+                <select value={mode} onChange={(e: any) => setSettings(e.target.value === 'gorbov' ? 7 : size, e.target.value)} className="w-full min-h-11 p-3 text-xs rounded-xl border bg-background/50 border-border outline-none text-foreground">
                   <option value="classic">Прямой (1-25)</option>
                   <option value="reverse">Обратный (25-1)</option>
                   <option value="gorbov">Горбов-Шульте (Черно-красный)</option>
@@ -306,7 +306,7 @@ export function SchulteGrid() {
 
               <div>
                 <label className="text-xs text-muted-foreground uppercase font-bold tracking-wider mb-2 block">Когнитивные помехи</label>
-                <select value={distraction} onChange={(e: any) => setDistraction(e.target.value)} className="w-full p-3 text-xs rounded-xl border bg-background/50 border-border outline-none text-foreground">
+                <select value={distraction} onChange={(e: any) => setDistraction(e.target.value)} className="w-full min-h-11 p-3 text-xs rounded-xl border bg-background/50 border-border outline-none text-foreground">
                   <option value="none">Без отвлечения</option>
                   <option value="audio">Аудио-фон (Слова + Числа)</option>
                   <option value="visual">Визуальный шум (Chaos)</option>
@@ -324,9 +324,9 @@ export function SchulteGrid() {
                 <button 
                   onClick={() => setSettings(size, mode, { digitRotation: !state.modifications.digitRotation })}
                   aria-label="Вращение цифр"
-                  className={`w-10 h-5 rounded-full transition-all relative ${state.modifications.digitRotation ? 'bg-primary' : 'bg-muted'}`}
+                  className={`min-h-11 min-w-11 rounded-full transition-all relative flex items-center justify-center ${state.modifications.digitRotation ? 'bg-primary' : 'bg-muted'}`}
                 >
-                  <div className={`absolute top-1 w-3 h-3 rounded-full bg-white transition-all ${state.modifications.digitRotation ? 'left-6' : 'left-1'}`} />
+                  <div className={`w-4 h-4 rounded-full bg-white transition-all ${state.modifications.digitRotation ? 'ml-auto mr-0.5' : 'ml-0.5 mr-auto'}`} />
                 </button>
               </div>
 
@@ -338,9 +338,9 @@ export function SchulteGrid() {
                 <button 
                   onClick={() => setIsHardcore(!isHardcore)}
                   aria-label="Pro-режим (лимит 60с)"
-                  className={`w-10 h-5 rounded-full transition-all relative ${isHardcore ? 'bg-primary' : 'bg-muted'}`}
+                  className={`min-h-11 min-w-11 rounded-full transition-all relative flex items-center justify-center ${isHardcore ? 'bg-primary' : 'bg-muted'}`}
                 >
-                  <div className={`absolute top-1 w-3 h-3 rounded-full bg-white transition-all ${isHardcore ? 'left-6' : 'left-1'}`} />
+                  <div className={`w-4 h-4 rounded-full bg-white transition-all ${isHardcore ? 'ml-auto mr-0.5' : 'ml-0.5 mr-auto'}`} />
                 </button>
               </div>
 

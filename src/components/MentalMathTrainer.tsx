@@ -278,7 +278,7 @@ export function MentalMathTrainer() {
                   id="mental-math-level"
                   value={level}
                   onChange={(e) => setLevel(Number(e.target.value) as MathLevel)}
-                  className="w-full p-3 text-xs rounded-xl border bg-background/50 border-border focus:ring-2 focus:ring-primary/20 outline-none text-foreground font-bold transition-all"
+                  className="w-full min-h-11 p-3 text-xs rounded-xl border bg-background/50 border-border focus:ring-2 focus:ring-primary/20 outline-none text-foreground font-bold transition-all"
                 >
                   {MENTAL_MATH_PRESETS.map((preset) => (
                     <option key={preset.level} value={preset.level}>
@@ -308,7 +308,7 @@ export function MentalMathTrainer() {
                 <button
                   type="button"
                   onClick={() => setQuestionCount(48)}
-                  className="mt-3 min-h-10 w-full rounded-xl border border-primary/20 bg-primary/5 px-3 text-xs font-black uppercase tracking-widest text-primary"
+                  className="mt-3 min-h-11 w-full rounded-xl border border-primary/20 bg-primary/5 px-3 text-xs font-black uppercase tracking-widest text-primary"
                 >
                   5-минутный пресет: 48 вопросов
                 </button>
@@ -607,7 +607,7 @@ export function MentalMathTrainer() {
               type="submit"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className="px-10 py-3 bg-primary text-primary-foreground text-xs uppercase font-black tracking-widest rounded-2xl shadow-lg shadow-primary/20 transition-all"
+              className="min-h-11 px-10 py-3 bg-primary text-primary-foreground text-xs uppercase font-black tracking-widest rounded-2xl shadow-lg shadow-primary/20 transition-all"
             >
               Отправить
             </motion.button>
