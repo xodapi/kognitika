@@ -5,6 +5,7 @@ import { useEffect } from 'react';
 import { GitBranch, ChevronRight, CheckCircle } from 'lucide-react';
 import { CompletionRecommendation } from './CompletionRecommendation';
 import { SessionFlowIndicator } from './SessionFlowIndicator';
+import { haptic } from '../lib/haptic';
 
 const STATE_COLORS: Record<NodeState, string> = {
   idle:    'bg-secondary border-border text-muted-foreground',
@@ -287,7 +288,7 @@ export function TopologyMemory() {
             ))}
           </div>
           <button
-            onClick={submitAnswers}
+            onClick={() => { haptic.medium(); submitAnswers(); }}
             className="flex items-center gap-2 self-center min-h-11 px-8 py-3 bg-emerald-600 text-white text-xs uppercase font-bold rounded-xl hover:bg-emerald-500 transition-colors mt-2"
           >
             <CheckCircle className="w-4 h-4" /> Подтвердить

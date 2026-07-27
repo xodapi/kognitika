@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Activity, AlertOctagon, Zap, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { createSafeLogger, safeError } from '../lib/safe-logger';
+import { haptic } from '../lib/haptic';
 
 const logger = createSafeLogger('anomaly-detector');
 
@@ -34,6 +35,7 @@ export function AnomalyDetector() {
 
   const handleDetection = () => {
     if (gameState === 'anomaly') {
+      haptic.success();
       const reactionTime = Date.now() - (nextAnomalyTime);
       const points = Math.max(10, 100 - Math.floor(reactionTime / 10));
       setScore(s => s + points);
@@ -41,6 +43,7 @@ export function AnomalyDetector() {
       setGameState('scanning');
       scheduleNextAnomaly();
     } else {
+      haptic.error();
       // False positive
       setScore(s => Math.max(0, s - 50));
     }

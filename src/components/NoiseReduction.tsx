@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { useNoiseReductionEngine } from '../hooks/useNoiseReductionEngine';
 import { Play, Shield, AlertTriangle, Eye, Zap, Target } from 'lucide-react';
 import { CompletionRecommendation } from './CompletionRecommendation';
+import { haptic } from '../lib/haptic';
 
 interface NoiseReductionProps {
   level?: number;
@@ -199,7 +200,7 @@ export function NoiseReduction({ level = 1, onComplete }: NoiseReductionProps) {
             animate={{ scale: 1, opacity: 0.85 }}
             exit={{ scale: 0, opacity: 0 }}
             transition={{ duration: 0.15 }}
-            onClick={() => reactToDistractor()}
+            onClick={() => { haptic.error(); reactToDistractor(); }}
             className="absolute rounded-full cursor-pointer z-10 border-2 border-white/20"
             style={{
               left: `${d.x}%`,
@@ -218,7 +219,7 @@ export function NoiseReduction({ level = 1, onComplete }: NoiseReductionProps) {
       <div className="absolute inset-0 flex items-center justify-center z-10">
         <motion.button
           id="noise-signal-target"
-          onClick={() => reactToSignal()}
+          onClick={() => { haptic.medium(); reactToSignal(); }}
           className="relative flex items-center justify-center rounded-full transition-all"
           style={{ width: '7rem', height: '7rem' }}
           whileTap={{ scale: 0.92 }}

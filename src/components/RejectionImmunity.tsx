@@ -5,6 +5,7 @@ import { Button } from './ui/button';
 import { ShieldAlert, ThumbsDown, ThumbsUp, Frown, Play, AlertOctagon } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { CompletionRecommendation } from './CompletionRecommendation';
+import { haptic } from '../lib/haptic';
 
 export function RejectionImmunity({ onFinish }: { onFinish?: () => void }) {
   const {
@@ -139,7 +140,7 @@ export function RejectionImmunity({ onFinish }: { onFinish?: () => void }) {
                 <button
                   key={option.id}
                   disabled={!!lastFeedback}
-                  onClick={() => submitAnswer(option.id)}
+                  onClick={() => { haptic.medium(); submitAnswer(option.id); }}
                   className={`w-full text-left min-h-11 p-5 rounded-xl border-2 transition-all ${
                     lastFeedback 
                       ? 'opacity-50 cursor-not-allowed border-zinc-200 dark:border-zinc-800' 

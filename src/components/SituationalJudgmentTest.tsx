@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useSituationalEngine } from '../hooks/useSituationalEngine';
 import { useAuth } from '../hooks/useAuth';
 import { createSafeLogger, safeError } from '../lib/safe-logger';
+import { haptic } from '../lib/haptic';
 import { CompletionRecommendation } from './CompletionRecommendation';
 
 const logger = createSafeLogger('situational-judgment-test');
@@ -93,7 +94,7 @@ export function SituationalJudgmentTest() {
                {curQ.options.map((opt) => (
                   <button 
                     key={opt.id} 
-                    onClick={() => answerQuestion(opt.score)}
+                    onClick={() => { haptic.medium(); answerQuestion(opt.score); }}
                     className="text-left bg-card hover:bg-secondary border border-border hover:border-primary min-h-11 p-3 sm:p-4 rounded-xl transition-all"
                   >
                      <p className="text-xs sm:text-sm">{opt.text}</p>

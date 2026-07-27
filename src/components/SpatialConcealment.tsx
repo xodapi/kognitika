@@ -7,6 +7,7 @@ import { emitEvent } from '../hooks/useEventBus';
 import { useSessionRecording } from '../hooks/useSessionRecording';
 import { createSafeLogger, safeError } from '../lib/safe-logger';
 import { CompletionRecommendation } from './CompletionRecommendation';
+import { haptic } from '../lib/haptic';
 
 const logger = createSafeLogger('spatial-concealment');
 
@@ -183,7 +184,7 @@ export function SpatialConcealment() {
                   {grid.map((cell) => (
                     <motion.button
                       key={cell.id}
-                      onClick={() => handleCellClick(cell.id)}
+                      onClick={() => { haptic.medium(); handleCellClick(cell.id); }}
                       whileTap={{ scale: 0.95 }}
                       className={`
                         aspect-square rounded-xl border transition-all duration-300

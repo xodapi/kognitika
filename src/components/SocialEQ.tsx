@@ -5,6 +5,7 @@ import { Button } from './ui/button';
 import { AlertCircle, UserCheck, MessageSquare, Play } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { CompletionRecommendation } from './CompletionRecommendation';
+import { haptic } from '../lib/haptic';
 
 export function SocialEQ({ onFinish }: { onFinish?: () => void }) {
   const {
@@ -160,7 +161,7 @@ export function SocialEQ({ onFinish }: { onFinish?: () => void }) {
                 <button
                   key={option.id}
                   disabled={!!lastFeedback}
-                  onClick={() => submitAnswer(option)}
+                  onClick={() => { haptic.medium(); submitAnswer(option); }}
                   className={`w-full text-left min-h-11 p-4 rounded-xl border transition-all ${
                     lastFeedback 
                       ? 'opacity-50 cursor-not-allowed border-zinc-200 dark:border-zinc-800' 

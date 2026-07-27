@@ -16,6 +16,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { CompletionRecommendation } from './CompletionRecommendation';
+import { haptic } from '../lib/haptic';
 
 export const LanguageScanner: React.FC = () => {
   const engine = useLanguageScannerEngine();
@@ -215,7 +216,7 @@ export const LanguageScanner: React.FC = () => {
             return (
               <button
                 key={rule.id}
-                onClick={() => flagCard(rule.id)}
+                onClick={() => { haptic.medium(); flagCard(rule.id); }}
                 disabled={!!state.lastFeedback}
                 className={`flex flex-col items-center justify-center gap-1.5 sm:gap-2 rounded-2xl border-2 min-h-11 p-2 sm:p-4 transition-all hover:scale-[1.03] active:scale-95 disabled:opacity-30 disabled:hover:scale-100 ${colorClass}`}
               >
@@ -230,7 +231,7 @@ export const LanguageScanner: React.FC = () => {
 
         <div className="max-w-2xl mx-auto">
           <button
-            onClick={() => flagCard(0)}
+            onClick={() => { haptic.medium(); flagCard(0); }}
             disabled={!!state.lastFeedback}
             className="flex w-full items-center justify-center gap-2.5 rounded-xl sm:rounded-2xl border-2 border-slate-200 bg-slate-50 p-3.5 sm:p-5 text-base sm:text-xl font-black text-slate-600 transition-all hover:bg-slate-100 hover:border-slate-300 active:scale-[0.98] disabled:opacity-30"
           >

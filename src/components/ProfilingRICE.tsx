@@ -4,6 +4,7 @@ import { Target, Users, Sparkles, ShieldAlert, Award, Star } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth';
 import { createSafeLogger, safeError } from '../lib/safe-logger';
 import { CompletionRecommendation } from './CompletionRecommendation';
+import { haptic } from '../lib/haptic';
 
 const logger = createSafeLogger('profiling-rice');
 
@@ -59,9 +60,11 @@ export function ProfilingRICE() {
 
   const handleMotivationSelect = (m: Motivation) => {
     if (m === currentScenario.correctMotivation) {
+      haptic.success();
       setGameState('closing');
       setLastError(false);
     } else {
+      haptic.error();
       setLastError(true);
       setTimeout(() => setLastError(false), 500);
     }
@@ -69,9 +72,11 @@ export function ProfilingRICE() {
 
   const handlePhraseSelect = (phrase: string) => {
     if (phrase === currentScenario.effectivePhrase) {
+      haptic.success();
       setScore(s => s + 1);
       nextStep();
     } else {
+      haptic.error();
       setLastError(true);
       setTimeout(() => setLastError(false), 500);
     }

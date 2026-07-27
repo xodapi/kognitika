@@ -7,6 +7,7 @@ import { LuscherTest } from './LuscherTest';
 import { StressOverlay } from './StressOverlay';
 import { createSafeLogger, safeError } from '../lib/safe-logger';
 import { StroopAlphabetTrainer } from './StroopAlphabetTrainer';
+import { haptic } from '../lib/haptic';
 
 const logger = createSafeLogger('stroop-test');
 
@@ -47,10 +48,10 @@ function ClassicStroopTest() {
     
     const handleKeyDown = (e: KeyboardEvent) => {
       const key = e.key.toLowerCase();
-      if (key === '1' || key === 'й' || key === 'q') answerQuestion(colors[0].id); // Red
-      if (key === '2' || key === 'ц' || key === 'w') answerQuestion(colors[1].id); // Blue
-      if (key === '3' || key === 'у' || key === 'e') answerQuestion(colors[2].id); // Green
-      if (key === '4' || key === 'к' || key === 'r') answerQuestion(colors[3].id); // Yellow
+      if (key === '1' || key === 'й' || key === 'q') { haptic.medium(); answerQuestion(colors[0].id); } // Red
+      if (key === '2' || key === 'ц' || key === 'w') { haptic.medium(); answerQuestion(colors[1].id); } // Blue
+      if (key === '3' || key === 'у' || key === 'e') { haptic.medium(); answerQuestion(colors[2].id); } // Green
+      if (key === '4' || key === 'к' || key === 'r') { haptic.medium(); answerQuestion(colors[3].id); } // Yellow
     };
 
     window.addEventListener('keydown', handleKeyDown);
@@ -203,7 +204,7 @@ function ClassicStroopTest() {
                       {colors.map((c, i) => (
                          <button
                            key={c.id}
-                           onClick={() => answerQuestion(c.id)}
+                           onClick={() => { haptic.medium(); answerQuestion(c.id); }}
                            className="group flex flex-col items-center justify-center gap-1 sm:gap-2 bg-card hover:bg-secondary border border-border rounded-2xl py-4 sm:py-6 transition-all"
                          >
                            <div className="w-8 h-8 sm:w-12 sm:h-12 rounded-full border-4 border-background shadow-md mb-1 sm:mb-2" style={{ backgroundColor: c.color }}></div>

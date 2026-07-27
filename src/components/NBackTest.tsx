@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { PostGameInsight } from './PostGameInsight';
 import { LuscherTest } from './LuscherTest';
 import { createSafeLogger, safeError } from '../lib/safe-logger';
+import { haptic } from '../lib/haptic';
 
 const logger = createSafeLogger('n-back-test');
 
@@ -45,6 +46,7 @@ export function NBackTest() {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.code === 'Space') {
           e.preventDefault();
+          haptic.medium();
           answerMatch();
       }
     };
@@ -182,7 +184,7 @@ export function NBackTest() {
             </div>
             
             <button 
-              onClick={answerMatch} 
+              onClick={() => { haptic.medium(); answerMatch(); }} 
               className="w-full max-w-[280px] sm:max-w-sm min-h-11 px-4 py-6 sm:py-8 bg-primary/10 hover:bg-primary/20 border-2 border-primary text-xl sm:text-2xl uppercase tracking-widest rounded-2xl font-black transition-all active:scale-95 text-primary"
             >
               СОВПАДЕНИЕ

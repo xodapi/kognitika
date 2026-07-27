@@ -7,6 +7,7 @@ import { useSessionRecording } from '../hooks/useSessionRecording';
 import { useNavigate } from 'react-router-dom';
 import { PostGameInsight } from './PostGameInsight';
 import { createSafeLogger, safeError } from '../lib/safe-logger';
+import { haptic } from '../lib/haptic';
 import {
   computeSchulte90Score,
   SCHULTE_90_ROWS,
@@ -98,10 +99,10 @@ export function SchulteTable90() {
   }, [resetGame]);
 
   const handleSuccess = useCallback(() => {
-    if (navigator.vibrate) navigator.vibrate(15);
+    haptic.success();
   }, []);
   const handleError = useCallback(() => {
-    if (navigator.vibrate) navigator.vibrate([30, 30, 30]);
+    haptic.error();
   }, []);
 
   // Briefing screen

@@ -4,6 +4,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { PostGameInsight } from './PostGameInsight';
 import { createSafeLogger, safeError } from '../lib/safe-logger';
+import { haptic } from '../lib/haptic';
 
 const logger = createSafeLogger('logical-matrix');
 
@@ -133,7 +134,7 @@ export function LogicalMatrix() {
                {curQ.options.map((opt, i) => (
                   <button 
                     key={opt.id} 
-                    onClick={() => answerQuestion(i)}
+                    onClick={() => { haptic.medium(); answerQuestion(i); }}
                     className="bg-card hover:bg-secondary border border-border hover:border-primary rounded-xl transition-all aspect-square lg:aspect-auto lg:h-[100px] min-h-11 flex items-center justify-center p-1 sm:p-2"
                   >
                      <RenderShape item={opt} />

@@ -5,6 +5,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { PostGameInsight } from './PostGameInsight';
 import { createSafeLogger, safeError } from '../lib/safe-logger';
+import { haptic } from '../lib/haptic';
 
 const logger = createSafeLogger('objective-filter');
 
@@ -78,9 +79,11 @@ export function ObjectiveFilter() {
     if (gameState !== 'playing') return;
 
     if (isFact === currentStatement.isFact) {
+      haptic.success();
       setScore(s => s + 1);
       setLastResult('correct');
     } else {
+      haptic.error();
       setLastResult('wrong');
     }
 

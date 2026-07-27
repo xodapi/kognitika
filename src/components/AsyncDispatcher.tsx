@@ -4,6 +4,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useEffect } from 'react';
 import { Cpu, ChevronRight, Zap } from 'lucide-react';
 import { CompletionRecommendation } from './CompletionRecommendation';
+import { haptic } from '../lib/haptic';
 
 export function AsyncDispatcher() {
   const { state, startGame, triggerStream } = useDispatcherEngine();
@@ -141,7 +142,7 @@ export function AsyncDispatcher() {
             return (
               <motion.button
                 key={stream.id}
-                onClick={() => triggerStream(stream.id)}
+                onClick={() => { haptic.medium(); triggerStream(stream.id); }}
                 whileHover={{ scale: 1.01 }}
                 whileTap={{ scale: 0.98 }}
                 className={`relative bg-card/40 border rounded-2xl p-5 text-left transition-all overflow-hidden ${

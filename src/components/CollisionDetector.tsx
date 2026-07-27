@@ -5,6 +5,7 @@ import { useEffect, useState, useRef } from 'react';
 import { Filter, AlertTriangle, CheckCircle, ChevronRight, Sparkles, Loader2 } from 'lucide-react';
 import { generateCollisionCards } from '../lib/content-generator';
 import { CompletionRecommendation } from './CompletionRecommendation';
+import { haptic } from '../lib/haptic';
 
 export function CollisionDetector() {
   const { state, startGame, flagCard } = useCollisionEngine();
@@ -204,13 +205,14 @@ export function CollisionDetector() {
                   <p className="text-lg sm:text-xl font-medium leading-relaxed mb-8">{card.text}</p>
                   <div className="flex gap-4 justify-center">
                     <button
-                      onClick={() => flagCard(card)}
+                      onClick={() => { haptic.medium(); flagCard(card); }}
                       className="flex items-center gap-2 min-h-11 px-6 py-3 bg-red-600 text-white rounded-xl text-sm font-bold hover:bg-red-500 transition-all active:scale-95"
                     >
                       <AlertTriangle className="w-4 h-4" /> Нарушение!
                     </button>
                     <button
                       onClick={() => {
+                        haptic.medium();
                         // Skip — it will auto-expire, but let user manually pass
                         // We treat this as a "pass" (not flagging it)
                       }}

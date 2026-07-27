@@ -13,6 +13,7 @@ import { useEventBus } from '../hooks/useEventBus';
 import { useNavigate } from 'react-router-dom';
 import { PostGameInsight } from './PostGameInsight';
 import { createSafeLogger, safeError } from '../lib/safe-logger';
+import { haptic } from '../lib/haptic';
 
 const PASTEL_COLORS = [
   '#fecaca', '#fed7aa', '#fef08a', '#dcfce7', '#d1fae5', '#ccfbf1', '#e0f2fe', '#e0e7ff', '#ede9fe', '#fae8ff',
@@ -233,10 +234,10 @@ export function SchulteGrid() {
   }, [state.isFinished, state.timeMs, token, mode, size, distraction, state.errors, isGorbov, refreshUser, state.modifications, isHardcore]);
 
   const handleSuccess = () => {
-     if (navigator.vibrate) navigator.vibrate(15);
+     haptic.success();
   };
   const handleError = () => {
-     if (navigator.vibrate) navigator.vibrate([30, 30, 30]);
+     haptic.error();
   };
 
   const handleStartWithBriefing = () => {

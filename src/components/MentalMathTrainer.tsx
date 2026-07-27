@@ -8,6 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import { PostGameInsight } from './PostGameInsight';
 import { createSafeLogger, safeError } from '../lib/safe-logger';
 import { requestMentalMathSet } from '../lib/neurotrainer-client';
+import { haptic } from '../lib/haptic';
 import {
   computeMentalMathScore,
   MENTAL_MATH_PRESETS,
@@ -147,6 +148,7 @@ export function MentalMathTrainer() {
       e.preventDefault();
       const num = Number(inputValue.trim());
       if (Number.isInteger(num)) {
+        haptic.medium();
         submitAnswer(num);
         setInputValue('');
       }
