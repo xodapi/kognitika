@@ -41,12 +41,21 @@ export function Dashboard({
   const [streak, setStreak] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<DashboardTab>(initialTab);
   const [isShareOpen, setIsShareOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     setActiveTab(initialTab);
   }, [initialTab]);
 
   useEffect(() => {
+     setIsLoading(true);
+     let completed = 0;
+     const total = token ? 3 : 1;
+     const trackLoad = () => {
+       completed++;
+       if (completed >= total) setIsLoading(false);
+     };
+
      // Fetch leaderboard
      fetch('/api/leaderboard')
        .then(res => res.json())
@@ -56,7 +65,8 @@ export function Dashboard({
        .catch(err => {
           logger.error('Leaderboard fetch failed', { error: safeError(err) });
           toast({ title: 'Рейтинг недоступен', description: 'Не удалось загрузить таблицу лидеров.', variant: 'error' });
-       });
+       })
+       .finally(trackLoad);
 
      if (!token) return;
 
@@ -74,7 +84,8 @@ export function Dashboard({
      .catch(err => {
         logger.error('Dashboard status fetch failed', { error: safeError(err) });
         toast({ title: 'Статус не загружен', description: 'Не удалось получить ежедневные задачи и стрик.', variant: 'error' });
-     });
+     })
+     .finally(trackLoad);
 
      // Fetch user progress
      fetch('/api/progress', {
@@ -98,7 +109,8 @@ export function Dashboard({
      .catch(err => {
         logger.error('Progress fetch failed', { error: safeError(err) });
         toast({ title: 'История прогресса не загружена', description: 'Не удалось получить данные для графика.', variant: 'error' });
-     });
+     })
+     .finally(trackLoad);
   }, [token]);
 
   const milestones = [
@@ -168,6 +180,10 @@ export function Dashboard({
             exit={{ opacity: 0, y: -20 }}
             className="space-y-8"
           >
+            {isLoading && !leaderboard.length ? (
+              <DashboardSkeleton />
+            ) : (
+              <>
             {/* Streak Banner */}
             <StreakBanner streak={streak} />
 
@@ -382,6 +398,8 @@ export function Dashboard({
                   </div>
                </div>
             </div>
+            </>
+            )}
           </motion.div>
         )}
         
@@ -466,6 +484,87 @@ export function Dashboard({
           )}
         </div>
       </nav>
+    </div>
+  );
+}
+
+/* ─── Skeleton Loading Components ─── */
+
+function SkeletonBar({ className = '' }: { className?: string }) {
+  return <div className={`animate-pulse bg-secondary/50 rounded-xl ${className}`} />;
+}
+
+function SkeletonCard() {
+  return (
+    <div className="bg-card/40 border border-border rounded-2xl p-5 space-y-3">
+      <SkeletonBar className="h-4 w-24" />
+      <SkeletonBar className="h-8 w-32" />
+      <SkeletonBar className="h-2 w-full" />
+    </div>
+  );
+}
+
+function SkeletonChart() {
+  return (
+    <div className="bg-card/40 border border-border rounded-3xl p-6 h-[320px]">
+      <SkeletonBar className="h-4 w-36 mb-6" />
+      <div className="h-[220px] flex items-end justify-between gap-2 px-4">
+        {Array.from({ length: 8 }).map((_, i) => (
+          <div
+            key={i}
+            className="animate-pulse bg-secondary/50 rounded-t-xl flex-1"
+            style={{ height: `${40 + Math.sin(i * 1.2) * 30 + 20}%` }}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function DashboardSkeleton() {
+  return (
+    <div className="space-y-8">
+      {/* Skeleton welcome header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="space-y-2">
+          <SkeletonBar className="h-8 w-64" />
+          <SkeletonBar className="h-4 w-48" />
+        </div>
+        <SkeletonBar className="h-16 w-64 rounded-2xl" />
+      </div>
+
+      {/* Skeleton center banner */}
+      <SkeletonBar className="h-32 w-full rounded-3xl" />
+
+      {/* Skeleton gallery section */}
+      <div className="space-y-4">
+        <SkeletonBar className="h-4 w-48" />
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <SkeletonBar key={i} className="h-40 rounded-2xl" />
+          ))}
+        </div>
+      </div>
+
+      {/* Skeleton main grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* Left column: stat cards + chart */}
+        <div className="lg:col-span-8 space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <SkeletonCard key={i} />
+            ))}
+          </div>
+          <SkeletonChart />
+        </div>
+
+        {/* Right column: sidebar */}
+        <div className="lg:col-span-4 space-y-6">
+          <SkeletonBar className="h-64 w-full rounded-3xl" />
+          <SkeletonBar className="h-80 w-full rounded-3xl" />
+          <SkeletonBar className="h-48 w-full rounded-3xl" />
+        </div>
+      </div>
     </div>
   );
 }
