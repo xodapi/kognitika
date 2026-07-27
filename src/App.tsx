@@ -32,6 +32,7 @@ import {
   Decryptor, RealityCheck, NeuroSilence, CognitiveTrashFilter, HypeFilter,
   Reframing, RejectionImmunity, Storytelling, DeepFocus, SymbolChat, Wiki,
   CognitiveMap, MentalMathTrainer, SchulteTable90, AlphabetTableTrainer, StroopAlphabetTrainer,
+  ExpressKnowledgeHub,
   getRouteTitle,
   HEADER_NAV_ITEMS, MOBILE_NAV_ITEMS, BOTTOM_NAV_ITEMS,
 } from './lib/route-config';
@@ -503,6 +504,7 @@ function AppContent() {
                 <Route path="/rejection" element={<RejectionImmunity onFinish={() => navigate('/')} />} />
                 <Route path="/storytelling" element={<Storytelling onFinish={() => navigate('/')} />} />
                 <Route path="/focus" element={<DeepFocus onFinish={() => navigate('/')} />} />
+                <Route path="/express-knowledge" element={<ExpressKnowledgeHub />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </LazySection>

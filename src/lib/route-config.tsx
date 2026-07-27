@@ -5,6 +5,7 @@ import {
   LayoutDashboard, Play, Calculator, Grid3x3, Palette, BrainCircuit,
   Users, Trophy, Lightbulb, Shield, GitBranch, Filter, Cpu, VolumeX,
   Search, Network, Target, MessageSquare, Lock, Hash, Languages,
+  Zap,
 } from 'lucide-react';
 
 export function lazyNamed<TProps extends object = Record<string, never>>(
@@ -66,6 +67,7 @@ export const MentalMathTrainer = lazyNamed(() => import('../components/MentalMat
 export const SchulteTable90 = lazyNamed(() => import('../components/SchulteTable90'), 'SchulteTable90');
 export const AlphabetTableTrainer = lazyNamed(() => import('../components/AlphabetTableTrainer'), 'AlphabetTableTrainer');
 export const StroopAlphabetTrainer = lazyNamed(() => import('../components/StroopAlphabetTrainer'), 'StroopAlphabetTrainer');
+export const ExpressKnowledgeHub = lazyNamed(() => import('../components/ExpressKnowledgeHub'), 'ExpressKnowledgeHub');
 
 export interface RouteEntry {
   path: string;
@@ -114,6 +116,7 @@ export const ROUTE_DEFINITIONS: RouteEntry[] = [
   { path: '/schulte-90', title: 'Таблица 1-90', icon: Grid3x3, navGroup: 'cognitive' },
   { path: '/alphabet-table', title: 'Таблица Алфавит', icon: Languages, navGroup: 'cognitive' },
   { path: '/stroop-alphabet', title: 'Струп + Алфавит', icon: Palette, navGroup: 'cognitive' },
+  { path: '/express-knowledge', title: 'Экспресс-знания', icon: Zap, navGroup: 'cognitive' },
 ];
 
 const routeTitleMap = new Map<string, string>();
@@ -173,6 +176,7 @@ export const MOBILE_NAV_ITEMS = [
   { id: 'storytelling', icon: Network, label: 'Смысловые связи' },
   { id: 'focus', icon: Target, label: 'Глубокий Фокус' },
   { id: 'ideas', icon: Lightbulb, label: 'Предложения' },
+  { id: 'express-knowledge', icon: Zap, label: 'Экспресс-знания' },
 ];
 
 export const BOTTOM_NAV_ITEMS = [
