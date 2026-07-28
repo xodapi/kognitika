@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, act } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { Dashboard } from '../components/Dashboard';
 import React from 'react';
 
@@ -51,14 +51,15 @@ describe('Dashboard UI', () => {
     vi.clearAllMocks();
   });
 
-  it('должен отображать вкладку тренировок по умолчанию', () => {
+  it('должен отображать вкладку тренировок по умолчанию', async () => {
     render(<Dashboard onStartGame={() => {}} />);
-    expect(screen.getByText(/Привет, Test User/i)).toBeDefined();
+    await waitFor(() => expect(screen.getByText(/Test User/i)).toBeDefined());
     expect(screen.getByTestId('training-gallery')).toBeDefined();
   });
 
   it('должен переключаться на вкладку профиля', async () => {
     render(<Dashboard onStartGame={() => {}} />);
+    await waitFor(() => expect(screen.getByText(/Test User/i)).toBeDefined());
     
     const profileTab = screen.getAllByRole('button', { name: /Профиль/i })[0];
     fireEvent.click(profileTab);
@@ -69,6 +70,7 @@ describe('Dashboard UI', () => {
 
   it('должен переключаться на вкладку дуэлей', async () => {
     render(<Dashboard onStartGame={() => {}} />);
+    await waitFor(() => expect(screen.getByText(/Test User/i)).toBeDefined());
     
     const duelsTab = screen.getAllByRole('button', { name: /Дуэли/i })[0];
     fireEvent.click(duelsTab);
@@ -76,8 +78,9 @@ describe('Dashboard UI', () => {
     expect(await screen.findByTestId('duels-view')).toBeDefined();
   });
 
-  it('должен отображать бейджи рейтинга и Brain ID', () => {
+  it('должен отображать бейджи рейтинга и Brain ID', async () => {
     render(<Dashboard onStartGame={() => {}} />);
+    await waitFor(() => expect(screen.getByText(/Test User/i)).toBeDefined());
     expect(screen.getByText(/Профиль защищен/i)).toBeDefined();
     expect(screen.getByText(/0488/i)).toBeDefined();
     expect(screen.queryByText(/00000000-0000-4000-8000-000000000488/i)).toBeNull();

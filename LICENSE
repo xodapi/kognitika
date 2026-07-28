@@ -1,0 +1,53 @@
+Проприетарная лицензия Kognitika / Kognitika Proprietary License
+
+Copyright (c) 2026 Kognitika (syntog.ru). Все права защищены. / All rights reserved.
+
+РУССКИЙ ТЕКСТ (основной):
+
+1. Право собственности. Программное обеспечение Kognitika, включая исходный код,
+   дизайн, тексты, методики тренировок и документацию (далее — «Продукт»),
+   является исключительной собственностью правообладателя.
+
+2. Запрещено без письменного разрешения правообладателя:
+   - копировать, воспроизводить или распространять Продукт или его части;
+   - модифицировать, создавать производные работы на основе Продукта;
+   - использовать Продукт в коммерческих целях;
+   - публиковать исходный код в открытом доступе;
+   - декомпилировать или осуществлять реверс-инжиниринг, за исключением случаев,
+     прямо разрешённых применимым законодательством.
+
+3. Разрешённый доступ. Доступ к репозиторию предоставляется исключительно
+   участникам команды разработки, аудиторам и контракторам по соглашению
+   о неразглашении (NDA) и только для выполнения порученных работ.
+
+4. Отсутствие гарантий. Продукт предоставляется «как есть» (AS IS), без каких-либо
+   явных или подразумеваемых гарантий, включая гарантии товарной пригодности
+   и пригодности для конкретной цели. Продукт является wellness-инструментом
+   и не заменяет медицинскую диагностику или лечение.
+
+5. Ограничение ответственности. Ни при каких обстоятельствах правообладатель
+   не несёт ответственности за любые прямые, косвенные, случайные или
+   последующие убытки, возникшие в связи с использованием Продукта.
+
+ENGLISH TRANSLATION (for reference; the Russian text prevails):
+
+1. Ownership. The Kognitika software, including source code, design, texts,
+   training methodologies, and documentation (the "Product"), is the exclusive
+   property of the copyright holder.
+
+2. Without the copyright holder's prior written permission you may NOT:
+   copy, reproduce, or distribute the Product or any part of it; modify it or
+   create derivative works; use it commercially; publish the source code;
+   decompile or reverse-engineer it except where explicitly permitted by law.
+
+3. Permitted access. Repository access is granted solely to development team
+   members, auditors, and contractors under NDA, and only for assigned work.
+
+4. No warranty. The Product is provided "AS IS", without warranty of any kind,
+   express or implied, including merchantability and fitness for a particular
+   purpose. The Product is a wellness tool and does not replace medical
+   diagnosis or treatment.
+
+5. Limitation of liability. In no event shall the copyright holder be liable
+   for any direct, indirect, incidental, or consequential damages arising
+   from the use of the Product.

@@ -190,4 +190,4 @@ Preferred labels:
 
 ## License
 
-Private repository. License is not defined for public distribution.
+Private repository. Proprietary license — see [LICENSE](LICENSE). Access is granted only to team members, auditors, and contractors under NDA.

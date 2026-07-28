@@ -36,6 +36,7 @@ export const APP_ROUTE_PATHS = [
   '/schulte-90',
   '/alphabet-table',
   '/stroop-alphabet',
+  '/express-knowledge',
 ] as const;
 
 export const RECOMMENDED_GAME_ROUTES = {

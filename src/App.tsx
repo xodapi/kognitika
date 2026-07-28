@@ -176,7 +176,7 @@ function AppContent() {
           <button
             onClick={() => setIsMobileMenuOpen(true)}
             aria-label="Открыть меню"
-            className="2xl:hidden min-h-11 min-w-11 hover:bg-secondary rounded-lg transition-colors flex items-center justify-center"
+            className="2xl:hidden p-2"
           >
             <Menu className="w-5 h-5" />
           </button>
