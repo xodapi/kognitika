@@ -10,6 +10,7 @@ on:
       - 'package.json'
       - 'pnpm-lock.yaml'
       - 'vite.config.ts'
+      - '.github/workflows/android.yml'
   pull_request:
     paths:
       - 'apps/capacitor/**'
@@ -18,6 +19,7 @@ on:
       - 'package.json'
       - 'pnpm-lock.yaml'
       - 'vite.config.ts'
+      - '.github/workflows/android.yml'
   workflow_dispatch:
     inputs:
       release:
