@@ -168,6 +168,16 @@ docker compose up --build
 
 The app container exposes `3006:3006`; PostgreSQL exposes `5432:5432`.
 
+## Mobile (Android)
+
+The latest debug APK is published automatically on every push to `main`:
+
+- Download: [GitHub Releases → android-latest](https://github.com/xodapi/kognitika/releases/tag/android-latest)
+
+Signed release App Bundles for Play Console are built manually via the
+`Android Native Build` workflow (`workflow_dispatch` with `release=true`)
+in the `android-release` environment.
+
 ## Issue Hygiene
 
 Use clear title prefixes:

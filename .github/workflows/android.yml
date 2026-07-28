@@ -67,6 +67,30 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
+  github-release:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: debug
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/download-artifact@v6
+        with:
+          name: kognitika-android-debug-${{ github.sha }}
+          path: apk
+
+      - name: Publish rolling latest release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mv apk/app-debug.apk apk/kognitika-debug.apk
+          gh release delete android-latest --yes --cleanup-tag || true
+          gh release create android-latest apk/kognitika-debug.apk \
+            --title "Kognitika Android (latest main)" \
+            --notes "Automated debug build from main @ ${{ github.sha }}. For internal testing only; production releases go through Play Console." \
+            --prerelease
+
   release:
     if: github.event_name == 'workflow_dispatch' && inputs.release
     needs: debug
