@@ -22,6 +22,27 @@
 
 Private platform for cognitive training, Brain ID identity, adaptive analytics, and real-time duel mechanics.
 
+<p>
+  <a href="https://github.com/xodapi/kognitika/wiki"><strong>Explore the wiki</strong></a> ·
+  <a href="https://kognitika.syntog.ru"><strong>Production site</strong></a> ·
+  <a href="https://github.com/xodapi/kognitika/releases/tag/android-latest"><strong>Download Android APK</strong></a>
+</p>
+
+## Quick navigation
+
+| Area | Link |
+|---|---|
+| Architecture and design | [`ARCHITECTURE.md`](ARCHITECTURE.md), [`KOGNITIKA_CORE.md`](KOGNITIKA_CORE.md) |
+| Wiki (tests, methodology, data export, security) | [github.com/xodapi/kognitika/wiki](https://github.com/xodapi/kognitika/wiki) |
+| Scientific methodology of all 28 trainers | [Scientific methodology](https://github.com/xodapi/kognitika/wiki/Scientific-methodology) |
+| Test reference (84 files, 357 tests) | [Testing reference](https://github.com/xodapi/kognitika/wiki/Testing-reference) |
+| Data export for LLM analysis | [Data export](https://github.com/xodapi/kognitika/wiki/Data-export) |
+| Security boundaries and vulnerability reporting | [`SECURITY.md`](SECURITY.md) |
+| Agent development guide | [`AGENTS.md`](AGENTS.md) |
+| Roadmap | [Issue #10](https://github.com/xodapi/kognitika/issues/10) |
+| Knowledge base (in-app articles) | `src/lib/knowledge-base.ts` |
+| Audit description for external reviewers | [`docs/AUDIT_BRIEF.md`](docs/AUDIT_BRIEF.md) |
+
 ## Status
 
 Current status: MVP / technical stabilization.
@@ -38,6 +59,36 @@ Tracking roadmap: https://github.com/xodapi/kognitika/issues/10
 - Prisma + PostgreSQL
 - Vitest + Playwright
 - JS analytics worker with a WASM-ready boundary for future hot paths
+
+## Project structure
+
+```
+kognitika/
+├── src/                         # Main application source
+│   ├── components/              # React UI components (70+ trainers, modals, panels)
+│   ├── hooks/                   # React hooks (use{Module}Engine pattern)
+│   ├── lib/                     # Shared utilities, routes, knowledge base
+│   ├── core/                    # EventBus, seeded generators, analytics engine
+│   ├── server/                  # Express API, Socket.io, middleware, schemas
+│   ├── client/                  # Analytics worker, event bus
+│   ├── workers/                 # Web workers (analytics, session analysis)
+│   ├── tests/                   # Vitest test suite (84 files, 357 tests)
+│   ├── App.tsx                  # Root app with routing
+│   └── main.tsx                 # Entry point
+├── crates/
+│   └── kognitika-core/          # Rust/WASM research crate (not runtime-critical)
+├── apps/
+│   ├── capacitor/               # Android/iOS native build via Capacitor
+│   └── mobile/                  # Mobile-specific configuration
+├── prisma/                      # Database schema (12 models)
+├── tests/                       # Playwright E2E specs
+├── docs/                        # Architecture, identity, operations, audit docs
+├── server.ts                    # Full-stack Express + Vite dev server entry
+├── .github/workflows/           # CI (lint+test+build), Deploy, Android APK
+├── SECURITY.md                  # Vulnerability reporting and security boundaries
+├── AGENTS.md                    # Agent development guide with mandatory checklist
+└── ARCHITECTURE.md              # Architectural source of truth
+```
 
 ## Requirements
 
