@@ -1,7 +1,7 @@
 <div align="center">
   <br />
-  <h1>🧠 Когнитика · Kognitika</h1>
-  <p><strong>React/Express platform for cognitive training — memory, attention, speed, and adaptive analytics</strong></p>
+  <h1>🧠 Когнитика</h1>
+  <p><strong>Платформа когнитивных тренировок — память, внимание, скорость реакции и адаптивная аналитика</strong></p>
   <p>
     <a href="https://kognitika.syntog.ru" target="_blank">kognitika.syntog.ru</a>
   </p>
@@ -13,159 +13,167 @@
     <img src="https://img.shields.io/badge/Tailwind_CSS-38B2AC?logo=tailwind-css&logoColor=fff" alt="Tailwind" />
     <img src="https://img.shields.io/badge/Socket.io-010101?logo=socket.io&logoColor=fff" alt="Socket.io" />
     <br />
-    <img src="https://img.shields.io/badge/tests-357_passing-22c55e?logo=vitest&logoColor=fff" alt="Tests" />
-    <img src="https://img.shields.io/badge/license-Proprietary-ff69b4" alt="License" />
+    <img src="https://img.shields.io/badge/тесты-357_пройдены-22c55e?logo=vitest&logoColor=fff" alt="Tests" />
+    <img src="https://img.shields.io/badge/лицензия-Proprietary-ff69b4" alt="License" />
     <img src="https://img.shields.io/github/last-commit/xodapi/kognitika?logo=git" alt="Last commit" />
+  </p>
+  <p>
+    <sub>
+      <a href="README.en.md">English version</a>
+    </sub>
   </p>
   <br />
 </div>
 
-Private platform for cognitive training, Brain ID identity, adaptive analytics, and real-time duel mechanics.
+Приватная веб-платформа для когнитивных тренировок. Аутентификация через Brain ID, 30+ тренажёров, адаптивная аналитика, real-time дуэли и геймификация.
 
 <p>
-  <a href="https://github.com/xodapi/kognitika/wiki"><strong>Explore the wiki</strong></a> ·
-  <a href="https://kognitika.syntog.ru"><strong>Production site</strong></a> ·
-  <a href="https://github.com/xodapi/kognitika/releases/tag/android-latest"><strong>Download Android APK</strong></a>
+  <a href="https://github.com/xodapi/kognitika/wiki"><strong>Вики проекта</strong></a> ·
+  <a href="https://kognitika.syntog.ru"><strong>Продакшн</strong></a> ·
+  <a href="https://github.com/xodapi/kognitika/releases/tag/android-latest"><strong>Скачать APK</strong></a>
 </p>
 
-## Quick navigation
+---
 
-| Area | Link |
+## Быстрая навигация
+
+| Раздел | Ссылка |
 |---|---|
-| Architecture and design | [`ARCHITECTURE.md`](ARCHITECTURE.md), [`KOGNITIKA_CORE.md`](KOGNITIKA_CORE.md) |
-| Wiki (tests, methodology, data export, security) | [github.com/xodapi/kognitika/wiki](https://github.com/xodapi/kognitika/wiki) |
-| Scientific methodology of all 28 trainers | [Scientific methodology](https://github.com/xodapi/kognitika/wiki/Scientific-methodology) |
-| Test reference (84 files, 357 tests) | [Testing reference](https://github.com/xodapi/kognitika/wiki/Testing-reference) |
-| Data export for LLM analysis | [Data export](https://github.com/xodapi/kognitika/wiki/Data-export) |
-| Security boundaries and vulnerability reporting | [`SECURITY.md`](SECURITY.md) |
-| Agent development guide | [`AGENTS.md`](AGENTS.md) |
-| Roadmap | [Issue #10](https://github.com/xodapi/kognitika/issues/10) |
-| Knowledge base (in-app articles) | `src/lib/knowledge-base.ts` |
-| Audit description for external reviewers | [`docs/AUDIT_BRIEF.md`](docs/AUDIT_BRIEF.md) |
+| Архитектура и дизайн системы | [`ARCHITECTURE.md`](ARCHITECTURE.md), [`KOGNITIKA_CORE.md`](KOGNITIKA_CORE.md) |
+| Научная методология всех тренажёров | [Научная методология (вики)](https://github.com/xodapi/kognitika/wiki/Научная-методология) |
+| Все тесты: 84 файла, 357 проверок | [Тестирование (вики)](https://github.com/xodapi/kognitika/wiki/Тестирование) |
+| Экспорт данных для анализа в LLM | [Экспорт данных (вики)](https://github.com/xodapi/kognitika/wiki/Экспорт-данных) |
+| Безопасность и ответственное раскрытие уязвимостей | [`SECURITY.md`](SECURITY.md) |
+| Гайд по разработке для агентов | [`AGENTS.md`](AGENTS.md) |
+| Дорожная карта | [Issue #10](https://github.com/xodapi/kognitika/issues/10) |
+| База знаний тренажёров (в приложении) | `src/lib/knowledge-base.ts` |
+| Описание для внешнего аудитора | [`docs/AUDIT_BRIEF.md`](docs/AUDIT_BRIEF.md) |
+| GLOBAL_VISION.md | `GLOBAL_VISION.md` |
 
-## Status
+---
 
-Current status: MVP / technical stabilization.
+## Статус проекта
 
-The main engineering priority is production risk reduction: boot recovery, storage contracts, privacy-safe identity, API consistency, test coverage, and deploy reproducibility come before new product features.
+**MVP / Техническая стабилизация.** Приоритет — снижение production-рисков: boot recovery, контракты хранилища, приватная идентификация, консистентность API, тестовое покрытие, воспроизводимость деплоя.
 
-Tracking roadmap: https://github.com/xodapi/kognitika/issues/10
+Дорожная карта: [github.com/xodapi/kognitika/issues/10](https://github.com/xodapi/kognitika/issues/10)
 
-## Tech Stack
+---
 
-- React + Vite + TypeScript
-- Tailwind CSS + Motion (`motion/react`)
-- Express + Socket.io
-- Prisma + PostgreSQL
-- Vitest + Playwright
-- JS analytics worker with a WASM-ready boundary for future hot paths
+## Стек технологий
 
-## Project structure
+| Слой | Технологии |
+|---|---|
+| Frontend | React 19 + Vite 7 + TypeScript + Tailwind CSS 4 + Motion + Recharts |
+| Backend | Express 4 + Socket.io 4 |
+| База данных | PostgreSQL 15+ через Prisma 7 (12 моделей) |
+| Аналитика | JS Web Worker + Rust/WASM-ready граница |
+| Мобильное приложение | Capacitor 8 (Android APK в CI) |
+| Тестирование | Vitest (84 файла, 357 тестов) + Playwright E2E |
+| CI/CD | GitHub Actions: Lint → Test → Build → E2E → Deploy → APK |
+
+---
+
+## Структура проекта
 
 ```
 kognitika/
-├── src/                         # Main application source
-│   ├── components/              # React UI components (70+ trainers, modals, panels)
-│   ├── hooks/                   # React hooks (use{Module}Engine pattern)
-│   ├── lib/                     # Shared utilities, routes, knowledge base
-│   ├── core/                    # EventBus, seeded generators, analytics engine
-│   ├── server/                  # Express API, Socket.io, middleware, schemas
-│   ├── client/                  # Analytics worker, event bus
-│   ├── workers/                 # Web workers (analytics, session analysis)
-│   ├── tests/                   # Vitest test suite (84 files, 357 tests)
-│   ├── App.tsx                  # Root app with routing
-│   └── main.tsx                 # Entry point
+├── src/                         # Исходный код приложения
+│   ├── components/              # React-компоненты (70+ тренажёров, модалки, панели)
+│   ├── hooks/                   # React-hooks (паттерн use{Module}Engine)
+│   ├── lib/                     # Общие утилиты, маршруты, база знаний
+│   ├── core/                    # EventBus, генераторы с seed, аналитика
+│   ├── server/                  # Express API, Socket.io, middleware, схемы
+│   ├── client/                  # Клиентский event-bus
+│   ├── workers/                 # Web Worker'ы (аналитика, сессии)
+│   ├── tests/                   # Vitest (84 файла, 357 тестов)
+│   ├── App.tsx                  # Корневой компонент с роутингом
+│   └── main.tsx                 # Точка входа
 ├── crates/
-│   └── kognitika-core/          # Rust/WASM research crate (not runtime-critical)
+│   └── kognitika-core/          # Rust/WASM исследовательский крейт
 ├── apps/
-│   ├── capacitor/               # Android/iOS native build via Capacitor
-│   └── mobile/                  # Mobile-specific configuration
-├── prisma/                      # Database schema (12 models)
-├── tests/                       # Playwright E2E specs
-├── docs/                        # Architecture, identity, operations, audit docs
-├── server.ts                    # Full-stack Express + Vite dev server entry
-├── .github/workflows/           # CI (lint+test+build), Deploy, Android APK
-├── SECURITY.md                  # Vulnerability reporting and security boundaries
-├── AGENTS.md                    # Agent development guide with mandatory checklist
-└── ARCHITECTURE.md              # Architectural source of truth
+│   ├── capacitor/               # Android/iOS через Capacitor
+│   └── mobile/                  # Мобильная конфигурация
+├── prisma/                      # Схема базы данных (12 моделей)
+├── tests/                       # Playwright E2E-спецификации
+├── docs/                        # Архитектура, идентификация, операции, аудит
+├── server.ts                    # Express + Vite dev server
+├── .github/workflows/           # CI, Deploy, Android APK
+├── SECURITY.md                  # Политика безопасности
+├── AGENTS.md                    # Гайд по разработке для AI-агентов
+└── ARCHITECTURE.md              # Архитектурный источник истины
 ```
 
-## Requirements
+---
 
-- Node.js 22
-- pnpm 10.22.0
-- PostgreSQL 15+
+## Требования к окружению
 
-The canonical package manager is pnpm. Do not use npm or yarn lockfiles.
+- **Node.js** 22 или выше
+- **pnpm** 10.22.0 (канонический пакетный менеджер; npm/yarn не используются)
+- **PostgreSQL** 15+ (локально или в Docker)
 
-## Local Setup
+---
 
-Install dependencies:
+## Локальный запуск
 
 ```bash
+# 1. Установить зависимости
 pnpm install
-```
 
-Create a local environment file:
-
-```bash
+# 2. Создать файл окружения
 cp .env.example .env
-```
 
-Start PostgreSQL with Docker Compose:
-
-```bash
+# 3. Запустить PostgreSQL в Docker
 docker compose up -d db
-```
 
-Run Prisma setup:
-
-```bash
+# 4. Настроить Prisma
 pnpm prisma generate
 pnpm prisma db push
-```
 
-Start the full-stack dev server:
-
-```bash
+# 5. Запустить dev-сервер
 pnpm dev
 ```
 
-Default local URL: `http://localhost:3006`
+По умолчанию: **http://localhost:3006**
 
-## Environment
+---
 
-See `.env.example` for the full list. Required for normal local work:
+## Переменные окружения
 
-- `DATABASE_URL`
-- `JWT_SECRET`
-- `PORT=3006`
-- `APP_URL=http://localhost:3006`
-- `FRONTEND_URL=http://localhost:3006`
-- `CORS_ORIGIN=http://localhost:3006`
-- `CORS_ALLOW_DEV_WILDCARD=false`
+Полный список в `.env.example`. Обязательные для локальной разработки:
 
-`CORS_ORIGIN` accepts a comma-separated allowlist shared by Express and Socket.io. Wildcard CORS requires `CORS_ORIGIN=*` plus `CORS_ALLOW_DEV_WILDCARD=true` and is accepted only in development/test; production without an allowlist fails closed for browser cross-origin requests and logs a startup warning.
+| Переменная | Описание |
+|---|---|
+| `DATABASE_URL` | Строка подключения к PostgreSQL |
+| `JWT_SECRET` | Секрет для подписи JWT-токенов |
+| `PORT=3006` | Порт сервера |
+| `APP_URL` | Публичный URL приложения |
+| `CORS_ORIGIN` | Разрешённые источники CORS (через запятую) |
+| `CORS_ALLOW_DEV_WILDCARD=false` | Разрешить `*` в CORS только для разработки |
 
-Optional integrations include Telegram, SMTP, and legacy email channels. Public auth is Brain ID-first; legacy email features must remain explicitly gated.
+Дополнительно: Telegram, SMTP, Neurotrainer — опционально, см. `.env.example`.
 
-Never commit real secrets, tokens, raw Brain IDs, production telemetry, or user data.
+---
 
-## Scripts
+## Скрипты
 
-- `pnpm dev` - start the Express/Vite development server
-- `pnpm start` - start the Express server
-- `pnpm lint` - generate Prisma client and run TypeScript checks
-- `pnpm test` - run the Vitest suite
-- `pnpm validate` - run the core validation suite
-- `pnpm build` - generate Prisma client and build the frontend
-- `pnpm test:e2e` - run Playwright E2E tests and let Playwright manage its production-style webServer
-- `pnpm test:e2e:attached` - run Playwright against an already running local server; defaults to `http://127.0.0.1:3006` and is useful on Windows/proxy environments
-- `pnpm clean` - remove only the local `dist` directory through a cross-platform Node helper
+| Команда | Назначение |
+|---|---|
+| `pnpm dev` | Запуск Express/Vite dev-сервера |
+| `pnpm start` | Запуск Express-сервера (production) |
+| `pnpm lint` | Prisma generate + TypeScript check |
+| `pnpm test` | Vitest (357 тестов) |
+| `pnpm validate` | Базовый прогон валидации |
+| `pnpm build` | Prisma generate + Vite build |
+| `pnpm test:e2e` | Playwright E2E |
+| `pnpm test:e2e:attached` | Playwright к уже запущенному серверу |
+| `pnpm clean` | Очистка `dist/` |
 
-## Validation
+---
 
-Before opening or merging a production-risk change, run:
+## Валидация перед коммитом
+
+Перед production-risk изменениями выполнить:
 
 ```bash
 pnpm lint
@@ -173,104 +181,99 @@ pnpm test
 pnpm build
 ```
 
-For navigation or post-game flow work, run:
+Для навигации и post-game flow дополнительно:
 
 ```bash
 pnpm test:e2e
 ```
 
-If local Playwright webServer readiness is affected by a desktop proxy, start the app separately and use the attached mode:
+Известные неблокирующие предупреждения: Recharts zero-size в jsdom, React `act(...)` в dashboard-тестах. Новые падения — блокирующие.
 
-```bash
-pnpm dev
-pnpm test:e2e:attached
+---
+
+## Runtime-контракты
+
+- **Порт**: `3006` (канонический).
+- **Обратная связь**: Prisma-backed `/api/feedback` — операторская верификация в `docs/feedback-operations.md`.
+- **Идентификация**: Brain ID-first; сырой Brain ID, email, токены и хэши паролей не появляются в UI/API.
+- **Хранилище Brain ID**: `docs/brain-id-identity.md`.
+- **PWA/offline**: отключён до acceptance-гейтов `docs/pwa-offline-strategy.md`.
+- **Rust/WASM, 60 FPS**: требуют frame-budget гейта `docs/frame-budget-benchmark.md`.
+- **Аналитика**: `ClickEvent = { cellId, reactionTimeMs }`.
+- **Production-патчи**: запрещены без задокументированного hotfix-протокола.
+
+---
+
+## Деплой
+
+```
+локальные изменения → commit → push → PR → merge в main → GitHub Actions → сервер
 ```
 
-The attached mode sets `NO_PROXY` for localhost and uses `BASE_URL` if you need a non-default URL.
-
-Known non-blocking local warnings currently include Recharts zero-size container warnings in jsdom and React `act(...)` warnings in existing dashboard tests. Treat new failures as blockers.
-
-## Runtime Contracts
-
-- Canonical port: `3006`.
-- Public feedback submissions use the Prisma-backed `/api/feedback` route as the runtime source of truth; operator verification is documented in `docs/feedback-operations.md`.
-- Public identity is Brain ID-first; do not expose raw Brain ID, email, token, or password hashes in UI/API responses.
-- Brain ID storage/recovery boundaries are defined in `docs/brain-id-identity.md`.
-- PWA/offline-first must remain disabled until `docs/pwa-offline-strategy.md` acceptance gates are met.
-- Rust/WASM and 60 FPS work must pass the frame-budget gate in `docs/frame-budget-benchmark.md` before implementation.
-- Client analytics `ClickEvent` uses `{ cellId, reactionTimeMs }`.
-- Direct production file patches are forbidden outside documented emergency hotfixes.
-
-## Deploy
-
-Normal deploy flow:
-
-```text
-local branch -> commit -> push -> PR -> merge to main -> GitHub Actions deploy
-```
-
-The server should update through the repository-first flow. Do not edit `/opt/kognitika/*` or `/opt/kognitika/dist/*` directly during normal work.
-
-Production health check:
+Production health-check:
 
 ```bash
 curl https://kognitika.syntog.ru/api/health
 ```
 
-The response includes `buildId`, which should match the deployed commit short hash. The deploy workflow reads the internal health-check port from the server `.env` `PORT` value and falls back to `3006`, so production-only port overrides do not break deploy verification.
+Ответ содержит `buildId` = short hash коммита.
 
-## CI
-
-GitHub Actions run:
-
-- TypeScript lint
-- Vitest tests
-- build
-- Playwright E2E
-- deploy to the production server on `main`
+---
 
 ## Docker
-
-Build and run app + database:
 
 ```bash
 docker compose up --build
 ```
 
-The app container exposes `3006:3006`; PostgreSQL exposes `5432:5432`.
+Приложение: `3006:3006`, PostgreSQL: `5432:5432`.
 
-## Mobile (Android)
+---
 
-The latest debug APK is published automatically on every push to `main`:
+## Мобильное приложение (Android)
 
-- Download: [GitHub Releases → android-latest](https://github.com/xodapi/kognitika/releases/tag/android-latest)
+Последняя debug APK собирается автоматически при каждом пуше в `main`:
 
-Signed release App Bundles for Play Console are built manually via the
-`Android Native Build` workflow (`workflow_dispatch` with `release=true`)
-in the `android-release` environment.
+- **Скачать**: [GitHub Releases → android-latest](https://github.com/xodapi/kognitika/releases/tag/android-latest)
 
-## Issue Hygiene
+Подписанные App Bundle для Play Console собираются вручную через workflow `Android Native Build` (`workflow_dispatch` с `release=true`) в окружении `android-release`.
 
-Use clear title prefixes:
+---
 
-- `[P0]` production outage, active security risk, or data-loss risk
-- `[P1]` high-priority stabilization or privacy/security hardening
-- `[P2]` medium-priority cleanup, docs, or contract hygiene
-- `[P3]` strategic horizon
+## Оформление issues
 
-Preferred labels:
+Префиксы заголовков:
 
-- `area:boot`
-- `area:security`
-- `area:privacy`
-- `area:identity`
-- `area:storage`
-- `area:api`
-- `area:infra`
-- `area:docs`
+- `[P0]` — production-аутэйдж, активный security-риск, потеря данных
+- `[P1]` — приоритетная стабилизация, приватность, безопасность
+- `[P2]` — чистка, документация, гигиена контрактов
+- `[P3]` — стратегический горизонт
 
-## License
+Предпочтительные лейблы:
 
-Proprietary license — see [LICENSE](LICENSE). Access to the source is granted to team members, auditors, and contractors under NDA.
+| Лейбл | Область |
+|---|---|
+| `area:boot` | Загрузка, восстановление, браузер |
+| `area:security` | Безопасность, trust-boundary |
+| `area:privacy` | Приватность, 152-ФЗ |
+| `area:identity` | Brain ID, идентификация |
+| `area:storage` | База данных, Prisma, localStorage |
+| `area:api` | API-контракты |
+| `area:infra` | CI/CD, деплой, nginx |
+| `area:docs` | Документация |
+| `area:ux` | Пользовательский опыт |
+| `area:analytics` | Аналитика, EventBus, метрики |
+| `area:wasm` | Rust/WASM, hot-path |
+| `area:product` | Продукт, стратегия, геймификация |
 
-All rights reserved. See [SECURITY.md](SECURITY.md) for vulnerability reporting and security boundaries.
+---
+
+## Лицензия
+
+Проприетарная — см. [LICENSE](LICENSE). Доступ к исходному коду предоставляется участникам команды, аудиторам и контракторам в рамках NDA.
+
+Все права защищены. Политика безопасности и ответственное раскрытие уязвимостей: [SECURITY.md](SECURITY.md).
+
+---
+
+*Читать на других языках: [English](README.en.md)*
