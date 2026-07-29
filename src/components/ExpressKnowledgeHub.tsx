@@ -224,12 +224,15 @@ export function ExpressKnowledgeHub() {
                 </div>
               </div>
             ))}
-            <button
+            <span
               onClick={(e) => { e.stopPropagation(); handleStart(mode); }}
-              className="w-full text-xs font-black uppercase tracking-widest text-primary hover:underline"
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); handleStart(mode); } }}
+              className="block w-full text-xs font-black uppercase tracking-widest text-primary hover:underline cursor-pointer"
             >
               Подробнее о режимах →
-            </button>
+            </span>
           </div>
 
           {/* Stats */}
@@ -255,18 +258,21 @@ export function ExpressKnowledgeHub() {
           )}
 
           {/* CTA Button */}
-          <motion.button
+          <motion.div
+            role="button"
+            tabIndex={0}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
-            className={`w-full py-4 rounded-2xl font-black text-sm uppercase tracking-[0.2em] shadow-lg transition-all ${
+            onClick={() => handleStart(mode)}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleStart(mode); }}
+            className={`w-full py-4 rounded-2xl font-black text-sm uppercase tracking-[0.2em] shadow-lg transition-all text-center cursor-pointer ${
               isMath 
                 ? 'bg-emerald-500 text-white hover:bg-emerald-600 shadow-emerald-500/30' 
                 : 'bg-sky-500 text-white hover:bg-sky-600 shadow-sky-500/30'
             }`}
-            disabled={isGenerating}
           >
             {isGenerating ? 'Генерация...' : `Начать ${isMath ? 'вычисления' : 'поиск'}`}
-          </motion.button>
+          </motion.div>
         </div>
       </motion.button>
     );
