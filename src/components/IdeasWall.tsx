@@ -129,12 +129,12 @@ export const IdeasWall: React.FC<{ token: string | null }> = ({ token }) => {
     <div className="col-span-12 flex flex-col gap-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold text-foreground">Голосование за идеи</h2>
+          <h2 className="text-2xl font-black tracking-tight text-foreground">Голосование за идеи</h2>
           <p className="text-xs text-muted-foreground uppercase tracking-widest mt-1">Влияйте на развитие платформы</p>
         </div>
         <button 
           onClick={() => setShowAddModal(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground text-xs uppercase tracking-wider rounded-xl font-bold hover:bg-primary/90 transition-all shadow-lg shadow-primary/20"
+          className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground text-xs uppercase tracking-widest rounded-xl font-black min-h-11 hover:bg-primary/90 transition-all shadow-lg shadow-primary/20"
         >
           <Plus className="w-4 h-4" />
           Предложить
@@ -156,7 +156,7 @@ export const IdeasWall: React.FC<{ token: string | null }> = ({ token }) => {
           ) : ideas.length === 0 ? (
              <div className="col-span-full py-20 text-center border-2 border-dashed border-border rounded-3xl">
                 <Lightbulb className="w-12 h-12 text-muted-foreground/30 mx-auto mb-4" />
-                <p className="text-muted-foreground text-sm uppercase tracking-widest font-bold">Идей пока нет. Станьте первым!</p>
+                <p className="text-muted-foreground text-sm uppercase tracking-widest font-black">Идей пока нет. Станьте первым!</p>
              </div>
           ) : (
             ideas.map((idea) => (

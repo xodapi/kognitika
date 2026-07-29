@@ -67,12 +67,12 @@ export function AuthModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
   if (successBrainId) {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/90 backdrop-blur-md p-4">
-        <div className="relative bg-card w-full max-w-sm p-8 rounded-[2rem] border border-primary/20 shadow-2xl text-center">
-          <div className="w-20 h-20 bg-primary/10 border border-primary/30 text-primary rounded-full flex items-center justify-center mx-auto mb-6">
+        <div className="relative bg-card w-full max-w-sm p-8 rounded-3xl border border-primary/20 shadow-2xl text-center">
+          <div className="w-20 h-20 bg-primary/10 border border-primary/30 text-primary rounded-2xl flex items-center justify-center mx-auto mb-6">
             <Brain className="w-10 h-10" />
           </div>
           
-          <h2 className="text-2xl font-bold tracking-tight mb-2 uppercase">Сессия создана</h2>
+          <h2 className="text-2xl font-black tracking-tight mb-2 uppercase">Сессия создана</h2>
           <p className="text-muted-foreground text-sm mb-8">
             Это ваш уникальный Brain ID. Сохраните его, чтобы восстановить прогресс. Мы не храним ваши персональные данные.
           </p>
@@ -82,7 +82,7 @@ export function AuthModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
         <button 
           onClick={() => copyToClipboard(successBrainId)}
           aria-label="Копировать Brain ID"
-          className="min-h-11 min-w-11 bg-background border border-border rounded-lg text-muted-foreground hover:text-primary transition-colors shrink-0 flex items-center justify-center"
+          className="min-h-11 min-w-11 bg-background border border-border rounded-xl text-muted-foreground hover:text-primary transition-colors shrink-0 flex items-center justify-center"
         >
           {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
         </button>
@@ -90,7 +90,7 @@ export function AuthModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
 
           <button 
             onClick={onClose}
-            className="w-full py-4 bg-primary text-primary-foreground rounded-2xl font-bold uppercase tracking-widest text-xs hover:scale-[1.02] transition-transform shadow-lg shadow-primary/20"
+            className="w-full min-h-11 py-4 bg-primary text-primary-foreground rounded-2xl font-black uppercase tracking-widest text-xs hover:scale-[1.02] transition-transform shadow-lg shadow-primary/20"
           >
             Начать тренировку
           </button>
@@ -101,12 +101,12 @@ export function AuthModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4">
-      <div className="relative bg-card w-full max-w-sm p-6 rounded-[2rem] border border-border shadow-2xl animate-in zoom-in-95 duration-200">
+      <div className="relative bg-card w-full max-w-sm p-6 rounded-3xl border border-border shadow-2xl animate-in zoom-in-95 duration-200">
         
         <button 
           onClick={onClose} 
           aria-label="Закрыть"
-          className="absolute top-6 right-6 min-h-11 min-w-11 rounded-full text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors flex items-center justify-center"
+          className="absolute top-6 right-6 min-h-11 min-w-11 rounded-xl text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors flex items-center justify-center"
         >
           <X className="w-4 h-4" />
         </button>
@@ -119,12 +119,12 @@ export function AuthModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
 
         <div className="flex items-center justify-center gap-2 bg-secondary/30 p-3 rounded-xl mb-8 text-primary border border-primary/10">
           <Key className="w-4 h-4" />
-          <span className="text-xs font-bold uppercase tracking-widest">Brain ID доступ</span>
+          <span className="text-xs font-black uppercase tracking-widest">Brain ID доступ</span>
         </div>
         
         <div className="space-y-6">
           <div className="text-center space-y-2">
-            <h3 className="text-lg font-bold tracking-tight uppercase">Анонимный доступ</h3>
+            <h3 className="text-lg font-black tracking-tight uppercase">Анонимный доступ</h3>
             <p className="text-muted-foreground text-[11px] leading-relaxed">
               Тренируйтесь без пароля и email. Весь прогресс привязан к Brain ID.
             </p>
@@ -133,7 +133,7 @@ export function AuthModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
           <button 
             onClick={handleBrainInit}
             disabled={loading}
-            className="w-full py-4 bg-primary text-primary-foreground rounded-2xl font-bold uppercase tracking-widest text-xs hover:scale-[1.02] transition-transform shadow-lg shadow-primary/20 disabled:opacity-50"
+            className="w-full min-h-11 py-4 bg-primary text-primary-foreground rounded-2xl font-black uppercase tracking-widest text-xs hover:scale-[1.02] transition-transform shadow-lg shadow-primary/20 disabled:opacity-50"
           >
             {loading ? 'Создание...' : 'Начать новую сессию'}
           </button>

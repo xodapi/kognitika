@@ -68,7 +68,7 @@ export function ShareCard({ isOpen, onClose }: ShareCardProps) {
             initial={{ scale: 0.9, opacity: 0, y: 20 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.9, opacity: 0, y: 20 }}
-            className="relative w-full max-w-lg bg-card border border-border rounded-[2.5rem] shadow-2xl overflow-hidden"
+            className="relative w-full max-w-lg bg-card border border-border rounded-3xl shadow-2xl overflow-hidden"
           >
             {/* Card Content (The ID Card) */}
             <div className="p-8 pb-10 space-y-8" ref={cardRef}>
@@ -79,12 +79,12 @@ export function ShareCard({ isOpen, onClose }: ShareCardProps) {
                   </div>
                   <div>
                     <h3 className="text-sm font-black uppercase tracking-tighter">Kognitika Identity</h3>
-                    <p className="text-xs text-primary font-black uppercase tracking-[0.2em]">Cognitive-Protocol v2.1</p>
+                    <p className="text-xs text-primary font-black uppercase tracking-widest">Cognitive-Protocol v2.1</p>
                   </div>
                 </div>
                 <button 
                   onClick={onClose}
-                  className="min-h-11 min-w-11 hover:bg-secondary rounded-full transition-colors text-muted-foreground flex items-center justify-center"
+                  className="min-h-11 min-w-11 hover:bg-secondary rounded-xl transition-colors text-muted-foreground flex items-center justify-center"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -149,7 +149,7 @@ export function ShareCard({ isOpen, onClose }: ShareCardProps) {
             <div className="bg-secondary/50 border-t border-border p-4 flex gap-3">
               <button 
                 onClick={handleShare}
-                className="flex-1 flex items-center justify-center gap-2 py-3 bg-primary text-white rounded-2xl font-bold text-xs uppercase tracking-widest shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
+                className="flex-1 flex items-center justify-center gap-2 min-h-11 bg-primary text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
               >
                 <Share2 className="w-4 h-4" /> Поделиться
               </button>

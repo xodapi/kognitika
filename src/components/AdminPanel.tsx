@@ -121,19 +121,19 @@ export const AdminPanel: React.FC<{ token: string | null }> = ({ token }) => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-black text-foreground uppercase tracking-tight">Панель управления</h2>
-          <p className="text-xs text-muted-foreground uppercase tracking-[0.2em] mt-1">Мини-CRM для работы с сообществом</p>
+          <p className="text-xs text-muted-foreground uppercase tracking-widest mt-1">Мини-CRM для работы с сообществом</p>
         </div>
 
         <div className="flex bg-card/40 p-1 border border-border rounded-xl">
            <button 
              onClick={() => setActiveTab('feedback')}
-             className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'feedback' ? 'bg-primary text-primary-foreground shadow-lg' : 'text-muted-foreground hover:text-foreground'}`}
+             className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'feedback' ? 'bg-primary text-primary-foreground shadow-lg' : 'text-muted-foreground hover:text-foreground'}`}
            >
              Обратная связь
            </button>
            <button 
              onClick={() => setActiveTab('ideas')}
-             className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'ideas' ? 'bg-primary text-primary-foreground shadow-lg' : 'text-muted-foreground hover:text-foreground'}`}
+             className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'ideas' ? 'bg-primary text-primary-foreground shadow-lg' : 'text-muted-foreground hover:text-foreground'}`}
            >
              Идеи ({ideas.length})
            </button>
@@ -207,7 +207,7 @@ export const AdminPanel: React.FC<{ token: string | null }> = ({ token }) => {
                                 />
                                 <button 
                                   onClick={() => handleFeedbackResponse(f.id)}
-                                  className="px-6 bg-primary text-primary-foreground rounded-xl font-bold uppercase text-[10px] hover:bg-primary/90 transition-all flex items-center justify-center shadow-lg shadow-primary/20"
+                                  className="px-6 min-h-11 bg-primary text-primary-foreground rounded-xl font-black uppercase text-xs hover:bg-primary/90 transition-all flex items-center justify-center shadow-lg shadow-primary/20"
                                 >
                                   <Send className="w-4 h-4" />
                                 </button>

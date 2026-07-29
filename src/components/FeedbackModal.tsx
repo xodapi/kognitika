@@ -101,9 +101,9 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
                   <div className="w-8 h-8 rounded-lg bg-primary/20 text-primary flex items-center justify-center">
                      <MessageSquare className="w-4 h-4" />
                   </div>
-                  <h2 className="text-sm font-black uppercase tracking-widest text-foreground">Обратная связь</h2>
+                  <h2 className="text-xs font-black uppercase tracking-widest text-foreground">Обратная связь</h2>
                </div>
-               <button onClick={onClose} className="p-2 hover:bg-secondary rounded-full transition-colors">
+               <button onClick={onClose} className="min-h-11 min-w-11 hover:bg-secondary rounded-xl transition-colors flex items-center justify-center">
                   <X className="w-5 h-5" />
                </button>
             </div>
@@ -117,13 +117,13 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
                     <h3 className="text-xl font-bold mb-2">Получено!</h3>
                     <p className="text-sm text-muted-foreground mb-4">Спасибо за ваш вклад в развитие проекта.</p>
                     <div className="bg-primary/10 border border-primary/20 rounded-xl px-4 py-2 mb-8">
-                       <p className="text-[10px] text-primary font-black uppercase tracking-widest mb-1">Номер обращения</p>
+                       <p className="text-xs text-primary font-black uppercase tracking-widest mb-1">Номер обращения</p>
                        <p className="text-lg font-mono font-bold text-foreground">{trackingNum}</p>
                     </div>
                     <button 
                       type="button"
                       onClick={() => { setIsSuccess(false); onClose(); }}
-                      className="px-8 py-3 bg-secondary text-foreground rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-secondary/80 transition-all w-full"
+                      className="w-full min-h-11 py-3 bg-secondary text-foreground rounded-xl font-black text-xs uppercase tracking-widest hover:bg-secondary/80 transition-all"
                     >
                       Закрыть
                     </button>
@@ -131,7 +131,7 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
               ) : (
                 <form onSubmit={handleSubmit} className="space-y-6">
                   <div>
-                    <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-3 block">Тип обращения</label>
+                    <label className="text-xs font-black text-muted-foreground uppercase tracking-widest mb-3 block">Тип обращения</label>
                     <div className="grid grid-cols-2 gap-2">
                        {[
                          { id: 'idea', icon: Lightbulb, label: 'Идея' },
@@ -143,7 +143,7 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
                             key={item.id}
                             type="button"
                             onClick={() => { setType(item.id as FeedbackType); setErrorMessage(''); }}
-                            className={`flex items-center gap-3 p-3 rounded-xl border text-xs font-bold transition-all ${type === item.id ? 'bg-primary/10 border-primary text-primary' : 'bg-secondary/50 border-border text-muted-foreground hover:bg-secondary'}`}
+                            className={`flex items-center gap-3 min-h-11 p-3 rounded-xl border text-xs font-black transition-all ${type === item.id ? 'bg-primary/10 border-primary text-primary' : 'bg-secondary/50 border-border text-muted-foreground hover:bg-secondary'}`}
                          >
                             <item.icon className="w-4 h-4" /> {item.label}
                          </button>
@@ -152,7 +152,7 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
                   </div>
 
                   <div>
-                     <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-3 block">Ваше сообщение</label>
+                     <label className="text-xs font-black text-muted-foreground uppercase tracking-widest mb-3 block">Ваше сообщение</label>
                      <textarea 
                         value={content}
                         onChange={(e) => { setContent(e.target.value); setErrorMessage(''); }}
@@ -171,7 +171,7 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
                   <button 
                     type="submit"
                     disabled={isSubmitting || !content.trim()}
-                    className="w-full py-4 bg-primary text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-lg shadow-primary/20 disabled:opacity-50 disabled:shadow-none hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+                    className="w-full min-h-11 py-4 bg-primary text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg shadow-primary/20 disabled:opacity-50 disabled:shadow-none hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2"
                   >
                     {isSubmitting ? 'Отправка...' : <><Send className="w-4 h-4" /> Отправить предложение</>}
                   </button>

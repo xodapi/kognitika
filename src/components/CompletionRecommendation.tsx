@@ -123,7 +123,7 @@ export function CompletionRecommendation(props: CompletionRecommendationProps) {
     >
       <div className="grid gap-3 sm:grid-cols-3">
         <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-4">
-          <div className="mb-2 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-emerald-500">
+          <div className="mb-2 flex items-center gap-2 text-xs font-black uppercase tracking-widest text-emerald-500">
             <CheckCircle2 className="h-4 w-4" />
             Что получилось
           </div>
@@ -131,7 +131,7 @@ export function CompletionRecommendation(props: CompletionRecommendationProps) {
         </div>
 
         <div className="rounded-xl border border-amber-500/20 bg-amber-500/10 p-4">
-          <div className="mb-2 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-amber-500">
+          <div className="mb-2 flex items-center gap-2 text-xs font-black uppercase tracking-widest text-amber-500">
             <Target className="h-4 w-4" />
             Что улучшить
           </div>
@@ -139,7 +139,7 @@ export function CompletionRecommendation(props: CompletionRecommendationProps) {
         </div>
 
         <div className="rounded-xl border border-primary/20 bg-primary/10 p-4">
-          <div className="mb-2 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-primary">
+          <div className="mb-2 flex items-center gap-2 text-xs font-black uppercase tracking-widest text-primary">
             <Sparkles className="h-4 w-4" />
             Следующий тест
           </div>
@@ -152,7 +152,7 @@ export function CompletionRecommendation(props: CompletionRecommendationProps) {
         <button
           type="button"
           onClick={startRecommended}
-          className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-[10px] font-black uppercase tracking-widest text-primary-foreground shadow-lg shadow-primary/10 transition-all hover:bg-primary/90 active:scale-95"
+          className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-xs font-black uppercase tracking-widest text-primary-foreground shadow-lg shadow-primary/10 transition-all hover:bg-primary/90 active:scale-95 min-h-11"
         >
           Начать рекомендованное
           <ArrowRight className="h-4 w-4" />
@@ -162,7 +162,7 @@ export function CompletionRecommendation(props: CompletionRecommendationProps) {
           <button
             type="button"
             onClick={props.onRepeat}
-            className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-border bg-card px-4 py-3 text-[10px] font-black uppercase tracking-widest text-foreground transition-all hover:bg-secondary active:scale-95"
+            className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-border bg-card px-4 py-3 text-xs font-black uppercase tracking-widest text-foreground transition-all hover:bg-secondary active:scale-95 min-h-11"
           >
             <RotateCcw className="h-4 w-4" />
             {props.repeatLabel || 'Повторить'}
@@ -172,7 +172,7 @@ export function CompletionRecommendation(props: CompletionRecommendationProps) {
         <button
           type="button"
           onClick={backToMenu}
-          className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-border bg-card px-4 py-3 text-[10px] font-black uppercase tracking-widest text-foreground transition-all hover:bg-secondary active:scale-95"
+          className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-border bg-card px-4 py-3 text-xs font-black uppercase tracking-widest text-foreground transition-all hover:bg-secondary active:scale-95 min-h-11"
         >
           <Menu className="h-4 w-4" />
           {props.menuLabel || 'В меню'}
