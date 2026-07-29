@@ -1,6 +1,26 @@
-# Kognitika
+<div align="center">
+  <br />
+  <h1>🧠 Когнитика · Kognitika</h1>
+  <p><strong>React/Express platform for cognitive training — memory, attention, speed, and adaptive analytics</strong></p>
+  <p>
+    <a href="https://kognitika.syntog.ru" target="_blank">kognitika.syntog.ru</a>
+  </p>
+  <p>
+    <img src="https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=fff" alt="TypeScript" />
+    <img src="https://img.shields.io/badge/React-20232A?logo=react&logoColor=61DAFB" alt="React" />
+    <img src="https://img.shields.io/badge/Express-000?logo=express&logoColor=fff" alt="Express" />
+    <img src="https://img.shields.io/badge/Prisma-2D3748?logo=prisma&logoColor=fff" alt="Prisma" />
+    <img src="https://img.shields.io/badge/Tailwind_CSS-38B2AC?logo=tailwind-css&logoColor=fff" alt="Tailwind" />
+    <img src="https://img.shields.io/badge/Socket.io-010101?logo=socket.io&logoColor=fff" alt="Socket.io" />
+    <br />
+    <img src="https://img.shields.io/badge/tests-357_passing-22c55e?logo=vitest&logoColor=fff" alt="Tests" />
+    <img src="https://img.shields.io/badge/license-Proprietary-ff69b4" alt="License" />
+    <img src="https://img.shields.io/github/last-commit/xodapi/kognitika?logo=git" alt="Last commit" />
+  </p>
+  <br />
+</div>
 
-Private MVP for cognitive training, Brain ID identity, adaptive analytics, and real-time duel mechanics.
+Private platform for cognitive training, Brain ID identity, adaptive analytics, and real-time duel mechanics.
 
 ## Status
 
@@ -200,4 +220,6 @@ Preferred labels:
 
 ## License
 
-Private repository. Proprietary license — see [LICENSE](LICENSE). Access is granted only to team members, auditors, and contractors under NDA.
+Proprietary license — see [LICENSE](LICENSE). Access to the source is granted to team members, auditors, and contractors under NDA.
+
+All rights reserved. See [SECURITY.md](SECURITY.md) for vulnerability reporting and security boundaries.

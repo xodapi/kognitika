@@ -14,3 +14,5 @@ crates/**/pkg*/
 !.env.example
 dist-web/
 dist-web
+docs/ЗЭ_*/
+docs/тз*/
