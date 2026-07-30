@@ -32,6 +32,24 @@ describe('API Validation Schemas', () => {
       expect(valid.success).toBe(true);
     });
 
+    it('saveGameSchema принимает валидный clientRunId', () => {
+      const valid = saveGameSchema.safeParse({
+        clientRunId: '11111111-1111-4111-8111-111111111111',
+        gameType: 'SCHULTE',
+        timeMs: 5000,
+      });
+      expect(valid.success).toBe(true);
+    });
+
+    it('saveGameSchema отклоняет невалидный clientRunId', () => {
+      const invalid = saveGameSchema.safeParse({
+        clientRunId: 'not-a-uuid',
+        gameType: 'SCHULTE',
+        timeMs: 5000,
+      });
+      expect(invalid.success).toBe(false);
+    });
+
     it('saveGameSchema должен отклонять client-side score на верхнем уровне', () => {
       const invalid = saveGameSchema.safeParse({
         gameType: 'SCHULTE',

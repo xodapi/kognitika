@@ -11,17 +11,17 @@ const JWT_SECRET = 'synthetic-game-route-secret';
 
 const prismaMock = vi.hoisted(() => ({
   gameSession: {
-    create: vi.fn(),
-  },
-  user: {
+    findMany: vi.fn(),
     findUnique: vi.fn(),
     update: vi.fn(),
+  },
+  user: {
     findMany: vi.fn(),
   },
-  xpEvent: {
-    create: vi.fn(),
-  },
-  $transaction: vi.fn(async (operations: unknown[]) => Promise.all(operations)),
+}));
+
+const gameSaveMock = vi.hoisted(() => ({
+  saveCompletedGame: vi.fn(),
 }));
 
 const eventBusMock = vi.hoisted(() => ({
@@ -41,6 +41,8 @@ vi.mock('../server/events/event-bus.ts', () => ({
   eventBus: eventBusMock,
 }));
 
+vi.mock('../server/services/game-save.ts', () => gameSaveMock);
+
 let gameRoutes: Router;
 const servers: HttpServer[] = [];
 
@@ -52,7 +54,7 @@ beforeAll(async () => {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  prismaMock.$transaction.mockImplementation(async (operations: unknown[]) => Promise.all(operations));
+  process.env.GAME_SAVE_LEGACY_COMPAT_ENABLED = 'false';
 });
 
 afterEach(async () => {
@@ -98,35 +100,72 @@ async function postJson(baseUrl: string, path: string, token: string, body: unkn
 
 describe('game route XP event contract', () => {
   it('records an XpEvent when a completed game awards XP', async () => {
-    prismaMock.user.findUnique.mockResolvedValue({
-      id: 'user_synthetic_game',
-      level: 1,
-      experience: 100,
-      streakDays: 0,
-      lastPlayedAt: null,
-    });
-    prismaMock.gameSession.create.mockResolvedValue({
-      id: 'session_synthetic_1',
-      userId: 'user_synthetic_game',
-      gameType: 'SCHULTE',
-      score: 21,
-      timeMs: 5000,
-      isCompleted: true,
-      metadata: { size: 3 },
-    });
-    prismaMock.user.update.mockResolvedValue({
-      id: 'user_synthetic_game',
-      level: 1,
-      experience: 121,
-      streakDays: 1,
-    });
-    prismaMock.xpEvent.create.mockResolvedValue({
-      id: 'xp_synthetic_1',
-      userId: 'user_synthetic_game',
-      amount: 21,
-      reason: 'game:SCHULTE',
+    gameSaveMock.saveCompletedGame.mockResolvedValue({
+      session: {
+        id: 'session_synthetic_1',
+        userId: 'user_synthetic_game',
+        clientRunId: '11111111-1111-4111-8111-111111111111',
+        gameType: 'SCHULTE',
+        score: 21,
+        timeMs: 5000,
+        isCompleted: true,
+        metadata: { size: 3 },
+      },
+      user: {
+        id: 'user_synthetic_game',
+        level: 1,
+        experience: 121,
+        streakDays: 1,
+      },
+      isReplay: false,
     });
 
+    const baseUrl = await createGameHarness();
+    const token = userToken({ id: 'user_synthetic_game' });
+    const response = await postJson(baseUrl, '/api/game/save', token, {
+      clientRunId: '11111111-1111-4111-8111-111111111111',
+      gameType: 'SCHULTE',
+      timeMs: 5000,
+      metadata: { size: 3 },
+    });
+
+    expect(response.status).toBe(200);
+    expect(gameSaveMock.saveCompletedGame).toHaveBeenCalledWith({
+      userId: 'user_synthetic_game',
+      clientRunId: '11111111-1111-4111-8111-111111111111',
+      gameType: 'SCHULTE',
+      timeMs: 5000,
+      metadata: { size: 3 },
+    });
+    expect(eventBusMock.emit).toHaveBeenCalledWith('game:completed', expect.objectContaining({
+      userId: 'user_synthetic_game',
+      sessionId: 'session_synthetic_1',
+      score: 21,
+      gameType: 'SCHULTE',
+    }));
+  });
+
+  it('does not emit completion again for an idempotent replay', async () => {
+    gameSaveMock.saveCompletedGame.mockResolvedValue({
+      session: { id: 'session_synthetic_1', score: 21 },
+      user: { experience: 121, streakDays: 1 },
+      isReplay: true,
+    });
+    const baseUrl = await createGameHarness();
+    const token = userToken({ id: 'user_synthetic_game' });
+    const response = await postJson(baseUrl, '/api/game/save', token, {
+      clientRunId: '11111111-1111-4111-8111-111111111111',
+      gameType: 'SCHULTE',
+      timeMs: 5000,
+      metadata: { size: 3 },
+    });
+
+    expect(response.status).toBe(200);
+    expect(response.body.session.id).toBe('session_synthetic_1');
+    expect(eventBusMock.emit).not.toHaveBeenCalled();
+  });
+
+  it('rejects missing clientRunId when compatibility is disabled', async () => {
     const baseUrl = await createGameHarness();
     const token = userToken({ id: 'user_synthetic_game' });
     const response = await postJson(baseUrl, '/api/game/save', token, {
@@ -135,20 +174,7 @@ describe('game route XP event contract', () => {
       metadata: { size: 3 },
     });
 
-    expect(response.status).toBe(200);
-    expect(prismaMock.$transaction).toHaveBeenCalledOnce();
-    expect(prismaMock.xpEvent.create).toHaveBeenCalledWith({
-      data: {
-        userId: 'user_synthetic_game',
-        amount: 21,
-        reason: 'game:SCHULTE',
-      },
-    });
-    expect(eventBusMock.emit).toHaveBeenCalledWith('game:completed', expect.objectContaining({
-      userId: 'user_synthetic_game',
-      sessionId: 'session_synthetic_1',
-      score: 21,
-      gameType: 'SCHULTE',
-    }));
+    expect(response.status).toBe(400);
+    expect(gameSaveMock.saveCompletedGame).not.toHaveBeenCalled();
   });
 });

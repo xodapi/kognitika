@@ -27,6 +27,7 @@ services:
       - PORT=3006
       - CORS_ORIGIN=${CORS_ORIGIN:-http://localhost:3006}
       - APP_URL=${APP_URL:-http://localhost:3006}
+      - GAME_SAVE_LEGACY_COMPAT_ENABLED=${GAME_SAVE_LEGACY_COMPAT_ENABLED:-true}
     depends_on:
       db:
         condition: service_healthy

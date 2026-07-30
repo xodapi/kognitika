@@ -42,12 +42,14 @@ model User {
 }
 
 model XpEvent {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  amount    Int
-  reason    String
-  createdAt DateTime @default(now())
+  id            String       @id @default(cuid())
+  userId        String
+  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  gameSessionId String?      @unique
+  gameSession   GameSession? @relation(fields: [gameSessionId], references: [id], onDelete: Cascade)
+  amount        Int
+  reason        String
+  createdAt     DateTime     @default(now())
 
   @@index([userId, createdAt])
 }
@@ -113,10 +115,13 @@ model GameSession {
   timeMs        Int
   isCompleted   Boolean  @default(false)
   
-  metadata      Json     
-  
+  metadata      Json
+  clientRunId   String?
+  xpEvent       XpEvent?
+
   createdAt     DateTime @default(now())
 
+  @@unique([userId, clientRunId])
   @@index([userId, isCompleted, createdAt])
   @@index([gameType, isCompleted, score])
 }

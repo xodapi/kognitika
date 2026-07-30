@@ -5,7 +5,7 @@ import { handleValidationError } from '../utils/validation.ts';
 import { authenticate } from '../middleware/auth.ts';
 import { saveGameSchema, updateMetadataSchema } from '../schemas/game.ts';
 import { eventBus } from '../events/event-bus.ts';
-import { computeServerScore } from '../services/game-score.ts';
+import { saveCompletedGame } from '../services/game-save.ts';
 import { createSafeLogger, safeError } from '../../lib/safe-logger.ts';
 
 const router = Router();
@@ -28,76 +28,38 @@ router.post('/save', authenticate, async (req: any, res) => {
   const validationError = handleValidationError(result, res);
   if (validationError) return validationError;
 
+  const { clientRunId, gameType, timeMs, metadata } = result.data!;
+  if (!timeMs || timeMs < 100) {
+    return res.status(400).json({ error: 'Invalid performance data' });
+  }
+  if (!clientRunId && process.env.GAME_SAVE_LEGACY_COMPAT_ENABLED !== 'true') {
+    return res.status(400).json({ error: 'clientRunId is required' });
+  }
+
   try {
-    const { gameType, timeMs, metadata } = result.data!;
-
-    if (!timeMs || timeMs < 100) {
-      return res.status(400).json({ error: 'Invalid performance data' });
-    }
-
-    const score = computeServerScore({ gameType, timeMs, metadata });
-
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const currentUser = await prisma.user.findUnique({ where: { id: req.user.id } });
-
-    let newStreak = currentUser?.streakDays || 0;
-    if (currentUser?.lastPlayedAt) {
-      const lastPlayed = new Date(currentUser.lastPlayedAt);
-      const lastDay = new Date(lastPlayed.getFullYear(), lastPlayed.getMonth(), lastPlayed.getDate());
-      const diffDays = Math.floor((today.getTime() - lastDay.getTime()) / (1000 * 60 * 60 * 24));
-      if (diffDays === 1) newStreak += 1;
-      else if (diffDays > 1) newStreak = 1;
-    } else {
-      newStreak = 1;
-    }
-
-    const [session, user] = await prisma.$transaction([
-      prisma.gameSession.create({
-        data: {
-          userId: req.user.id,
-          gameType: gameType as any,
-          score,
-          timeMs: timeMs || 0,
-          isCompleted: true,
-          metadata: (metadata || {}) as import('@prisma/client').Prisma.InputJsonValue
-        }
-      }),
-      prisma.user.update({
-        where: { id: req.user.id },
-        data: {
-          experience: { increment: score },
-          streakDays: newStreak,
-          lastPlayedAt: now,
-          ...(metadata?.distraction && metadata.distraction !== 'none' ? {
-            rating: { increment: Math.max(1, Math.floor(100000 / (timeMs || 10000)) - 5) }
-          } : {})
-        }
-      }),
-      prisma.xpEvent.create({
-        data: {
-          userId: req.user.id,
-          amount: score,
-          reason: `game:${gameType}`,
-        },
-      }),
-    ]);
-
-    const currentLvl = Math.floor(user.experience / 500) + 1;
-    const EventBusClass: any = eventBus.constructor;
-    eventBus.emit(EventBusClass.EVENTS.GAME_COMPLETED, {
+    const saveResult = await saveCompletedGame({
       userId: req.user.id,
-      sessionId: session.id,
-      score,
+      clientRunId,
       gameType,
-      metadata
+      timeMs,
+      metadata,
     });
-
-    if (currentLvl > user.level) {
-      await prisma.user.update({ where: { id: user.id }, data: { level: currentLvl } });
+    const currentLevel = Math.floor(saveResult.user.experience / 500) + 1;
+    if (!saveResult.isReplay) {
+      const EventBusClass: any = eventBus.constructor;
+      eventBus.emit(EventBusClass.EVENTS.GAME_COMPLETED, {
+        userId: req.user.id,
+        sessionId: saveResult.session.id,
+        score: saveResult.session.score,
+        gameType,
+        metadata,
+      });
     }
-
-    res.json({ session, newLevel: currentLvl, streakDays: user.streakDays });
+    res.json({
+      session: saveResult.session,
+      newLevel: currentLevel,
+      streakDays: saveResult.user.streakDays,
+    });
   } catch (error) {
     logger.error('Game save failed', { error: safeError(error) });
     res.status(500).json({ error: 'Failed to save session' });
