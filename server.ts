@@ -11,6 +11,7 @@ import helmet from 'helmet';
 import { rateLimit } from 'express-rate-limit';
 import { createSafeLogger } from './src/lib/safe-logger.ts';
 import { createExpressCorsOptions, createSocketCorsOptions, resolveCorsConfig } from './src/server/config/cors.ts';
+import { validateJwtSecret } from './src/server/config/runtime-security.ts';
 
 const logger = createSafeLogger('server');
 
@@ -73,11 +74,13 @@ function resolveBuildId() {
 const BUILD_ID = resolveBuildId();
 
 // Startup Guard
-if (!process.env.JWT_SECRET) {
-  logger.error('JWT_SECRET is not defined in environment');
+let JWT_SECRET: string;
+try {
+  JWT_SECRET = validateJwtSecret(process.env.JWT_SECRET);
+} catch (error) {
+  logger.error('Invalid runtime security configuration', { error });
   process.exit(1);
 }
-const JWT_SECRET = process.env.JWT_SECRET;
 const corsConfig = resolveCorsConfig(process.env);
 if (corsConfig.warning) {
   logger.warn('CORS configuration warning', { reason: corsConfig.warning });

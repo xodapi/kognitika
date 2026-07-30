@@ -124,7 +124,8 @@ pnpm install
 # 2. Создать файл окружения
 cp .env.example .env
 
-# 3. Запустить PostgreSQL в Docker
+# 3. Указать POSTGRES_USER, POSTGRES_PASSWORD и POSTGRES_DB в .env,
+# затем запустить PostgreSQL во внутренней Docker-сети
 docker compose up -d db
 
 # 4. Настроить Prisma
@@ -227,7 +228,7 @@ curl https://kognitika.syntog.ru/api/health
 docker compose up --build
 ```
 
-Приложение: `3006:3006`, PostgreSQL: `5432:5432`.
+Приложение публикуется на `3006:3006`. PostgreSQL доступен только внутри Docker-сети и не публикуется на хост; учётные данные и `JWT_SECRET` должны быть заданы через `.env`.
 
 ---
 
