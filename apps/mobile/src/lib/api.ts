@@ -96,22 +96,32 @@ export async function clearAuth(): Promise<void> {
 }
 
 export async function submitGameResult(result: {
+  clientRunId: string;
   type: string;
   size?: number;
   timeMs: number;
   accuracy: number;
-  score: number;
   errors: number;
 }): Promise<void> {
   const headers = await getHeaders();
-  const res = await fetch(`${API_URL}/api/game/result`, {
+  const res = await fetch(`${API_URL}/api/game/save`, {
     method: 'POST',
     headers,
-    body: JSON.stringify(result),
+    body: JSON.stringify({
+      clientRunId: result.clientRunId,
+      gameType: result.type,
+      timeMs: result.timeMs,
+      metadata: {
+        size: result.size,
+        accuracy: result.accuracy,
+        errors: result.errors,
+      },
+    }),
   });
 
   if (!res.ok) {
-    console.warn('Failed to submit game result:', res.status);
+    const error = await res.json().catch(() => null) as { error?: string; message?: string } | null;
+    throw new Error(error?.error || error?.message || `Failed to submit game result: ${res.status}`);
   }
 }
 

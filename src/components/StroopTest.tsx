@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { createClientRunId } from '../lib/client-run-id';
 import { useStroopEngine } from '../hooks/useStroopEngine';
 import { useAuth } from '../hooks/useAuth';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -21,8 +22,10 @@ function ClassicStroopTest() {
   const [showPreLuscher, setShowPreLuscher] = useState(false);
   const [preSequence, setPreSequence] = useState<number[] | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
+  const clientRunIdRef = useRef<string | null>(null);
 
   const handleStartClick = () => {
+    clientRunIdRef.current = createClientRunId();
     setSessionId(null);
     setPreSequence(null);
     if (useLuscher) {
@@ -33,6 +36,7 @@ function ClassicStroopTest() {
   };
 
   const handlePlayAgain = () => {
+    clientRunIdRef.current = createClientRunId();
     setSessionId(null);
     setPreSequence(null);
     if (useLuscher) {
@@ -65,6 +69,7 @@ function ClassicStroopTest() {
            method: 'POST',
            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
            body: JSON.stringify({
+              clientRunId: clientRunIdRef.current,
               gameType: 'STROOP',
               timeMs: 60000 - state.timeLeftMs, 
               metadata: { 

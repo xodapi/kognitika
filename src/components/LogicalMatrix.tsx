@@ -1,4 +1,5 @@
-import { useEffect } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
+import { createClientRunId } from '../lib/client-run-id';
 import { useLogicalEngine, MatrixItem } from '../hooks/useLogicalEngine';
 import { useAuth } from '../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
@@ -48,6 +49,11 @@ export function LogicalMatrix() {
   const { state, startGame, answerQuestion } = useLogicalEngine();
   const { token } = useAuth();
   const navigate = useNavigate();
+  const clientRunIdRef = useRef<string | null>(null);
+  const handleStart = useCallback(() => {
+    clientRunIdRef.current = createClientRunId();
+    startGame();
+  }, [startGame]);
 
   useEffect(() => {
      if (state.isFinished && token) {
@@ -55,6 +61,7 @@ export function LogicalMatrix() {
            method: 'POST',
            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
            body: JSON.stringify({
+              clientRunId: clientRunIdRef.current,
               gameType: 'LOGICAL_SEQUENCE',
               timeMs: state.timeMs,
               metadata: { score: state.score }
@@ -71,7 +78,7 @@ export function LogicalMatrix() {
             <p className="text-sm text-muted-foreground mb-8">
               Выявите скрытую закономерность и дополните матрицу 3х3 правильным элементом. Тест состоит из 3 матриц нарастающей сложности.
             </p>
-            <button onClick={() => startGame()} className="w-full max-w-[250px] min-h-11 px-4 py-3 bg-primary text-primary-foreground text-xs uppercase tracking-wider rounded-lg font-bold hover:bg-primary/90 transition-colors">
+            <button onClick={handleStart} className="w-full max-w-[250px] min-h-11 px-4 py-3 bg-primary text-primary-foreground text-xs uppercase tracking-wider rounded-lg font-bold hover:bg-primary/90 transition-colors">
               Актвировать матрицы
             </button>
         </div>
@@ -87,7 +94,7 @@ export function LogicalMatrix() {
           score={state.score}
           timeMs={state.timeMs}
           errors={3 - state.score}
-          onPlayAgain={startGame}
+          onPlayAgain={handleStart}
           onBackToMenu={() => navigate('/')}
         />
       </div>

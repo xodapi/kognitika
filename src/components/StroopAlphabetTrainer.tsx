@@ -13,6 +13,7 @@ import { DEFAULT_STROOP_ALPHABET_COUNT } from '../lib/stroop-alphabet-generator'
 import { STROOP_COLORS } from '../lib/stroop-colors';
 import { createSafeLogger, safeError } from '../lib/safe-logger';
 import { CompletionRecommendation } from './CompletionRecommendation';
+import { createClientRunId } from '../lib/client-run-id';
 
 const logger = createSafeLogger('stroop-alphabet');
 
@@ -29,6 +30,7 @@ export function StroopAlphabetTrainer() {
   const [questionCount, setQuestionCount] = useState(DEFAULT_STROOP_ALPHABET_COUNT);
   const [saveRetry, setSaveRetry] = useState(0);
   const savedRunRef = useRef(false);
+  const clientRunIdRef = useRef<string | null>(null);
   const saveAttemptsRef = useRef(0);
   const retryTimerRef = useRef<number | null>(null);
 
@@ -39,6 +41,7 @@ export function StroopAlphabetTrainer() {
   }, []);
 
   const handleStart = useCallback(() => {
+    clientRunIdRef.current = createClientRunId();
     savedRunRef.current = false;
     saveAttemptsRef.current = 0;
     if (retryTimerRef.current !== null) window.clearTimeout(retryTimerRef.current);
@@ -107,6 +110,7 @@ export function StroopAlphabetTrainer() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({
+        clientRunId: clientRunIdRef.current,
         gameType: 'STROOP_ALPHABET',
         timeMs: state.timeMs,
         metadata: {

@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { createClientRunId } from '../lib/client-run-id';
 import { motion, AnimatePresence } from 'motion/react';
 import { Grid3x3, Target, Trophy, RefreshCw, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
@@ -24,6 +25,11 @@ export function SpatialConcealment() {
   const { state, startTraining, handleCellClick } = useSpatialEngine();
   const { level, gridSize, activeCount, grid, phase, score, errors } = state;
   const { token } = useAuth();
+  const clientRunIdRef = useRef<string | null>(null);
+  const handleStart = useCallback(() => {
+    clientRunIdRef.current = createClientRunId();
+    startTraining();
+  }, [startTraining]);
   const MEMORIZE_SECS = 3; // matches useSpatialEngine memorize duration
   
   useSessionRecording(phase !== 'idle' && phase !== 'result', phase === 'result');
@@ -35,6 +41,7 @@ export function SpatialConcealment() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
           body: JSON.stringify({
+            clientRunId: clientRunIdRef.current,
             gameType: 'SPATIAL_CONCEALMENT',
             timeMs: 1000,
             metadata: { level, score, errors }
@@ -96,7 +103,7 @@ export function SpatialConcealment() {
           </div>
 
           <button 
-            onClick={startTraining} 
+            onClick={handleStart}
             className="mt-auto w-full min-h-11 px-4 py-3 bg-primary text-primary-foreground text-xs uppercase tracking-wider rounded-lg font-bold hover:bg-primary/90 transition-colors flex items-center justify-center gap-2"
           >
             <RefreshCw className="w-4 h-4" /> Начать заново
@@ -126,7 +133,7 @@ export function SpatialConcealment() {
                   </p>
                 </div>
                 <button 
-                  onClick={startTraining}
+                  onClick={handleStart}
                   className="min-h-11 px-8 py-4 bg-primary text-primary-foreground rounded-2xl font-black uppercase tracking-widest text-xs shadow-lg shadow-primary/20 hover:scale-105 transition-transform"
                 >
                   Начать тренировку
@@ -151,7 +158,7 @@ export function SpatialConcealment() {
                   sourceModuleId="spatial"
                   score={score}
                   errors={errors}
-                  onRepeat={startTraining}
+                  onRepeat={handleStart}
                   repeatLabel="Попробовать снова"
                   className="max-w-3xl"
                 />

@@ -25,6 +25,7 @@ import {
 } from '../lib/alphabet-table-generator';
 import { createSafeLogger, safeError } from '../lib/safe-logger';
 import { CompletionRecommendation } from './CompletionRecommendation';
+import { createClientRunId } from '../lib/client-run-id';
 
 const logger = createSafeLogger('alphabet-table');
 
@@ -46,10 +47,12 @@ export function AlphabetTableTrainer() {
   const [preset, setPreset] = useState<AlphabetTablePreset>('balanced');
   const [questionCount, setQuestionCount] = useState(DEFAULT_ALPHABET_QUESTION_COUNT);
   const savedRunRef = useRef(false);
+  const clientRunIdRef = useRef<string | null>(null);
 
   useSessionRecording(state.isActive, state.isFinished);
 
   const handleStart = useCallback(() => {
+    clientRunIdRef.current = createClientRunId();
     savedRunRef.current = false;
     startGame(preset, questionCount);
   }, [preset, questionCount, startGame]);
@@ -112,6 +115,7 @@ export function AlphabetTableTrainer() {
         Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({
+        clientRunId: clientRunIdRef.current,
         gameType: 'ALPHABET_TABLE',
         timeMs: state.timeMs,
         metadata: {

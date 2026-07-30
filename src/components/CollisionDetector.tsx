@@ -5,6 +5,7 @@ import { useEffect, useState, useRef } from 'react';
 import { Filter, AlertTriangle, CheckCircle, ChevronRight, Sparkles, Loader2 } from 'lucide-react';
 import { generateCollisionCards } from '../lib/content-generator';
 import { CompletionRecommendation } from './CompletionRecommendation';
+import { createClientRunId } from '../lib/client-run-id';
 import { haptic } from '../lib/haptic';
 
 export function CollisionDetector() {
@@ -14,9 +15,11 @@ export function CollisionDetector() {
   const [generatedMode, setGeneratedMode] = useState(false);
   const [contentError, setContentError] = useState<string | null>(null);
   const levelRef = useRef(1);
+  const clientRunIdRef = useRef<string | null>(null);
 
   // Local deterministic content generation keeps this module offline and reproducible.
   const startWithGeneratedContent = async (level: number) => {
+    clientRunIdRef.current = createClientRunId();
     levelRef.current = level;
     setIsGenerating(true);
     setContentError(null);
@@ -45,6 +48,7 @@ export function CollisionDetector() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({
+          clientRunId: clientRunIdRef.current,
           gameType: 'COLLISION_DETECTOR',
           timeMs: state.timeMs,
           metadata: { score: state.score, hits: state.hits, misses: state.misses, fp: state.falsePositives, level: state.level },
@@ -280,12 +284,12 @@ export function CollisionDetector() {
           maxScore={state.maxScore}
           errors={state.misses + state.falsePositives}
           durationMs={state.timeMs}
-          onRepeat={() => startGame(state.level)}
+          onRepeat={() => startWithGeneratedContent(state.level)}
           className="max-w-3xl"
         />
         <div className="mt-4 flex gap-3">
           {accuracy >= 70 && (
-            <button onClick={() => startGame(state.level + 1)} className="flex items-center gap-2 px-5 py-2.5 bg-red-600 text-white rounded-xl text-xs font-bold hover:bg-red-500 transition-colors">
+            <button onClick={() => startWithGeneratedContent(state.level + 1)} className="flex items-center gap-2 px-5 py-2.5 bg-red-600 text-white rounded-xl text-xs font-bold hover:bg-red-500 transition-colors">
               Уровень {state.level + 1} <ChevronRight className="w-3.5 h-3.5" />
             </button>
           )}

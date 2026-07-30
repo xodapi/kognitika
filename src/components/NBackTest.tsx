@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { createClientRunId } from '../lib/client-run-id';
 import { useNBackEngine } from '../hooks/useNBackEngine';
 import { useAuth } from '../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
@@ -18,8 +19,10 @@ export function NBackTest() {
   const [showPreLuscher, setShowPreLuscher] = useState(false);
   const [preSequence, setPreSequence] = useState<number[] | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
+  const clientRunIdRef = useRef<string | null>(null);
 
   const handleStartClick = () => {
+    clientRunIdRef.current = createClientRunId();
     setSessionId(null);
     setPreSequence(null);
     if (useLuscher) {
@@ -30,6 +33,7 @@ export function NBackTest() {
   };
 
   const handlePlayAgain = () => {
+    clientRunIdRef.current = createClientRunId();
     setSessionId(null);
     setPreSequence(null);
     if (useLuscher) {
@@ -62,6 +66,7 @@ export function NBackTest() {
            method: 'POST',
            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
            body: JSON.stringify({
+              clientRunId: clientRunIdRef.current,
               gameType: 'N_BACK',
               timeMs: 2500 * state.round, // Estimate
               metadata: { 

@@ -4,6 +4,7 @@ import { Activity, AlertOctagon, Zap, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { createSafeLogger, safeError } from '../lib/safe-logger';
 import { haptic } from '../lib/haptic';
+import { createClientRunId } from '../lib/client-run-id';
 
 const logger = createSafeLogger('anomaly-detector');
 
@@ -18,8 +19,10 @@ export function AnomalyDetector() {
   
   const gameInterval = useRef<NodeJS.Timeout | null>(null);
   const startTime = useRef<number>(0);
+  const clientRunIdRef = useRef<string | null>(null);
 
   const startGame = () => {
+    clientRunIdRef.current = createClientRunId();
     setGameState('scanning');
     setScore(0);
     setAnomaliesFound(0);
@@ -58,6 +61,7 @@ export function AnomalyDetector() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({
+          clientRunId: clientRunIdRef.current,
           gameType: 'ANOMALY_DETECTOR',
           timeMs: 60000,
           isCompleted: true,

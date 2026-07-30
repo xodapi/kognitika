@@ -13,6 +13,7 @@ import {
 import { generateGrid, generateExpectedSequence, CellValue, GameMode } from '../lib/schulte-generator';
 import { submitGameResult, getStoredBrainId, getStoredPseudonym, fetchUserProfile } from '../lib/api';
 import CompletionRecommendation from '../components/CompletionRecommendation';
+import { createClientRunId } from '../lib/client-run-id';
 
 
 interface SchulteScreenProps {
@@ -90,7 +91,7 @@ export default function SchulteScreen({ onLogout }: SchulteScreenProps) {
     setSubmitSuccess(null);
 
     startTimeRef.current = Date.now();
-    sessionIdRef.current = `mobile:${brainId || 'anon'}:${startTimeRef.current}`;
+    sessionIdRef.current = createClientRunId();
 
     if (timerRef.current) cancelAnimationFrame(timerRef.current);
 
@@ -99,7 +100,7 @@ export default function SchulteScreen({ onLogout }: SchulteScreenProps) {
       timerRef.current = requestAnimationFrame(updateTime);
     };
     timerRef.current = requestAnimationFrame(updateTime);
-  }, [size, mode, brainId]);
+  }, [size, mode]);
 
   const resetGame = useCallback(() => {
     if (timerRef.current) cancelAnimationFrame(timerRef.current);
@@ -111,6 +112,7 @@ export default function SchulteScreen({ onLogout }: SchulteScreenProps) {
     setErrors(0);
     setTimeMs(0);
     setSubmitSuccess(null);
+    sessionIdRef.current = null;
   }, []);
 
   const handleCellPress = useCallback((cell: CellValue) => {
@@ -152,15 +154,20 @@ export default function SchulteScreen({ onLogout }: SchulteScreenProps) {
     }
   }, [isActive, isFinished, expectedSequence, expectedIndex, errors, size]);
 
-  const submitResults = async (gSize: number, gTimeMs: number, gAccuracy: number, gScore: number, gErrors: number) => {
+  const submitResults = async (gSize: number, gTimeMs: number, gAccuracy: number, _gScore: number, gErrors: number) => {
+    const clientRunId = sessionIdRef.current;
+    if (!clientRunId) {
+      setSubmitSuccess(false);
+      return;
+    }
     setSubmitting(true);
     try {
       await submitGameResult({
+        clientRunId,
         type: 'SCHULTE',
         size: gSize,
         timeMs: gTimeMs,
         accuracy: gAccuracy,
-        score: gScore,
         errors: gErrors
       });
       setSubmitSuccess(true);

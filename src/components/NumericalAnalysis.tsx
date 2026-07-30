@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { createClientRunId } from '../lib/client-run-id';
 import { useNumericalEngine } from '../hooks/useNumericalEngine';
 import { Calculator } from './Calculator';
 import { motion, AnimatePresence } from 'motion/react';
@@ -35,6 +36,11 @@ export function NumericalAnalysis() {
   const [showCalc, setShowCalc] = useState(false);
   const { token } = useAuth();
   const navigate = useNavigate();
+  const clientRunIdRef = useRef<string | null>(null);
+  const handleStart = useCallback(() => {
+    clientRunIdRef.current = createClientRunId();
+    startGame();
+  }, [startGame]);
 
   
   // Save result on finish
@@ -44,6 +50,7 @@ export function NumericalAnalysis() {
            method: 'POST',
            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
            body: JSON.stringify({
+              clientRunId: clientRunIdRef.current,
               gameType: 'NUMERICAL_ANALYSIS',
               timeMs: 60000 - state.timeLeftMs, // Time spent
               metadata: { score: state.score }
@@ -60,7 +67,7 @@ export function NumericalAnalysis() {
             <p className="text-sm text-muted-foreground mb-8">
               Оценка способности быстро оперировать данными. У вас будет 60 секунд на ответ серии вопросов (вычисление долей, процентных изменений и средневзвешенных значений).
             </p>
-            <button onClick={() => startGame()} className="w-full max-w-[250px] px-4 py-3 bg-primary text-primary-foreground text-xs uppercase tracking-wider rounded-lg font-bold hover:bg-primary/90 transition-colors">
+            <button onClick={handleStart} className="w-full max-w-[250px] px-4 py-3 bg-primary text-primary-foreground text-xs uppercase tracking-wider rounded-lg font-bold hover:bg-primary/90 transition-colors">
               Начать тест
             </button>
         </div>
@@ -76,7 +83,7 @@ export function NumericalAnalysis() {
           score={state.score}
           timeMs={60000 - state.timeLeftMs}
           errors={5 - state.score}
-          onPlayAgain={startGame}
+          onPlayAgain={handleStart}
           onBackToMenu={() => navigate('/')}
         />
       </div>

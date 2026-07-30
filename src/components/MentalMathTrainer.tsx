@@ -14,6 +14,7 @@ import {
   MENTAL_MATH_PRESETS,
   type MathLevel,
 } from '../lib/mentmath-generator';
+import { createClientRunId } from '../lib/client-run-id';
 
 const logger = createSafeLogger('mental-math');
 
@@ -29,6 +30,7 @@ export function MentalMathTrainer() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [generationSource, setGenerationSource] = useState<'llm' | 'fallback' | null>(null);
   const savedRunRef = useRef(false);
+  const clientRunIdRef = useRef<string | null>(null);
   const generationControllerRef = useRef<AbortController | null>(null);
   const isMountedRef = useRef(true);
   const selectedPreset = MENTAL_MATH_PRESETS.find((preset) => preset.level === level)!;
@@ -57,6 +59,7 @@ export function MentalMathTrainer() {
   const confirmStart = useCallback(async () => {
     if (isGenerating) return;
     setIsGenerating(true);
+    clientRunIdRef.current = createClientRunId();
     savedRunRef.current = false;
     generationControllerRef.current?.abort();
     const controller = new AbortController();
@@ -108,6 +111,7 @@ export function MentalMathTrainer() {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
+          clientRunId: clientRunIdRef.current,
           gameType: 'MENTAL_MATH',
           timeMs: state.timeMs,
           metadata: {

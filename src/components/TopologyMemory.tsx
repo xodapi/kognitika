@@ -1,7 +1,8 @@
 import { motion, AnimatePresence } from 'motion/react';
 import { useTopologyEngine, NodeState, NodeId } from '../hooks/useTopologyEngine';
 import { useAuth } from '../hooks/useAuth';
-import { useEffect } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
+import { createClientRunId } from '../lib/client-run-id';
 import { GitBranch, ChevronRight, CheckCircle } from 'lucide-react';
 import { CompletionRecommendation } from './CompletionRecommendation';
 import { SessionFlowIndicator } from './SessionFlowIndicator';
@@ -131,6 +132,15 @@ function GraphView({ nodes, edges, interactive, userAnswers, onSetAnswer }: {
 export function TopologyMemory() {
   const { state, startGame, nextEvent, setNodeAnswer, submitAnswers, nextLevel } = useTopologyEngine();
   const { token } = useAuth();
+  const clientRunIdRef = useRef<string | null>(null);
+  const handleStart = useCallback((level: number) => {
+    clientRunIdRef.current = createClientRunId();
+    startGame(level);
+  }, [startGame]);
+  const handleNextLevel = useCallback(() => {
+    clientRunIdRef.current = createClientRunId();
+    nextLevel();
+  }, [nextLevel]);
 
   useEffect(() => {
     if (state.isFinished && token) {
@@ -138,6 +148,7 @@ export function TopologyMemory() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({
+          clientRunId: clientRunIdRef.current,
           gameType: 'TOPOLOGY_MEMORY',
           timeMs: state.timeMs,
           metadata: { score: state.score, maxScore: state.maxScore, level: state.level },
@@ -160,7 +171,7 @@ export function TopologyMemory() {
           </p>
           <p className="text-xs text-indigo-400 font-mono mb-8">Тренирует: топологическая память · удержание контекста · графовое мышление</p>
           <button
-            onClick={() => startGame(1)}
+            onClick={() => handleStart(1)}
             className="min-h-11 px-8 py-3 bg-indigo-600 text-white text-xs uppercase font-bold rounded-xl hover:bg-indigo-500 transition-colors"
           >
             Начать уровень 1
@@ -317,12 +328,12 @@ export function TopologyMemory() {
           score={state.score}
           maxScore={state.maxScore}
           durationMs={state.timeMs}
-          onRepeat={() => startGame(state.level)}
+          onRepeat={() => handleStart(state.level)}
           className="max-w-3xl"
         />
         <div className="mt-4 flex gap-3">
           {pct >= 70 && (
-            <button onClick={nextLevel} className="flex items-center gap-2 min-h-11 px-5 py-2.5 bg-indigo-600 text-white rounded-xl text-xs font-bold hover:bg-indigo-500 transition-colors">
+            <button onClick={handleNextLevel} className="flex items-center gap-2 min-h-11 px-5 py-2.5 bg-indigo-600 text-white rounded-xl text-xs font-bold hover:bg-indigo-500 transition-colors">
               Уровень {state.level + 1} <ChevronRight className="w-3.5 h-3.5" />
             </button>
           )}

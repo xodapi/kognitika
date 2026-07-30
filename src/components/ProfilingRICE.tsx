@@ -1,4 +1,5 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
+import { createClientRunId } from '../lib/client-run-id';
 import { motion, AnimatePresence } from 'motion/react';
 import { Target, Users, Sparkles, ShieldAlert, Award, Star } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
@@ -55,6 +56,7 @@ export function ProfilingRICE() {
   const [score, setScore] = useState(0);
   const [lastError, setLastError] = useState(false);
   const { token, refreshUser } = useAuth();
+  const clientRunIdRef = useRef<string | null>(null);
 
   const currentScenario = SCENARIOS[currentIndex % SCENARIOS.length];
 
@@ -98,6 +100,7 @@ export function ProfilingRICE() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({
+          clientRunId: clientRunIdRef.current,
           gameType: 'PROFILING_RICE',
           timeMs: 1000,
           isCompleted: true,
@@ -110,6 +113,7 @@ export function ProfilingRICE() {
   }, [score, currentIndex, token, refreshUser]);
 
   const restartGame = () => {
+    clientRunIdRef.current = createClientRunId();
     setCurrentIndex(0);
     setScore(0);
     setLastError(false);
@@ -128,7 +132,7 @@ export function ProfilingRICE() {
             Научитесь определять скрытую мотивацию людей и подбирать ключи к их поведению по системе: 
             <b> Reward, Ideology, Coercion, Ego</b>.
           </p>
-          <button onClick={() => setGameState('profiling')} className="w-full py-4 bg-primary text-primary-foreground rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-xl shadow-primary/20 hover:scale-[1.02] transition-all">
+          <button onClick={restartGame} className="w-full py-4 bg-primary text-primary-foreground rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-xl shadow-primary/20 hover:scale-[1.02] transition-all">
             Начать анализ
           </button>
         </div>

@@ -1,4 +1,5 @@
-import { useEffect } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
+import { createClientRunId } from '../lib/client-run-id';
 import { useSituationalEngine } from '../hooks/useSituationalEngine';
 import { useAuth } from '../hooks/useAuth';
 import { createSafeLogger, safeError } from '../lib/safe-logger';
@@ -10,6 +11,11 @@ const logger = createSafeLogger('situational-judgment-test');
 export function SituationalJudgmentTest() {
   const { state, startGame, answerQuestion } = useSituationalEngine();
   const { token } = useAuth();
+  const clientRunIdRef = useRef<string | null>(null);
+  const handleStart = useCallback(() => {
+    clientRunIdRef.current = createClientRunId();
+    startGame();
+  }, [startGame]);
   
   // Save result on finish
   useEffect(() => {
@@ -18,6 +24,7 @@ export function SituationalJudgmentTest() {
            method: 'POST',
            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
            body: JSON.stringify({
+              clientRunId: clientRunIdRef.current,
               gameType: 'SITUATIONAL_JUDGMENT',
               timeMs: state.timeMs,
               metadata: { score: state.score, maxScore: state.maxScore }
@@ -34,7 +41,7 @@ export function SituationalJudgmentTest() {
             <p className="text-sm text-muted-foreground mb-8 text-balance">
               Оценка управленческого и эмоционального интеллекта. Вам будут предложены гипотетические рабочие ситуации. Выберите наиболее подходящий вариант действий.
             </p>
-            <button onClick={startGame} className="w-full max-w-[250px] min-h-11 px-4 py-3 bg-primary text-primary-foreground text-xs uppercase tracking-wider rounded-lg font-bold hover:bg-primary/90 transition-colors">
+            <button onClick={handleStart} className="w-full max-w-[250px] min-h-11 px-4 py-3 bg-primary text-primary-foreground text-xs uppercase tracking-wider rounded-lg font-bold hover:bg-primary/90 transition-colors">
               Начать анализ
             </button>
         </div>
@@ -60,7 +67,7 @@ export function SituationalJudgmentTest() {
               score={state.score}
               maxScore={state.maxScore}
               durationMs={state.timeMs}
-              onRepeat={startGame}
+              onRepeat={handleStart}
               repeatLabel="Повторить сценарии"
             />
          </div>

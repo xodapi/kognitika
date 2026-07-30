@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { createClientRunId } from '../lib/client-run-id';
 import { motion, AnimatePresence } from 'motion/react';
 import { Star, Target, Info, Activity, AlertCircle, History } from 'lucide-react';
 import { useSchulteEngine, CellValue, GameMode } from '../hooks/useSchulteEngine';
@@ -91,6 +92,7 @@ export function SchulteGrid() {
   const [currentLevel, setCurrentLevel] = useState<TrainingLevel>('classic');
   const [sessionStartTime, setSessionStartTime] = useState<number | null>(null);
   const { token, refreshUser } = useAuth();
+  const clientRunIdRef = useRef<string | null>(null);
   const navigate = useNavigate();
   
   const [currentStability, setCurrentStability] = useState({ avg: 0, stability: 0 });
@@ -218,6 +220,7 @@ export function SchulteGrid() {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({
+               clientRunId: clientRunIdRef.current,
                gameType: isGorbov ? 'SCHULTE_GORBOV' : 'SCHULTE',
                timeMs: state.timeMs,
                metadata: { score: finalScore, mode, size, distraction, errors: state.errors, modifications: state.modifications, clickHistory: state.clickHistory }
@@ -246,6 +249,7 @@ export function SchulteGrid() {
   };
 
   const confirmStart = () => {
+    clientRunIdRef.current = createClientRunId();
     setShowBriefing(false);
     startGame();
   };

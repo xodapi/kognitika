@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { createClientRunId } from '../lib/client-run-id';
 import { motion, AnimatePresence } from 'motion/react';
 import { Shield, Brain, CheckCircle2, XCircle } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
@@ -40,11 +41,13 @@ export function ObjectiveFilter() {
   const [lastResult, setLastResult] = useState<'correct' | 'wrong' | null>(null);
   const { token, refreshUser } = useAuth();
   const navigate = useNavigate();
+  const clientRunIdRef = useRef<string | null>(null);
 
 
   const currentStatement = STATEMENTS[currentIndex % STATEMENTS.length];
 
   const startGame = () => {
+    clientRunIdRef.current = createClientRunId();
     setGameState('playing');
     setCurrentIndex(0);
     setScore(0);
@@ -63,6 +66,7 @@ export function ObjectiveFilter() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({
+          clientRunId: clientRunIdRef.current,
           gameType: 'OBJECTIVE_FILTER',
           timeMs: finalTime,
           isCompleted: true,

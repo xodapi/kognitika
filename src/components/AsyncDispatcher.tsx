@@ -1,7 +1,8 @@
 import { motion } from 'motion/react';
 import { useDispatcherEngine } from '../hooks/useDispatcherEngine';
 import { useAuth } from '../hooks/useAuth';
-import { useEffect } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
+import { createClientRunId } from '../lib/client-run-id';
 import { Cpu, ChevronRight, Zap } from 'lucide-react';
 import { CompletionRecommendation } from './CompletionRecommendation';
 import { haptic } from '../lib/haptic';
@@ -9,6 +10,11 @@ import { haptic } from '../lib/haptic';
 export function AsyncDispatcher() {
   const { state, startGame, triggerStream } = useDispatcherEngine();
   const { token } = useAuth();
+  const clientRunIdRef = useRef<string | null>(null);
+  const handleStart = useCallback((level: number) => {
+    clientRunIdRef.current = createClientRunId();
+    startGame(level);
+  }, [startGame]);
 
   useEffect(() => {
     if (state.isFinished && token) {
@@ -16,6 +22,7 @@ export function AsyncDispatcher() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({
+          clientRunId: clientRunIdRef.current,
           gameType: 'ASYNC_DISPATCHER',
           timeMs: state.timeMs,
           metadata: { score: state.score, level: state.level, triggers: state.totalTriggers, overflows: state.totalOverflows },
@@ -42,7 +49,7 @@ export function AsyncDispatcher() {
             {[1, 2, 3].map(lvl => (
               <button
                 key={lvl}
-                onClick={() => startGame(lvl)}
+                onClick={() => handleStart(lvl)}
                 className={`min-h-11 px-6 py-3 rounded-xl text-xs uppercase font-bold transition-colors ${
                   lvl === 1 ? 'bg-amber-600 text-white hover:bg-amber-500' :
                   lvl === 2 ? 'bg-orange-600 text-white hover:bg-orange-500' :
@@ -92,12 +99,12 @@ export function AsyncDispatcher() {
             accuracy={efficiency}
             errors={state.totalOverflows}
             durationMs={state.timeMs}
-            onRepeat={() => startGame(state.level)}
+            onRepeat={() => handleStart(state.level)}
             className="max-w-3xl"
           />
           <div className="mt-4 flex gap-3">
             {state.score >= 80 && state.level < 3 && (
-              <button onClick={() => startGame(state.level + 1)} className="flex items-center gap-2 min-h-11 px-5 py-2.5 bg-amber-600 text-white rounded-xl text-xs font-bold hover:bg-amber-500 transition-colors">
+              <button onClick={() => handleStart(state.level + 1)} className="flex items-center gap-2 min-h-11 px-5 py-2.5 bg-amber-600 text-white rounded-xl text-xs font-bold hover:bg-amber-500 transition-colors">
                 Уровень {state.level + 1} <ChevronRight className="w-3.5 h-3.5" />
               </button>
             )}

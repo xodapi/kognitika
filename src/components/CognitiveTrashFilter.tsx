@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { createClientRunId } from '../lib/client-run-id';
 import { motion, AnimatePresence } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
@@ -105,7 +106,9 @@ export function CognitiveTrashFilter() {
   const [isFinished, setIsFinished] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [durationMs, setDurationMs] = useState(0);
-  const [startTime] = useState(Date.now());
+  const [startTime, setStartTime] = useState(Date.now());
+  const clientRunIdRef = useRef<string | null>(null);
+  if (!clientRunIdRef.current) clientRunIdRef.current = createClientRunId();
 
   useEffect(() => {
     // Shuffle and pick 10 statements
@@ -153,6 +156,7 @@ export function CognitiveTrashFilter() {
           'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
+          clientRunId: clientRunIdRef.current,
           gameType: 'REALITY_CHECK',
           timeMs: durationMs,
           metadata: {
@@ -192,6 +196,8 @@ export function CognitiveTrashFilter() {
           timeMs={durationMs}
           errors={errors}
           onPlayAgain={() => {
+            clientRunIdRef.current = createClientRunId();
+            setStartTime(Date.now());
             setStatements([...STATEMENTS_POOL].sort(() => Math.random() - 0.5).slice(0, 10));
             setCurrentIndex(0);
             setScore(0);

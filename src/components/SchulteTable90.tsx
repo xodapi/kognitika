@@ -17,6 +17,7 @@ import {
   getGorbovColor,
   type GorbovRuleId,
 } from '../lib/schulte90-generator';
+import { createClientRunId } from '../lib/client-run-id';
 
 const logger = createSafeLogger('schulte-90');
 
@@ -44,6 +45,7 @@ export function SchulteTable90() {
   const [showBriefing, setShowBriefing] = useState(false);
   const [selectedRule, setSelectedRule] = useState<GorbovRuleId>('black-red');
   const savedRunRef = useRef(false);
+  const clientRunIdRef = useRef<string | null>(null);
   const selectedRuleConfig = GORBOV_RULES.find((rule) => rule.id === selectedRule) ?? GORBOV_RULES[0];
 
   useSessionRecording(state.isActive, state.isFinished);
@@ -60,6 +62,7 @@ export function SchulteTable90() {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
+          clientRunId: clientRunIdRef.current,
           gameType: 'SCHULTE_90',
           timeMs: state.timeMs,
           metadata: {
@@ -88,6 +91,7 @@ export function SchulteTable90() {
   }, [state.outcome, state.timeMs, token, refreshUser, state.errors, state.clickHistory]);
 
   const beginGame = useCallback(() => {
+    clientRunIdRef.current = createClientRunId();
     savedRunRef.current = false;
     setShowBriefing(false);
     startGame(selectedRule);
