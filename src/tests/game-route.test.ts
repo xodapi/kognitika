@@ -20,6 +20,15 @@ const prismaMock = vi.hoisted(() => ({
   },
 }));
 
+const gameAttemptMock = vi.hoisted(() => {
+  class GameAttemptError extends Error {
+    constructor(message: string, public status: 400 | 403 | 409, public code: string) {
+      super(message);
+    }
+  }
+  return { GameAttemptError, startGameAttempt: vi.fn() };
+});
+
 const gameSaveMock = vi.hoisted(() => ({
   saveCompletedGame: vi.fn(),
 }));
@@ -41,6 +50,7 @@ vi.mock('../server/events/event-bus.ts', () => ({
   eventBus: eventBusMock,
 }));
 
+vi.mock('../server/services/game-attempt.ts', () => gameAttemptMock);
 vi.mock('../server/services/game-save.ts', () => gameSaveMock);
 
 let gameRoutes: Router;
@@ -99,7 +109,38 @@ async function postJson(baseUrl: string, path: string, token: string, body: unkn
 }
 
 describe('game route XP event contract', () => {
-  it('records an XpEvent when a completed game awards XP', async () => {
+  it('starts an authenticated server challenge attempt', async () => {
+    const issuedAt = new Date('2026-07-31T12:00:00.000Z');
+    gameAttemptMock.startGameAttempt.mockResolvedValue({
+      attemptId: 'attempt-a', challenge: 'synthetic-challenge', issuedAt,
+      notBefore: issuedAt, expiresAt: new Date('2026-07-31T12:15:00.000Z'),
+    });
+    const baseUrl = await createGameHarness();
+    const token = userToken({ id: 'user_synthetic_game' });
+    const response = await postJson(baseUrl, '/api/game/attempts', token, {
+      gameType: 'SCHULTE', clientRunId: '11111111-1111-4111-8111-111111111111',
+    });
+
+    expect(response.status).toBe(201);
+    expect(response.body.attemptId).toBe('attempt-a');
+    expect(gameAttemptMock.startGameAttempt).toHaveBeenCalledWith({
+      userId: 'user_synthetic_game', gameType: 'SCHULTE',
+      clientRunId: '11111111-1111-4111-8111-111111111111',
+    });
+  });
+
+  it('rejects invalid game types when starting an attempt', async () => {
+    const baseUrl = await createGameHarness();
+    const token = userToken({ id: 'user_synthetic_game' });
+    const response = await postJson(baseUrl, '/api/game/attempts', token, {
+      gameType: 'NOT_A_GAME', clientRunId: '11111111-1111-4111-8111-111111111111',
+    });
+    expect(response.status).toBe(400);
+    expect(gameAttemptMock.startGameAttempt).not.toHaveBeenCalled();
+  });
+
+  it('records an XpEvent when a completed legacy-compatible game awards XP', async () => {
+    process.env.GAME_SAVE_LEGACY_COMPAT_ENABLED = 'true';
     gameSaveMock.saveCompletedGame.mockResolvedValue({
       session: {
         id: 'session_synthetic_1',
@@ -133,6 +174,8 @@ describe('game route XP event contract', () => {
     expect(gameSaveMock.saveCompletedGame).toHaveBeenCalledWith({
       userId: 'user_synthetic_game',
       clientRunId: '11111111-1111-4111-8111-111111111111',
+      attemptId: undefined,
+      challenge: undefined,
       gameType: 'SCHULTE',
       timeMs: 5000,
       metadata: { size: 3 },
@@ -145,7 +188,7 @@ describe('game route XP event contract', () => {
     }));
   });
 
-  it('does not emit completion again for an idempotent replay', async () => {
+  it('does not emit completion again for an idempotent attempt replay', async () => {
     gameSaveMock.saveCompletedGame.mockResolvedValue({
       session: { id: 'session_synthetic_1', score: 21 },
       user: { experience: 121, streakDays: 1 },
@@ -155,12 +198,17 @@ describe('game route XP event contract', () => {
     const token = userToken({ id: 'user_synthetic_game' });
     const response = await postJson(baseUrl, '/api/game/save', token, {
       clientRunId: '11111111-1111-4111-8111-111111111111',
+      attemptId: 'attempt-a',
+      challenge: 'synthetic-challenge',
       gameType: 'SCHULTE',
       timeMs: 5000,
       metadata: { size: 3 },
     });
 
     expect(response.status).toBe(200);
+    expect(gameSaveMock.saveCompletedGame).toHaveBeenCalledWith(expect.objectContaining({
+      attemptId: 'attempt-a', challenge: 'synthetic-challenge',
+    }));
     expect(response.body.session.id).toBe('session_synthetic_1');
     expect(eventBusMock.emit).not.toHaveBeenCalled();
   });

@@ -28,6 +28,7 @@ model User {
   createdAt     DateTime  @default(now())
 
   sessions      GameSession[]
+  gameAttempts  GameAttempt[]
   achievements  UserAchievement[]
   xpEvents      XpEvent[]
   feedback      Feedback[]
@@ -106,24 +107,44 @@ enum GameType {
 }
 
 model GameSession {
-  id            String   @id @default(cuid())
+  id            String       @id @default(cuid())
   userId        String
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   
   gameType      GameType
   score         Int
   timeMs        Int
-  isCompleted   Boolean  @default(false)
+  isCompleted   Boolean      @default(false)
   
   metadata      Json
   clientRunId   String?
   xpEvent       XpEvent?
+  gameAttempt   GameAttempt?
 
-  createdAt     DateTime @default(now())
+  createdAt     DateTime     @default(now())
 
   @@unique([userId, clientRunId])
   @@index([userId, isCompleted, createdAt])
   @@index([gameType, isCompleted, score])
+}
+
+model GameAttempt {
+  id              String       @id @default(cuid())
+  userId          String
+  user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  gameType        GameType
+  clientRunId     String
+  challengeDigest String
+  issuedAt        DateTime     @default(now())
+  notBefore       DateTime
+  expiresAt       DateTime
+  consumedAt      DateTime?
+  gameSessionId   String?      @unique
+  gameSession     GameSession? @relation(fields: [gameSessionId], references: [id], onDelete: SetNull)
+
+  @@unique([userId, clientRunId])
+  @@index([userId, expiresAt])
+  @@index([consumedAt])
 }
 
 model Idea {

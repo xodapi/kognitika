@@ -1,10 +1,13 @@
 import { Prisma, type GameSession, type User } from '@prisma/client';
 import prisma from '../../lib/prisma.ts';
+import { challengeMatches, GameAttemptError } from './game-attempt.ts';
 import { computeServerScore } from './game-score.ts';
 
-type SaveGameInput = {
+export type SaveGameInput = {
   userId: string;
   clientRunId?: string;
+  attemptId?: string;
+  challenge?: string;
   gameType: string;
   timeMs: number;
   metadata?: Record<string, unknown>;
@@ -27,24 +30,21 @@ function nextStreak(user: User, now: Date) {
   return user.streakDays;
 }
 
-function assertReplayMatches(
-  session: GameSession,
-  input: SaveGameInput,
-  score: number,
-) {
-  if (session.gameType !== input.gameType || session.timeMs !== input.timeMs || session.score !== score) {
-    throw new Error('Game save idempotency conflict');
+function assertReplayMatches(session: GameSession, input: SaveGameInput, score: number) {
+  if (
+    session.userId !== input.userId
+    || session.clientRunId !== input.clientRunId
+    || session.gameType !== input.gameType
+    || session.timeMs !== input.timeMs
+    || session.score !== score
+  ) {
+    throw new GameAttemptError('Game save conflicts with the completed attempt', 409, 'ATTEMPT_REPLAY_CONFLICT');
   }
 }
 
-async function replayResult(
-  input: SaveGameInput,
-  score: number,
-): Promise<SaveGameResult | null> {
+async function replayResult(input: SaveGameInput, score: number): Promise<SaveGameResult | null> {
   const session = await prisma.gameSession.findUnique({
-    where: {
-      userId_clientRunId: { userId: input.userId, clientRunId: input.clientRunId! },
-    },
+    where: { userId_clientRunId: { userId: input.userId, clientRunId: input.clientRunId! } },
   });
   if (!session) return null;
   assertReplayMatches(session, input, score);
@@ -52,15 +52,91 @@ async function replayResult(
   return user ? { session, user, isReplay: true } : null;
 }
 
+function validateAttemptContract(
+  attempt: {
+    userId: string;
+    gameType: string;
+    clientRunId: string;
+    challengeDigest: string;
+  } | null,
+  input: SaveGameInput,
+) {
+  if (!attempt || attempt.userId !== input.userId || !input.challenge || !challengeMatches(input.challenge, attempt.challengeDigest)) {
+    throw new GameAttemptError('Invalid game attempt credentials', 403, 'INVALID_ATTEMPT_CREDENTIALS');
+  }
+  if (attempt.gameType !== input.gameType || attempt.clientRunId !== input.clientRunId) {
+    throw new GameAttemptError('Game attempt contract does not match', 409, 'ATTEMPT_CONTRACT_MISMATCH');
+  }
+}
+
+function validateAttemptWindow(attempt: { notBefore: Date; expiresAt: Date }, now: Date) {
+  if (now < attempt.notBefore) {
+    throw new GameAttemptError('Game attempt is not ready', 409, 'ATTEMPT_NOT_READY');
+  }
+  if (now >= attempt.expiresAt) {
+    throw new GameAttemptError('Game attempt has expired', 409, 'ATTEMPT_EXPIRED');
+  }
+}
+
 export async function saveCompletedGame(input: SaveGameInput): Promise<SaveGameResult> {
+  const hasAttempt = Boolean(input.attemptId || input.challenge);
+  if (hasAttempt && (!input.attemptId || !input.challenge || !input.clientRunId)) {
+    throw new GameAttemptError('attemptId, challenge, and clientRunId are required together', 400, 'INCOMPLETE_ATTEMPT');
+  }
+  if (!hasAttempt && process.env.GAME_SAVE_LEGACY_COMPAT_ENABLED !== 'true') {
+    throw new GameAttemptError('A game attempt is required', 400, 'ATTEMPT_REQUIRED');
+  }
+
   const score = computeServerScore(input);
   try {
     return await prisma.$transaction(async (tx) => {
-      if (input.clientRunId) {
-        const existingSession = await tx.gameSession.findUnique({
+      const now = new Date();
+      let attempt: Awaited<ReturnType<typeof tx.gameAttempt.findUnique>> = null;
+
+      if (hasAttempt) {
+        attempt = await tx.gameAttempt.findUnique({ where: { id: input.attemptId! } });
+        validateAttemptContract(attempt, input);
+
+        if (attempt!.consumedAt || attempt!.gameSessionId) {
+          if (!attempt!.gameSessionId) {
+            throw new GameAttemptError('Game attempt was already consumed', 409, 'ATTEMPT_ALREADY_CONSUMED');
+          }
+          const session = await tx.gameSession.findUnique({ where: { id: attempt!.gameSessionId } });
+          if (!session) {
+            throw new GameAttemptError('Game attempt was already consumed', 409, 'ATTEMPT_ALREADY_CONSUMED');
+          }
+          assertReplayMatches(session, input, score);
+          const user = await tx.user.findUniqueOrThrow({ where: { id: input.userId } });
+          return { session, user, isReplay: true };
+        }
+
+        validateAttemptWindow(attempt!, now);
+        const reserved = await tx.gameAttempt.updateMany({
           where: {
-            userId_clientRunId: { userId: input.userId, clientRunId: input.clientRunId },
+            id: input.attemptId!,
+            userId: input.userId,
+            consumedAt: null,
+            gameSessionId: null,
+            notBefore: { lte: now },
+            expiresAt: { gt: now },
           },
+          data: { consumedAt: now },
+        });
+        if (reserved.count !== 1) {
+          const concurrentAttempt = await tx.gameAttempt.findUnique({ where: { id: input.attemptId! } });
+          if (concurrentAttempt?.gameSessionId) {
+            const session = await tx.gameSession.findUnique({ where: { id: concurrentAttempt.gameSessionId } });
+            if (session) {
+              assertReplayMatches(session, input, score);
+              const user = await tx.user.findUniqueOrThrow({ where: { id: input.userId } });
+              return { session, user, isReplay: true };
+            }
+          }
+          throw new GameAttemptError('Game attempt was already consumed', 409, 'ATTEMPT_ALREADY_CONSUMED');
+        }
+      } else if (input.clientRunId) {
+        const existingSession = await tx.gameSession.findUnique({
+          where: { userId_clientRunId: { userId: input.userId, clientRunId: input.clientRunId } },
         });
         if (existingSession) {
           assertReplayMatches(existingSession, input, score);
@@ -69,7 +145,6 @@ export async function saveCompletedGame(input: SaveGameInput): Promise<SaveGameR
         }
       }
 
-      const now = new Date();
       const currentUser = await tx.user.findUniqueOrThrow({ where: { id: input.userId } });
       const session = await tx.gameSession.create({
         data: {
@@ -82,6 +157,12 @@ export async function saveCompletedGame(input: SaveGameInput): Promise<SaveGameR
           metadata: (input.metadata || {}) as Prisma.InputJsonValue,
         },
       });
+      if (hasAttempt) {
+        await tx.gameAttempt.update({
+          where: { id: input.attemptId! },
+          data: { gameSessionId: session.id },
+        });
+      }
       let user = await tx.user.update({
         where: { id: input.userId },
         data: {

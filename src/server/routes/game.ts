@@ -3,8 +3,9 @@ import { z } from 'zod';
 import prisma from '../../lib/prisma.ts';
 import { handleValidationError } from '../utils/validation.ts';
 import { authenticate } from '../middleware/auth.ts';
-import { saveGameSchema, updateMetadataSchema } from '../schemas/game.ts';
+import { saveGameSchema, startGameAttemptSchema, updateMetadataSchema } from '../schemas/game.ts';
 import { eventBus } from '../events/event-bus.ts';
+import { GameAttemptError, startGameAttempt } from '../services/game-attempt.ts';
 import { saveCompletedGame } from '../services/game-save.ts';
 import { createSafeLogger, safeError } from '../../lib/safe-logger.ts';
 
@@ -23,23 +24,46 @@ router.get('/progress', authenticate, async (req: any, res) => {
   }
 });
 
+router.post('/attempts', authenticate, async (req: any, res) => {
+  const result = startGameAttemptSchema.safeParse(req.body);
+  const validationError = handleValidationError(result, res);
+  if (validationError) return validationError;
+
+  try {
+    const attempt = await startGameAttempt({ userId: req.user.id, ...result.data! });
+    res.status(201).json(attempt);
+  } catch (error) {
+    if (error instanceof GameAttemptError) {
+      return res.status(error.status).json({ error: error.message, code: error.code });
+    }
+    logger.error('Game attempt creation failed', { error: safeError(error) });
+    res.status(500).json({ error: 'Failed to create game attempt' });
+  }
+});
+
 router.post('/save', authenticate, async (req: any, res) => {
   const result = saveGameSchema.safeParse(req.body);
   const validationError = handleValidationError(result, res);
   if (validationError) return validationError;
 
-  const { clientRunId, gameType, timeMs, metadata } = result.data!;
+  const { clientRunId, attemptId, challenge, gameType, timeMs, metadata } = result.data!;
   if (!timeMs || timeMs < 100) {
     return res.status(400).json({ error: 'Invalid performance data' });
   }
-  if (!clientRunId && process.env.GAME_SAVE_LEGACY_COMPAT_ENABLED !== 'true') {
-    return res.status(400).json({ error: 'clientRunId is required' });
+  const hasAttemptCredentials = Boolean(attemptId || challenge);
+  if (hasAttemptCredentials && (!attemptId || !challenge || !clientRunId)) {
+    return res.status(400).json({ error: 'attemptId, challenge, and clientRunId are required together' });
+  }
+  if (!hasAttemptCredentials && process.env.GAME_SAVE_LEGACY_COMPAT_ENABLED !== 'true') {
+    return res.status(400).json({ error: 'A game attempt is required' });
   }
 
   try {
     const saveResult = await saveCompletedGame({
       userId: req.user.id,
       clientRunId,
+      attemptId,
+      challenge,
       gameType,
       timeMs,
       metadata,
@@ -61,6 +85,9 @@ router.post('/save', authenticate, async (req: any, res) => {
       streakDays: saveResult.user.streakDays,
     });
   } catch (error) {
+    if (error instanceof GameAttemptError) {
+      return res.status(error.status).json({ error: error.message, code: error.code });
+    }
     logger.error('Game save failed', { error: safeError(error) });
     res.status(500).json({ error: 'Failed to save session' });
   }
