@@ -34,7 +34,7 @@ describe('cognitive trend computation', () => {
       { accuracy: 0.9, p50ReactionMs: 180, fatigueIndex: 0.05, engagementIndex: 0.95, createdAt: lateDate },
     ]);
 
-    const trend = await computeCognitiveTrend(null, 30);
+    const trend = await computeCognitiveTrend('user-trend-a', null, 30);
 
     expect(trend.overallDirection).toBe('improving');
     expect(trend.points.length).toBeGreaterThan(0);
@@ -59,7 +59,7 @@ describe('cognitive trend computation', () => {
       { accuracy: 0.55, p50ReactionMs: 320, fatigueIndex: 0.35, engagementIndex: 0.65, createdAt: lateDate },
     ]);
 
-    const trend = await computeCognitiveTrend(null, 30);
+    const trend = await computeCognitiveTrend('user-trend-a', null, 30);
 
     expect(trend.overallDirection).toBe('declining');
   });
@@ -78,7 +78,7 @@ describe('cognitive trend computation', () => {
       { accuracy: 0.81, p50ReactionMs: 198, fatigueIndex: 0.11, engagementIndex: 0.89, createdAt: lateDate },
     ]);
 
-    const trend = await computeCognitiveTrend('nback', 30);
+    const trend = await computeCognitiveTrend('user-trend-a', 'nback', 30);
 
     expect(trend.overallDirection).toBe('stable');
     expect(trend.moduleId).toBe('nback');
@@ -89,7 +89,7 @@ describe('cognitive trend computation', () => {
 
     prismaMock.sessionAnalyticsSummary.findMany.mockResolvedValue([]);
 
-    const trend = await computeCognitiveTrend(null, 30);
+    const trend = await computeCognitiveTrend('user-trend-a', null, 30);
 
     expect(trend.overallDirection).toBe('stable');
     expect(trend.points).toHaveLength(0);
@@ -102,9 +102,10 @@ describe('cognitive trend computation', () => {
 
     prismaMock.sessionAnalyticsSummary.findMany.mockResolvedValue([]);
 
-    await computeCognitiveTrend('stroop', 14);
+    await computeCognitiveTrend('user-trend-a', 'stroop', 14);
 
     const call = prismaMock.sessionAnalyticsSummary.findMany.mock.calls[0][0];
+    expect(call.where.userId).toBe('user-trend-a');
     expect(call.where.moduleId).toBe('stroop');
   });
 
@@ -118,7 +119,7 @@ describe('cognitive trend computation', () => {
       { accuracy: 0.9, p50ReactionMs: 150, fatigueIndex: 0.05, engagementIndex: 0.95, createdAt: sameDay },
     ]);
 
-    const trend = await computeCognitiveTrend(null, 30);
+    const trend = await computeCognitiveTrend('user-trend-a', null, 30);
 
     expect(trend.points).toHaveLength(1);
     expect(trend.points[0].sessionCount).toBe(2);

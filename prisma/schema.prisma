@@ -34,6 +34,7 @@ model User {
   messages      Message[]
   ideas         Idea[]
   ideaVotes     IdeaVote[]
+  analyticsSummaries SessionAnalyticsSummary[]
 
   @@index([brainId])
   @@index([pseudonym])
@@ -178,6 +179,8 @@ model Message {
 model SessionAnalyticsSummary {
   id                     String   @id @default(cuid())
   jobId                  String   @unique
+  userId                 String?
+  user                   User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
   sourceSessionId        String
   moduleId               String
   category               String
@@ -195,6 +198,8 @@ model SessionAnalyticsSummary {
   suspiciousPatternScore Float
   recommendationSignals  Json
 
+  @@index([userId, createdAt])
+  @@index([userId, moduleId, createdAt])
   @@index([moduleId])
   @@index([category])
   @@index([createdAt])

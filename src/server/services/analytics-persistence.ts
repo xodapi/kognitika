@@ -17,6 +17,7 @@ function containsSensitiveData(record: Record<string, unknown>): boolean {
 }
 
 export async function persistSessionAnalyticsSummary(
+  userId: string,
   record: SessionAnalyticsSummaryRecord,
 ): Promise<void> {
   if (containsSensitiveData(record as Record<string, unknown>)) {
@@ -33,10 +34,11 @@ export async function persistSessionAnalyticsSummary(
   }
 
   try {
-    await prisma.sessionAnalyticsSummary.upsert({
+    const persisted = await prisma.sessionAnalyticsSummary.upsert({
       where: { jobId: record.jobId },
       create: {
         jobId: record.jobId,
+        userId,
         sourceSessionId: record.sourceSessionId,
         moduleId: record.moduleId,
         category: record.category,
@@ -54,7 +56,15 @@ export async function persistSessionAnalyticsSummary(
         recommendationSignals: record.recommendationSignals,
       },
       update: {},
+      select: {
+        userId: true,
+        sourceSessionId: true,
+      },
     });
+
+    if (persisted.userId !== userId || persisted.sourceSessionId !== record.sourceSessionId) {
+      throw new Error('Analytics summary idempotency conflict');
+    }
   } catch (err) {
     logger.error('Failed to persist analytics summary', { error: safeError(err), jobId: record.jobId });
     throw err;
@@ -62,7 +72,7 @@ export async function persistSessionAnalyticsSummary(
 }
 
 export interface SummaryQueryParams {
-  userId?: string;
+  userId: string;
   moduleId?: string;
   category?: string;
   from?: Date;
@@ -71,12 +81,13 @@ export interface SummaryQueryParams {
 }
 
 export async function getSessionAnalyticsSummaries(
-  params: SummaryQueryParams = {},
+  params: SummaryQueryParams,
 ) {
-  const { moduleId, category, from, to, limit = 100 } = params;
+  const { userId, moduleId, category, from, to, limit = 100 } = params;
 
   return prisma.sessionAnalyticsSummary.findMany({
     where: {
+      userId,
       ...(moduleId ? { moduleId } : {}),
       ...(category ? { category } : {}),
       ...(from || to
@@ -94,6 +105,7 @@ export async function getSessionAnalyticsSummaries(
 }
 
 export async function getModuleTrendData(
+  userId: string,
   moduleId: string,
   days: number,
 ): Promise<TrendPoint[]> {
@@ -102,6 +114,7 @@ export async function getModuleTrendData(
 
   const summaries = await prisma.sessionAnalyticsSummary.findMany({
     where: {
+      userId,
       moduleId,
       createdAt: { gte: from },
     },
@@ -112,6 +125,7 @@ export async function getModuleTrendData(
 }
 
 export async function getAggregateTrendData(
+  userId: string,
   days: number,
 ): Promise<TrendPoint[]> {
   const from = new Date();
@@ -119,6 +133,7 @@ export async function getAggregateTrendData(
 
   const summaries = await prisma.sessionAnalyticsSummary.findMany({
     where: {
+      userId,
       createdAt: { gte: from },
     },
     orderBy: { createdAt: 'asc' },
@@ -173,6 +188,7 @@ function aggregateByDay(
 }
 
 export async function computeCognitiveTrend(
+  userId: string,
   moduleId: string | null,
   days: number,
 ): Promise<CognitiveTrend> {
@@ -180,6 +196,7 @@ export async function computeCognitiveTrend(
   from.setDate(from.getDate() - days);
 
   const where = {
+    userId,
     ...(moduleId ? { moduleId } : {}),
     createdAt: { gte: from },
   };

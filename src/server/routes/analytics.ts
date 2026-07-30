@@ -359,15 +359,26 @@ function calculateTrend(recent: any[], previous: any[]) {
 /**
  * POST /api/analytics/summaries — persist a SessionAnalyticsSummaryRecord
  */
-router.post('/summaries', async (req, res) => {
+router.post('/summaries', authenticate, async (req: any, res) => {
   try {
     const parsed = parseSessionAnalyticsJob(req.body);
     if (!parsed.success) {
       return res.status(400).json({ error: 'Invalid session analytics job', details: String(parsed.error) });
     }
 
+    const gameSession = await prisma.gameSession.findFirst({
+      where: {
+        id: parsed.data.session.sessionId,
+        userId: req.user.id,
+      },
+      select: { id: true },
+    });
+    if (!gameSession) {
+      return res.status(403).json({ error: 'Session does not belong to authenticated user' });
+    }
+
     const summary = createSessionAnalyticsSummary(parsed.data);
-    await persistSessionAnalyticsSummary(summary);
+    await persistSessionAnalyticsSummary(req.user.id, summary);
 
     res.status(201).json({ ok: true, jobId: summary.jobId });
   } catch (err) {
@@ -385,6 +396,7 @@ router.get('/summaries', authenticate, async (req: any, res) => {
     const { moduleId, category, from, to, limit } = req.query;
 
     const summaries = await getSessionAnalyticsSummaries({
+      userId: req.user.id,
       moduleId: moduleId as string | undefined,
       category: category as string | undefined,
       from: from ? new Date(from as string) : undefined,
@@ -409,8 +421,8 @@ router.get('/summaries/trend', authenticate, async (req: any, res) => {
     const daysNum = days ? parseInt(days as string, 10) : 30;
 
     const trend = moduleId
-      ? await getModuleTrendData(moduleId as string, daysNum)
-      : await getAggregateTrendData(daysNum);
+      ? await getModuleTrendData(req.user.id, moduleId as string, daysNum)
+      : await getAggregateTrendData(req.user.id, daysNum);
 
     res.json({ trend, days: daysNum, moduleId: moduleId || null });
   } catch (err) {
@@ -429,6 +441,7 @@ router.get('/cognitive-trend', authenticate, async (req: any, res) => {
     const daysNum = days ? parseInt(days as string, 10) : 30;
 
     const trend = await computeCognitiveTrend(
+      req.user.id,
       moduleId ? (moduleId as string) : null,
       daysNum,
     );

@@ -33,7 +33,10 @@ const baseJob: SessionAnalyticsJob = {
 describe('analytics persistence contract', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    prismaMock.sessionAnalyticsSummary.upsert.mockResolvedValue({});
+    prismaMock.sessionAnalyticsSummary.upsert.mockResolvedValue({
+      userId: 'user-analytics-a',
+      sourceSessionId: baseSession.sessionId,
+    });
   });
 
   it('creates a valid summary record from a job', () => {
@@ -64,13 +67,27 @@ describe('analytics persistence contract', () => {
     const { persistSessionAnalyticsSummary } = await import('../server/services/analytics-persistence.ts');
     const summary = createSessionAnalyticsSummary(baseJob);
 
-    await persistSessionAnalyticsSummary(summary);
+    await persistSessionAnalyticsSummary('user-analytics-a', summary);
 
     expect(prismaMock.sessionAnalyticsSummary.upsert).toHaveBeenCalledOnce();
     const call = prismaMock.sessionAnalyticsSummary.upsert.mock.calls[0][0];
     expect(call.where.jobId).toBe(summary.jobId);
+    expect(call.create.userId).toBe('user-analytics-a');
     expect(call.create.moduleId).toBe(summary.moduleId);
     expect(call.create.accuracy).toBe(summary.accuracy);
+  });
+
+  it('rejects a jobId collision owned by another user', async () => {
+    const { persistSessionAnalyticsSummary } = await import('../server/services/analytics-persistence.ts');
+    const summary = createSessionAnalyticsSummary(baseJob);
+    prismaMock.sessionAnalyticsSummary.upsert.mockResolvedValue({
+      userId: 'user-analytics-b',
+      sourceSessionId: summary.sourceSessionId,
+    });
+
+    await expect(persistSessionAnalyticsSummary('user-analytics-a', summary)).rejects.toThrow(
+      'idempotency conflict',
+    );
   });
 
   it('rejects summary with sensitive material', async () => {
@@ -80,7 +97,7 @@ describe('analytics persistence contract', () => {
     const tampered = { ...summary, jobId: 'analytics-job-test-token-leak' };
     (tampered as any).token = 'should-be-rejected';
 
-    await expect(persistSessionAnalyticsSummary(tampered as any)).rejects.toThrow('sensitive');
+    await expect(persistSessionAnalyticsSummary('user-analytics-a', tampered as any)).rejects.toThrow('sensitive');
     expect(prismaMock.sessionAnalyticsSummary.upsert).not.toHaveBeenCalled();
   });
 
@@ -96,9 +113,15 @@ describe('analytics persistence contract', () => {
     };
     prismaMock.sessionAnalyticsSummary.findMany.mockResolvedValue([mockRecord]);
 
-    const results = await getSessionAnalyticsSummaries({ moduleId: 'nback', category: 'cognitive' });
+    const results = await getSessionAnalyticsSummaries({
+      userId: 'user-analytics-a',
+      moduleId: 'nback',
+      category: 'cognitive',
+    });
     expect(results).toHaveLength(1);
     expect(prismaMock.sessionAnalyticsSummary.findMany).toHaveBeenCalledOnce();
+    const call = prismaMock.sessionAnalyticsSummary.findMany.mock.calls[0][0];
+    expect(call.where.userId).toBe('user-analytics-a');
   });
 
   it('aggregates trend data by day', async () => {
@@ -110,8 +133,10 @@ describe('analytics persistence contract', () => {
       { accuracy: 0.9, p50ReactionMs: 170, fatigueIndex: 0.02, engagementIndex: 0.97, createdAt: new Date('2026-06-23T08:00:00.000Z') },
     ]);
 
-    const trend = await getModuleTrendData('nback', 7);
+    const trend = await getModuleTrendData('user-analytics-a', 'nback', 7);
 
+    const call = prismaMock.sessionAnalyticsSummary.findMany.mock.calls[0][0];
+    expect(call.where.userId).toBe('user-analytics-a');
     expect(trend).toHaveLength(2);
     expect(trend[0].date).toBe('2026-06-22');
     expect(trend[0].sessionCount).toBe(2);

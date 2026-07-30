@@ -96,7 +96,7 @@ eventBus.on('game:completed', async (data) => {
       const parsed = parseSessionAnalyticsJob(job);
       if (parsed.success) {
         const summary = createSessionAnalyticsSummary(parsed.data);
-        await persistSessionAnalyticsSummary(summary);
+        await persistSessionAnalyticsSummary(gameSession.userId, summary);
         logger.info('Session analytics summary persisted', { jobId: summary.jobId });
       }
     }
