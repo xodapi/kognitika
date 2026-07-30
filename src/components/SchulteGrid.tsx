@@ -80,6 +80,7 @@ function generateChaosStyle(modifications: any, timeMs: number, cellId: number) 
 }
 
 export function SchulteGrid() {
+  // Test IDs for mobile layout verification
   const [distraction, setDistraction] = useState<'none' | 'audio' | 'visual' | 'chaos'>('none');
   const isAIAdaptationEnabled = false; // AI Adaptation disabled as per user request
 
@@ -353,6 +354,7 @@ export function SchulteGrid() {
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               onClick={handleStartWithBriefing} 
+              data-testid="start-button"
               className="mt-auto w-full py-4 bg-primary text-primary-foreground text-xs uppercase tracking-[0.2em] rounded-2xl font-black shadow-lg shadow-primary/20 transition-all"
             >
               Начать тест
@@ -535,8 +537,8 @@ export function SchulteGrid() {
               onBackToMenu={() => navigate('/')}
             />
 
-            <div className="w-full bg-background/50 border border-border rounded-[2.5rem] p-8 overflow-hidden shadow-inner grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <div>
+            <div data-testid="results-section" className="w-full bg-background/50 border border-border rounded-[2.5rem] p-8 overflow-hidden shadow-inner grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div data-testid="result-stats">
                    <SchulteStats 
                      history={state.clickHistory} 
                      size={state.size} 
@@ -561,13 +563,13 @@ export function SchulteGrid() {
         animate={{ opacity: 1, x: 0 }}
         className="lg:col-span-3 flex flex-col gap-4"
       >
-         <div className="bg-card/40 backdrop-blur-md border border-border rounded-3xl p-6 shadow-sm">
+         <div data-testid="hud-timer" className="bg-card/40 backdrop-blur-md border border-border rounded-3xl p-6 shadow-sm">
             <div className="flex items-center justify-between mb-4">
               <span className="text-xs text-muted-foreground uppercase font-black tracking-widest">Прогресс</span>
               <Activity className="w-4 h-4 text-primary opacity-50" />
             </div>
             <div className="space-y-4">
-               <div>
+               <div data-testid="timer-display">
                   <div className="flex justify-between items-baseline mb-1">
                     <p className="text-3xl font-mono font-black tabular-nums text-foreground">
                       {(state.timeMs / 1000).toFixed(2)}<span className="text-xs text-muted-foreground pl-1">s</span>
@@ -582,7 +584,7 @@ export function SchulteGrid() {
                     />
                   </div>
                </div>
-               <div className="flex items-center justify-between pt-2">
+               <div className="flex items-center justify-between pt-2" data-testid="errors-count">
                  <div className="flex flex-col">
                     <span className="text-xs text-muted-foreground uppercase font-black">Ошибки</span>
                     <span className={`text-sm font-mono font-bold ${state.errors > 0 ? 'text-destructive' : 'text-foreground'}`}>{state.errors}</span>
@@ -633,6 +635,7 @@ export function SchulteGrid() {
         animate={state.errors > 0 ? { x: [0, -10, 10, -10, 10, 0] } : {}}
         transition={{ duration: 0.4 }}
         className={`lg:col-span-6 border border-border rounded-[2.5rem] p-4 sm:p-8 flex flex-col items-center justify-center relative min-h-[400px] overflow-hidden lg:h-full shadow-2xl ${state.modifications.bgTheme === 'dark-green' ? 'bg-[#064e3b]' : 'bg-card/30 backdrop-blur-sm'}`}
+        data-testid="grid-container"
       >
          <div className="absolute inset-0 pointer-events-none flex items-center justify-center opacity-[0.05]">
             <div className="w-px h-24 bg-primary"></div>
@@ -711,6 +714,7 @@ export function SchulteGrid() {
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={stopGame} 
+            data-testid="stop-button"
             className="w-full py-4 bg-destructive/10 border border-destructive/20 text-destructive text-xs uppercase font-black tracking-widest rounded-2xl hover:bg-destructive hover:text-white transition-all shadow-lg shadow-destructive/5"
           >
             Завершить досрочно

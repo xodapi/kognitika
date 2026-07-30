@@ -33,6 +33,7 @@
     "node_modules",
     "scratch",
     "test-results",
-    "tests"
+    "tests",
+    "src/tests"
   ]
 }

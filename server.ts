@@ -92,7 +92,17 @@ async function startServer() {
 
   registerDuelHandlers(io, { prisma, jwtSecret: JWT_SECRET });
 
-  app.use(helmet());
+  app.use(helmet({
+    contentSecurityPolicy: process.env.NODE_ENV !== 'production' 
+      ? {
+          directives: {
+            ...helmet.contentSecurityPolicy.getDefaultDirectives(),
+            'connect-src': ["'self'", 'ws:', 'wss:'],
+            'script-src': ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+          },
+        }
+      : undefined,
+  }));
   app.use(cors(createExpressCorsOptions(corsConfig)));
   app.use(express.json());
   app.use((_req, res, next) => {
@@ -160,6 +170,38 @@ async function startServer() {
       server: { middlewareMode: true },
       appType: 'spa',
     });
+
+    // SPA fallback for client-side routes - BEFORE vite.middlewares
+    // But skip API, Vite internals, AND static files with extensions
+    app.get('*', async (req, res, next) => {
+      // Skip API routes
+      if (req.path.startsWith('/api/')) {
+        return next();
+      }
+      // Skip Vite internal routes
+      if (req.path.startsWith('/@vite') || req.path.startsWith('/@react-refresh') || req.path.startsWith('/@fs')) {
+        return next();
+      }
+      // Skip static files (have extensions like .js, .css, .png, .ico, .map, .html, .json, .txt, .svg, .woff, .woff2, .ttf, .eot)
+      if (/\.(js|css|png|ico|map|html|json|txt|svg|woff|woff2|ttf|eot|js\.map|css\.map)$/i.test(req.path)) {
+        return next();
+      }
+      // Skip known asset paths
+      if (req.path.startsWith('/assets/') || req.path.startsWith('/public/')) {
+        return next();
+      }
+      try {
+        const indexPath = path.join(process.cwd(), 'index.html');
+        let template = await import('fs/promises').then(fs => fs.readFile(indexPath, 'utf-8'));
+        template = await vite.transformIndexHtml(req.url, template);
+        res.setHeader('Content-Type', 'text/html');
+        res.send(template);
+      } catch (e) {
+        vite.ssrFixStacktrace(e as Error);
+        next(e);
+      }
+    });
+
     app.use(vite.middlewares);
   } else {
     const distPath = path.join(process.cwd(), 'dist');

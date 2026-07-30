@@ -55,7 +55,13 @@ export default defineConfig({
   optimizeDeps: {
     include: ['zod'],
   },
+  esbuild: {
+    keepNames: true,
+    // Preserve data-testid attributes in production
+    drop: [],
+  },
   build: {
+    minify: 'esbuild',
     rollupOptions: {
       output: {
         manualChunks(id) {

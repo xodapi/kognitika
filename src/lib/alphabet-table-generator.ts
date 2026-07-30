@@ -59,7 +59,7 @@ export const ALPHABET_TABLE_PRESETS: ReadonlyArray<{
 
 export const MIN_ALPHABET_QUESTION_COUNT = 9;
 export const MAX_ALPHABET_QUESTION_COUNT = RUSSIAN_ALPHABET.length;
-export const DEFAULT_ALPHABET_QUESTION_COUNT: number = MAX_ALPHABET_QUESTION_COUNT;
+export const DEFAULT_ALPHABET_QUESTION_COUNT = 33;
 
 function normalizeSeed(seed?: number) {
   if (typeof seed === 'number' && Number.isFinite(seed)) {
