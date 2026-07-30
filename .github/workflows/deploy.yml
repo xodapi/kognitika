@@ -7,7 +7,7 @@ on:
 
 concurrency:
   group: kognitika-production
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   verify:
@@ -47,10 +47,18 @@ jobs:
           cache-dependency-path: pnpm-lock.yaml
 
       - run: pnpm install --frozen-lockfile
+      - name: Apply database migrations
+        run: pnpm exec prisma migrate deploy
       - run: cargo test --manifest-path crates/kognitika-core/Cargo.toml
       - run: pnpm lint
       - run: pnpm test
+      - run: pnpm validate
       - run: pnpm build
+      - run: pnpm check:bundle
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm test:e2e
+      - name: Build production container
+        run: docker build --tag kognitika:${{ github.sha }} .
 
   deploy:
     runs-on: ubuntu-latest
@@ -147,21 +155,8 @@ jobs:
             upsert_env CORS_ORIGIN "https://kognitika.ru,https://www.kognitika.ru,https://kognitika.syntog.ru,https://admin.kognitika.syntog.ru,https://m.kognitika.ru,https://m.kognitika.syntog.ru"
           fi
 
-          migration_log="$(mktemp)"
-          if ! CI=true pnpm exec prisma migrate deploy 2>&1 | tee "$migration_log"; then
-            if ! grep -q "P3005" "$migration_log"; then
-              rm -f "$migration_log"
-              exit 1
-            fi
-
-            echo "Baselining the existing production schema with the first committed migration"
-            CI=true pnpm exec prisma db execute \
-              --file prisma/migrations/20260724180000_add_express_knowledge_game_types/migration.sql
-            CI=true pnpm exec prisma migrate resolve \
-              --applied 20260724180000_add_express_knowledge_game_types
-            CI=true pnpm exec prisma migrate deploy
-          fi
-          rm -f "$migration_log"
+          echo "Applying committed database migrations (fail closed)"
+          CI=true pnpm exec prisma migrate deploy
 
           BUILD_HASH="$build_id" VITE_BUILD_ID="$build_id" pnpm build
 

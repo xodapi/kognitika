@@ -43,6 +43,8 @@ jobs:
           cache-dependency-path: pnpm-lock.yaml
 
       - run: pnpm install --frozen-lockfile
+      - name: Apply database migrations
+        run: pnpm exec prisma migrate deploy
       - run: cargo test --manifest-path crates/kognitika-core/Cargo.toml
       - run: pnpm lint
       - run: pnpm test
@@ -51,3 +53,5 @@ jobs:
       - run: pnpm check:bundle
       - run: pnpm exec playwright install --with-deps chromium
       - run: pnpm test:e2e
+      - name: Build production container
+        run: docker build --tag kognitika:${{ github.sha }} .
