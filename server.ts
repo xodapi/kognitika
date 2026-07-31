@@ -4,7 +4,6 @@ import express from 'express';
 import { createServer } from 'http';
 import path from 'path';
 import { execSync } from 'child_process';
-import { createServer as createViteServer } from 'vite';
 import prisma from './src/lib/prisma.ts';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -172,6 +171,9 @@ async function startServer() {
 
   // ── Vite Middleware / Static ─────────────────────────────
   if (process.env.NODE_ENV !== 'production') {
+    // Vite is development-only. Keeping the dynamic import out of the
+    // production module graph lets the runtime image omit Vite safely.
+    const { createServer: createViteServer } = await import('vite');
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: 'spa',

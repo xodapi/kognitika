@@ -2,3 +2,12 @@ packages:
   - "."
   - "apps/*"
   - "packages/*"
+
+# pnpm v10 location for allowed dependency build scripts.
+# package.json's "pnpm" field is no longer read by pnpm v10.
+onlyBuiltDependencies:
+  - "@prisma/engines"
+  - "@prisma/client"
+  - "esbuild"
+  - "prisma"
+  - "protobufjs"
