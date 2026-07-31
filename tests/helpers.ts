@@ -62,22 +62,48 @@ function jsonResponse(body: unknown, status = 200) {
 }
 
 export async function installSyntheticApi(page: Page) {
+  // Pre-populate identity vault with synthetic token
+  await page.addInitScript(() => {
+    const syntheticUser = {
+      id: 'synthetic-user',
+      name: 'Brain Tester',
+      pseudonym: 'Brain Tester',
+      brainId: 'BR-SYNTHETIC-0001',
+      email: null,
+      level: 2,
+      experience: 250,
+      rating: 500,
+      role: 'USER',
+      streakDays: 1,
+      _count: { sessions: 3 },
+    };
+    // Use the correct keys from storage-keys.ts
+    localStorage.setItem('kognitika:auth:token', 'synthetic-token');
+    localStorage.setItem('token', 'synthetic-token'); // legacy
+    localStorage.setItem('user', JSON.stringify(syntheticUser));
+    localStorage.setItem('kognitika:brainId', 'BR-SYNTHETIC-0001');
+    localStorage.setItem('kognitika:storage:schemaVersion', '1');
+  });
+
   await page.route('**/api/**', async (route) => {
     const request = route.request();
     const url = new URL(request.url());
     const method = request.method();
+    const pathname = url.pathname;
 
-    if (url.pathname === '/api/client-error') {
+    console.log(`[Synthetic API] ${method} ${pathname}`);
+
+    if (pathname === '/api/client-error') {
       await route.fulfill({ status: 204, body: '' });
       return;
     }
 
-    if (url.pathname === '/api/leaderboard') {
+    if (pathname === '/api/leaderboard') {
       await route.fulfill(jsonResponse(syntheticLeaderboard));
       return;
     }
 
-    if (url.pathname === '/api/dashboard/status') {
+    if (pathname === '/api/dashboard/status') {
       await route.fulfill(
         jsonResponse({
           dailyTasks: [
@@ -92,17 +118,17 @@ export async function installSyntheticApi(page: Page) {
       return;
     }
 
-    if (url.pathname === '/api/progress' || url.pathname === '/api/game/progress') {
+    if (pathname === '/api/progress' || pathname === '/api/game/progress') {
       await route.fulfill(jsonResponse([]));
       return;
     }
 
-    if (url.pathname === '/api/me') {
+    if (pathname === '/api/me') {
       await route.fulfill(jsonResponse({ user: syntheticUser }));
       return;
     }
 
-    if (url.pathname === '/api/ideas') {
+    if (pathname === '/api/ideas') {
       await route.fulfill(
         jsonResponse(
           method === 'GET'
@@ -123,12 +149,12 @@ export async function installSyntheticApi(page: Page) {
       return;
     }
 
-    if (url.pathname.startsWith('/api/ideas/')) {
+    if (pathname.startsWith('/api/ideas/')) {
       await route.fulfill(jsonResponse({ success: true }));
       return;
     }
 
-    if (url.pathname === '/api/analytics/compare') {
+    if (pathname === '/api/analytics/compare') {
       await route.fulfill(
         jsonResponse({
           deltaPercentage: 0,
@@ -142,32 +168,54 @@ export async function installSyntheticApi(page: Page) {
       return;
     }
 
-    if (url.pathname === '/api/analytics/profile') {
+    if (pathname === '/api/analytics/profile') {
       await route.fulfill(jsonResponse({ profile: null, message: 'synthetic-profile-empty' }));
       return;
     }
 
-    if (url.pathname === '/api/analytics/export') {
+    if (pathname === '/api/analytics/export') {
       await route.fulfill(jsonResponse({ version: 'synthetic', sessions: [] }));
       return;
     }
 
-    if (url.pathname.startsWith('/api/game')) {
+    if (pathname === '/api/game/attempts' && method === 'POST') {
+      const challenge = Array.from({ length: 32 }, () => Math.floor(Math.random() * 256).toString(16).padStart(2, '0')).join('');
+      await route.fulfill(jsonResponse({ 
+        attemptId: 'synthetic-attempt-id', 
+        challenge, 
+        issuedAt: new Date().toISOString(),
+        notBefore: new Date().toISOString(),
+        expiresAt: new Date(Date.now() + 300000).toISOString() 
+      }));
+      return;
+    }
+
+    if (pathname === '/api/game/save' && method === 'POST') {
+      await route.fulfill(jsonResponse({ success: true, sessionId: 'synthetic-session', session: { score: 100 } }));
+      return;
+    }
+
+    if (pathname.startsWith('/api/game')) {
       await route.fulfill(jsonResponse({ success: true, sessionId: 'synthetic-session' }));
       return;
     }
 
-    if (url.pathname === '/api/auth/brain') {
+    if (pathname === '/api/auth/brain') {
       await route.fulfill(jsonResponse({ token: 'synthetic-token', brainId: syntheticUser.brainId, pseudonym: syntheticUser.pseudonym, user: syntheticUser }));
       return;
     }
 
-    if (url.pathname === '/api/auth/restore') {
+    if (pathname === '/api/auth/restore') {
       await route.fulfill(jsonResponse({ token: 'synthetic-token', brainId: syntheticUser.brainId, pseudonym: syntheticUser.pseudonym, user: syntheticUser }));
       return;
     }
 
-    if (url.pathname === '/api/feedback') {
+    if (pathname === '/api/analytics/practice-flow') {
+      await route.fulfill(jsonResponse({ success: true }));
+      return;
+    }
+
+    if (pathname === '/api/feedback') {
       await route.fulfill(jsonResponse({ success: true, trackingNum: 'FB-SYNTH' }));
       return;
     }

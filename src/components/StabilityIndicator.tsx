@@ -12,12 +12,12 @@ export function StabilityIndicator({ stability, isAdapting }: StabilityIndicator
   const percentage = Math.max(0, Math.min(100, 100 - (stability / 5)));
 
   return (
-    <div className="w-full flex flex-col gap-2">
-      <div className="flex justify-between items-center">
-        <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">Стабильность</span>
+    <div className="w-full flex flex-col gap-2 min-w-0">
+      <div className="flex justify-between items-center flex-wrap gap-1">
+        <span className="text-sm font-black text-muted-foreground uppercase tracking-widest whitespace-nowrap">Стабильность</span>
         <div className="flex items-center gap-1">
           {isAdapting && <div className="w-1.5 h-1.5 bg-primary rounded-full animate-ping" />}
-          <span className="text-[9px] font-mono font-bold" style={{ color: `hsl(${hue}, 70%, 50%)` }}>
+          <span className="text-sm font-mono font-bold" style={{ color: `hsl(${hue}, 70%, 50%)` }}>
             {percentage.toFixed(0)}%
           </span>
         </div>
@@ -30,7 +30,7 @@ export function StabilityIndicator({ stability, isAdapting }: StabilityIndicator
           transition={{ type: 'spring', stiffness: 50 }}
         />
       </div>
-      <p className="text-[7px] text-muted-foreground/60 uppercase tracking-tighter">
+      <p className="text-sm text-muted-foreground/60 uppercase tracking-tighter whitespace-nowrap">
         {stability < 150 ? 'Высокая концентрация' : stability < 300 ? 'Средняя стабильность' : 'Требуется фокусировка'}
       </p>
     </div>

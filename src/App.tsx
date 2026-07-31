@@ -90,7 +90,7 @@ function AdminAccessGate({
         </p>
         {isSignedIn && (
           <div className="mt-5 rounded-xl border border-border bg-background/50 px-4 py-3">
-            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+            <p className="text-sm font-black uppercase tracking-widest text-muted-foreground">
               Текущий профиль
             </p>
             <p className="mt-1 truncate text-sm font-bold text-foreground">
@@ -187,7 +187,7 @@ function AppContent() {
             </div>
             <div className="min-w-0">
               <h1 className="text-lg sm:text-xl font-black tracking-tighter text-foreground uppercase">Когнитика</h1>
-              <p className="text-[9px] text-primary font-bold uppercase tracking-[0.2em] hidden sm:block">Система когнитивного развития</p>
+              <p className="text-sm text-primary font-bold uppercase tracking-[0.2em] hidden sm:block">Система когнитивного развития</p>
             </div>
           </div>
         </div>
@@ -237,12 +237,12 @@ function AppContent() {
                 title={user.pseudonym || user.name || 'Аноним'}
               >
                 <div className="text-right hidden md:block px-1 min-w-0">
-                  <p className="max-w-[140px] truncate text-[10px] font-bold leading-none transition-colors group-hover:text-primary xl:max-w-[170px]">
+                  <p className="max-w-[140px] truncate text-sm font-bold leading-none transition-colors group-hover:text-primary xl:max-w-[170px]">
                     {user.pseudonym || user.name || 'Аноним'}
                   </p>
-                  <p className="text-[8px] text-primary uppercase font-black tracking-tighter">LVL {user.level || 1}</p>
+                  <p className="text-sm text-primary uppercase font-black tracking-tighter">LVL {user.level || 1}</p>
                 </div>
-                <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-xs ring-2 ring-primary/10 uppercase">
+                <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-sm ring-2 ring-primary/10 uppercase">
                   {(user.pseudonym || user.name || 'A')[0]}
                 </div>
               </button>
@@ -256,7 +256,7 @@ function AppContent() {
               </button>
             </div>
           ) : (
-            <button onClick={() => setIsAuthOpen(true)} className="flex items-center gap-2 min-h-11 px-4 py-2 bg-primary text-primary-foreground text-[10px] sm:text-xs uppercase tracking-wider rounded-lg font-bold hover:shadow-lg hover:shadow-primary/30 transition-all shadow-md">
+            <button onClick={() => setIsAuthOpen(true)} className="flex items-center gap-2 min-h-11 px-4 py-2 bg-primary text-primary-foreground text-sm sm:text-sm uppercase tracking-wider rounded-lg font-bold hover:shadow-lg hover:shadow-primary/30 transition-all shadow-md">
               <LogIn className="w-4 h-4" /> <span className="hidden xs:inline">Войти</span>
             </button>
           )}
@@ -524,7 +524,7 @@ function AppContent() {
 
       <footer
         aria-label="Версия сборки"
-        className="fixed bottom-24 right-3 lg:bottom-3 z-40 rounded-lg border border-border bg-card/80 px-2.5 py-1 text-[10px] font-mono font-bold text-muted-foreground shadow-sm backdrop-blur-md"
+        className="fixed bottom-24 right-3 lg:bottom-3 z-40 rounded-lg border border-border bg-card/80 px-2.5 py-1 text-sm font-mono font-bold text-muted-foreground shadow-sm backdrop-blur-md"
       >
         build {appBuildId}
       </footer>

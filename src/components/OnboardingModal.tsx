@@ -110,7 +110,7 @@ export function OnboardingModal({
       >
         <div className="flex items-center justify-between gap-4 border-b border-border px-5 py-4 sm:px-7">
           <div className="min-w-0">
-            <p className="text-[10px] font-black uppercase tracking-[0.25em] text-primary">
+            <p className="text-sm font-black uppercase tracking-[0.25em] text-primary">
               Шаг {step + 1} из {steps.length}
             </p>
             <h2 id="onboarding-title" className="mt-1 truncate text-lg font-black tracking-tight sm:text-2xl">
@@ -195,7 +195,7 @@ export function OnboardingModal({
                   <article key={article.id} className="rounded-2xl border border-border bg-background/50 p-4">
                     <div className="flex items-center justify-between gap-3">
                       <h3 className="font-black">{article.title}</h3>
-                      <span className="shrink-0 rounded-full bg-primary/10 px-2 py-1 text-[9px] font-black uppercase text-primary">
+                      <span className="shrink-0 rounded-full bg-primary/10 px-2 py-1 text-xs font-black uppercase text-primary">
                         {article.category}
                       </span>
                     </div>
@@ -271,7 +271,7 @@ export function OnboardingModal({
           <button
             type="button"
             onClick={onComplete}
-            className="px-4 py-3 text-xs font-black uppercase tracking-widest text-muted-foreground hover:text-foreground"
+            className="px-4 py-3 text-sm font-black uppercase tracking-widest text-muted-foreground hover:text-foreground"
           >
             Пропустить
           </button>
@@ -280,7 +280,7 @@ export function OnboardingModal({
               <button
                 type="button"
                 onClick={() => setStep((value) => value - 1)}
-                className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-border px-4 py-3 text-xs font-black uppercase tracking-widest sm:flex-none"
+                className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-border px-4 py-3 text-sm font-black uppercase tracking-widest sm:flex-none"
               >
                 <ArrowLeft className="h-4 w-4" />
                 Назад
@@ -290,7 +290,7 @@ export function OnboardingModal({
               <button
                 type="button"
                 onClick={() => setStep((value) => value + 1)}
-                className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-xs font-black uppercase tracking-widest text-primary-foreground sm:flex-none"
+                className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-black uppercase tracking-widest text-primary-foreground sm:flex-none"
               >
                 Далее
                 <ArrowRight className="h-4 w-4" />
@@ -300,14 +300,14 @@ export function OnboardingModal({
                 <button
                   type="button"
                   onClick={finishAndOpenProfile}
-                  className="hidden items-center justify-center gap-2 rounded-xl border border-primary/30 px-5 py-3 text-xs font-black uppercase tracking-widest text-primary sm:inline-flex"
+                  className="hidden items-center justify-center gap-2 rounded-xl border border-primary/30 px-5 py-3 text-sm font-black uppercase tracking-widest text-primary sm:inline-flex"
                 >
                   Открыть профиль
                 </button>
                 <button
                   type="button"
                   onClick={finishAndStart}
-                  className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-xs font-black uppercase tracking-widest text-primary-foreground sm:flex-none"
+                  className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-black uppercase tracking-widest text-primary-foreground sm:flex-none"
                 >
                   Начать с Шульте
                   <ArrowRight className="h-4 w-4" />

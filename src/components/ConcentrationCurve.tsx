@@ -24,18 +24,18 @@ export function ConcentrationCurve({ data }: ConcentrationCurveProps) {
   const avgTime = chartData.reduce((acc, d) => acc + d.time, 0) / chartData.length;
 
   return (
-    <div className="w-full h-full flex flex-col gap-4">
-      <div className="flex justify-between items-end px-2">
+    <div className="w-full h-full flex flex-col gap-4 min-w-0">
+      <div className="flex justify-between items-end px-2 flex-wrap gap-2">
         <div>
-          <h4 className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Кривая концентрации</h4>
-          <p className="text-xs text-foreground font-bold italic opacity-70">Динамика скорости поиска (сек/число)</p>
+          <h4 className="text-sm font-black text-muted-foreground uppercase tracking-widest mb-1 whitespace-nowrap">Кривая концентрации</h4>
+          <p className="text-sm text-foreground font-bold italic opacity-70 whitespace-nowrap">Динамика скорости поиска (сек/число)</p>
         </div>
         <div className="text-right">
-          <span className="text-[10px] text-primary font-black uppercase tracking-tighter">Avg: {avgTime.toFixed(2)}s</span>
+          <span className="text-sm text-primary font-black uppercase tracking-tighter whitespace-nowrap">Avg: {avgTime.toFixed(2)}s</span>
         </div>
       </div>
 
-      <div className="flex-1 min-h-[200px] w-full">
+      <div className="flex-1 min-h-[200px] w-full min-w-0">
         <SafeResponsiveContainer width="100%" height="100%">
           <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
             <defs>
@@ -50,7 +50,7 @@ export function ConcentrationCurve({ data }: ConcentrationCurveProps) {
               hide={true}
             />
             <YAxis 
-              tick={{ fontSize: 10, fill: 'var(--muted-foreground)' }} 
+              tick={{ fontSize: 12, fill: 'var(--muted-foreground)' }} 
               axisLine={false}
               tickLine={false}
               unit="s"
@@ -61,7 +61,7 @@ export function ConcentrationCurve({ data }: ConcentrationCurveProps) {
                   const d = payload[0].payload;
                   return (
                     <div className="bg-card border border-border p-3 rounded-xl shadow-2xl backdrop-blur-md">
-                      <p className="text-[10px] font-black text-muted-foreground uppercase mb-1">Число {d.name}</p>
+                      <p className="text-xs font-black text-muted-foreground uppercase mb-1">Число {d.name}</p>
                       <p className="text-sm font-mono font-bold text-primary">{d.time.toFixed(2)}s</p>
                     </div>
                   );
@@ -82,12 +82,12 @@ export function ConcentrationCurve({ data }: ConcentrationCurveProps) {
         </SafeResponsiveContainer>
       </div>
 
-      <div className="flex justify-between px-2 pt-2 border-t border-border/50">
+      <div className="flex justify-between px-2 pt-2 border-t border-border/50 flex-wrap gap-2">
         <div className="flex items-center gap-2">
            <div className="w-2 h-2 rounded-full bg-primary" />
-           <span className="text-[8px] text-muted-foreground uppercase font-black">Скорость реакции</span>
+           <span className="text-sm text-muted-foreground uppercase font-black whitespace-nowrap">Скорость реакции</span>
         </div>
-        <p className="text-[8px] text-muted-foreground uppercase font-medium italic">Ось X: Последовательность поиска</p>
+        <p className="text-sm text-muted-foreground uppercase font-medium italic whitespace-nowrap">Ось X: Последовательность поиска</p>
       </div>
     </div>
   );

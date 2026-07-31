@@ -59,39 +59,39 @@ export function SchulteStats({ history, size, totalTimeMs, errors }: SchulteStat
   }).join(' ');
 
   return (
-    <div className="w-full space-y-8 mt-4">
+    <div className="w-full space-y-8 mt-4 min-w-0">
       {/* Metrics Row */}
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-        <div className="bg-background/40 border border-border p-4 rounded-2xl flex flex-col items-center text-center">
+        <div className="bg-background/40 border border-border p-4 rounded-2xl flex flex-col items-center text-center min-w-0">
           <Activity className="w-4 h-4 text-primary mb-2" />
-          <span className="text-[10px] text-muted-foreground uppercase tracking-widest">Ср. реакция</span>
+          <span className="text-xs text-muted-foreground uppercase tracking-widest whitespace-nowrap">Ср. реакция</span>
           <span className="text-lg font-mono font-bold">{(stats.avgRT / 1000).toFixed(2)}s</span>
         </div>
-        <div className="bg-background/40 border border-border p-4 rounded-2xl flex flex-col items-center text-center">
+        <div className="bg-background/40 border border-border p-4 rounded-2xl flex flex-col items-center text-center min-w-0">
           <TrendingUp className="w-4 h-4 text-green-500 mb-2" />
-          <span className="text-[10px] text-muted-foreground uppercase tracking-widest">Стабильность</span>
+          <span className="text-xs text-muted-foreground uppercase tracking-widest whitespace-nowrap">Стабильность</span>
           <span className="text-lg font-mono font-bold">{stats.consistency}%</span>
         </div>
-        <div className="bg-background/40 border border-border p-4 rounded-2xl flex flex-col items-center text-center">
+        <div className="bg-background/40 border border-border p-4 rounded-2xl flex flex-col items-center text-center min-w-0">
           <Target className="w-4 h-4 text-destructive mb-2" />
-          <span className="text-[10px] text-muted-foreground uppercase tracking-widest">Точность</span>
+          <span className="text-xs text-muted-foreground uppercase tracking-widest whitespace-nowrap">Точность</span>
           <span className="text-lg font-mono font-bold">{Math.max(0, 100 - (errors * 10))}%</span>
         </div>
-        <div className="bg-background/40 border border-border p-4 rounded-2xl flex flex-col items-center text-center">
+        <div className="bg-background/40 border border-border p-4 rounded-2xl flex flex-col items-center text-center min-w-0">
           <TrendingUp className={`w-4 h-4 mb-2 ${stats.drift > 20 ? 'text-destructive' : 'text-primary'}`} />
-          <span className="text-[10px] text-muted-foreground uppercase tracking-widest">Когнитивный дрейф</span>
+          <span className="text-xs text-muted-foreground uppercase tracking-widest whitespace-nowrap">Когнитивный дрейф</span>
           <span className={`text-lg font-mono font-bold ${stats.drift > 20 ? 'text-destructive' : 'text-primary'}`}>{stats.drift > 0 ? '+' : ''}{stats.drift.toFixed(0)}%</span>
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         {/* Heatmap Section */}
-        <div className="space-y-4">
-          <h4 className="text-[10px] text-muted-foreground uppercase tracking-widest font-black flex items-center gap-2">
+        <div className="space-y-4 min-w-0">
+          <h4 className="text-xs text-muted-foreground uppercase tracking-widest font-black flex items-center gap-2 whitespace-nowrap">
             <div className="w-2 h-2 rounded-full bg-primary" /> Тепловая карта внимания
           </h4>
           <div 
-            className="grid gap-1 aspect-square w-full max-w-[240px] mx-auto" 
+            className="grid gap-1 aspect-square w-full max-w-[240px] mx-auto min-w-0" 
             style={{ gridTemplateColumns: `repeat(${size}, 1fr)` }}
           >
             {Array.from({ length: size * size }).map((_, i) => {
@@ -101,7 +101,7 @@ export function SchulteStats({ history, size, totalTimeMs, errors }: SchulteStat
               return (
                 <div 
                   key={i}
-                  className="rounded-sm relative group"
+                  className="rounded-sm relative group min-w-0"
                   style={{ 
                     backgroundColor: rt 
                       ? `rgba(var(--primary-rgb), ${0.1 + intensity * 0.9})` 
@@ -110,24 +110,24 @@ export function SchulteStats({ history, size, totalTimeMs, errors }: SchulteStat
                 >
                    {rt > 0 && (
                      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-background/80 rounded-sm">
-                        <span className="text-[8px] font-mono">{(rt/1000).toFixed(1)}s</span>
+                        <span className="text-xs font-mono">{(rt/1000).toFixed(1)}s</span>
                      </div>
                    )}
                 </div>
               );
             })}
           </div>
-          <p className="text-[9px] text-muted-foreground text-center italic">
+          <p className="text-xs text-muted-foreground text-center italic whitespace-nowrap">
             Чем темнее ячейка, тем выше время реакции в этой зоне зрения.
           </p>
         </div>
 
         {/* Reaction Time Chart */}
-        <div className="space-y-4">
-          <h4 className="text-[10px] text-muted-foreground uppercase tracking-widest font-black flex items-center gap-2">
+        <div className="space-y-4 min-w-0">
+          <h4 className="text-xs text-muted-foreground uppercase tracking-widest font-black flex items-center gap-2 whitespace-nowrap">
              <div className="w-2 h-2 rounded-full bg-green-500" /> Динамика прогресса
           </h4>
-          <div className="bg-background/20 border border-border p-6 rounded-2xl h-full flex flex-col justify-center">
+          <div className="bg-background/20 border border-border p-6 rounded-2xl h-full flex flex-col justify-center min-w-0">
             <svg width="100%" height={chartHeight} viewBox={`0 0 ${chartWidth} ${chartHeight}`} className="overflow-visible">
                <path 
                  d={`M 0,${chartHeight} ${points} L ${chartWidth},${chartHeight} Z`}
@@ -148,7 +148,7 @@ export function SchulteStats({ history, size, totalTimeMs, errors }: SchulteStat
                  </linearGradient>
                </defs>
             </svg>
-            <div className="flex justify-between text-[8px] text-muted-foreground uppercase mt-4 font-mono">
+            <div className="flex justify-between text-xs text-muted-foreground uppercase mt-4 font-mono whitespace-nowrap">
                <span>Старт</span>
                <span>Финиш</span>
             </div>

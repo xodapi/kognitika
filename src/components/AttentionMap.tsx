@@ -18,10 +18,13 @@ export function AttentionMap({ clicks, width = 300, height = 300 }: AttentionMap
     return clicks.filter(c => c.x !== undefined && c.y !== undefined);
   }, [clicks]);
 
+  const containerWidth = Math.min(width, 300);
+  const containerHeight = Math.min(height, 300);
+
   return (
     <div 
-      className="relative bg-background/20 border border-border rounded-3xl overflow-hidden shadow-inner"
-      style={{ width, height }}
+      className="relative bg-background/20 border border-border rounded-3xl overflow-hidden shadow-inner w-full max-w-[300px]"
+      style={{ width: containerWidth, height: containerHeight }}
     >
       <svg width="100%" height="100%" viewBox="0 0 1 1" className="absolute inset-0">
         <defs>
@@ -66,7 +69,7 @@ export function AttentionMap({ clicks, width = 300, height = 300 }: AttentionMap
 
       <div className="absolute bottom-3 left-3 flex items-center gap-2">
         <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-        <span className="text-[8px] text-muted-foreground uppercase font-black tracking-widest">Live Attention Link</span>
+        <span className="text-sm text-muted-foreground uppercase font-black tracking-widest whitespace-nowrap">Live Attention Link</span>
       </div>
     </div>
   );

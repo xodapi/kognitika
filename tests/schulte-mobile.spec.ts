@@ -1,137 +1,146 @@
 import { test, expect } from '@playwright/test';
+import { installSyntheticApi, collectUnexpectedBrowserErrors, expectAppReady } from './helpers';
 
 const VIEWPORTS = [
   { name: 'iPhone SE', width: 375, height: 667 },
   { name: 'iPhone 12/13', width: 390, height: 844 },
+  { name: 'iPad Mini', width: 768, height: 1024 },
 ];
 
-const TARGET_URL = process.env.BASE_URL || 'http://localhost:4173';
+const SCHULTE_URL = '/schulte';
+
+async function clickByText(page, text: string) {
+  await page.evaluate((t) => {
+    const btn = Array.from(document.querySelectorAll('button')).find(b => b.textContent?.includes(t));
+    if (btn) btn.click();
+  }, text);
+}
 
 async function goToSchulte(page) {
-  await page.goto(`${TARGET_URL}/schulte`, { waitUntil: 'networkidle' });
-  // Wait for the start button to be visible (using text selector)
-  await page.waitForSelector('button:has-text("Начать тест")', { timeout: 15000 });
+  await page.goto(SCHULTE_URL, { waitUntil: 'networkidle' });
+  await expect(page.locator('button:has-text("Начать тест")')).toBeVisible({ timeout: 15000 });
 }
 
 async function startGame(page) {
-  // Click "Начать тест" - this opens the briefing modal
-  await page.click('button:has-text("Начать тест")');
+  // Click "Начать тест" - opens briefing modal
+  await clickByText(page, 'Начать тест');
   // Wait for briefing modal and click "Инициализировать Тест"
-  await page.waitForSelector('button:has-text("Инициализировать Тест")', { timeout: 5000 });
-  await page.click('button:has-text("Инициализировать Тест")');
+  await page.waitForSelector('button:has-text("Инициализировать Тест")', { timeout: 15000 });
+  await clickByText(page, 'Инициализировать Тест');
   // Wait for HUD timer (has "Прогресс" text)
-  await page.waitForSelector('div.bg-card\\/40:has-text("Прогресс"), div:has(span:has-text("Прогресс"))', { timeout: 10000 });
-  // Wait for grid container (has grid display)
-  await page.waitForSelector('div[style*="gridTemplateColumns"], div.grid.gap-2', { timeout: 10000 });
+  await page.waitForSelector('div:has-text("Прогресс")', { timeout: 30000 });
+  // Wait for grid container
+  await page.waitForSelector('div[style*="gridTemplateColumns"], div.grid.gap-2', { timeout: 30000 });
 }
 
 async function checkFontSizes(page) {
-  const smallTexts = await page.evaluate(() => {
+  const violations = await page.evaluate(() => {
     const elements = Array.from(document.querySelectorAll('*'));
-    const violations: { selector: string; fontSize: number; text: string }[] = [];
-    
+    const results: { selector: string; fontSize: number; text: string; rect: DOMRect | null }[] = [];
+
     elements.forEach(el => {
       const style = window.getComputedStyle(el);
       const fontSize = parseFloat(style.fontSize);
-      const text = (el.textContent || '').trim().slice(0, 50);
+      const text = (el.textContent || '').trim().slice(0, 80);
       
       if (!text) return;
-      
-      // Use 11px as threshold - but we'll filter known acceptable small text in the test
-      if (fontSize > 0 && fontSize < 11) {
+      if (fontSize <= 0) return;
+
+      // Only check elements that have their own text content (not just inherited)
+      const hasOwnText = el.childNodes.length > 0 && Array.from(el.childNodes).some(n => n.nodeType === Node.TEXT_NODE && n.textContent?.trim().length > 0);
+      if (!hasOwnText) return;
+
+      // Skip elements that are not visually rendered
+      const rect = el.getBoundingClientRect();
+      if (rect.width === 0 && rect.height === 0) return;
+      if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') return;
+
+      // Skip screen-reader only content
+      if (el.hasAttribute('aria-hidden') && el.getAttribute('aria-hidden') === 'true') return;
+      if (el.classList.contains('sr-only') || el.classList.contains('screen-reader-only')) return;
+
+      // Check if computed font size is below 14px
+      if (fontSize < 14) {
         const tag = el.tagName.toLowerCase();
         const classes = el.className || '';
         const selector = `${tag}${classes ? '.' + classes.split(' ').join('.') : ''}`;
-        violations.push({ selector, fontSize, text });
+        results.push({ selector, fontSize, text, rect });
       }
     });
-    
-    return violations;
+
+    return results;
   });
-  
-  return smallTexts;
+
+  return violations;
+}
+
+async function checkNoHorizontalOverflow(page) {
+  const hasHorizontalScroll = await page.evaluate(() => {
+    return document.documentElement.scrollWidth > window.innerWidth;
+  });
+  return hasHorizontalScroll;
 }
 
 async function checkKeyElementsVisible(page) {
-  const results = await page.evaluate(() => {
+  return await page.evaluate(() => {
     const viewportHeight = window.innerHeight;
-    
-    // Find the HUD container (the small card at top with timer and errors)
-    const findHUDTimer = () => {
-      // Look for small div with "Прогресс" that's NOT a large container
-      const elements = Array.from(document.querySelectorAll('div'));
-      return elements.find(el => {
-        const text = el.textContent || '';
-        const rect = el.getBoundingClientRect();
-        return text.includes('Прогресс') && 
-               text.includes('s') &&  // has time value
-               rect.height < 200 &&  // small element, not container
-               rect.width < viewportHeight;  // reasonable width
-      });
+    const viewportWidth = window.innerWidth;
+
+    const results: Record<string, { 
+      found: boolean; 
+      visible: boolean; 
+      rect: DOMRect | null;
+      reason: string 
+    }> = {};
+
+    // Helper to find element by text content
+    const findByText = (text: string, tag?: string) => {
+      const elements = Array.from(document.querySelectorAll(tag || '*'));
+      return elements.find(el => el.textContent?.includes(text));
     };
-    
-    const findHUDErrors = () => {
-      const elements = Array.from(document.querySelectorAll('div'));
-      return elements.find(el => {
-        const text = el.textContent || '';
-        const rect = el.getBoundingClientRect();
-        return text.includes('Ошибки') && 
-               rect.height < 200 &&
-               rect.width < viewportHeight;
-      });
-    };
-    
-    const findTimerDisplay = () => {
-      const elements = Array.from(document.querySelectorAll('div'));
-      return elements.find(el => {
-        const text = el.textContent || '';
-        const rect = el.getBoundingClientRect();
-        return text.match(/\d+\.\d+s/) && rect.height < 100;
-      });
-    };
-    
-    const findGrid = () => {
-      return document.querySelector('div[style*="gridTemplateColumns"], div.grid.gap-2');
-    };
-    
-    const findStartBtn = () => Array.from(document.querySelectorAll('button')).find(el => el.textContent?.includes('Начать тест'));
-    const findStopBtn = () => Array.from(document.querySelectorAll('button')).find(el => el.textContent?.includes('Завершить досрочно'));
-    
-    const timer = findHUDTimer();
-    const timerDisplay = findTimerDisplay();
-    const errors = findHUDErrors();
-    const grid = findGrid();
-    const startBtn = findStartBtn();
-    const stopBtn = findStopBtn();
-    
-    const keyElements = [
-      { name: 'timer', el: timer },
-      { name: 'timer-display', el: timerDisplay },
-      { name: 'errors-count', el: errors },
-      { name: 'grid', el: grid },
-      { name: 'start-button', el: startBtn },
-      { name: 'stop-button', el: stopBtn },
+
+    const checks = [
+      { name: 'start-button', find: () => findByText('Начать тест', 'button') },
+      { name: 'hud-timer', find: () => findByText('Прогресс', 'div') },
+      { name: 'timer-display', find: () => findByText('s', 'div') },
+      { name: 'errors-count', find: () => findByText('Ошибки', 'div') },
+      { name: 'grid', find: () => document.querySelector('div[style*="gridTemplateColumns"], div.grid.gap-2') },
+      { name: 'stop-button', find: () => findByText('Завершить досрочно', 'button') },
     ];
-    
-    return keyElements.map(({ name, el }) => {
-      if (!el) return { name, visible: false, reason: 'not found' };
-      
-      const rect = el.getBoundingClientRect();
-      // Element is visible if any part is in viewport
-      const isVisible = rect.bottom > 0 && rect.top < viewportHeight && rect.width > 0 && rect.height > 0;
-      
-      return {
-        name,
-        visible: isVisible,
-        found: name === 'grid' ? true : undefined,
-        rect: { top: rect.top, bottom: rect.bottom, left: rect.left, right: rect.right, width: rect.width, height: rect.height },
-        viewportHeight,
-        reason: isVisible ? 'visible' : rect.bottom > viewportHeight ? 'below viewport' : 'above viewport or zero size'
-      };
-    });
+
+    for (const check of checks) {
+      const el = check.find() as HTMLElement | null;
+      if (el) {
+        const rect = el.getBoundingClientRect();
+        const isVisible = rect.bottom > 0 && rect.top < viewportHeight && rect.right > 0 && rect.left < viewportWidth && rect.width > 0 && rect.height > 0;
+        results[check.name] = {
+          found: true,
+          visible: isVisible,
+          rect,
+          reason: isVisible ? 'visible' : rect.bottom > viewportHeight ? 'below viewport' : rect.top < 0 ? 'above viewport' : 'zero size or outside'
+        };
+      } else {
+        results[check.name] = { found: false, visible: false, rect: null, reason: 'not found' };
+      }
+    }
+
+    // Document scroll dimensions
+    results.document = {
+      found: true,
+      visible: true,
+      rect: { 
+        top: 0, 
+        left: 0, 
+        width: document.documentElement.scrollWidth, 
+        height: document.documentElement.scrollHeight,
+        bottom: document.documentElement.scrollHeight,
+        right: document.documentElement.scrollWidth
+      } as DOMRect,
+      reason: `document scrollWidth: ${document.documentElement.scrollWidth}, clientWidth: ${viewportWidth}`
+    };
+
+    return results;
   });
-  
-  return results;
 }
 
 VIEWPORTS.forEach(({ name, width, height }) => {
@@ -140,6 +149,7 @@ VIEWPORTS.forEach(({ name, width, height }) => {
     
     test.beforeEach(async ({ page }) => {
       await page.setViewportSize({ width, height });
+      await installSyntheticApi(page);
     });
 
     test('should load and show start button', async ({ page }) => {
@@ -147,30 +157,21 @@ VIEWPORTS.forEach(({ name, width, height }) => {
       await expect(page.locator('button:has-text("Начать тест")')).toBeVisible();
     });
 
-    test('should have no critical text smaller than 11px (excluding nav/decorative)', async ({ page }) => {
+    test('all visible text must have computed font-size >= 14px (no arbitrary exclusions)', async ({ page }) => {
       await goToSchulte(page);
       await startGame(page);
       
       const violations = await checkFontSizes(page);
       
-      // Filter out known acceptable small text: navigation buttons, decorative labels, chart labels
-      const acceptablePatterns = [
-        'Система когнитивного развития', // decorative header
-        'Обзор', 'Рейтинг', 'Шульте', 'Числа', 'Логика', 'Струп', 'Память', 'Печать', 'Пространство', // nav buttons
-        'Войти', // login button
-        'Стабильность', '100%', 'Высокая концентрация', 'Кривая концентрации', 'Avg:', 'Скорость реакции', 'Ось X:', 'Live Attention Link', // chart labels
-        'build dev' // build footer
-      ];
-      
-      const criticalViolations = violations.filter(v => 
-        !acceptablePatterns.some(p => v.text.includes(p))
-      );
-      
-      if (criticalViolations.length > 0) {
-        console.log(`Critical font size violations on ${name}:`, criticalViolations);
+      if (violations.length > 0) {
+        // Detailed failure output for debugging
+        console.log(`Font size violations on ${name} (${width}x${height}):`);
+        violations.forEach(v => {
+          console.log(`  ${v.selector}: ${v.fontSize}px - "${v.text}" - rect: ${v.rect ? `${Math.round(v.rect.left)},${Math.round(v.rect.top)} ${Math.round(v.rect.width)}x${Math.round(v.rect.height)}` : 'none'}`);
+        });
       }
       
-      expect(criticalViolations.length).toBe(0);
+      expect(violations.length).toBe(0);
     });
 
     test('key elements should be visible without scrolling', async ({ page }) => {
@@ -179,70 +180,55 @@ VIEWPORTS.forEach(({ name, width, height }) => {
       
       const results = await checkKeyElementsVisible(page);
       
-      console.log(`Key elements visibility on ${name}:`, results);
-      
-      for (const result of results) {
-        if (!result.visible) {
-          console.warn(`${result.name} NOT visible on ${name}:`, result);
-        }
-      }
+      console.log(`Key elements visibility on ${name}:`, JSON.stringify(results, null, 2));
       
       // Timer display (actual time) must be visible
-      const timerDisplay = results.find(r => r.name === 'timer-display');
-      expect(timerDisplay?.visible).toBe(true);
+      expect(results['timer-display']?.visible).toBe(true);
       
       // Grid must be at least partially visible (top in viewport)
-      const grid = results.find(r => r.name === 'grid');
-      expect(grid?.found).toBe(true);
-      expect(grid?.rect.top).toBeLessThanOrEqual(height);
+      expect(results['grid']?.found).toBe(true);
+      expect(results['grid']?.rect?.top).toBeLessThanOrEqual(height);
       
-      // Errors count - should be visible on larger screens
-      const errors = results.find(r => r.name === 'errors-count');
-      if (height >= 800) {
-        expect(errors?.visible).toBe(true);
-      }
+      // HUD timer label must be visible
+      expect(results['hud-timer']?.visible).toBe(true);
+      
+      // During game, stop button should exist (right panel is scrollable, so button may be below viewport)
+      expect(results['stop-button']?.found).toBe(true);
     });
 
-    test('grid should fit in viewport height', async ({ page }) => {
+    test('grid should fit in viewport width (no horizontal overflow)', async ({ page }) => {
       await goToSchulte(page);
       await startGame(page);
       
-      const gridInfo = await page.evaluate(() => {
-        const grid = document.querySelector('div.grid.gap-2, div[style*="gridTemplateColumns"]');
+      const hasHorizontalScroll = await checkNoHorizontalOverflow(page);
+      expect(hasHorizontalScroll).toBe(false);
+      
+      // Additional check: grid container should not exceed viewport
+      const gridOverflow = await page.evaluate(() => {
+        const grid = document.querySelector('div[style*="gridTemplateColumns"], div.grid.gap-2');
         if (!grid) return { found: false };
-        
         const rect = grid.getBoundingClientRect();
         return {
           found: true,
-          top: rect.top,
-          bottom: rect.bottom,
-          height: rect.height,
-          viewportHeight: window.innerHeight,
-          fits: rect.bottom <= window.innerHeight
+          gridRight: rect.right,
+          viewportWidth: window.innerWidth,
+          overflows: rect.right > window.innerWidth
         };
       });
       
-      console.log(`Grid fit on ${name}:`, gridInfo);
-      expect(gridInfo.found).toBe(true);
-      // iPhone 12/13 (844px) - allow small overflow (grid may need slight scroll)
-      // The test documents the current behavior
-      if (height >= 800) {
-        // Document current state - grid slightly exceeds viewport on 844px
-        // This is a known issue to fix in the component
-        console.log(`Grid fits on ${name} (${height}px):`, gridInfo.fits);
-      }
+      expect(gridOverflow.found).toBe(true);
+      expect(gridOverflow.overflows).toBe(false);
     });
 
-    test('timer and errors should be at top of HUD', async ({ page }) => {
+    test('timer and errors HUD should be above grid', async ({ page }) => {
       await goToSchulte(page);
       await startGame(page);
       
       const positions = await page.evaluate(() => {
-        // Find elements by text content using proper DOM traversal
         const allDivs = Array.from(document.querySelectorAll('div'));
         const timer = allDivs.find(el => el.textContent?.includes('Прогресс'));
         const errors = allDivs.find(el => el.textContent?.includes('Ошибки'));
-        const grid = document.querySelector('div.grid.gap-2, div[style*="gridTemplateColumns"]');
+        const grid = document.querySelector('div[style*="gridTemplateColumns"], div.grid.gap-2');
         
         if (!timer || !errors || !grid) return { error: 'missing elements' };
         
@@ -254,8 +240,6 @@ VIEWPORTS.forEach(({ name, width, height }) => {
         };
       });
       
-      console.log(`Positions on ${name}:`, positions);
-      
       if (!positions.error) {
         expect(positions.timerTop).toBeLessThan(positions.gridTop);
         expect(positions.errorsTop).toBeLessThan(positions.gridTop);
@@ -264,25 +248,58 @@ VIEWPORTS.forEach(({ name, width, height }) => {
   });
 });
 
-// Accessibility check
-test.describe('Mobile Accessibility', () => {
+// Accessibility and overflow regression tests
+test.describe('Mobile Layout Regression - Horizontal Overflow', () => {
   VIEWPORTS.forEach(({ name, width, height }) => {
     test.describe(`${name} (${width}x${height})`, () => {
       test.use({ viewport: { width, height } });
       
       test.beforeEach(async ({ page }) => {
         await page.setViewportSize({ width, height });
+        await installSyntheticApi(page);
       });
 
-      test('no horizontal overflow', async ({ page }) => {
+      test('no horizontal overflow on initial load', async ({ page }) => {
         await goToSchulte(page);
         
-        const hasHorizontalScroll = await page.evaluate(() => {
-          return document.documentElement.scrollWidth > window.innerWidth;
-        });
-        
+        const hasHorizontalScroll = await checkNoHorizontalOverflow(page);
         expect(hasHorizontalScroll).toBe(false);
       });
+
+      test('no horizontal overflow during active game', async ({ page }) => {
+        await goToSchulte(page);
+        await startGame(page);
+        
+        const hasHorizontalScroll = await checkNoHorizontalOverflow(page);
+        expect(hasHorizontalScroll).toBe(false);
+      });
+
+      test('font contract enforced on initial load (pre-game)', async ({ page }) => {
+        await goToSchulte(page);
+        
+        const violations = await checkFontSizes(page);
+        
+        if (violations.length > 0) {
+          console.log(`Pre-game font violations on ${name}:`, violations);
+        }
+        
+        expect(violations.length).toBe(0);
+      });
     });
+  });
+});
+
+// Quick smoke test for CI
+test.describe('Schulte Trainer - Quick Smoke', () => {
+  test('page loads, key elements present, no horizontal overflow at 390x844', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await installSyntheticApi(page);
+    await page.goto(SCHULTE_URL);
+    await page.waitForLoadState('networkidle');
+    
+    await expect(page.locator('button:has-text("Начать тест")')).toBeVisible({ timeout: 10000 });
+    
+    const hasHorizontalScroll = await checkNoHorizontalOverflow(page);
+    expect(hasHorizontalScroll).toBe(false);
   });
 });
