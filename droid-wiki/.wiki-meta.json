@@ -1,0 +1,22 @@
+{
+  "pageCount": 14,
+  "pageOrder": [
+    "overview/index.md",
+    "overview/architecture.md",
+    "overview/getting-started.md",
+    "overview/glossary.md",
+    "features/scientific-methodology.md",
+    "features/adaptive-decision-modeling.md",
+    "features/data-export.md",
+    "features/testing.md",
+    "PROJECT_UPDATES.md",
+    "DEVELOPMENT_HISTORY.md",
+    "deployment.md",
+    "security.md",
+    "reference/configuration.md",
+    "reference/data-models.md"
+  ],
+  "commitHash": "c2742f6",
+  "branch": "main",
+  "generatedAt": "2026-08-01T00:00:00Z"
+}
