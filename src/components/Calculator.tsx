@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { evaluateArithmetic } from '../lib/calculator';
 
 export function Calculator() {
   const [disp, setDisp] = useState('0');
@@ -10,9 +11,7 @@ export function Calculator() {
   
   const calc = () => {
     try {
-      // safe eval alternative using Function
-      const res = new Function(`return ${disp}`)();
-      setDisp(String(Math.round(res * 100) / 100)); // round to 2 decimals
+      setDisp(String(evaluateArithmetic(disp)));
     } catch {
       setDisp('Error');
     }
