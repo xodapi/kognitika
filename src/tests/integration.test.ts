@@ -555,7 +555,7 @@ describe('Integration Tests - EventBus / Subscribers', () => {
     eventBusWithValidation.emit('TRAINING_COMPLETE', {
       type: 'INVALID_TYPE',
       timeMs: 5000,
-    });
+    } as any);
 
     expect(errors.length).toBeGreaterThan(0);
     expect(errors[errors.length - 1].event).toBe('TRAINING_COMPLETE');

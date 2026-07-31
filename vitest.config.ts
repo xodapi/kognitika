@@ -9,6 +9,17 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
     include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'json-summary'],
+      include: ['src/lib/calculator.ts', 'src/server/services/sse-connections.ts'],
+      thresholds: {
+        lines: 90,
+        functions: 90,
+        branches: 80,
+        statements: 90,
+      },
+    },
   },
   resolve: {
     alias: {
