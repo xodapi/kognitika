@@ -6,7 +6,7 @@ import jwt from 'jsonwebtoken';
 import { z } from 'zod';
 import prisma from '../../lib/prisma.ts';
 import { createSafeLogger, safeError } from '../../lib/safe-logger.ts';
-import { handleValidationError } from '../utils/validation.ts';
+import { validateBody } from '../middleware/validate.ts';
 import { createSseConnectionManager, resolveSseConnectionLimits } from '../services/sse-connections.ts';
 
 const messageSchema = z.object({
@@ -90,13 +90,8 @@ router.get('/stream', async (req, res) => {
   if (!closed) chatBus.on('message', onMessage);
 });
 
-router.post('/messages', async (req: any, res) => {
-  const parsed = messageSchema.safeParse(req.body);
-  if (!parsed.success) {
-    handleValidationError(parsed, res);
-    return;
-  }
-  const { content } = parsed.data;
+router.post('/messages', validateBody(messageSchema), async (req: any, res) => {
+  const { content } = req.validated.body;
 
   try {
 

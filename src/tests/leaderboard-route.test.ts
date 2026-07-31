@@ -120,6 +120,16 @@ describe('leaderboard sync authorization', () => {
 });
 
 describe('weekly leaderboard XP contract', () => {
+  it('rejects unsupported leaderboard periods instead of silently returning global data', async () => {
+    const baseUrl = await createLeaderboardHarness();
+    const response = await getLeaderboard(baseUrl, 'monthly');
+
+    expect(response.status).toBe(400);
+    expect(response.body).toMatchObject({ code: 'VALIDATION_ERROR' });
+    expect(prismaMock.user.findMany).not.toHaveBeenCalled();
+    expect(prismaMock.xpEvent.groupBy).not.toHaveBeenCalled();
+  });
+
   it('uses recent XpEvent sums for weekly leaderboard ordering', async () => {
     prismaMock.xpEvent.groupBy.mockResolvedValue([
       { userId: 'user_synthetic_top', _sum: { amount: 120 } },

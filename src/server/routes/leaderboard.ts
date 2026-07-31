@@ -1,9 +1,14 @@
 import { Router } from 'express';
+import { z } from 'zod';
 import prisma from '../../lib/prisma.ts';
 import { createSafeLogger, safeError } from '../../lib/safe-logger.ts';
 import { authenticate, isAdmin } from '../middleware/auth.ts';
+import { validateQuery } from '../middleware/validate.ts';
 
 const router = Router();
+const leaderboardQuerySchema = z.object({
+  period: z.enum(['weekly']).optional(),
+}).strict();
 const logger = createSafeLogger('leaderboard-route');
 
 /**
@@ -11,8 +16,8 @@ const logger = createSafeLogger('leaderboard-route');
  * Возвращает топ игроков для публичного рейтинга.
  * Использует только псевдонимы для обеспечения анонимности.
  */
-router.get('/', async (req, res) => {
-  const { period } = req.query;
+router.get('/', validateQuery(leaderboardQuerySchema), async (req, res) => {
+  const { period } = req.validated!.query;
 
   try {
     if (period === 'weekly') {

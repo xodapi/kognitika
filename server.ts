@@ -49,6 +49,7 @@ import practiceFlowRoutes from './src/server/routes/practice-flow.ts';
 import dailyTrajectoryRoutes from './src/server/routes/daily-trajectory.ts';
 import neurotrainerRoutes from './src/server/routes/neurotrainer.ts';
 import { authenticate } from './src/server/middleware/auth.ts';
+import { apiErrorHandler, apiNotFound } from './src/server/middleware/api-errors.ts';
 import { privacyGuard } from './src/server/middleware/privacy.ts';
 
 import { Server } from 'socket.io';
@@ -168,6 +169,11 @@ async function startServer() {
   });
 
   app.get('/api/progress', (req, res) => res.redirect('/api/game/progress'));
+
+  // API failures must never fall through to the SPA fallback. This keeps API
+  // clients on a stable JSON contract in both development and production.
+  app.use('/api', apiNotFound);
+  app.use(apiErrorHandler);
 
   // ── Vite Middleware / Static ─────────────────────────────
   if (process.env.NODE_ENV !== 'production') {

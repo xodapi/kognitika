@@ -96,6 +96,15 @@ async function getJson(baseUrl: string, path: string) {
 }
 
 describe('ideas route notification contract', () => {
+  it('rejects a blank vote identifier before calling Prisma', async () => {
+    const baseUrl = await createIdeasHarness();
+    const response = await postJson(baseUrl, '/api/ideas/%20/vote', userToken({ id: 'user_synthetic_idea' }), {});
+
+    expect(response.status).toBe(400);
+    expect(response.body).toMatchObject({ code: 'VALIDATION_ERROR' });
+    expect(prismaMock.idea.findUnique).not.toHaveBeenCalled();
+  });
+
   it('normalizes legacy statuses in list responses', async () => {
     prismaMock.idea.findMany.mockResolvedValue([
       {

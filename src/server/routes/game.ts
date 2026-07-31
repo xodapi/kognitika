@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import prisma from '../../lib/prisma.ts';
-import { handleValidationError } from '../utils/validation.ts';
+import { validateBody, validateParams } from '../middleware/validate.ts';
 import { authenticate } from '../middleware/auth.ts';
 import { saveGameSchema, startGameAttemptSchema, updateMetadataSchema } from '../schemas/game.ts';
 import { eventBus } from '../events/event-bus.ts';
@@ -24,13 +24,9 @@ router.get('/progress', authenticate, async (req: any, res) => {
   }
 });
 
-router.post('/attempts', authenticate, async (req: any, res) => {
-  const result = startGameAttemptSchema.safeParse(req.body);
-  const validationError = handleValidationError(result, res);
-  if (validationError) return validationError;
-
+router.post('/attempts', authenticate, validateBody(startGameAttemptSchema), async (req: any, res) => {
   try {
-    const attempt = await startGameAttempt({ userId: req.user.id, ...result.data! });
+    const attempt = await startGameAttempt({ userId: req.user.id, ...req.validated.body });
     res.status(201).json(attempt);
   } catch (error) {
     if (error instanceof GameAttemptError) {
@@ -41,12 +37,8 @@ router.post('/attempts', authenticate, async (req: any, res) => {
   }
 });
 
-router.post('/save', authenticate, async (req: any, res) => {
-  const result = saveGameSchema.safeParse(req.body);
-  const validationError = handleValidationError(result, res);
-  if (validationError) return validationError;
-
-  const { clientRunId, attemptId, challenge, gameType, timeMs, metadata } = result.data!;
+router.post('/save', authenticate, validateBody(saveGameSchema), async (req: any, res) => {
+  const { clientRunId, attemptId, challenge, gameType, timeMs, metadata } = req.validated.body;
   if (!timeMs || timeMs < 100) {
     return res.status(400).json({ error: 'Invalid performance data' });
   }
@@ -93,44 +85,42 @@ router.post('/save', authenticate, async (req: any, res) => {
   }
 });
 
-router.post('/session/:id/metadata', authenticate, async (req: any, res) => {
-  const parsed = updateMetadataSchema.safeParse(req.body);
-  if (!parsed.success) {
-    return res.status(400).json({ error: 'Invalid metadata payload' });
-  }
-  const { metadata } = parsed.data;
+const gameSessionParamsSchema = z.object({ id: z.string().min(1) }).strict();
 
-  try {
-    const { id } = req.params;
+router.post(
+  '/session/:id/metadata',
+  authenticate,
+  validateParams(gameSessionParamsSchema),
+  validateBody(updateMetadataSchema),
+  async (req: any, res) => {
+    const { metadata } = req.validated.body;
+    const { id } = req.validated.params;
 
-    const session = await prisma.gameSession.findUnique({
-      where: { id }
-    });
+    try {
+      const session = await prisma.gameSession.findUnique({ where: { id } });
+      if (!session) return res.status(404).json({ error: 'Session not found' });
+      if (session.userId !== req.user.id) return res.status(403).json({ error: 'Forbidden' });
 
-    if (!session) {
-      return res.status(404).json({ error: 'Session not found' });
+      const updatedSession = await prisma.gameSession.update({
+        where: { id },
+        data: {
+          metadata: {
+            ...(session.metadata as Record<string, any>),
+            ...metadata,
+          },
+        },
+      });
+
+      res.json({ success: true, session: updatedSession });
+    } catch (error) {
+      logger.error('Session metadata update failed', {
+        error: safeError(error),
+        sessionLabel: `Session ${String(id).slice(0, 8)}`,
+      });
+      res.status(500).json({ error: 'Failed to update session metadata' });
     }
-
-    if (session.userId !== req.user.id) {
-      return res.status(403).json({ error: 'Forbidden' });
-    }
-
-    const updatedSession = await prisma.gameSession.update({
-      where: { id },
-      data: {
-        metadata: {
-          ...(session.metadata as Record<string, any>),
-          ...metadata
-        }
-      }
-    });
-
-    res.json({ success: true, session: updatedSession });
-  } catch (error) {
-    logger.error('Session metadata update failed', { error: safeError(error), sessionLabel: `Session ${String(req.params.id).slice(0, 8)}` });
-    res.status(500).json({ error: 'Failed to update session metadata' });
-  }
-});
+  },
+);
 
 router.get('/leaderboard', async (req, res) => {
   try {

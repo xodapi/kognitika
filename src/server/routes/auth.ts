@@ -2,7 +2,7 @@ import { Router } from 'express';
 import jwt from 'jsonwebtoken';
 import type { User } from '@prisma/client';
 import prisma from '../../lib/prisma.ts';
-import { handleValidationError } from '../utils/validation.ts';
+import { validateBody } from '../middleware/validate.ts';
 import { generateBrainId, generatePseudonym } from '../utils/brain-id.ts';
 import { resumeSchema } from '../schemas/auth.ts';
 import { createSafeLogger, safeError } from '../../lib/safe-logger.ts';
@@ -75,13 +75,9 @@ router.post('/brain', async (req, res) => {
   }
 });
 
-router.post('/restore', async (req, res) => {
-  const result = resumeSchema.safeParse(req.body);
-  const validationError = handleValidationError(result, res);
-  if (validationError) return validationError;
-
+router.post('/restore', validateBody(resumeSchema), async (req: any, res) => {
   try {
-    const { brainId } = result.data!;
+    const { brainId } = req.validated.body;
     const user = await prisma.user.findUnique({ where: { brainId } });
     
     if (!user) {

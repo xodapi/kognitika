@@ -4,7 +4,7 @@ import prisma from '../../lib/prisma.ts';
 import { createSafeLogger, safeError } from '../../lib/safe-logger.ts';
 import { eventBus } from '../events/event-bus.ts';
 import { authenticate } from '../middleware/auth.ts';
-import { handleValidationError } from '../utils/validation.ts';
+import { validateBody } from '../middleware/validate.ts';
 import { feedbackSubmitSchema } from '../schemas/feedback.ts';
 
 const router = Router();
@@ -21,14 +21,8 @@ function isUniqueTrackingCollision(error: unknown) {
     (error as { code?: string }).code === 'P2002';
 }
 
-router.post('/', authenticate, async (req: any, res) => {
-  const parsed = feedbackSubmitSchema.safeParse(req.body);
-  if (!parsed.success) {
-    handleValidationError(parsed, res);
-    return;
-  }
-
-  const { type, content, rating } = parsed.data;
+router.post('/', authenticate, validateBody(feedbackSubmitSchema), async (req: any, res) => {
+  const { type, content, rating } = req.validated.body;
 
   try {
     let createdFeedback: { trackingNum: string } | null = null;

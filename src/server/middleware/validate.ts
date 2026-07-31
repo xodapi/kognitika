@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction, RequestHandler } from 'express';
-import { ZodError, ZodSchema, z, type ZodObject, type ZodRawShape } from 'zod';
+import { ZodError, ZodSchema, z, type ZodObject } from 'zod';
 import { createSafeLogger } from '../../lib/safe-logger.ts';
+import { validationErrorResponse } from './api-errors.ts';
 
 const logger = createSafeLogger('validation');
 
@@ -295,10 +296,7 @@ export function sanitizeInput(req: Request, res: Response, next: NextFunction) {
  */
 export function handleValidationError(result: any, res: Response) {
   if (!result.success) {
-    return res.status(400).json({ 
-      error: result.error.issues[0].message,
-      details: result.error.issues 
-    });
+    return res.status(400).json(validationErrorResponse('Validation failed', result.error.issues));
   }
   return null;
 }

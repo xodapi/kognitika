@@ -3,7 +3,7 @@ import jwt from 'jsonwebtoken';
 import { z } from 'zod';
 import prisma from '../../lib/prisma.ts';
 import { authenticate } from '../middleware/auth.ts';
-import { handleValidationError } from '../utils/validation.ts';
+import { validateBody, validateParams } from '../middleware/validate.ts';
 import { sanitizePublicUserIdentity } from '../utils/privacy.ts';
 import { createSafeLogger, safeError } from '../../lib/safe-logger.ts';
 import { eventBus } from '../events/event-bus.ts';
@@ -70,17 +70,13 @@ router.get('/', async (req: any, res) => {
   }
 });
 
-router.post('/', authenticate, async (req: any, res) => {
-  const result = ideaSchema.safeParse(req.body);
-  const validationError = handleValidationError(result, res);
-  if (validationError) return validationError;
-
+router.post('/', authenticate, validateBody(ideaSchema), async (req: any, res) => {
   try {
     const idea = await prisma.idea.create({
       data: {
         userId: req.user.id,
-        title: result.data!.title,
-        description: result.data!.description,
+        title: req.validated.body.title,
+        description: req.validated.body.description,
         status: 'PENDING',
       },
       include: {
@@ -121,20 +117,23 @@ router.post('/', authenticate, async (req: any, res) => {
   }
 });
 
-router.post('/:id/vote', authenticate, async (req: any, res) => {
+const ideaParamsSchema = z.object({ id: z.string().trim().min(1) }).strict();
+
+router.post('/:id/vote', authenticate, validateParams(ideaParamsSchema), async (req: any, res) => {
+  const { id } = req.validated.params;
   try {
-    const idea = await prisma.idea.findUnique({ where: { id: req.params.id }, select: { id: true } });
+    const idea = await prisma.idea.findUnique({ where: { id }, select: { id: true } });
     if (!idea) return res.status(404).json({ error: 'Idea not found' });
 
     await prisma.ideaVote.upsert({
       where: {
         ideaId_userId: {
-          ideaId: req.params.id,
+          ideaId: id,
           userId: req.user.id,
         },
       },
       create: {
-        ideaId: req.params.id,
+        ideaId: id,
         userId: req.user.id,
       },
       update: {},
@@ -142,7 +141,7 @@ router.post('/:id/vote', authenticate, async (req: any, res) => {
 
     res.json({ success: true });
   } catch (error) {
-    logger.error('Idea vote failed', { error: safeError(error), ideaLabel: `Idea ${String(req.params.id).slice(0, 8)}` });
+    logger.error('Idea vote failed', { error: safeError(error), ideaLabel: `Idea ${id.slice(0, 8)}` });
     res.status(500).json({ error: 'Failed to vote for idea' });
   }
 });
