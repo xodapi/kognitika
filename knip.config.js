@@ -5,7 +5,6 @@ export default {
       project: ['src/**/*.{ts,tsx}', 'server.ts', 'vite.config.ts', 'vitest.config.ts', 'src/tests/**/*.{ts,tsx}'],
       ignore: [
         'src/server/scripts/migrate-to-brain.ts',
-        'src/server/services/mail.ts',
         'src/lib/prisma.ts',
         'src/lib/safe-logger.ts',
         'src/server/config/cors.ts',

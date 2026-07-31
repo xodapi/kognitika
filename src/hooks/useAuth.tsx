@@ -10,7 +10,6 @@ const logger = createSafeLogger('auth-client');
 interface User {
   id: string;
   name: string;
-  email?: string | null;
   pseudonym?: string | null;
   brainId?: string | null;
   level?: number;
@@ -26,7 +25,6 @@ interface User {
 const userSchema = z.object({
   id: z.string(),
   name: z.string(),
-  email: z.string().nullable().optional(),
   pseudonym: z.string().nullable().optional(),
   brainId: z.string().nullable().optional(),
   level: z.number().optional(),

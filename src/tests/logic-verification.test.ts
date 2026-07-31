@@ -26,10 +26,9 @@ vi.mock('@prisma/client', () => {
   return { PrismaClient: vi.fn(() => mockPrisma) };
 });
 
-// Mock subscribers to avoid real DB/Email calls
+// Mock subscribers to avoid real database and notification calls.
 vi.mock('../lib/subscribers', () => ({}));
 vi.mock('../lib/observability-subscriber', () => ({}));
-vi.mock('../lib/report-subscriber', () => ({}));
 
 describe('EDA Logic Verification (Headless)', () => {
   it('correctly handles game:completed event emission', async () => {

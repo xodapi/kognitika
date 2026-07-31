@@ -33,7 +33,6 @@ const authLimiter = rateLimit({
 
 // Register subscribers
 import './src/lib/subscribers.ts';
-import './src/lib/report-subscriber.ts';
 import './src/lib/observability-subscriber.ts';
 
 import authRoutes from './src/server/routes/auth.ts';

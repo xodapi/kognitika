@@ -1,4 +1,4 @@
-import { Router, type Request, type Response } from 'express';
+import { Router } from 'express';
 import jwt from 'jsonwebtoken';
 import type { User } from '@prisma/client';
 import prisma from '../../lib/prisma.ts';
@@ -30,7 +30,6 @@ function serializeBrainUser(user: User) {
   return {
     id: user.id,
     name: displayName,
-    email: null,
     brainId: user.brainId,
     pseudonym: user.pseudonym || displayName,
     role: user.role,
@@ -40,18 +39,6 @@ function serializeBrainUser(user: User) {
     streakDays: user.streakDays,
   };
 }
-
-function emailAuthDisabled(_req: Request, res: Response) {
-  return res.status(410).json({
-    error: 'Email authentication is disabled for public users. Use Brain ID.',
-    code: 'email_auth_disabled',
-  });
-}
-
-router.post('/magic-link', emailAuthDisabled);
-router.post('/verify-magic', emailAuthDisabled);
-router.post('/register', emailAuthDisabled);
-router.post('/login', emailAuthDisabled);
 
 // Анонимные сессии (Brain ID)
 router.post('/brain', async (req, res) => {
@@ -64,7 +51,6 @@ router.post('/brain', async (req, res) => {
         brainId,
         pseudonym,
         name: pseudonym,
-        email: null,
         experience: 100, // Начальный бонус XP
         role: 'USER',
         xpEvents: {

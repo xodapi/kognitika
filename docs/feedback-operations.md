@@ -26,19 +26,7 @@ TELEGRAM_ADMIN_CHAT_ID="replace-me"
 
 If either value is missing, empty, `replace-me`, `undefined`, or `null`, Telegram delivery is treated as disabled and no network call is made.
 
-Optional legacy/admin email vars:
-
-```env
-ADMIN_NOTIFICATION_EMAIL="admin@example.com"
-SMTP_HOST="smtp.example.com"
-SMTP_PORT="465"
-SMTP_SECURE="true"
-SMTP_USER="user@example.com"
-SMTP_PASS="replace-me"
-LEGACY_EMAIL_NOTIFICATIONS_ENABLED="false"
-```
-
-Public Brain ID users are not emailed unless the legacy opt-in flag is explicitly enabled and the legacy user has email.
+Feedback and idea notifications use Telegram only. Public identity is Brain ID-only, so the application does not collect email addresses or send user email.
 
 ## Privacy Rules
 

@@ -153,7 +153,7 @@ pnpm dev
 | `CORS_ORIGIN` | Разрешённые источники CORS (через запятую) |
 | `CORS_ALLOW_DEV_WILDCARD=false` | Разрешить `*` в CORS только для разработки |
 
-Дополнительно: Telegram, SMTP, Neurotrainer — опционально, см. `.env.example`.
+Дополнительно: Telegram и Neurotrainer, опционально, см. `.env.example`.
 
 ---
 

@@ -30,7 +30,7 @@ function collectFiles(dir: string, extensions: string[]) {
   return files;
 }
 
-describe('legacy email audit', () => {
+describe('Brain ID-only identity audit', () => {
   it('keeps public auth UI Brain ID-only', () => {
     const authModal = readRepoFile('src/components/AuthModal.tsx');
     const publicComponentSources = collectFiles('src/components', ['.tsx']).map((file) => readFileSync(file, 'utf8'));
@@ -55,27 +55,26 @@ describe('legacy email audit', () => {
     }
   });
 
-  it('keeps email delivery behind explicit legacy opt-in flags', () => {
-    const subscribers = readRepoFile('src/lib/subscribers.ts');
-    const reportSubscriber = readRepoFile('src/lib/report-subscriber.ts');
-    const mailService = readRepoFile('src/server/services/mail.ts');
-    const envExample = readRepoFile('.env.example');
+  it('removes SMTP and legacy email identity from runtime configuration', () => {
+    const runtimeSources = [
+      readRepoFile('server.ts'),
+      readRepoFile('src/lib/subscribers.ts'),
+      readRepoFile('src/server/routes/auth.ts'),
+      readRepoFile('.env.example'),
+      readRepoFile('package.json'),
+    ];
 
-    expect(subscribers).toContain('LEGACY_EMAIL_NOTIFICATIONS_ENABLED');
-    expect(reportSubscriber).toContain('LEGACY_EMAIL_NOTIFICATIONS_ENABLED');
-    expect(mailService).toContain('LEGACY_EMAIL_AUTH_ENABLED');
-    expect(envExample).toContain('LEGACY_EMAIL_NOTIFICATIONS_ENABLED="false"');
-    expect(envExample).toContain('LEGACY_EMAIL_AUTH_ENABLED="false"');
-    expect(envExample).toContain('ADMIN_NOTIFICATION_EMAIL');
-    expect(envExample).not.toContain('ADMIN_EMAIL=');
-    expect(subscribers).not.toContain('ADMIN_EMAIL');
+    for (const source of runtimeSources) {
+      expect(source).not.toMatch(/SMTP_|LEGACY_EMAIL|ADMIN_NOTIFICATION_EMAIL|nodemailer/i);
+    }
   });
 
-  it('documents Prisma email and password as legacy/admin-only fields', () => {
+  it('removes email and password columns from the User model', () => {
     const schema = readRepoFile('prisma/schema.prisma');
+    const userModel = schema.match(/model User \{([\s\S]*?)\n\}/)?.[1] || '';
 
-    expect(schema).toContain('Legacy/admin-only nullable contact field');
-    expect(schema).toContain('Legacy/admin-only nullable credential hash');
+    expect(userModel).not.toMatch(/^\s*email\s/m);
+    expect(userModel).not.toMatch(/^\s*password\s/m);
   });
 
   it('keeps admin authorization role-based instead of email-based', () => {
