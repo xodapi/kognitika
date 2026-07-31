@@ -16,6 +16,13 @@ vi.mock('../hooks/useSessionRecording', () => ({
   useSessionRecording: vi.fn(),
 }));
 
+vi.mock('../lib/game-attempt-client', () => ({
+  useGameAttempt: () => ({
+    beginAttempt: vi.fn().mockResolvedValue({}),
+    saveAttempt: vi.fn().mockResolvedValue({}),
+  }),
+}));
+
 vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual<typeof import('react-router-dom')>('react-router-dom');
   return { ...actual, useNavigate: () => vi.fn() };
@@ -70,7 +77,7 @@ describe('new trainer UI contract', () => {
     });
   });
 
-  it('keeps the mental-math briefing and active state accessible', () => {
+  it('keeps the mental-math briefing and active state accessible', async () => {
     render(React.createElement(MentalMathTrainer));
 
     const count = screen.getByRole('slider', { name: 'Количество вопросов' });
@@ -85,7 +92,7 @@ describe('new trainer UI contract', () => {
     expect(screen.getByText(/лучше дать ответ и двигаться дальше/i)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Инициализировать тест' }));
 
-    expect(screen.getByRole('progressbar', { name: 'Прогресс вычислений' })).toHaveAttribute('aria-valuemax', '48');
+    expect(await screen.findByRole('progressbar', { name: 'Прогресс вычислений' })).toHaveAttribute('aria-valuemax', '48');
     expect(screen.getByRole('spinbutton', { name: 'Ответ на текущий пример' })).toBeEnabled();
     expect(screen.getByText('Legend').parentElement).toHaveClass('sticky');
   });
@@ -99,7 +106,7 @@ describe('new trainer UI contract', () => {
     expect(screen.getByRole('button', { name: 'Число 2' })).toBeEnabled();
   });
 
-  it('keeps alphabet actions accessible by touch and keyboard', () => {
+  it('keeps alphabet actions accessible by touch and keyboard', async () => {
     render(React.createElement(AlphabetTableTrainer));
 
     const count = screen.getByRole('slider', { name: 'Количество букв' });
@@ -110,7 +117,7 @@ describe('new trainer UI contract', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Начать тренировку' }));
 
-    expect(screen.getByRole('progressbar', { name: 'Прогресс таблицы алфавита' }))
+    expect(await screen.findByRole('progressbar', { name: 'Прогресс таблицы алфавита' }))
       .toHaveAttribute('aria-valuemax', '33');
     expect(screen.getByRole('button', { name: 'П — Правая рука' })).toHaveClass('min-h-24');
     expect(screen.getByRole('button', { name: 'Л — Левая рука' })).toHaveClass('min-h-24');
@@ -121,13 +128,13 @@ describe('new trainer UI contract', () => {
       .toHaveAttribute('aria-valuenow', '1');
   });
 
-  it('keeps combined Stroop responses accessible in a stable order', () => {
+  it('keeps combined Stroop responses accessible in a stable order', async () => {
     render(React.createElement(StroopAlphabetTrainer));
 
     expect(screen.getByText(/сначала выберите фактический цвет текста/i)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Начать тренировку' }));
 
-    expect(screen.getByRole('progressbar', { name: 'Прогресс комбинированного Струпа' }))
+    expect(await screen.findByRole('progressbar', { name: 'Прогресс комбинированного Струпа' }))
       .toHaveAttribute('aria-valuemax', '18');
     expect(screen.getByRole('button', { name: /КРАСНЫЙ/i })).toBeEnabled();
 

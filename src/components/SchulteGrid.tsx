@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { createClientRunId } from '../lib/client-run-id';
+import { useGameAttempt } from '../lib/game-attempt-client';
 import { motion, AnimatePresence } from 'motion/react';
 import { Star, Target, Info, Activity, AlertCircle, History } from 'lucide-react';
 import { useSchulteEngine, CellValue, GameMode } from '../hooks/useSchulteEngine';
@@ -92,7 +92,8 @@ export function SchulteGrid() {
   const [currentLevel, setCurrentLevel] = useState<TrainingLevel>('classic');
   const [sessionStartTime, setSessionStartTime] = useState<number | null>(null);
   const { token, refreshUser } = useAuth();
-  const clientRunIdRef = useRef<string | null>(null);
+  const { beginAttempt, saveAttempt } = useGameAttempt(token);
+  const gameTypeRef = useRef<'SCHULTE_GORBOV' | 'SCHULTE' | null>(null);
   const navigate = useNavigate();
   
   const [currentStability, setCurrentStability] = useState({ avg: 0, stability: 0 });
@@ -216,26 +217,24 @@ export function SchulteGrid() {
          if (isHardcore) multiplier += 0.5;
          const finalScore = Math.floor(baseScore * multiplier);
 
-         fetch('/api/game/save', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({
-               clientRunId: clientRunIdRef.current,
-               gameType: isGorbov ? 'SCHULTE_GORBOV' : 'SCHULTE',
-               timeMs: state.timeMs,
-               metadata: { score: finalScore, mode, size, distraction, errors: state.errors, modifications: state.modifications, clickHistory: state.clickHistory }
-            })
+         const gameType = gameTypeRef.current;
+         if (!gameType) {
+           logger.error('Session save failed', { error: 'No game type is available', gameType: isGorbov ? 'SCHULTE_GORBOV' : 'SCHULTE' });
+           return;
+         }
+         void saveAttempt({
+           timeMs: state.timeMs,
+           metadata: { score: finalScore, mode, size, distraction, errors: state.errors, modifications: state.modifications, clickHistory: state.clickHistory },
          })
-         .then(res => res.json())
          .then(resData => {
-            if (resData.session?.score) {
+            if (resData?.session?.score) {
               setBonusAwarded(resData.session.score);
               refreshUser();
             }
          })
-         .catch(err => logger.error('Session save failed', { error: safeError(err), gameType: isGorbov ? 'SCHULTE_GORBOV' : 'SCHULTE' }));
+         .catch(err => logger.error('Session save failed', { error: safeError(err), gameType }));
       }
-  }, [state.isFinished, state.timeMs, token, mode, size, distraction, state.errors, isGorbov, refreshUser, state.modifications, isHardcore]);
+  }, [state.isFinished, state.timeMs, token, mode, size, distraction, state.errors, isGorbov, refreshUser, state.modifications, isHardcore, saveAttempt]);
 
   const handleSuccess = () => {
      haptic.success();
@@ -248,10 +247,17 @@ export function SchulteGrid() {
     setShowBriefing(true);
   };
 
-  const confirmStart = () => {
-    clientRunIdRef.current = createClientRunId();
-    setShowBriefing(false);
-    startGame();
+  const confirmStart = async () => {
+    const gameType = mode === 'gorbov' ? 'SCHULTE_GORBOV' : 'SCHULTE';
+    try {
+      await beginAttempt(gameType);
+      gameTypeRef.current = gameType;
+      setShowBriefing(false);
+      startGame();
+    } catch (error) {
+      gameTypeRef.current = null;
+      logger.error('Game attempt start failed', { error: safeError(error), gameType });
+    }
   };
 
   if (!state.isActive && !state.isFinished && !showBriefing) {

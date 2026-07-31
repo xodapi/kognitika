@@ -1,8 +1,8 @@
 import { motion, AnimatePresence } from 'motion/react';
 import { useTopologyEngine, NodeState, NodeId } from '../hooks/useTopologyEngine';
 import { useAuth } from '../hooks/useAuth';
-import { useCallback, useEffect, useRef } from 'react';
-import { createClientRunId } from '../lib/client-run-id';
+import { useCallback, useEffect } from 'react';
+import { useGameAttempt } from '../lib/game-attempt-client';
 import { GitBranch, ChevronRight, CheckCircle } from 'lucide-react';
 import { CompletionRecommendation } from './CompletionRecommendation';
 import { SessionFlowIndicator } from './SessionFlowIndicator';
@@ -132,30 +132,22 @@ function GraphView({ nodes, edges, interactive, userAnswers, onSetAnswer }: {
 export function TopologyMemory() {
   const { state, startGame, nextEvent, setNodeAnswer, submitAnswers, nextLevel } = useTopologyEngine();
   const { token } = useAuth();
-  const clientRunIdRef = useRef<string | null>(null);
+  const { beginAttempt, saveAttempt } = useGameAttempt(token);
   const handleStart = useCallback((level: number) => {
-    clientRunIdRef.current = createClientRunId();
-    startGame(level);
-  }, [startGame]);
+    void beginAttempt('TOPOLOGY_MEMORY').then(() => startGame(level)).catch(() => {});
+  }, [beginAttempt, startGame]);
   const handleNextLevel = useCallback(() => {
-    clientRunIdRef.current = createClientRunId();
-    nextLevel();
-  }, [nextLevel]);
+    void beginAttempt('TOPOLOGY_MEMORY').then(() => nextLevel()).catch(() => {});
+  }, [beginAttempt, nextLevel]);
 
   useEffect(() => {
     if (state.isFinished && token) {
-      fetch('/api/game/save', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({
-          clientRunId: clientRunIdRef.current,
-          gameType: 'TOPOLOGY_MEMORY',
-          timeMs: state.timeMs,
-          metadata: { score: state.score, maxScore: state.maxScore, level: state.level },
-        }),
+      void saveAttempt({
+        timeMs: state.timeMs,
+        metadata: { score: state.score, maxScore: state.maxScore, level: state.level },
       }).catch(() => {});
     }
-  }, [state.isFinished, token]);
+  }, [saveAttempt, state.isFinished, state.level, state.maxScore, state.score, state.timeMs, token]);
 
   // Intro screen
   if (state.nodes.length === 0) {

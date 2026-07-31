@@ -4,7 +4,7 @@ import { Activity, AlertOctagon, Zap, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { createSafeLogger, safeError } from '../lib/safe-logger';
 import { haptic } from '../lib/haptic';
-import { createClientRunId } from '../lib/client-run-id';
+import { useGameAttempt } from '../lib/game-attempt-client';
 
 const logger = createSafeLogger('anomaly-detector');
 
@@ -19,10 +19,17 @@ export function AnomalyDetector() {
   
   const gameInterval = useRef<NodeJS.Timeout | null>(null);
   const startTime = useRef<number>(0);
-  const clientRunIdRef = useRef<string | null>(null);
+  const finishStartedRef = useRef(false);
+  const { beginAttempt, saveAttempt } = useGameAttempt(token);
 
-  const startGame = () => {
-    clientRunIdRef.current = createClientRunId();
+  const startGame = async () => {
+    try {
+      await beginAttempt('ANOMALY_DETECTOR');
+    } catch (err) {
+      logger.error('Session start failed', { error: safeError(err), gameType: 'ANOMALY_DETECTOR' });
+      return;
+    }
+    finishStartedRef.current = false;
     setGameState('scanning');
     setScore(0);
     setAnomaliesFound(0);
@@ -53,25 +60,21 @@ export function AnomalyDetector() {
   };
 
   const finishGame = useCallback(() => {
+    if (finishStartedRef.current) return;
+    finishStartedRef.current = true;
     setGameState('finished');
     if (gameInterval.current) clearInterval(gameInterval.current);
-    
+
     if (token) {
-      fetch('/api/game/save', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({
-          clientRunId: clientRunIdRef.current,
-          gameType: 'ANOMALY_DETECTOR',
-          timeMs: 60000,
-          isCompleted: true,
-          metadata: { score, anomaliesFound }
-        })
+      saveAttempt({
+        timeMs: 60000,
+        isCompleted: true,
+        metadata: { score, anomaliesFound },
       })
       .then(() => refreshUser())
       .catch(err => logger.error('Session save failed', { error: safeError(err), gameType: 'ANOMALY_DETECTOR' }));
     }
-  }, [score, anomaliesFound, token, refreshUser]);
+  }, [score, anomaliesFound, token, refreshUser, saveAttempt]);
 
   useEffect(() => {
     if (gameState === 'scanning' || gameState === 'anomaly') {

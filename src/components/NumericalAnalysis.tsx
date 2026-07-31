@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { createClientRunId } from '../lib/client-run-id';
+import { useState, useEffect, useCallback } from 'react';
+import { useGameAttempt } from '../lib/game-attempt-client';
 import { useNumericalEngine } from '../hooks/useNumericalEngine';
 import { Calculator } from './Calculator';
 import { motion, AnimatePresence } from 'motion/react';
@@ -36,28 +36,25 @@ export function NumericalAnalysis() {
   const [showCalc, setShowCalc] = useState(false);
   const { token } = useAuth();
   const navigate = useNavigate();
-  const clientRunIdRef = useRef<string | null>(null);
-  const handleStart = useCallback(() => {
-    clientRunIdRef.current = createClientRunId();
-    startGame();
-  }, [startGame]);
+  const { beginAttempt, saveAttempt } = useGameAttempt(token);
+  const handleStart = useCallback(async () => {
+    try {
+      await beginAttempt('NUMERICAL_ANALYSIS');
+      startGame();
+    } catch (err) {
+      logger.error('Session start failed', { error: safeError(err), gameType: 'NUMERICAL_ANALYSIS' });
+    }
+  }, [beginAttempt, startGame]);
 
-  
   // Save result on finish
   useEffect(() => {
      if (state.isFinished && token) {
-        fetch('/api/game/save', {
-           method: 'POST',
-           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-           body: JSON.stringify({
-              clientRunId: clientRunIdRef.current,
-              gameType: 'NUMERICAL_ANALYSIS',
-              timeMs: 60000 - state.timeLeftMs, // Time spent
-              metadata: { score: state.score }
-           })
+        saveAttempt({
+          timeMs: 60000 - state.timeLeftMs,
+          metadata: { score: state.score },
         }).catch(err => logger.error('Session save failed', { error: safeError(err), gameType: 'NUMERICAL_ANALYSIS' }));
      }
-  }, [state.isFinished, state.timeLeftMs, token, state.score]);
+  }, [state.isFinished, state.timeLeftMs, token, state.score, saveAttempt]);
 
   if (!state.isActive && !state.isFinished) {
     return (

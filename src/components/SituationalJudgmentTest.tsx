@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useRef } from 'react';
-import { createClientRunId } from '../lib/client-run-id';
+import { useCallback, useEffect } from 'react';
+import { useGameAttempt } from '../lib/game-attempt-client';
 import { useSituationalEngine } from '../hooks/useSituationalEngine';
 import { useAuth } from '../hooks/useAuth';
 import { createSafeLogger, safeError } from '../lib/safe-logger';
@@ -11,27 +11,25 @@ const logger = createSafeLogger('situational-judgment-test');
 export function SituationalJudgmentTest() {
   const { state, startGame, answerQuestion } = useSituationalEngine();
   const { token } = useAuth();
-  const clientRunIdRef = useRef<string | null>(null);
-  const handleStart = useCallback(() => {
-    clientRunIdRef.current = createClientRunId();
-    startGame();
-  }, [startGame]);
+  const { beginAttempt, saveAttempt } = useGameAttempt(token);
+  const handleStart = useCallback(async () => {
+    try {
+      await beginAttempt('SITUATIONAL_JUDGMENT');
+      startGame();
+    } catch (error) {
+      logger.error('Game attempt start failed', { error: safeError(error), gameType: 'SITUATIONAL_JUDGMENT' });
+    }
+  }, [beginAttempt, startGame]);
   
   // Save result on finish
   useEffect(() => {
      if (state.isFinished && token) {
-        fetch('/api/game/save', {
-           method: 'POST',
-           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-           body: JSON.stringify({
-              clientRunId: clientRunIdRef.current,
-              gameType: 'SITUATIONAL_JUDGMENT',
-              timeMs: state.timeMs,
-              metadata: { score: state.score, maxScore: state.maxScore }
-           })
+        void saveAttempt({
+          timeMs: state.timeMs,
+          metadata: { score: state.score, maxScore: state.maxScore },
         }).catch(err => logger.error('Session save failed', { error: safeError(err), gameType: 'SITUATIONAL_JUDGMENT' }));
      }
-  }, [state.isFinished, state.timeMs, token, state.score, state.maxScore]);
+  }, [state.isFinished, state.timeMs, token, state.score, state.maxScore, saveAttempt]);
 
   if (!state.isActive && !state.isFinished) {
     return (

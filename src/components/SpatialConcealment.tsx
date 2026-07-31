@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { createClientRunId } from '../lib/client-run-id';
+import { useState, useEffect, useCallback } from 'react';
+import { useGameAttempt } from '../lib/game-attempt-client';
 import { motion, AnimatePresence } from 'motion/react';
 import { Grid3x3, Target, Trophy, RefreshCw, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
@@ -25,11 +25,15 @@ export function SpatialConcealment() {
   const { state, startTraining, handleCellClick } = useSpatialEngine();
   const { level, gridSize, activeCount, grid, phase, score, errors } = state;
   const { token } = useAuth();
-  const clientRunIdRef = useRef<string | null>(null);
-  const handleStart = useCallback(() => {
-    clientRunIdRef.current = createClientRunId();
-    startTraining();
-  }, [startTraining]);
+  const { beginAttempt, saveAttempt } = useGameAttempt(token);
+  const handleStart = useCallback(async () => {
+    try {
+      await beginAttempt('SPATIAL_CONCEALMENT');
+      startTraining();
+    } catch (error) {
+      logger.error('Game attempt start failed', { error: safeError(error), gameType: 'SPATIAL_CONCEALMENT' });
+    }
+  }, [beginAttempt, startTraining]);
   const MEMORIZE_SECS = 3; // matches useSpatialEngine memorize duration
   
   useSessionRecording(phase !== 'idle' && phase !== 'result', phase === 'result');
@@ -37,19 +41,13 @@ export function SpatialConcealment() {
   useEffect(() => {
     if (phase === 'result') {
       if (token) {
-        fetch('/api/game/save', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-          body: JSON.stringify({
-            clientRunId: clientRunIdRef.current,
-            gameType: 'SPATIAL_CONCEALMENT',
-            timeMs: 1000,
-            metadata: { level, score, errors }
-          })
+        void saveAttempt({
+          timeMs: 1000,
+          metadata: { level, score, errors },
         }).catch(err => logger.error('Session save failed', { error: safeError(err), gameType: 'SPATIAL_CONCEALMENT' }));
       }
     }
-  }, [phase, level, score, errors, token]);
+  }, [phase, level, score, errors, token, saveAttempt]);
 
   return (
     <div className="col-span-12 grid grid-cols-1 lg:grid-cols-12 gap-4 h-full min-h-0 pb-4">

@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef } from 'react';
-import { createClientRunId } from '../lib/client-run-id';
+import { useState, useEffect, useCallback } from 'react';
+import { useGameAttempt } from '../lib/game-attempt-client';
 import { motion, AnimatePresence } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
@@ -107,14 +107,26 @@ export function CognitiveTrashFilter() {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [durationMs, setDurationMs] = useState(0);
   const [startTime, setStartTime] = useState(Date.now());
-  const clientRunIdRef = useRef<string | null>(null);
-  if (!clientRunIdRef.current) clientRunIdRef.current = createClientRunId();
+  const { beginAttempt, saveAttempt } = useGameAttempt(token);
+
+  const initializeGame = useCallback(async () => {
+    try {
+      await beginAttempt('REALITY_CHECK');
+      setStartTime(Date.now());
+      setStatements([...STATEMENTS_POOL].sort(() => Math.random() - 0.5).slice(0, 10));
+      setCurrentIndex(0);
+      setScore(0);
+      setErrors(0);
+      setIsFinished(false);
+      setSessionId(null);
+    } catch (err) {
+      logger.error('Session start failed', { error: safeError(err), gameType: 'REALITY_CHECK' });
+    }
+  }, [beginAttempt]);
 
   useEffect(() => {
-    // Shuffle and pick 10 statements
-    const shuffled = [...STATEMENTS_POOL].sort(() => Math.random() - 0.5).slice(0, 10);
-    setStatements(shuffled);
-  }, []);
+    void initializeGame();
+  }, [initializeGame]);
 
   const handleAnswer = (userChoice: boolean) => {
     if (feedback !== null) return; // Prevent double clicks
@@ -149,35 +161,20 @@ export function CognitiveTrashFilter() {
   // Save session when finished
   useEffect(() => {
     if (isFinished && token) {
-      fetch('/api/game/save', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+      saveAttempt({
+        timeMs: durationMs,
+        metadata: {
+          score,
+          errors,
+          accuracy: Math.round(((statements.length - errors) / statements.length) * 100),
         },
-        body: JSON.stringify({
-          clientRunId: clientRunIdRef.current,
-          gameType: 'REALITY_CHECK',
-          timeMs: durationMs,
-          metadata: {
-            score,
-            errors,
-            accuracy: Math.round(((statements.length - errors) / statements.length) * 100)
-          }
-        })
-      })
-      .then(res => {
-        if (!res.ok) throw new Error('Failed to save session');
-        return res.json();
       })
       .then(data => {
-        if (data.session && data.session.id) {
-          setSessionId(data.session.id);
-        }
+        if (data?.session?.id) setSessionId(data.session.id);
       })
       .catch(err => logger.error('Session save failed', { error: safeError(err), gameType: 'COGNITIVE_TRASH_FILTER' }));
     }
-  }, [isFinished, token, score, errors, durationMs, statements.length]);
+  }, [isFinished, token, score, errors, durationMs, statements.length, saveAttempt]);
 
   if (statements.length === 0) {
     return (
@@ -195,16 +192,7 @@ export function CognitiveTrashFilter() {
           score={score}
           timeMs={durationMs}
           errors={errors}
-          onPlayAgain={() => {
-            clientRunIdRef.current = createClientRunId();
-            setStartTime(Date.now());
-            setStatements([...STATEMENTS_POOL].sort(() => Math.random() - 0.5).slice(0, 10));
-            setCurrentIndex(0);
-            setScore(0);
-            setErrors(0);
-            setIsFinished(false);
-            setSessionId(null);
-          }}
+          onPlayAgain={() => { void initializeGame(); }}
           onBackToMenu={() => navigate('/')}
           sessionId={sessionId}
         />

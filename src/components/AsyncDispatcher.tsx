@@ -1,8 +1,8 @@
 import { motion } from 'motion/react';
 import { useDispatcherEngine } from '../hooks/useDispatcherEngine';
 import { useAuth } from '../hooks/useAuth';
-import { useCallback, useEffect, useRef } from 'react';
-import { createClientRunId } from '../lib/client-run-id';
+import { useCallback, useEffect } from 'react';
+import { useGameAttempt } from '../lib/game-attempt-client';
 import { Cpu, ChevronRight, Zap } from 'lucide-react';
 import { CompletionRecommendation } from './CompletionRecommendation';
 import { haptic } from '../lib/haptic';
@@ -10,26 +10,24 @@ import { haptic } from '../lib/haptic';
 export function AsyncDispatcher() {
   const { state, startGame, triggerStream } = useDispatcherEngine();
   const { token } = useAuth();
-  const clientRunIdRef = useRef<string | null>(null);
-  const handleStart = useCallback((level: number) => {
-    clientRunIdRef.current = createClientRunId();
-    startGame(level);
-  }, [startGame]);
+  const { beginAttempt, saveAttempt } = useGameAttempt(token);
+  const handleStart = useCallback(async (level: number) => {
+    try {
+      await beginAttempt('ASYNC_DISPATCHER');
+      startGame(level);
+    } catch {
+      // Fail closed when an attempt cannot be issued.
+    }
+  }, [beginAttempt, startGame]);
 
   useEffect(() => {
     if (state.isFinished && token) {
-      fetch('/api/game/save', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({
-          clientRunId: clientRunIdRef.current,
-          gameType: 'ASYNC_DISPATCHER',
-          timeMs: state.timeMs,
-          metadata: { score: state.score, level: state.level, triggers: state.totalTriggers, overflows: state.totalOverflows },
-        }),
+      saveAttempt({
+        timeMs: state.timeMs,
+        metadata: { score: state.score, level: state.level, triggers: state.totalTriggers, overflows: state.totalOverflows },
       }).catch(() => {});
     }
-  }, [state.isFinished, token]);
+  }, [state.isFinished, token, state.timeMs, state.score, state.level, state.totalTriggers, state.totalOverflows, saveAttempt]);
 
   // Intro
   if (!state.isActive && !state.isFinished) {

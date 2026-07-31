@@ -1,5 +1,5 @@
-import { useState, useCallback, useRef } from 'react';
-import { createClientRunId } from '../lib/client-run-id';
+import { useState, useCallback } from 'react';
+import { useGameAttempt } from '../lib/game-attempt-client';
 import { motion, AnimatePresence } from 'motion/react';
 import { Target, Users, Sparkles, ShieldAlert, Award, Star } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
@@ -56,7 +56,7 @@ export function ProfilingRICE() {
   const [score, setScore] = useState(0);
   const [lastError, setLastError] = useState(false);
   const { token, refreshUser } = useAuth();
-  const clientRunIdRef = useRef<string | null>(null);
+  const { beginAttempt, saveAttempt } = useGameAttempt(token);
 
   const currentScenario = SCENARIOS[currentIndex % SCENARIOS.length];
 
@@ -96,29 +96,27 @@ export function ProfilingRICE() {
   const finishGame = useCallback(() => {
     setGameState('finished');
     if (token) {
-      fetch('/api/game/save', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({
-          clientRunId: clientRunIdRef.current,
-          gameType: 'PROFILING_RICE',
-          timeMs: 1000,
-          isCompleted: true,
-          metadata: { score: score * 100, scenariosCompleted: currentIndex + 1 }
-        })
+      void saveAttempt({
+        timeMs: 1000,
+        isCompleted: true,
+        metadata: { score: score * 100, scenariosCompleted: currentIndex + 1 },
       })
       .then(() => refreshUser())
       .catch(err => logger.error('Session save failed', { error: safeError(err), gameType: 'PROFILING_RICE' }));
     }
-  }, [score, currentIndex, token, refreshUser]);
+  }, [score, currentIndex, token, refreshUser, saveAttempt]);
 
-  const restartGame = () => {
-    clientRunIdRef.current = createClientRunId();
-    setCurrentIndex(0);
-    setScore(0);
-    setLastError(false);
-    setGameState('profiling');
-  };
+  const restartGame = useCallback(async () => {
+    try {
+      await beginAttempt('PROFILING_RICE');
+      setCurrentIndex(0);
+      setScore(0);
+      setLastError(false);
+      setGameState('profiling');
+    } catch (error) {
+      logger.error('Game attempt start failed', { error: safeError(error), gameType: 'PROFILING_RICE' });
+    }
+  }, [beginAttempt]);
 
   if (gameState === 'idle') {
     return (

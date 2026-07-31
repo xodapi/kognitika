@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
-import { createClientRunId } from '../lib/client-run-id';
+import { useEffect, useState } from 'react';
+import { useGameAttempt } from '../lib/game-attempt-client';
 import { useNBackEngine } from '../hooks/useNBackEngine';
 import { useAuth } from '../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
@@ -19,29 +19,25 @@ export function NBackTest() {
   const [showPreLuscher, setShowPreLuscher] = useState(false);
   const [preSequence, setPreSequence] = useState<number[] | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
-  const clientRunIdRef = useRef<string | null>(null);
+  const { beginAttempt, saveAttempt } = useGameAttempt(token);
 
-  const handleStartClick = () => {
-    clientRunIdRef.current = createClientRunId();
+  const prepareGame = async () => {
     setSessionId(null);
     setPreSequence(null);
     if (useLuscher) {
       setShowPreLuscher(true);
-    } else {
+      return;
+    }
+    try {
+      await beginAttempt('N_BACK');
       startGame();
+    } catch (err) {
+      logger.error('Session start failed', { error: safeError(err), gameType: 'N_BACK' });
     }
   };
 
-  const handlePlayAgain = () => {
-    clientRunIdRef.current = createClientRunId();
-    setSessionId(null);
-    setPreSequence(null);
-    if (useLuscher) {
-      setShowPreLuscher(true);
-    } else {
-      startGame();
-    }
-  };
+  const handleStartClick = () => { void prepareGame(); };
+  const handlePlayAgain = () => { void prepareGame(); };
   
   // Track keyboard shortcut
   useEffect(() => {
@@ -62,42 +58,37 @@ export function NBackTest() {
   // Save result on finish
   useEffect(() => {
      if (state.isFinished && token) {
-        fetch('/api/game/save', {
-           method: 'POST',
-           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-           body: JSON.stringify({
-              clientRunId: clientRunIdRef.current,
-              gameType: 'N_BACK',
-              timeMs: 2500 * state.round, // Estimate
-              metadata: { 
-                score: state.score, 
-                errors: state.errors,
-                preSequence: preSequence || undefined
-              }
-           })
-        })
-        .then(res => {
-          if (!res.ok) throw new Error('Failed to save session');
-          return res.json();
+        saveAttempt({
+          timeMs: 2500 * state.round,
+          metadata: {
+            score: state.score,
+            errors: state.errors,
+            preSequence: preSequence || undefined,
+          },
         })
         .then(data => {
-          if (data.session && data.session.id) {
-            setSessionId(data.session.id);
-          }
+          if (data?.session?.id) setSessionId(data.session.id);
         })
         .catch(err => logger.error('Session save failed', { error: safeError(err), gameType: 'N_BACK' }));
      }
-  }, [state.isFinished, state.round, token, state.score, state.errors, preSequence]);
+  }, [state.isFinished, state.round, token, state.score, state.errors, preSequence, saveAttempt]);
 
   if (showPreLuscher) {
     return (
       <div className="col-span-12">
         <LuscherTest 
           title="Цветовой тест Люшера ДО игры" 
-          onFinish={(seq) => { 
-            setPreSequence(seq); 
-            setShowPreLuscher(false); 
-            startGame(); 
+          onFinish={(seq) => {
+            void (async () => {
+              try {
+                await beginAttempt('N_BACK');
+                setPreSequence(seq);
+                setShowPreLuscher(false);
+                startGame();
+              } catch (err) {
+                logger.error('Session start failed', { error: safeError(err), gameType: 'N_BACK' });
+              }
+            })();
           }} 
         />
       </div>

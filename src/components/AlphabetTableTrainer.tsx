@@ -25,7 +25,7 @@ import {
 } from '../lib/alphabet-table-generator';
 import { createSafeLogger, safeError } from '../lib/safe-logger';
 import { CompletionRecommendation } from './CompletionRecommendation';
-import { createClientRunId } from '../lib/client-run-id';
+import { useGameAttempt } from '../lib/game-attempt-client';
 
 const logger = createSafeLogger('alphabet-table');
 
@@ -46,19 +46,20 @@ export function AlphabetTableTrainer() {
   const navigate = useNavigate();
   const [preset, setPreset] = useState<AlphabetTablePreset>('balanced');
   const [questionCount, setQuestionCount] = useState(DEFAULT_ALPHABET_QUESTION_COUNT);
-  const savedRunRef = useRef(false);
-  const clientRunIdRef = useRef<string | null>(null);
+  const { beginAttempt, saveAttempt } = useGameAttempt(token);
 
   useSessionRecording(state.isActive, state.isFinished);
 
-  const handleStart = useCallback(() => {
-    clientRunIdRef.current = createClientRunId();
-    savedRunRef.current = false;
-    startGame(preset, questionCount);
-  }, [preset, questionCount, startGame]);
+  const handleStart = useCallback(async () => {
+    try {
+      await beginAttempt('ALPHABET_TABLE');
+      startGame(preset, questionCount);
+    } catch (error) {
+      logger.error('Session start failed', { error: safeError(error), gameType: 'ALPHABET_TABLE' });
+    }
+  }, [beginAttempt, preset, questionCount, startGame]);
 
   const handleReset = useCallback(() => {
-    savedRunRef.current = false;
     resetGame();
   }, [resetGame]);
 
@@ -99,40 +100,25 @@ export function AlphabetTableTrainer() {
       state.outcome !== 'completed'
       || state.timeMs < 100
       || !token
-      || savedRunRef.current
     ) {
       return;
     }
 
-    savedRunRef.current = true;
     const totalQuestions = state.items.length;
     const accuracy = (state.correctAnswers / Math.max(1, totalQuestions)) * 100;
 
-    fetch('/api/game/save', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
+    saveAttempt({
+      timeMs: state.timeMs,
+      metadata: {
+        mode: state.preset,
+        questionCount: totalQuestions,
+        correctAnswers: state.correctAnswers,
+        totalQuestions,
+        accuracy,
+        errors: state.errors,
+        averageReactionTimeMs: state.averageReactionTimeMs,
       },
-      body: JSON.stringify({
-        clientRunId: clientRunIdRef.current,
-        gameType: 'ALPHABET_TABLE',
-        timeMs: state.timeMs,
-        metadata: {
-          mode: state.preset,
-          questionCount: totalQuestions,
-          correctAnswers: state.correctAnswers,
-          totalQuestions,
-          accuracy,
-          errors: state.errors,
-          averageReactionTimeMs: state.averageReactionTimeMs,
-        },
-      }),
     })
-      .then((response) => {
-        if (!response.ok) throw new Error(`Session save failed with status ${response.status}`);
-        return response.json();
-      })
       .then((data) => {
         if (data.session?.score) refreshUser();
       })
@@ -152,6 +138,7 @@ export function AlphabetTableTrainer() {
     state.averageReactionTimeMs,
     token,
     refreshUser,
+    saveAttempt,
   ]);
 
   const accuracy = useMemo(() => {

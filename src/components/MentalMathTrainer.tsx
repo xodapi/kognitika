@@ -14,7 +14,7 @@ import {
   MENTAL_MATH_PRESETS,
   type MathLevel,
 } from '../lib/mentmath-generator';
-import { createClientRunId } from '../lib/client-run-id';
+import { useGameAttempt } from '../lib/game-attempt-client';
 
 const logger = createSafeLogger('mental-math');
 
@@ -29,8 +29,7 @@ export function MentalMathTrainer() {
   const [showBriefing, setShowBriefing] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generationSource, setGenerationSource] = useState<'llm' | 'fallback' | null>(null);
-  const savedRunRef = useRef(false);
-  const clientRunIdRef = useRef<string | null>(null);
+  const { beginAttempt, saveAttempt } = useGameAttempt(token);
   const generationControllerRef = useRef<AbortController | null>(null);
   const isMountedRef = useRef(true);
   const selectedPreset = MENTAL_MATH_PRESETS.find((preset) => preset.level === level)!;
@@ -59,90 +58,76 @@ export function MentalMathTrainer() {
   const confirmStart = useCallback(async () => {
     if (isGenerating) return;
     setIsGenerating(true);
-    clientRunIdRef.current = createClientRunId();
-    savedRunRef.current = false;
     generationControllerRef.current?.abort();
     const controller = new AbortController();
     generationControllerRef.current = controller;
 
     try {
+      let generatedSet;
+      let source: 'llm' | 'fallback' = 'fallback';
       if (token) {
-        const generated = await requestMentalMathSet(
-          token,
-          { level, count: questionCount },
-          controller.signal,
-        );
-        if (!isMountedRef.current || controller.signal.aborted) return;
-        setGenerationSource(generated.source);
-        startGame(level, questionCount, generated.set);
-      } else {
-        if (!isMountedRef.current) return;
-        setGenerationSource('fallback');
-        startGame(level, questionCount);
+        try {
+          const generated = await requestMentalMathSet(
+            token,
+            { level, count: questionCount },
+            controller.signal,
+          );
+          generatedSet = generated.set;
+          source = generated.source;
+        } catch (err) {
+          if (!isMountedRef.current || controller.signal.aborted) return;
+          logger.warn('Remote generation unavailable, using local fallback', {
+            error: safeError(err),
+          });
+        }
       }
+      if (!isMountedRef.current || controller.signal.aborted) return;
+      await beginAttempt('MENTAL_MATH');
+      if (!isMountedRef.current || controller.signal.aborted) return;
+      setGenerationSource(source);
+      startGame(level, questionCount, generatedSet);
       setShowBriefing(false);
     } catch (err) {
       if (!isMountedRef.current || controller.signal.aborted) return;
-      logger.warn('Remote generation unavailable, using local fallback', {
-        error: safeError(err),
-      });
-      setGenerationSource('fallback');
-      startGame(level, questionCount);
-      setShowBriefing(false);
+      logger.error('Session start failed', { error: safeError(err), gameType: 'MENTAL_MATH' });
     } finally {
       if (isMountedRef.current) setIsGenerating(false);
     }
-  }, [isGenerating, token, level, questionCount, startGame]);
+  }, [isGenerating, token, level, questionCount, beginAttempt, startGame]);
 
   useEffect(() => {
     const completed = state.outcome === 'completed';
-    if (completed && state.timeMs > 0 && token && !savedRunRef.current) {
-      savedRunRef.current = true;
+    if (completed && state.timeMs > 0 && token) {
       const finalScore = computeMentalMathScore(
         state.timeMs,
         (state.correctAnswers / Math.max(1, state.questions.length)) * 100,
         state.errors,
       );
 
-      fetch('/api/game/save', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
+      saveAttempt({
+        timeMs: state.timeMs,
+        metadata: {
+          score: finalScore,
+          level: state.level,
+          questionCount: state.questions.length,
+          correctAnswers: state.correctAnswers,
+          totalQuestions: state.questions.length,
+          accuracy: (state.correctAnswers / Math.max(1, state.questions.length)) * 100,
+          errors: state.errors,
         },
-        body: JSON.stringify({
-          clientRunId: clientRunIdRef.current,
-          gameType: 'MENTAL_MATH',
-          timeMs: state.timeMs,
-          metadata: {
-            score: finalScore,
-            level: state.level,
-            questionCount: state.questions.length,
-            correctAnswers: state.correctAnswers,
-            totalQuestions: state.questions.length,
-            accuracy: (state.correctAnswers / Math.max(1, state.questions.length)) * 100,
-            errors: state.errors,
-          },
-        }),
       })
-        .then((res) => {
-          if (!res.ok) throw new Error(`Session save failed with status ${res.status}`);
-          return res.json();
-        })
         .then((resData) => {
           if (resData.session?.score) {
             refreshUser();
           }
         })
         .catch((err) => {
-          savedRunRef.current = false;
           logger.error('Session save failed', { error: safeError(err), gameType: 'MENTAL_MATH' });
         });
     }
-  }, [state.outcome, state.timeMs, token, refreshUser, state.correctAnswers, state.errors, state.questions.length, state.level]);
+  }, [state.outcome, state.timeMs, token, refreshUser, state.correctAnswers, state.errors, state.questions.length, state.level, saveAttempt]);
 
   const handleReset = useCallback(() => {
-    savedRunRef.current = false;
     setGenerationSource(null);
     resetGame();
   }, [resetGame]);

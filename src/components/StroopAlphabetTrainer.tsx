@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { AlertCircle, Languages, Palette } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
@@ -13,7 +13,7 @@ import { DEFAULT_STROOP_ALPHABET_COUNT } from '../lib/stroop-alphabet-generator'
 import { STROOP_COLORS } from '../lib/stroop-colors';
 import { createSafeLogger, safeError } from '../lib/safe-logger';
 import { CompletionRecommendation } from './CompletionRecommendation';
-import { createClientRunId } from '../lib/client-run-id';
+import { useGameAttempt } from '../lib/game-attempt-client';
 
 const logger = createSafeLogger('stroop-alphabet');
 
@@ -28,30 +28,20 @@ export function StroopAlphabetTrainer() {
   const { token, refreshUser } = useAuth();
   const navigate = useNavigate();
   const [questionCount, setQuestionCount] = useState(DEFAULT_STROOP_ALPHABET_COUNT);
-  const [saveRetry, setSaveRetry] = useState(0);
-  const savedRunRef = useRef(false);
-  const clientRunIdRef = useRef<string | null>(null);
-  const saveAttemptsRef = useRef(0);
-  const retryTimerRef = useRef<number | null>(null);
+  const { beginAttempt, saveAttempt } = useGameAttempt(token);
 
   useSessionRecording(state.isActive, state.isFinished);
 
-  useEffect(() => () => {
-    if (retryTimerRef.current !== null) window.clearTimeout(retryTimerRef.current);
-  }, []);
-
-  const handleStart = useCallback(() => {
-    clientRunIdRef.current = createClientRunId();
-    savedRunRef.current = false;
-    saveAttemptsRef.current = 0;
-    if (retryTimerRef.current !== null) window.clearTimeout(retryTimerRef.current);
-    startGame(questionCount);
-  }, [questionCount, startGame]);
+  const handleStart = useCallback(async () => {
+    try {
+      await beginAttempt('STROOP_ALPHABET');
+      startGame(questionCount);
+    } catch (error) {
+      logger.error('Game attempt start failed', { error: safeError(error), gameType: 'STROOP_ALPHABET' });
+    }
+  }, [beginAttempt, questionCount, startGame]);
 
   const handleReset = useCallback(() => {
-    savedRunRef.current = false;
-    saveAttemptsRef.current = 0;
-    if (retryTimerRef.current !== null) window.clearTimeout(retryTimerRef.current);
     resetGame();
   }, [resetGame]);
 
@@ -90,58 +80,35 @@ export function StroopAlphabetTrainer() {
   }, [state.isActive, state.phase, submitAction, submitColor]);
 
   useEffect(() => {
-    if (
-      state.outcome !== 'completed'
-      || state.timeMs < 100
-      || !token
-      || savedRunRef.current
-      || saveAttemptsRef.current >= 2
-    ) return;
+    if (state.outcome !== 'completed' || state.timeMs < 100 || !token) return;
 
-    savedRunRef.current = true;
-    saveAttemptsRef.current += 1;
     const totalErrors = state.colorErrors + state.actionErrors;
     const totalQuestions = state.items.length;
     const accuracy = totalQuestions > 0
       ? ((totalQuestions * 2 - totalErrors) / (totalQuestions * 2)) * 100
       : 0;
 
-    fetch('/api/game/save', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify({
-        clientRunId: clientRunIdRef.current,
-        gameType: 'STROOP_ALPHABET',
-        timeMs: state.timeMs,
-        metadata: {
-          mode: 'stroop-alphabet',
-          questionCount: totalQuestions,
-          colorErrors: state.colorErrors,
-          actionErrors: state.actionErrors,
-          errors: totalErrors,
-          accuracy,
-          averageReactionTimeMs: state.averageReactionTimeMs,
-        },
-      }),
+    void saveAttempt({
+      timeMs: state.timeMs,
+      metadata: {
+        mode: 'stroop-alphabet',
+        questionCount: totalQuestions,
+        colorErrors: state.colorErrors,
+        actionErrors: state.actionErrors,
+        errors: totalErrors,
+        accuracy,
+        averageReactionTimeMs: state.averageReactionTimeMs,
+      },
     })
-      .then((response) => {
-        if (!response.ok) throw new Error(`Session save failed with status ${response.status}`);
-        return response.json();
-      })
       .then((data) => {
-        if (data.session?.score) refreshUser();
+        if (data?.session?.score) refreshUser();
       })
       .catch((error) => {
-        savedRunRef.current = false;
-        if (saveAttemptsRef.current < 2) {
-          retryTimerRef.current = window.setTimeout(() => {
-            setSaveRetry((value) => value + 1);
-          }, 1000);
-        }
         logger.error('Session save failed', { error: safeError(error), gameType: 'STROOP_ALPHABET' });
       });
   }, [
     refreshUser,
+    saveAttempt,
     state.actionErrors,
     state.averageReactionTimeMs,
     state.colorErrors,
@@ -149,7 +116,6 @@ export function StroopAlphabetTrainer() {
     state.outcome,
     state.timeMs,
     token,
-    saveRetry,
   ]);
 
   if (state.outcome === 'completed') {

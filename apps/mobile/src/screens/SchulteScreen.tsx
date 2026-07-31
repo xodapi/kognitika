@@ -11,7 +11,14 @@ import {
   Alert,
 } from 'react-native';
 import { generateGrid, generateExpectedSequence, CellValue, GameMode } from '../lib/schulte-generator';
-import { submitGameResult, getStoredBrainId, getStoredPseudonym, fetchUserProfile } from '../lib/api';
+import {
+  createGameAttempt,
+  submitGameResult,
+  getStoredBrainId,
+  getStoredPseudonym,
+  fetchUserProfile,
+  type GameAttemptCredentials,
+} from '../lib/api';
 import CompletionRecommendation from '../components/CompletionRecommendation';
 import { createClientRunId } from '../lib/client-run-id';
 
@@ -50,6 +57,9 @@ export default function SchulteScreen({ onLogout }: SchulteScreenProps) {
   const timerRef = useRef<ReturnType<typeof requestAnimationFrame> | null>(null);
   const startTimeRef = useRef<number>(0);
   const sessionIdRef = useRef<string | null>(null);
+  const attemptRef = useRef<GameAttemptCredentials | null>(null);
+  const attemptPromiseRef = useRef<Promise<GameAttemptCredentials | null> | null>(null);
+  const runGenerationRef = useRef(0);
   const feedbackTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Load User Info
@@ -80,6 +90,20 @@ export default function SchulteScreen({ onLogout }: SchulteScreenProps) {
   const startGame = useCallback(() => {
     const seq = generateExpectedSequence(size, mode);
     const newGrid = generateGrid(size, mode);
+    const clientRunId = createClientRunId();
+    const runGeneration = ++runGenerationRef.current;
+
+    sessionIdRef.current = clientRunId;
+    attemptRef.current = null;
+    attemptPromiseRef.current = createGameAttempt('SCHULTE', clientRunId)
+      .then((attempt) => {
+        if (runGenerationRef.current === runGeneration && sessionIdRef.current === clientRunId) {
+          attemptRef.current = attempt;
+          return attempt;
+        }
+        return null;
+      })
+      .catch(() => null);
 
     setGrid(newGrid);
     setExpectedSequence(seq);
@@ -91,7 +115,6 @@ export default function SchulteScreen({ onLogout }: SchulteScreenProps) {
     setSubmitSuccess(null);
 
     startTimeRef.current = Date.now();
-    sessionIdRef.current = createClientRunId();
 
     if (timerRef.current) cancelAnimationFrame(timerRef.current);
 
@@ -112,7 +135,10 @@ export default function SchulteScreen({ onLogout }: SchulteScreenProps) {
     setErrors(0);
     setTimeMs(0);
     setSubmitSuccess(null);
+    runGenerationRef.current += 1;
     sessionIdRef.current = null;
+    attemptRef.current = null;
+    attemptPromiseRef.current = null;
   }, []);
 
   const handleCellPress = useCallback((cell: CellValue) => {
@@ -156,13 +182,22 @@ export default function SchulteScreen({ onLogout }: SchulteScreenProps) {
 
   const submitResults = async (gSize: number, gTimeMs: number, gAccuracy: number, _gScore: number, gErrors: number) => {
     const clientRunId = sessionIdRef.current;
+    const runGeneration = runGenerationRef.current;
     if (!clientRunId) {
       setSubmitSuccess(false);
       return;
     }
+    const isCurrentRun = () => (
+      runGenerationRef.current === runGeneration && sessionIdRef.current === clientRunId
+    );
     setSubmitting(true);
     try {
+      const attempt = attemptRef.current ?? await attemptPromiseRef.current;
+      if (!attempt || !isCurrentRun()) {
+        throw new Error('Game attempt is unavailable for this run');
+      }
       await submitGameResult({
+        ...attempt,
         clientRunId,
         type: 'SCHULTE',
         size: gSize,
@@ -170,12 +205,12 @@ export default function SchulteScreen({ onLogout }: SchulteScreenProps) {
         accuracy: gAccuracy,
         errors: gErrors
       });
-      setSubmitSuccess(true);
+      if (isCurrentRun()) setSubmitSuccess(true);
     } catch (err) {
       console.warn('Failed to submit results:', err);
-      setSubmitSuccess(false);
+      if (isCurrentRun()) setSubmitSuccess(false);
     } finally {
-      setSubmitting(false);
+      if (isCurrentRun()) setSubmitting(false);
     }
   };
 

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'motion/react';
 import { Grid3x3, Info, Activity, AlertCircle } from 'lucide-react';
 import { useSchulte90Engine } from '../hooks/useSchulte90Engine';
@@ -17,7 +17,7 @@ import {
   getGorbovColor,
   type GorbovRuleId,
 } from '../lib/schulte90-generator';
-import { createClientRunId } from '../lib/client-run-id';
+import { useGameAttempt } from '../lib/game-attempt-client';
 
 const logger = createSafeLogger('schulte-90');
 
@@ -44,41 +44,29 @@ export function SchulteTable90() {
   const navigate = useNavigate();
   const [showBriefing, setShowBriefing] = useState(false);
   const [selectedRule, setSelectedRule] = useState<GorbovRuleId>('black-red');
-  const savedRunRef = useRef(false);
-  const clientRunIdRef = useRef<string | null>(null);
+  const { beginAttempt, saveAttempt } = useGameAttempt(token);
   const selectedRuleConfig = GORBOV_RULES.find((rule) => rule.id === selectedRule) ?? GORBOV_RULES[0];
 
   useSessionRecording(state.isActive, state.isFinished);
 
   useEffect(() => {
-    if (state.outcome === 'completed' && state.timeMs > 0 && token && !savedRunRef.current) {
-      savedRunRef.current = true;
+    if (state.outcome === 'completed' && state.timeMs > 0 && token) {
       const accuracy = (SCHULTE_90_TOTAL / (SCHULTE_90_TOTAL + state.errors)) * 100;
 
-      fetch('/api/game/save', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
+      void saveAttempt({
+        timeMs: state.timeMs,
+        metadata: {
+          rows: SCHULTE_90_ROWS,
+          cols: SCHULTE_90_COLS,
+          size: SCHULTE_90_COLS,
+          rule: state.rule,
+          accuracy,
+          correctAnswers: SCHULTE_90_TOTAL,
+          totalQuestions: SCHULTE_90_TOTAL,
+          errors: state.errors,
+          clickHistory: state.clickHistory,
         },
-        body: JSON.stringify({
-          clientRunId: clientRunIdRef.current,
-          gameType: 'SCHULTE_90',
-          timeMs: state.timeMs,
-          metadata: {
-            rows: SCHULTE_90_ROWS,
-            cols: SCHULTE_90_COLS,
-            size: SCHULTE_90_COLS,
-            rule: state.rule,
-            accuracy,
-            correctAnswers: SCHULTE_90_TOTAL,
-            totalQuestions: SCHULTE_90_TOTAL,
-            errors: state.errors,
-            clickHistory: state.clickHistory,
-          },
-        }),
       })
-        .then((res) => res.json())
         .then((resData) => {
           if (resData.session?.score) {
             refreshUser();
@@ -88,17 +76,19 @@ export function SchulteTable90() {
           logger.error('Session save failed', { error: safeError(err), gameType: 'SCHULTE_90' })
         );
     }
-  }, [state.outcome, state.timeMs, token, refreshUser, state.errors, state.clickHistory]);
+  }, [state.outcome, state.timeMs, token, refreshUser, state.errors, state.clickHistory, saveAttempt]);
 
-  const beginGame = useCallback(() => {
-    clientRunIdRef.current = createClientRunId();
-    savedRunRef.current = false;
-    setShowBriefing(false);
-    startGame(selectedRule);
-  }, [selectedRule, startGame]);
+  const beginGame = useCallback(async () => {
+    try {
+      await beginAttempt('SCHULTE_90');
+      setShowBriefing(false);
+      startGame(selectedRule);
+    } catch (error) {
+      logger.error('Game attempt start failed', { error: safeError(error), gameType: 'SCHULTE_90' });
+    }
+  }, [beginAttempt, selectedRule, startGame]);
 
   const handleReset = useCallback(() => {
-    savedRunRef.current = false;
     resetGame();
   }, [resetGame]);
 

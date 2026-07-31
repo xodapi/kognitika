@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useRef } from 'react';
-import { createClientRunId } from '../lib/client-run-id';
+import { useCallback, useEffect } from 'react';
+import { useGameAttempt } from '../lib/game-attempt-client';
 import { useLogicalEngine, MatrixItem } from '../hooks/useLogicalEngine';
 import { useAuth } from '../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
@@ -49,26 +49,24 @@ export function LogicalMatrix() {
   const { state, startGame, answerQuestion } = useLogicalEngine();
   const { token } = useAuth();
   const navigate = useNavigate();
-  const clientRunIdRef = useRef<string | null>(null);
-  const handleStart = useCallback(() => {
-    clientRunIdRef.current = createClientRunId();
-    startGame();
-  }, [startGame]);
+  const { beginAttempt, saveAttempt } = useGameAttempt(token);
+  const handleStart = useCallback(async () => {
+    try {
+      await beginAttempt('LOGICAL_SEQUENCE');
+      startGame();
+    } catch (err) {
+      logger.error('Session start failed', { error: safeError(err), gameType: 'LOGICAL_SEQUENCE' });
+    }
+  }, [beginAttempt, startGame]);
 
   useEffect(() => {
      if (state.isFinished && token) {
-        fetch('/api/game/save', {
-           method: 'POST',
-           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-           body: JSON.stringify({
-              clientRunId: clientRunIdRef.current,
-              gameType: 'LOGICAL_SEQUENCE',
-              timeMs: state.timeMs,
-              metadata: { score: state.score }
-           })
+        saveAttempt({
+          timeMs: state.timeMs,
+          metadata: { score: state.score },
         }).catch(err => logger.error('Session save failed', { error: safeError(err), gameType: 'LOGICAL_SEQUENCE' }));
      }
-  }, [state.isFinished, state.timeMs, token, state.score]);
+  }, [state.isFinished, state.timeMs, token, state.score, saveAttempt]);
 
   if (!state.isActive && !state.isFinished) {
     return (

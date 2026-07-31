@@ -95,7 +95,38 @@ export async function clearAuth(): Promise<void> {
   await AsyncStorage.multiRemove([TOKEN_KEY, BRAIN_ID_KEY, PSEUDONYM_KEY]);
 }
 
+export interface GameAttemptCredentials {
+  attemptId: string;
+  challenge: string;
+}
+
+export async function createGameAttempt(
+  gameType: string,
+  clientRunId: string,
+): Promise<GameAttemptCredentials> {
+  const headers = await getHeaders();
+  const res = await fetch(`${API_URL}/api/game/attempts`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ gameType, clientRunId }),
+  });
+
+  if (!res.ok) {
+    const error = await res.json().catch(() => null) as { error?: string; message?: string } | null;
+    throw new Error(error?.error || error?.message || `Failed to create game attempt: ${res.status}`);
+  }
+
+  const data = await res.json() as Partial<GameAttemptCredentials>;
+  if (!data.attemptId || !data.challenge) {
+    throw new Error('Game attempt response is incomplete');
+  }
+
+  return { attemptId: data.attemptId, challenge: data.challenge };
+}
+
 export async function submitGameResult(result: {
+  attemptId: string;
+  challenge: string;
   clientRunId: string;
   type: string;
   size?: number;
@@ -108,6 +139,8 @@ export async function submitGameResult(result: {
     method: 'POST',
     headers,
     body: JSON.stringify({
+      attemptId: result.attemptId,
+      challenge: result.challenge,
       clientRunId: result.clientRunId,
       gameType: result.type,
       timeMs: result.timeMs,

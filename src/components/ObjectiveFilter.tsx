@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { createClientRunId } from '../lib/client-run-id';
+import { useState, useCallback } from 'react';
+import { useGameAttempt } from '../lib/game-attempt-client';
 import { motion, AnimatePresence } from 'motion/react';
 import { Shield, Brain, CheckCircle2, XCircle } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
@@ -41,20 +41,23 @@ export function ObjectiveFilter() {
   const [lastResult, setLastResult] = useState<'correct' | 'wrong' | null>(null);
   const { token, refreshUser } = useAuth();
   const navigate = useNavigate();
-  const clientRunIdRef = useRef<string | null>(null);
-
+  const { beginAttempt, saveAttempt } = useGameAttempt(token);
 
   const currentStatement = STATEMENTS[currentIndex % STATEMENTS.length];
 
-  const startGame = () => {
-    clientRunIdRef.current = createClientRunId();
-    setGameState('playing');
-    setCurrentIndex(0);
-    setScore(0);
-    setStartTime(Date.now());
-    setTimeMs(0);
-    setLastResult(null);
-  };
+  const startGame = useCallback(async () => {
+    try {
+      await beginAttempt('OBJECTIVE_FILTER');
+      setGameState('playing');
+      setCurrentIndex(0);
+      setScore(0);
+      setStartTime(Date.now());
+      setTimeMs(0);
+      setLastResult(null);
+    } catch (error) {
+      logger.error('Game attempt start failed', { error: safeError(error), gameType: 'OBJECTIVE_FILTER' });
+    }
+  }, [beginAttempt]);
 
   const finishGame = useCallback(() => {
     setGameState('finished');
@@ -62,22 +65,15 @@ export function ObjectiveFilter() {
     setTimeMs(finalTime);
 
     if (token) {
-      fetch('/api/game/save', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({
-          clientRunId: clientRunIdRef.current,
-          gameType: 'OBJECTIVE_FILTER',
-          timeMs: finalTime,
-          isCompleted: true,
-          metadata: { totalQuestions: 10, correctAnswers: score }
-        })
+      void saveAttempt({
+        timeMs: finalTime,
+        isCompleted: true,
+        metadata: { totalQuestions: 10, correctAnswers: score },
       })
-      .then(res => res.json())
       .then(() => refreshUser())
       .catch(err => logger.error('Session save failed', { error: safeError(err), gameType: 'OBJECTIVE_FILTER' }));
     }
-  }, [startTime, score, token, refreshUser]);
+  }, [startTime, score, token, refreshUser, saveAttempt]);
 
   const handleAnswer = (isFact: boolean) => {
     if (gameState !== 'playing') return;

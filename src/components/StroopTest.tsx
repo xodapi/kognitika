@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
-import { createClientRunId } from '../lib/client-run-id';
+import { useCallback, useEffect, useState } from 'react';
+import { useGameAttempt } from '../lib/game-attempt-client';
 import { useStroopEngine } from '../hooks/useStroopEngine';
 import { useAuth } from '../hooks/useAuth';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -22,29 +22,29 @@ function ClassicStroopTest() {
   const [showPreLuscher, setShowPreLuscher] = useState(false);
   const [preSequence, setPreSequence] = useState<number[] | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
-  const clientRunIdRef = useRef<string | null>(null);
+  const { beginAttempt, saveAttempt } = useGameAttempt(token);
 
-  const handleStartClick = () => {
-    clientRunIdRef.current = createClientRunId();
+  const beginStroop = useCallback(async () => {
+    try {
+      await beginAttempt('STROOP');
+      startGame();
+    } catch (error) {
+      logger.error('Game attempt start failed', { error: safeError(error), gameType: 'STROOP' });
+    }
+  }, [beginAttempt, startGame]);
+
+  const prepareGame = useCallback(() => {
     setSessionId(null);
     setPreSequence(null);
     if (useLuscher) {
       setShowPreLuscher(true);
     } else {
-      startGame();
+      void beginStroop();
     }
-  };
+  }, [beginStroop, useLuscher]);
 
-  const handlePlayAgain = () => {
-    clientRunIdRef.current = createClientRunId();
-    setSessionId(null);
-    setPreSequence(null);
-    if (useLuscher) {
-      setShowPreLuscher(true);
-    } else {
-      startGame();
-    }
-  };
+  const handleStartClick = prepareGame;
+  const handlePlayAgain = prepareGame;
 
   // Track button mappings for keyboard shortcuts (Q, W, E, R / 1, 2, 3, 4)
   useEffect(() => {
@@ -65,34 +65,22 @@ function ClassicStroopTest() {
   // Save result on finish
   useEffect(() => {
      if (state.isFinished && token) {
-        fetch('/api/game/save', {
-           method: 'POST',
-           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-           body: JSON.stringify({
-              clientRunId: clientRunIdRef.current,
-              gameType: 'STROOP',
-              timeMs: 60000 - state.timeLeftMs, 
-              metadata: { 
-                score: state.score, 
-                errors: state.errors, 
-                avgReactionTime: state.averageReactionTime,
-                preSequence: preSequence || undefined,
-                stressMode: useStress
-              }
-           })
-        })
-        .then(res => {
-          if (!res.ok) throw new Error('Failed to save session');
-          return res.json();
+        void saveAttempt({
+          timeMs: 60000 - state.timeLeftMs,
+          metadata: {
+            score: state.score,
+            errors: state.errors,
+            avgReactionTime: state.averageReactionTime,
+            preSequence: preSequence || undefined,
+            stressMode: useStress,
+          },
         })
         .then(data => {
-          if (data.session && data.session.id) {
-            setSessionId(data.session.id);
-          }
+          if (data?.session?.id) setSessionId(data.session.id);
         })
         .catch(err => logger.error('Session save failed', { error: safeError(err), gameType: 'STROOP' }));
      }
-  }, [state.isFinished, state.timeLeftMs, token, state.score, state.errors, state.averageReactionTime, preSequence, useStress]);
+  }, [state.isFinished, state.timeLeftMs, token, state.score, state.errors, state.averageReactionTime, preSequence, useStress, saveAttempt]);
 
   if (showPreLuscher) {
     return (
@@ -100,9 +88,9 @@ function ClassicStroopTest() {
         <LuscherTest 
           title="Цветовой тест Люшера ДО игры" 
           onFinish={(seq) => { 
-            setPreSequence(seq); 
-            setShowPreLuscher(false); 
-            startGame(); 
+            setPreSequence(seq);
+            setShowPreLuscher(false);
+            void beginStroop();
           }} 
         />
       </div>

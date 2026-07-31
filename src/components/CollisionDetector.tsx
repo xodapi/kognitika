@@ -5,7 +5,7 @@ import { useEffect, useState, useRef } from 'react';
 import { Filter, AlertTriangle, CheckCircle, ChevronRight, Sparkles, Loader2 } from 'lucide-react';
 import { generateCollisionCards } from '../lib/content-generator';
 import { CompletionRecommendation } from './CompletionRecommendation';
-import { createClientRunId } from '../lib/client-run-id';
+import { useGameAttempt } from '../lib/game-attempt-client';
 import { haptic } from '../lib/haptic';
 
 export function CollisionDetector() {
@@ -15,11 +15,10 @@ export function CollisionDetector() {
   const [generatedMode, setGeneratedMode] = useState(false);
   const [contentError, setContentError] = useState<string | null>(null);
   const levelRef = useRef(1);
-  const clientRunIdRef = useRef<string | null>(null);
+  const { beginAttempt, saveAttempt } = useGameAttempt(token);
 
   // Local deterministic content generation keeps this module offline and reproducible.
   const startWithGeneratedContent = async (level: number) => {
-    clientRunIdRef.current = createClientRunId();
     levelRef.current = level;
     setIsGenerating(true);
     setContentError(null);
@@ -32,11 +31,15 @@ export function CollisionDetector() {
         ? [{ id: 1, text: 'Все транзакции должны быть подтверждены получателем' }, { id: 2, text: 'Статус «завершено» — только после проверки' }, { id: 3, text: 'Уведомление отправляется до закрытия задачи' }]
         : [{ id: 1, text: 'Модуль B зависит от A — A грузится первым' }, { id: 2, text: 'Кэш очищается только при CRITICAL ошибке' }, { id: 3, text: 'Логи хранятся не менее 30 дней' }];
 
-      await generateCollisionCards(defaultRules, level, 10);
+      try {
+        await generateCollisionCards(defaultRules, level, 10);
+      } catch {
+        setContentError('Локальный генератор недоступен — запускаем базовые сценарии');
+      }
+      await beginAttempt('COLLISION_DETECTOR');
       startGame(level);
     } catch {
-      setContentError('Локальный генератор недоступен — запускаем базовые сценарии');
-      startGame(level);
+      setContentError('Не удалось начать защищённую игровую попытку');
     } finally {
       setIsGenerating(false);
     }
@@ -44,18 +47,12 @@ export function CollisionDetector() {
 
   useEffect(() => {
     if (state.isFinished && token) {
-      fetch('/api/game/save', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({
-          clientRunId: clientRunIdRef.current,
-          gameType: 'COLLISION_DETECTOR',
-          timeMs: state.timeMs,
-          metadata: { score: state.score, hits: state.hits, misses: state.misses, fp: state.falsePositives, level: state.level },
-        }),
+      saveAttempt({
+        timeMs: state.timeMs,
+        metadata: { score: state.score, hits: state.hits, misses: state.misses, fp: state.falsePositives, level: state.level },
       }).catch(() => {});
     }
-  }, [state.isFinished, token]);
+  }, [state.isFinished, token, state.timeMs, state.score, state.hits, state.misses, state.falsePositives, state.level, saveAttempt]);
 
   // Intro
   if (state.rules.length === 0) {
