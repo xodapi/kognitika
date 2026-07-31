@@ -1,3 +1,4 @@
+import { createHmac } from 'node:crypto';
 import { Router } from 'express';
 import { EventEmitter } from 'events';
 import { v4 as uuidv4 } from 'uuid';
@@ -17,6 +18,13 @@ const chatBus = new EventEmitter();
 const JWT_SECRET = process.env.JWT_SECRET!;
 const logger = createSafeLogger('chat-route');
 
+export function publicChatSenderId(userId: string) {
+  return createHmac('sha256', JWT_SECRET)
+    .update(`chat-sender:${userId}`, 'utf8')
+    .digest('base64url')
+    .slice(0, 22);
+}
+
 router.get('/stream', async (req, res) => {
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
@@ -34,7 +42,7 @@ router.get('/stream', async (req, res) => {
     const history = lastMessages.reverse().map(m => ({
       id: m.id,
       content: m.content,
-      userId: m.userId,
+      senderId: publicChatSenderId(m.userId),
       userName: m.user.name || 'Машинист',
       createdAt: m.createdAt
     }));
@@ -68,23 +76,24 @@ router.post('/messages', async (req: any, res) => {
 
   try {
 
-    let userId = 'anon';
+    let userId: string | null = null;
     let resolvedName = 'Гость';
     const authHeader = req.headers.authorization?.split(' ')[1];
     
     if (authHeader) {
       try {
         const decoded: any = jwt.verify(authHeader, JWT_SECRET);
-        userId = decoded.id;
-        const dbUser = await prisma.user.findUnique({ 
-          where: { id: userId }, 
-          select: { name: true, pseudonym: true } 
+        const authenticatedUserId = String(decoded.id);
+        userId = authenticatedUserId;
+        const dbUser = await prisma.user.findUnique({
+          where: { id: authenticatedUserId },
+          select: { name: true, pseudonym: true }
         });
         resolvedName = dbUser?.pseudonym ?? dbUser?.name ?? 'Участник';
       } catch {}
     }
 
-    if (userId !== 'anon') {
+    if (userId) {
       await prisma.message.create({
         data: { content: content.trim(), userId, room: 'global' }
       });
@@ -93,14 +102,14 @@ router.post('/messages', async (req: any, res) => {
     const messageObj = {
       id: uuidv4(),
       content: content.trim(),
-      userId,
+      senderId: userId ? publicChatSenderId(userId) : `guest-${uuidv4()}`,
       userName: resolvedName,
       room: 'global',
       createdAt: new Date()
     };
 
     chatBus.emit('message', messageObj);
-    res.json({ success: true });
+    res.json({ success: true, senderId: messageObj.senderId });
   } catch (e) {
     res.status(500).json({ error: 'Failed to send message' });
   }

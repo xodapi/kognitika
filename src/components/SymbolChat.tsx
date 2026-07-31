@@ -24,7 +24,7 @@ const SYMBOLS = ['Σ', 'Δ', 'Ω', 'Ψ', 'Φ', 'Γ', 'Θ', 'Ξ', 'Π', 'ℝ', '�
 
 interface Message {
   id?: string;
-  userId: string;
+  senderId: string;
   userName?: string;
   content: string;
   createdAt: string | Date;
@@ -34,7 +34,7 @@ interface Message {
 const isSymbolMsg = (content: string) => SYMBOLS.some(s => content.includes(s));
 
 export function SymbolChat() {
-  const { user, token } = useAuth();
+  const { token } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [showSymbols, setShowSymbols] = useState(false);
@@ -43,6 +43,7 @@ export function SymbolChat() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const esRef = useRef<EventSource | null>(null);
   const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [mySenderId, setMySenderId] = useState<string | null>(null);
 
   // ── Подключение к SSE потоку ───────────────────────────
   useEffect(() => {
@@ -112,14 +113,14 @@ export function SymbolChat() {
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
       if (token) headers['Authorization'] = `Bearer ${token}`;
 
-      await fetch('/api/chat/messages', {
+      const response = await fetch('/api/chat/messages', {
         method: 'POST',
         headers,
-        body: JSON.stringify({
-          content: text,
-          userName: user?.name || 'Гость',
-        }),
+        body: JSON.stringify({ content: text }),
       });
+      if (!response.ok) throw new Error(`Chat request failed with status ${response.status}`);
+      const result: { senderId?: string } = await response.json();
+      if (result.senderId) setMySenderId(result.senderId);
     } catch (err) {
       logger.error('Message send failed', { error: safeError(err) });
       // Восстановить ввод при ошибке
@@ -127,14 +128,12 @@ export function SymbolChat() {
     } finally {
       setIsSending(false);
     }
-  }, [input, isSending, token, user]);
+  }, [input, isSending, token]);
 
   const addSymbol = (symbol: string) => {
     setInput(prev => prev + symbol);
     setShowSymbols(false);
   };
-
-  const myId = user?.id ?? 'anon';
 
   return (
     <div className="flex flex-col h-full bg-card/20 backdrop-blur-md border border-border rounded-3xl overflow-hidden shadow-xl">
@@ -164,7 +163,7 @@ export function SymbolChat() {
               key={msg.id ?? idx}
               initial={{ opacity: 0, y: 10, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
-              className={`flex flex-col ${msg.userId === myId ? 'items-end' : 'items-start'}`}
+              className={`flex flex-col ${msg.senderId === mySenderId ? 'items-end' : 'items-start'}`}
             >
               <div className="flex items-center gap-1.5 mb-1 px-1">
                 <span className="text-[8px] font-black uppercase text-muted-foreground">{msg.userName || 'Гость'}</span>
@@ -173,7 +172,7 @@ export function SymbolChat() {
                 </span>
               </div>
               <div className={`px-4 py-2.5 rounded-2xl text-xs max-w-[90%] break-words shadow-sm border ${
-                msg.userId === myId
+                msg.senderId === mySenderId
                   ? 'bg-primary text-white border-primary shadow-primary/20 rounded-tr-none text-right'
                   : 'bg-secondary text-foreground border-border rounded-tl-none text-left'
               } ${msg.isSymbol ? 'font-mono text-sm tracking-widest' : ''}`}>
