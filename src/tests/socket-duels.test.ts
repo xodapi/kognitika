@@ -66,7 +66,7 @@ function createPrismaMock(users = syntheticUsers()) {
   };
 }
 
-async function createHarness(): Promise<Harness> {
+async function createHarness(limits?: Parameters<typeof registerDuelHandlers>[1]['limits']): Promise<Harness> {
   const httpServer = createServer();
   const io = new SocketServer(httpServer, {
     cors: { origin: '*', methods: ['GET', 'POST'] },
@@ -79,6 +79,7 @@ async function createHarness(): Promise<Harness> {
     prisma,
     logger: { log: vi.fn() },
     now: () => nowMs,
+    limits,
   }, createDuelState());
 
   await new Promise<void>((resolve) => {
@@ -202,6 +203,38 @@ describe('Socket.io duel trust boundary', () => {
     const invalidTokenError = await waitForEvent<Error>(invalidTokenSocket, 'connect_error');
     expect(invalidTokenError.message).toBe('Unauthorized');
     invalidTokenSocket.disconnect();
+  });
+
+  it('limits concurrent sockets per authenticated user and releases capacity on disconnect', async () => {
+    const { url } = await createHarness({ maxConnectionsPerUser: 1 });
+    const first = await connectClient(url, 'u1');
+
+    const second = createClient(url, {
+      auth: { token: jwt.sign({ id: 'u1' }, JWT_SECRET) },
+      transports: ['websocket'],
+      reconnection: false,
+      forceNew: true,
+    });
+    await expect(waitForEvent<Error>(second, 'connect_error')).resolves.toMatchObject({ message: 'Connection limit exceeded' });
+    second.disconnect();
+
+    first.disconnect();
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    const replacement = await connectClient(url, 'u1');
+    replacement.disconnect();
+  });
+
+  it('rate-limits non-gameplay duel event bursts', async () => {
+    const { url } = await createHarness({ maxEventsPerSecond: 2 });
+    const alice = await connectClient(url, 'u1');
+    const rateLimitError = waitForEvent<{ error: string }>(alice, 'duel:error');
+
+    alice.emit('duel:leave-queue');
+    alice.emit('duel:leave-queue');
+    alice.emit('duel:leave-queue');
+
+    await expect(rateLimitError).resolves.toEqual({ error: 'Rate limit exceeded' });
+    alice.disconnect();
   });
 
   it('does not allow a third authenticated user to join or report progress for another duel', async () => {

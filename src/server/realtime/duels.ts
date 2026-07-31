@@ -6,6 +6,11 @@ const DUEL_SIZE = 5;
 const DUEL_MODE = 'classic';
 const DUEL_MIN_FINISH_MS = 3000;
 const DUEL_MAX_EVENTS_PER_SECOND = 15;
+const DEFAULT_SOCKET_MAX_CONNECTIONS = 500;
+const DEFAULT_SOCKET_MAX_CONNECTIONS_PER_USER = 3;
+const DEFAULT_SOCKET_MAX_EVENTS_PER_SECOND = 30;
+const DEFAULT_DUEL_MAX_QUEUE_SIZE = 500;
+const DEFAULT_DUEL_MAX_ACTIVE = 250;
 
 interface MatchmakingUser {
   socketId: string;
@@ -57,6 +62,30 @@ interface RegisterDuelHandlersOptions {
   prisma: DuelPrisma;
   logger?: Pick<Console, 'log'>;
   now?: () => number;
+  limits?: Partial<DuelSocketLimits>;
+}
+
+export interface DuelSocketLimits {
+  maxConnections: number;
+  maxConnectionsPerUser: number;
+  maxEventsPerSecond: number;
+  maxQueueSize: number;
+  maxActiveDuels: number;
+}
+
+function positiveInteger(value: string | undefined, fallback: number) {
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
+}
+
+export function resolveDuelSocketLimits(env: NodeJS.ProcessEnv = process.env): DuelSocketLimits {
+  return {
+    maxConnections: positiveInteger(env.SOCKET_MAX_CONNECTIONS, DEFAULT_SOCKET_MAX_CONNECTIONS),
+    maxConnectionsPerUser: positiveInteger(env.SOCKET_MAX_CONNECTIONS_PER_USER, DEFAULT_SOCKET_MAX_CONNECTIONS_PER_USER),
+    maxEventsPerSecond: positiveInteger(env.SOCKET_MAX_EVENTS_PER_SECOND, DEFAULT_SOCKET_MAX_EVENTS_PER_SECOND),
+    maxQueueSize: positiveInteger(env.DUEL_MAX_QUEUE_SIZE, DEFAULT_DUEL_MAX_QUEUE_SIZE),
+    maxActiveDuels: positiveInteger(env.DUEL_MAX_ACTIVE, DEFAULT_DUEL_MAX_ACTIVE),
+  };
 }
 
 export function createDuelState(): DuelRuntimeState {
@@ -104,9 +133,13 @@ function consumesDuelEvent(duel: ActiveDuel, userId: string, nowMs: number) {
 
 export function registerDuelHandlers(
   io: Server,
-  { jwtSecret, prisma, logger = console, now = Date.now }: RegisterDuelHandlersOptions,
+  { jwtSecret, prisma, logger = console, now = Date.now, limits: limitOverrides }: RegisterDuelHandlersOptions,
   state: DuelRuntimeState = createDuelState(),
 ) {
+  const limits = { ...resolveDuelSocketLimits(), ...limitOverrides };
+  const connectionsByUser = new Map<string, number>();
+  let activeConnections = 0;
+
   io.use(async (socket, next) => {
     const token = typeof socket.handshake.auth?.token === 'string' ? socket.handshake.auth.token : null;
     if (!token) return next(new Error('Unauthorized'));
@@ -128,6 +161,10 @@ export function registerDuelHandlers(
       });
 
       if (!user) return next(new Error('Unauthorized'));
+      const userConnections = connectionsByUser.get(user.id) || 0;
+      if (activeConnections >= limits.maxConnections || userConnections >= limits.maxConnectionsPerUser) {
+        return next(new Error('Connection limit exceeded'));
+      }
       socket.data.user = user;
       next();
     } catch {
@@ -211,6 +248,26 @@ export function registerDuelHandlers(
 
   io.on('connection', (socket) => {
     const connectedUser = getSocketUser(socket);
+    activeConnections += 1;
+    connectionsByUser.set(connectedUser.id, (connectionsByUser.get(connectedUser.id) || 0) + 1);
+    let releasedConnection = false;
+    let eventWindowStartedAtMs = now();
+    let eventCount = 0;
+
+    socket.use((_event, next) => {
+      const currentTime = now();
+      if (currentTime - eventWindowStartedAtMs >= 1000) {
+        eventWindowStartedAtMs = currentTime;
+        eventCount = 0;
+      }
+      eventCount += 1;
+      if (eventCount > limits.maxEventsPerSecond) {
+        socket.emit('duel:error', { error: 'Rate limit exceeded' });
+        return next(new Error('Rate limit exceeded'));
+      }
+      next();
+    });
+
     logger.log(`[Socket] Client connected: ${socket.id} user=${connectedUser.id}`);
 
     socket.on('duel:matchmake', () => {
@@ -225,6 +282,11 @@ export function registerDuelHandlers(
       ));
 
       const opponentIndex = state.matchmakingQueue.findIndex((queuedUser) => Math.abs(queuedUser.rating - rating) <= 400);
+
+      if (opponentIndex !== -1 && state.activeDuels.size >= limits.maxActiveDuels) {
+        socket.emit('duel:error', { error: 'Duel capacity reached' });
+        return;
+      }
 
       if (opponentIndex !== -1) {
         const opponent = state.matchmakingQueue.splice(opponentIndex, 1)[0];
@@ -254,6 +316,10 @@ export function registerDuelHandlers(
           isFinished: false,
         });
       } else {
+        if (state.matchmakingQueue.length >= limits.maxQueueSize) {
+          socket.emit('duel:error', { error: 'Matchmaking queue full' });
+          return;
+        }
         state.matchmakingQueue.push({ socketId: socket.id, userId, rating, name });
       }
     });
@@ -357,6 +423,15 @@ export function registerDuelHandlers(
 
     socket.on('disconnect', () => {
       const userId = socket.data.user?.id;
+      if (!releasedConnection) {
+        releasedConnection = true;
+        activeConnections = Math.max(0, activeConnections - 1);
+        if (userId) {
+          const nextConnections = Math.max(0, (connectionsByUser.get(userId) || 1) - 1);
+          if (nextConnections === 0) connectionsByUser.delete(userId);
+          else connectionsByUser.set(userId, nextConnections);
+        }
+      }
       state.matchmakingQueue = state.matchmakingQueue.filter((queuedUser) => (
         queuedUser.socketId !== socket.id && queuedUser.userId !== userId
       ));

@@ -92,6 +92,8 @@ async function startServer() {
   const httpServer = createServer(app);
   const io = new Server(httpServer, {
     cors: createSocketCorsOptions(corsConfig),
+    maxHttpBufferSize: 16 * 1024,
+    perMessageDeflate: false,
   });
 
   registerDuelHandlers(io, { prisma, jwtSecret: JWT_SECRET });
