@@ -1,6 +1,8 @@
 import { Router } from 'express';
+import { z } from 'zod';
 import prisma from '../../lib/prisma.ts';
 import { authenticate } from '../middleware/auth.ts';
+import { validateQuery } from '../middleware/validate.ts';
 import jwt from 'jsonwebtoken';
 import { createSafeLogger, safeError } from '../../lib/safe-logger.ts';
 import {
@@ -21,6 +23,28 @@ const router = Router();
 const logger = createSafeLogger('analytics-route');
 const PROFILE_READY_SESSION_THRESHOLD = 5;
 const MAX_EXPORT_SESSIONS = 1000;
+const gameTypeSchema = z.string().trim().min(1).max(64).regex(/^[A-Za-z0-9_]+$/).transform((value) => value.toUpperCase());
+const compareQuerySchema = z.object({
+  gameType: gameTypeSchema.optional().default('SCHULTE'),
+  score: z.coerce.number().finite().min(0).max(1_000_000).default(0),
+  timeMs: z.coerce.number().finite().int().min(0).max(24 * 60 * 60 * 1000).default(0),
+  errors: z.coerce.number().finite().int().min(0).max(10_000).default(0),
+}).strict();
+const isoDateSchema = z.string().datetime({ offset: true });
+const summariesQuerySchema = z.object({
+  moduleId: z.string().trim().min(1).max(64).regex(/^[a-z0-9-]+$/).optional(),
+  category: z.enum(['cognitive', 'somatic', 'safety']).optional(),
+  from: isoDateSchema.optional(),
+  to: isoDateSchema.optional(),
+  limit: z.coerce.number().int().min(1).max(100).default(100),
+}).strict().refine(
+  (value) => !value.from || !value.to || new Date(value.from) <= new Date(value.to),
+  { message: 'from must be before or equal to to', path: ['from'] },
+);
+const trendQuerySchema = z.object({
+  moduleId: z.string().trim().min(1).max(64).regex(/^[a-z0-9-]+$/).optional(),
+  days: z.coerce.number().int().min(1).max(365).default(30),
+}).strict();
 
 function roundedAverage(values: number[]): number | null {
   if (values.length === 0) return null;
@@ -114,12 +138,9 @@ function createPrivacySafeAnalyticsExport(sessions: Array<{
 /**
  * Сравнивает результаты текущей игры с историей пользователя
  */
-router.get('/compare', async (req: any, res) => {
+router.get('/compare', validateQuery(compareQuerySchema), async (req: any, res) => {
   try {
-    const gameType = (req.query.gameType as string || 'SCHULTE').toUpperCase();
-    const currentScore = Number(req.query.score) || 0;
-    const currentTimeMs = Number(req.query.timeMs) || 0;
-    const currentErrors = Number(req.query.errors) || 0;
+    const { gameType, score: currentScore, timeMs: currentTimeMs, errors: currentErrors } = req.validated!.query;
 
     let userId: string | null = null;
     const authHeader = req.headers.authorization;
@@ -391,17 +412,17 @@ router.post('/summaries', authenticate, async (req: any, res) => {
  * GET /api/analytics/summaries — query persisted summaries
  * Query params: moduleId, category, from, to, limit
  */
-router.get('/summaries', authenticate, async (req: any, res) => {
+router.get('/summaries', authenticate, validateQuery(summariesQuerySchema), async (req: any, res) => {
   try {
-    const { moduleId, category, from, to, limit } = req.query;
+    const { moduleId, category, from, to, limit } = req.validated!.query;
 
     const summaries = await getSessionAnalyticsSummaries({
       userId: req.user.id,
-      moduleId: moduleId as string | undefined,
-      category: category as string | undefined,
-      from: from ? new Date(from as string) : undefined,
-      to: to ? new Date(to as string) : undefined,
-      limit: limit ? parseInt(limit as string, 10) : undefined,
+      moduleId,
+      category,
+      from: from ? new Date(from) : undefined,
+      to: to ? new Date(to) : undefined,
+      limit,
     });
 
     res.json({ summaries });
@@ -415,16 +436,15 @@ router.get('/summaries', authenticate, async (req: any, res) => {
  * GET /api/analytics/summaries/trend — trend-ready aggregated data
  * Query params: moduleId (optional), days (default 30)
  */
-router.get('/summaries/trend', authenticate, async (req: any, res) => {
+router.get('/summaries/trend', authenticate, validateQuery(trendQuerySchema), async (req: any, res) => {
   try {
-    const { moduleId, days } = req.query;
-    const daysNum = days ? parseInt(days as string, 10) : 30;
+    const { moduleId, days } = req.validated!.query;
 
     const trend = moduleId
-      ? await getModuleTrendData(req.user.id, moduleId as string, daysNum)
-      : await getAggregateTrendData(req.user.id, daysNum);
+      ? await getModuleTrendData(req.user.id, moduleId, days)
+      : await getAggregateTrendData(req.user.id, days);
 
-    res.json({ trend, days: daysNum, moduleId: moduleId || null });
+    res.json({ trend, days, moduleId: moduleId || null });
   } catch (err) {
     logger.error('Failed to compute trend data', { error: safeError(err) });
     res.status(500).json({ error: 'Failed to compute trend data' });
@@ -435,15 +455,14 @@ router.get('/summaries/trend', authenticate, async (req: any, res) => {
  * GET /api/analytics/cognitive-trend — full CognitiveTrend with direction detection
  * Query params: moduleId (optional), days (default 30)
  */
-router.get('/cognitive-trend', authenticate, async (req: any, res) => {
+router.get('/cognitive-trend', authenticate, validateQuery(trendQuerySchema), async (req: any, res) => {
   try {
-    const { moduleId, days } = req.query;
-    const daysNum = days ? parseInt(days as string, 10) : 30;
+    const { moduleId, days } = req.validated!.query;
 
     const trend = await computeCognitiveTrend(
       req.user.id,
-      moduleId ? (moduleId as string) : null,
-      daysNum,
+      moduleId ?? null,
+      days,
     );
 
     res.json(trend);

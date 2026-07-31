@@ -1,6 +1,8 @@
 import { Router } from 'express';
+import { z } from 'zod';
 import prisma from '../../lib/prisma.ts';
 import { authenticate, isAdmin } from '../middleware/auth.ts';
+import { validateBody, validateParams } from '../middleware/validate.ts';
 import { sanitizeAdminUserIdentity, sanitizePublicUserIdentity } from '../utils/privacy.ts';
 import { createSafeLogger, safeError } from '../../lib/safe-logger.ts';
 import { handleValidationError } from '../utils/validation.ts';
@@ -10,6 +12,8 @@ import { getPracticeFlowSummary } from '../services/practice-flow-store.ts';
 
 const router = Router();
 const logger = createSafeLogger('admin-route');
+const resourceIdSchema = z.object({ id: z.string().trim().min(1).max(120) }).strict();
+const ideaStatusSchema = z.object({ status: z.string().trim().min(1).max(32) }).strict();
 
 router.use(authenticate, isAdmin);
 
@@ -105,7 +109,7 @@ router.get('/feedback', async (req, res) => {
 });
 
 async function saveFeedbackResponse(req: any, res: any) {
-  const parsed = feedbackResponseSchema.safeParse(req.body);
+  const parsed = feedbackResponseSchema.safeParse(req.validated!.body);
   if (!parsed.success) {
     handleValidationError(parsed, res);
     return;
@@ -113,7 +117,7 @@ async function saveFeedbackResponse(req: any, res: any) {
 
   try {
     const feedback = await prisma.feedback.update({
-      where: { id: req.params.id },
+      where: { id: req.validated!.params.id },
       data: { adminResponse: parsed.data.response, status: 'replied' },
       include: {
         user: {
@@ -133,17 +137,17 @@ async function saveFeedbackResponse(req: any, res: any) {
   }
 }
 
-router.post('/feedback/:id/respond', saveFeedbackResponse);
-router.post('/feedback/:id/response', saveFeedbackResponse);
+router.post('/feedback/:id/respond', validateParams(resourceIdSchema), validateBody(feedbackResponseSchema), saveFeedbackResponse);
+router.post('/feedback/:id/response', validateParams(resourceIdSchema), validateBody(feedbackResponseSchema), saveFeedbackResponse);
 
-router.post('/ideas/:id/status', async (req, res) => {
-  const status = parseIdeaStatus(req.body?.status);
+router.post('/ideas/:id/status', validateParams(resourceIdSchema), validateBody(ideaStatusSchema), async (req, res) => {
+  const status = parseIdeaStatus(req.validated!.body.status);
   if (!status) {
     return res.status(400).json({ error: 'Invalid idea status' });
   }
 
   try {
-    const idea = await prisma.idea.update({ where: { id: req.params.id }, data: { status } });
+    const idea = await prisma.idea.update({ where: { id: req.validated!.params.id }, data: { status } });
     res.json({ ...idea, status: normalizeIdeaStatus(idea.status) });
   } catch {
     res.status(500).json({ error: 'Failed to update status' });

@@ -119,6 +119,27 @@ describe('analytics summary ownership routes', () => {
     expect(call.create.userId).toBe('user-a');
   });
 
+  it('rejects malformed summary and query input before data access', async () => {
+    const baseUrl = await createHarness();
+    const auth = { Authorization: `Bearer ${token('user-a')}`, 'Content-Type': 'application/json' };
+
+    const summaryResponse = await fetch(`${baseUrl}/api/analytics/summaries`, {
+      method: 'POST',
+      headers: auth,
+      body: JSON.stringify({}),
+    });
+    const queryResponse = await fetch(`${baseUrl}/api/analytics/summaries?limit=0`, { headers: auth });
+    const trendResponse = await fetch(`${baseUrl}/api/analytics/cognitive-trend?days=not-a-number`, { headers: auth });
+    const compareResponse = await fetch(`${baseUrl}/api/analytics/compare?score=-1`, { headers: auth });
+
+    expect(summaryResponse.status).toBe(400);
+    expect(queryResponse.status).toBe(400);
+    expect(trendResponse.status).toBe(400);
+    expect(compareResponse.status).toBe(400);
+    expect(prismaMock.gameSession.findFirst).not.toHaveBeenCalled();
+    expect(prismaMock.sessionAnalyticsSummary.findMany).not.toHaveBeenCalled();
+  });
+
   it('scopes summary and trend reads to the authenticated user', async () => {
     const baseUrl = await createHarness();
     const auth = { Authorization: `Bearer ${token('user-a')}` };
