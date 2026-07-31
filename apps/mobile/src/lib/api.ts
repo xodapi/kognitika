@@ -1,14 +1,37 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 import type { BrainIdPayload } from '@kognitika/shared-types';
+import { resolveMobileApiOrigin } from './api-origin';
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000';
+const API_URL = resolveMobileApiOrigin(process.env.EXPO_PUBLIC_API_URL, process.env.NODE_ENV);
 
-const TOKEN_KEY = '@kognitika/jwt';
-const BRAIN_ID_KEY = '@kognitika/brain-id';
+const TOKEN_KEY = 'kognitika-jwt';
+const BRAIN_ID_KEY = 'kognitika-brain-id';
+const LEGACY_TOKEN_KEY = '@kognitika/jwt';
+const LEGACY_BRAIN_ID_KEY = '@kognitika/brain-id';
 const PSEUDONYM_KEY = '@kognitika/pseudonym';
 
+async function saveCredentials(token: string, brainId: string) {
+  await Promise.all([
+    SecureStore.setItemAsync(TOKEN_KEY, token),
+    SecureStore.setItemAsync(BRAIN_ID_KEY, brainId),
+    AsyncStorage.multiRemove([LEGACY_TOKEN_KEY, LEGACY_BRAIN_ID_KEY]),
+  ]);
+}
+
+async function secureCredential(key: string, legacyKey: string) {
+  const secureValue = await SecureStore.getItemAsync(key);
+  if (secureValue) return secureValue;
+
+  const legacyValue = await AsyncStorage.getItem(legacyKey);
+  if (!legacyValue) return null;
+  await SecureStore.setItemAsync(key, legacyValue);
+  await AsyncStorage.removeItem(legacyKey);
+  return legacyValue;
+}
+
 async function getHeaders(): Promise<Record<string, string>> {
-  const token = await AsyncStorage.getItem(TOKEN_KEY);
+  const token = await getStoredToken();
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
   };
@@ -32,8 +55,7 @@ export async function loginWithBrainId(payload: BrainIdPayload): Promise<{ token
   }
 
   const data = await res.json();
-  await AsyncStorage.setItem(TOKEN_KEY, data.token);
-  await AsyncStorage.setItem(BRAIN_ID_KEY, data.brainId || payload.brainId);
+  await saveCredentials(data.token, data.brainId || payload.brainId);
   await AsyncStorage.setItem(PSEUDONYM_KEY, data.pseudonym || '');
   return data;
 }
@@ -51,14 +73,13 @@ export async function createNewBrainSession(): Promise<{ token: string; brainId:
   }
 
   const data = await res.json();
-  await AsyncStorage.setItem(TOKEN_KEY, data.token);
-  await AsyncStorage.setItem(BRAIN_ID_KEY, data.brainId);
+  await saveCredentials(data.token, data.brainId);
   await AsyncStorage.setItem(PSEUDONYM_KEY, data.pseudonym || '');
   return data;
 }
 
 export async function getStoredBrainId(): Promise<string | null> {
-  return AsyncStorage.getItem(BRAIN_ID_KEY);
+  return secureCredential(BRAIN_ID_KEY, LEGACY_BRAIN_ID_KEY);
 }
 
 export async function getStoredPseudonym(): Promise<string | null> {
@@ -66,11 +87,11 @@ export async function getStoredPseudonym(): Promise<string | null> {
 }
 
 export async function getStoredToken(): Promise<string | null> {
-  return AsyncStorage.getItem(TOKEN_KEY);
+  return secureCredential(TOKEN_KEY, LEGACY_TOKEN_KEY);
 }
 
 export async function fetchUserProfile(): Promise<any> {
-  const token = await AsyncStorage.getItem(TOKEN_KEY);
+  const token = await getStoredToken();
   if (!token) return null;
 
   const res = await fetch(`${API_URL}/api/me`, {
@@ -92,7 +113,11 @@ export async function fetchUserProfile(): Promise<any> {
 }
 
 export async function clearAuth(): Promise<void> {
-  await AsyncStorage.multiRemove([TOKEN_KEY, BRAIN_ID_KEY, PSEUDONYM_KEY]);
+  await Promise.all([
+    SecureStore.deleteItemAsync(TOKEN_KEY),
+    SecureStore.deleteItemAsync(BRAIN_ID_KEY),
+    AsyncStorage.multiRemove([LEGACY_TOKEN_KEY, LEGACY_BRAIN_ID_KEY, PSEUDONYM_KEY]),
+  ]);
 }
 
 export interface GameAttemptCredentials {
