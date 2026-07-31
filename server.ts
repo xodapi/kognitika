@@ -12,6 +12,7 @@ import { rateLimit } from 'express-rate-limit';
 import { createSafeLogger } from './src/lib/safe-logger.ts';
 import { createExpressCorsOptions, createSocketCorsOptions, resolveCorsConfig } from './src/server/config/cors.ts';
 import { validateJwtSecret } from './src/server/config/runtime-security.ts';
+import { resolveListenHost, resolveTrustProxy } from './src/server/config/proxy.ts';
 
 const logger = createSafeLogger('server');
 
@@ -87,6 +88,7 @@ if (corsConfig.warning) {
 
 async function startServer() {
   const app = express();
+  app.set('trust proxy', resolveTrustProxy(process.env));
   const httpServer = createServer(app);
   const io = new Server(httpServer, {
     cors: createSocketCorsOptions(corsConfig),
@@ -243,8 +245,9 @@ async function startServer() {
     });
   }
 
-  httpServer.listen(PORT, '0.0.0.0', () => {
-    logger.info('Server running', { port: PORT, buildId: BUILD_ID });
+  const listenHost = resolveListenHost(process.env);
+  httpServer.listen(PORT, listenHost, () => {
+    logger.info('Server running', { host: listenHost, port: PORT, buildId: BUILD_ID });
   });
 }
 
