@@ -3,6 +3,10 @@ node_modules/
 build/
 dist/
 coverage/
+coverage-install.log
+preview.log
+server.log
+debug-schulte.png
 playwright-report/
 .turbo/
 test-results/
