@@ -7,6 +7,7 @@ import { z } from 'zod';
 import prisma from '../../lib/prisma.ts';
 import { createSafeLogger, safeError } from '../../lib/safe-logger.ts';
 import { handleValidationError } from '../utils/validation.ts';
+import { createSseConnectionManager, resolveSseConnectionLimits } from '../services/sse-connections.ts';
 
 const messageSchema = z.object({
   content: z.string().min(1).max(500).trim(),
@@ -17,6 +18,7 @@ const router = Router();
 const chatBus = new EventEmitter();
 const JWT_SECRET = process.env.JWT_SECRET!;
 const logger = createSafeLogger('chat-route');
+const sseConnections = createSseConnectionManager(resolveSseConnectionLimits());
 
 export function publicChatSenderId(userId: string) {
   return createHmac('sha256', JWT_SECRET)
@@ -26,11 +28,45 @@ export function publicChatSenderId(userId: string) {
 }
 
 router.get('/stream', async (req, res) => {
+  const releaseConnection = sseConnections.acquire(req.ip || req.socket.remoteAddress || 'unknown');
+  if (!releaseConnection) {
+    res.setHeader('Retry-After', '30');
+    res.status(429).json({ error: 'Too many active streams' });
+    return;
+  }
+
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection', 'keep-alive');
   res.setHeader('X-Accel-Buffering', 'no');
   res.flushHeaders();
+
+  let closed = false;
+  const close = () => {
+    if (closed) return;
+    closed = true;
+    releaseConnection();
+    clearInterval(pingInterval);
+    chatBus.off('message', onMessage);
+    if (!res.writableEnded) res.end();
+  };
+  const write = (chunk: string) => {
+    if (closed || res.writableEnded || !res.write(chunk)) {
+      close();
+      return false;
+    }
+    return true;
+  };
+  const onMessage = (msg: object) => {
+    write(`event: message\ndata: ${JSON.stringify(msg)}\n\n`);
+  };
+  const pingInterval = setInterval(() => {
+    write(': ping\n\n');
+  }, 25000);
+
+  req.once('close', close);
+  req.once('aborted', close);
+  res.once('error', close);
 
   try {
     const lastMessages = await prisma.message.findMany({
@@ -46,24 +82,12 @@ router.get('/stream', async (req, res) => {
       userName: m.user.name || 'Машинист',
       createdAt: m.createdAt
     }));
-    res.write(`event: history\ndata: ${JSON.stringify(history)}\n\n`);
+    if (!write(`event: history\ndata: ${JSON.stringify(history)}\n\n`)) return;
   } catch (e) {
     logger.error('SSE history load failed', { error: safeError(e) });
   }
 
-  const onMessage = (msg: object) => {
-    res.write(`event: message\ndata: ${JSON.stringify(msg)}\n\n`);
-  };
-  chatBus.on('message', onMessage);
-
-  const pingInterval = setInterval(() => {
-    res.write(': ping\n\n');
-  }, 25000);
-
-  req.on('close', () => {
-    clearInterval(pingInterval);
-    chatBus.off('message', onMessage);
-  });
+  if (!closed) chatBus.on('message', onMessage);
 });
 
 router.post('/messages', async (req: any, res) => {
