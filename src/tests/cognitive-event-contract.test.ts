@@ -15,7 +15,6 @@ const base = {
 } as const;
 
 const validJob = {
-  schemaVersion: 1,
   jobId: 'analytics-job-synthetic-schulte',
   analyzerVersion: 'analyze-session-v1',
   receivedAt: '2026-01-02T00:01:00.000Z',
@@ -70,7 +69,10 @@ describe('canonical cognitive event contract', () => {
       sessionId: base.sessionId,
       moduleId: 'schulte',
       completedAt: validJob.completedAt,
-      events: [{ kind: 'click', isCorrect: true, reactionTimeMs: 750 }],
+      events: [
+        { kind: 'click', isCorrect: true, reactionTimeMs: 750 },
+        { kind: 'checkpoint', checkpoint: 'halfway' },
+      ],
     });
   });
 
