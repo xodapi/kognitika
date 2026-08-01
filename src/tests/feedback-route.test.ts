@@ -125,8 +125,11 @@ describe('feedback route persistence contract', () => {
     });
 
     expect(response.status).toBe(400);
-    expect(response.body.error).toBeDefined();
-    expect(response.body.details).toBeDefined();
+    expect(response.body).toMatchObject({
+      error: 'Validation failed',
+      code: 'VALIDATION_ERROR',
+      issues: expect.any(Array),
+    });
     expect(prismaMock.feedback.create).not.toHaveBeenCalled();
     expect(eventBusMock.emit).not.toHaveBeenCalled();
   });
