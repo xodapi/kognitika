@@ -105,15 +105,15 @@ test.describe('Kognitika production smoke', () => {
     await expectAppReady(page);
   });
 
-  test('direct /admin load without admin auth mounts the app and shows access guidance', async ({ page }) => {
+  test('direct /admin load as a non-admin mounts the app and shows access guidance', async ({ page }) => {
     const browserErrors = collectUnexpectedBrowserErrors(page);
 
     await page.goto('/admin');
     await expectAppReady(page);
     await expect(page.locator('#kognitika-boot-recovery')).toHaveCount(0);
     await expect(page).toHaveURL(/\/admin$/);
-    await expect(page.getByRole('heading', { name: /сначала войдите через brain id/i })).toBeVisible();
-    await expect(page.getByRole('button', { name: /войти через brain id/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /нужны права администратора/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /вернуться к обзору/i })).toBeVisible();
 
     expect(browserErrors).toEqual([]);
   });
@@ -134,7 +134,7 @@ test.describe('Kognitika production smoke', () => {
       };
       window.localStorage.setItem('token', 'synthetic-token');
       window.localStorage.setItem('user', JSON.stringify(user));
-      window.localStorage.setItem('kognitika:auth:token', JSON.stringify('synthetic-token'));
+      window.localStorage.setItem('kognitika:auth:token', 'synthetic-token');
     });
 
     const viewports = [

@@ -83,6 +83,9 @@ export async function installSyntheticApi(page: Page) {
     localStorage.setItem('user', JSON.stringify(syntheticUser));
     localStorage.setItem('kognitika:brainId', 'BR-SYNTHETIC-0001');
     localStorage.setItem('kognitika:storage:schemaVersion', '1');
+    // Interaction specs start with an established synthetic profile; onboarding
+    // is covered separately and must not obscure the training controls.
+    localStorage.setItem('kognitika:ui:onboarding:v1', JSON.stringify({ version: 1, completed: true }));
   });
 
   await page.route('**/api/**', async (route) => {
