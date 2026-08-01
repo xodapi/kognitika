@@ -26,7 +26,22 @@ export const AnalyzeSessionInputSchema = z.object({
   startedAt: z.string().datetime(),
   completedAt: z.string().datetime().optional(),
   events: z.array(AnalyzeSessionEventSchema).max(10_000),
-}).strict();
+}).strict().superRefine((input, context) => {
+  if (!input.completedAt) return;
+
+  const startedAtMs = Date.parse(input.startedAt);
+  const completedAtMs = Date.parse(input.completedAt);
+  if (!Number.isFinite(startedAtMs) || !Number.isFinite(completedAtMs)) return;
+
+  const durationMs = completedAtMs - startedAtMs;
+  if (durationMs > 24 * 60 * 60 * 1000) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['completedAt'],
+      message: 'completedAt must be at most 24 hours after startedAt',
+    });
+  }
+});
 
 export const AnalyzeSessionOutputSchema = z.object({
   schemaVersion: z.literal(1),

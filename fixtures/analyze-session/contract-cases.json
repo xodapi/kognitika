@@ -1,0 +1,112 @@
+[
+  {
+    "name": "valid-minimal-session",
+    "valid": true,
+    "input": {
+      "schemaVersion": 1,
+      "sessionId": "synthetic.contract-01",
+      "moduleId": "schulte",
+      "category": "cognitive",
+      "startedAt": "2026-01-01T00:00:00.000Z",
+      "completedAt": "2026-01-01T00:00:01.000Z",
+      "events": [{ "tMs": 1000, "kind": "click", "reactionTimeMs": 1, "isCorrect": true, "x": 0, "y": 1 }]
+    }
+  },
+  {
+    "name": "rejects-invalid-session-id",
+    "valid": false,
+    "input": {
+      "schemaVersion": 1,
+      "sessionId": "contains spaces",
+      "moduleId": "schulte",
+      "category": "cognitive",
+      "startedAt": "2026-01-01T00:00:00.000Z",
+      "events": []
+    }
+  },
+  {
+    "name": "rejects-invalid-module-id",
+    "valid": false,
+    "input": {
+      "schemaVersion": 1,
+      "sessionId": "synthetic-contract-02",
+      "moduleId": "Schulte",
+      "category": "cognitive",
+      "startedAt": "2026-01-01T00:00:00.000Z",
+      "events": []
+    }
+  },
+  {
+    "name": "rejects-invalid-timestamp",
+    "valid": false,
+    "input": {
+      "schemaVersion": 1,
+      "sessionId": "synthetic-contract-03",
+      "moduleId": "schulte",
+      "category": "cognitive",
+      "startedAt": "not-a-timestamp",
+      "events": []
+    }
+  },
+  {
+    "name": "rejects-duration-over-24-hours",
+    "valid": false,
+    "input": {
+      "schemaVersion": 1,
+      "sessionId": "synthetic-contract-04",
+      "moduleId": "schulte",
+      "category": "cognitive",
+      "startedAt": "2026-01-01T00:00:00.000Z",
+      "completedAt": "2026-01-02T00:00:00.001Z",
+      "events": []
+    }
+  },
+  {
+    "name": "rejects-reaction-time-zero",
+    "valid": false,
+    "input": {
+      "schemaVersion": 1,
+      "sessionId": "synthetic-contract-05",
+      "moduleId": "schulte",
+      "category": "cognitive",
+      "startedAt": "2026-01-01T00:00:00.000Z",
+      "events": [{ "tMs": 0, "kind": "click", "reactionTimeMs": 0 }]
+    }
+  },
+  {
+    "name": "rejects-coordinate-outside-unit-square",
+    "valid": false,
+    "input": {
+      "schemaVersion": 1,
+      "sessionId": "synthetic-contract-06",
+      "moduleId": "schulte",
+      "category": "cognitive",
+      "startedAt": "2026-01-01T00:00:00.000Z",
+      "events": [{ "tMs": 0, "kind": "click", "x": 1.01 }]
+    }
+  },
+  {
+    "name": "rejects-invalid-checkpoint",
+    "valid": false,
+    "input": {
+      "schemaVersion": 1,
+      "sessionId": "synthetic-contract-07",
+      "moduleId": "schulte",
+      "category": "cognitive",
+      "startedAt": "2026-01-01T00:00:00.000Z",
+      "events": [{ "tMs": 0, "kind": "checkpoint", "checkpoint": "has spaces" }]
+    }
+  },
+  {
+    "name": "rejects-event-after-24-hours",
+    "valid": false,
+    "input": {
+      "schemaVersion": 1,
+      "sessionId": "synthetic-contract-08",
+      "moduleId": "schulte",
+      "category": "cognitive",
+      "startedAt": "2026-01-01T00:00:00.000Z",
+      "events": [{ "tMs": 86400001, "kind": "checkpoint", "checkpoint": "completed" }]
+    }
+  }
+]
