@@ -129,13 +129,7 @@ jobs:
 
           build_id="$(git rev-parse --short HEAD)"
           CI=true pnpm install --frozen-lockfile
-
-          echo "=== Configuring kognitika.ru reverse proxy and TLS ==="
-          sudo cp deployment/nginx-kognitika.ru.conf /etc/nginx/sites-available/kognitika.ru
-          sudo ln -sf /etc/nginx/sites-available/kognitika.ru /etc/nginx/sites-enabled/kognitika.ru
-          sudo nginx -t
-          sudo systemctl reload nginx
-          sudo certbot --nginx -d kognitika.ru --non-interactive --agree-tos --email admin@syntog.ru --redirect --keep-until-expiring
+          CI=true pnpm exec prisma generate
 
           production_env="/opt/kognitika/.env"
           if [ -f "$production_env" ]; then
@@ -154,6 +148,7 @@ jobs:
             upsert_env FRONTEND_URL "https://kognitika.ru"
             upsert_env CORS_ORIGIN "https://kognitika.ru,https://www.kognitika.ru,https://kognitika.syntog.ru,https://admin.kognitika.syntog.ru,https://m.kognitika.ru,https://m.kognitika.syntog.ru"
             upsert_env GAME_SAVE_LEGACY_COMPAT_ENABLED "false"
+            upsert_env PORT "3006"
           fi
 
           if [ ! -r "$production_env" ]; then
@@ -173,6 +168,13 @@ jobs:
           CI=true pnpm exec prisma migrate deploy
 
           BUILD_HASH="$build_id" VITE_BUILD_ID="$build_id" pnpm build
+
+          echo "=== Configuring kognitika.ru reverse proxy and TLS ==="
+          sudo cp deployment/nginx-kognitika.ru.conf /etc/nginx/sites-available/kognitika.ru
+          sudo ln -sf /etc/nginx/sites-available/kognitika.ru /etc/nginx/sites-enabled/kognitika.ru
+          sudo nginx -t
+          sudo systemctl reload nginx
+          sudo certbot --nginx -d kognitika.ru --non-interactive --agree-tos --email admin@syntog.ru --redirect --keep-until-expiring
 
           mkdir -p dist/assets
           cp -an "$asset_keep"/. dist/assets/ 2>/dev/null || true
