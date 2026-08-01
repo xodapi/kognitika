@@ -9,7 +9,7 @@
   <h1>🧠 Kognitika</h1>
   <p><strong>React/Express platform for cognitive training — memory, attention, speed, and adaptive analytics</strong></p>
   <p>
-    <a href="https://kognitika.syntog.ru" target="_blank">kognitika.syntog.ru</a>
+    <a href="https://kognitika.ru" target="_blank">kognitika.ru</a>
   </p>
   <p>
     <img src="https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=fff" alt="TypeScript" />
@@ -26,13 +26,45 @@
   <br />
 </div>
 
-Private platform for cognitive training, Brain ID identity, adaptive analytics, and real-time duel mechanics.
+> 🚀 **Live:** [kognitika.ru](https://kognitika.ru) | 📱 **Android APK:** [Latest Release](https://github.com/xodapi/kognitika/releases/tag/android-latest) | 📚 **Wiki:** [Project Wiki](https://github.com/xodapi/kognitika/wiki)
 
-<p>
-  <a href="https://github.com/xodapi/kognitika/wiki"><strong>Explore the wiki</strong></a> ·
-  <a href="https://kognitika.syntog.ru"><strong>Production site</strong></a> ·
-  <a href="https://github.com/xodapi/kognitika/releases/tag/android-latest"><strong>Download Android APK</strong></a>
-</p>
+---
+
+## ✨ Key Features
+
+| Domain | Trainers | Focus |
+|--------|----------|-------|
+| **Base** | Schulte, N-Back, Stroop, Mental Math, Spatial, Typing | Attention, memory, speed |
+| **Engineering** | Numerical, Logical, Topology, Collision, Dispatcher, Noise | Systems thinking |
+| **Mind-Guard** | Scanner, Decryptor, Reality Check, Hype Filter, Reframing, Rejection | Critical thinking |
+| **Meta** | Cognitive Map, Wiki, Leaderboard, Duels, Express Knowledge Hub | Progress, knowledge, competition |
+
+- 🔐 **Brain ID** — Privacy-first auth (no Firebase, no email exposure)
+- ⚡ **Real-time duels** — Socket.io with resource bounds
+- 📊 **Adaptive analytics** — Web Worker + WASM-ready pipeline
+- 📱 **Native Android** — Capacitor 8, rolling debug APK on every push
+- ✅ **357 tests** — Vitest + Playwright E2E, navigation contracts
+
+---
+
+## 🛠 Quick Start (Development)
+
+```bash
+# Clone & install
+git clone https://github.com/xodapi/kognitika.git
+cd kognitika
+pnpm install --frozen-lockfile
+
+# Setup env & database
+cp .env.example .env
+# Edit .env with DATABASE_URL, JWT_SECRET
+pnpm exec prisma migrate deploy
+
+# Dev server (port 3006)
+pnpm dev
+```
+
+---
 
 ## Quick navigation
 
