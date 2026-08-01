@@ -108,10 +108,10 @@ export class LegacyCognitiveEventBridge {
         kind: 'session_completed',
         completedAt: completedAt(this.context.startedAt, envelope.tMs),
       };
-      this.terminal = true;
     }
 
     if (!event || !CognitiveInteractionEventSchema.safeParse(event).success) return null;
+    if (event.kind === 'session_completed') this.terminal = true;
     this.seenLegacyEventIds.add(envelope.legacyEventId);
     this.sequence += 1;
     this.lastTMs = envelope.tMs;
