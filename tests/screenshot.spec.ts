@@ -19,13 +19,13 @@ test.describe('Post-game navigation', () => {
       await expect(answerButton).toBeVisible();
       await answerButton.click();
       if (index < 4) {
-        await expect(page.getByText(`Вопрос ${index + 2} из 5:`)).toBeVisible();
+        await expect(page.getByText(`Вопрос ${index + 2} из 5:`, { exact: true })).toBeVisible();
       }
       // Let React commit the next state before the next answer click.
       await page.waitForTimeout(50);
     }
 
-    await expect(page.getByRole('heading', { name: 'Анализ завершен' })).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByRole('heading', { name: 'Анализ завершен' })).toBeVisible();
     await expect(page.getByText('Таблицы Шульте')).toBeVisible();
 
     await page.getByRole('button', { name: /Начать рекомендованное/i }).click();
