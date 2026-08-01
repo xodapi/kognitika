@@ -24,13 +24,7 @@ Rate limiting applies to auth endpoints: 10 requests per hour per IP.
 
 CORS is configured through `src/server/config/cors.ts`. In production, the `CORS_ORIGIN` environment variable must contain an explicit comma-separated allowlist. Wildcard (`*`) CORS is rejected in production. The configuration also accepts Capacitor native app origins (`capacitor://localhost`, `https://localhost`) when `CORS_ALLOW_NATIVE_APP=true`.
 
-Current production allowlist includes:
-- `https://kognitika.ru`
-- `https://www.kognitika.ru`
-- `https://kognitika.syntog.ru`
-- `https://admin.kognitika.syntog.ru`
-- `https://m.kognitika.ru`
-- `https://m.kognitika.syntog.ru`
+The canonical production domain is `https://kognitika.ru`. The actual production allowlist is deployment configuration, not a fixed list in this generated reference. It must contain only approved explicit origins; legacy `*.syntog.ru` domains are not current canonical runtime URLs.
 
 ## Privacy guard middleware
 

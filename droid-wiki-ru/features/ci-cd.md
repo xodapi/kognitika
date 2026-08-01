@@ -34,7 +34,7 @@ on:
 | Job | Runner | Steps | Время | Артефакты |
 |---|---|---|---|---|
 | **lint** | `ubuntu-latest` | `pnpm lint` (ESLint + TypeScript) | ~30s | — |
-| **test** | `ubuntu-latest` | `pnpm test --run` (Vitest 357 тестов) | ~2m | coverage.xml |
+| **test** | `ubuntu-latest` | `pnpm test --run` (Vitest; точный текущий результат подтверждает CI) | зависит от suite | coverage.xml |
 | **build** | `ubuntu-latest` | `pnpm build` (Vite production) | ~1m | dist/ (upload) |
 | **e2e** | `ubuntu-latest` | `pnpm playwright install` + `pnpm test:e2e` | ~3m | trace.zip, screenshots |
 
@@ -242,7 +242,7 @@ jobs:
 
 ## Чек-лист
 - [ ] `pnpm lint` проходит
-- [ ] `pnpm test` проходит (357 тестов)
+- [ ] `pnpm test` проходит, что подтверждено текущим CI run
 - [ ] `pnpm build` проходит
 - [ ] E2E тесты пройдены (или `skip-e2e` label)
 - [ ] Документация обновлена (wiki / README)

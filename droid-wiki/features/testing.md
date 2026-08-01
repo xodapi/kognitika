@@ -1,6 +1,6 @@
 # Testing reference
 
-Kognitika has 357 tests across 84 files running under Vitest plus Playwright for E2E. Tests are grouped by category and enforce key contracts around security, route behavior, UI components, engine logic, knowledge domain rules, infrastructure, and full end-to-end flows.
+Kognitika uses Vitest for unit and integration contracts plus Playwright for E2E coverage. Tests are grouped by category and enforce key contracts around security, route behavior, UI components, engine logic, knowledge domain rules, infrastructure, and end-to-end flows. Exact current suite results must be confirmed by CI or another completed compatible run; local Windows bind-mount runs can time out during module loading.
 
 ## Security and privacy
 

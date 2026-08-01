@@ -70,7 +70,7 @@ The platform runs in browsers and as a native Android app via Capacitor 8. A deb
 ## Key numbers
 
 - 30+ trainer modules across 3 domains
-- 357 tests across 84 files (Vitest)
+- Vitest and Playwright contract coverage, with exact current results confirmed by CI
 - 12 Prisma models for user data, sessions, analytics, and social features
 - Single monorepo with pnpm workspace
 - 3 CI/CD workflows: CI, Deploy, Android

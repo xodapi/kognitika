@@ -6,7 +6,7 @@
 
 | Workflow | Триггер | Назначение |
 |---|---|---|
-| `ci.yml` | push/PR на `main` | TypeScript lint → Vitest (357 тестов) → Vite build → Playwright E2E |
+| `ci.yml` | push/PR на `main` | TypeScript checks → Vitest → Vite build → Playwright E2E; точный текущий результат подтверждает CI |
 | `deploy.yml` | merge в `main` | Деплой на продакшн сервер |
 | `android.yml` | push на `main` + `workflow_dispatch` | Сборка debug APK + rolling release `android-latest` |
 

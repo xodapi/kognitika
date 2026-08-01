@@ -96,7 +96,7 @@ kognitika/
 │   ├── server/            # Express API, Socket.io, middleware, схемы
 │   ├── client/            # Клиентский event-bus
 │   ├── workers/           # Web Workers (analytics, session analysis)
-│   ├── tests/             # Vitest (84 файла, 357 тестов)
+│   ├── tests/             # Vitest contract tests (точный текущий результат подтверждает CI)
 │   ├── App.tsx            # Корневой роутинг
 │   └── main.tsx           # Точка входа
 ├── crates/kognitika-core/ # Rust/WASM research крейт

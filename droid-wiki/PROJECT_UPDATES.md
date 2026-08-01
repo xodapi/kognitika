@@ -1,8 +1,6 @@
 # Project Updates — Kognitika
 
-> **Last updated:** 2026-08-01  
-> **Commit:** c2742f6 (main)  
-> **Status:** Active development, CI passing
+> **Status:** Historical project-update snapshot. Confirm the current commit and CI result from the repository before relying on this page.
 
 ---
 
@@ -11,10 +9,10 @@
 | Metric | Value |
 |--------|-------|
 | **Trainer modules** | 30+ across 3 domains (Base, Engineering, Mind-Guard) |
-| **Test coverage** | 357 tests across 84 files (Vitest) |
+| **Test coverage** | Vitest and Playwright coverage; confirm exact current results in CI |
 | **TypeScript** | Strict mode, zero errors |
 | **Bundle size** | ~794 KB (gzipped: ~235 KB) — within budget |
-| **CI status** | All checks passing |
+| **CI status** | Confirm the current result in the latest CI run |
 | **Mobile** | Capacitor 8, rolling debug APK on every push |
 
 ---
@@ -82,12 +80,7 @@
 
 ## Test Suite Health
 
-```
-Test Files: 84 passed
-Tests:      357 passed
-TypeScript: 0 errors
-Lint:       Clean
-```
+Current test and type-check results must be confirmed by CI or a completed compatible local run. Do not treat this historical update as evidence that the full suite is currently passing.
 
 **Known pre-existing issue:** 1 integration test (`feedback-ideas-network`) requires running server — not a regression.
 

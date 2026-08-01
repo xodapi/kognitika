@@ -6,13 +6,12 @@
 
 ## Назначение
 
-**Rust-аналитика** — это высокопроизводительный, детерминированный движок для **офлайн-анализа** когнитивных сессий. Работает в браузере (WASM) и на сервере (Node.js / native).
+**Rust-аналитика** — исследовательский/feature-core для детерминированного офлайн-анализа когнитивных сессий. Крейт содержит `AnalyzeSession`, но не является production runtime authority: текущая production аналитика работает через JS/TypeScript workers и server services. Описанные ниже WASM/native пути не следует считать подключёнными production runtime surfaces.
 
-**Зачем Rust:**
-- **Производительность**: 10 000 событий за < 5 мс (vs 50–100 мс на JS)
-- **Детерминизм**: бит-в-бит идентичные результаты в браузере и на сервере
-- **Безопасность типов**: Zod (TS) + Serde (Rust) = единая схема `schemaVersion: 1`
-- **Privacy**: входные данные проходят проверку на отсутствие PII *до* десериализации
+**Целевые свойства Rust core (требуют отдельного benchmark/integration evidence):**
+- Производительность и browser/native parity являются целевыми свойствами, а не текущими production SLO.
+- Zod (TS) + Serde (Rust) задают схему `schemaVersion: 1` для core contract.
+- Входные данные core проверяются на отсутствие PII до десериализации.
 
 ---
 
@@ -132,7 +131,9 @@ const SENSITIVE_KEYS: [&str; 14] = [
 
 ---
 
-## Использование в браузере (WASM)
+## Проектируемое использование в браузере (WASM)
+
+Этот пример описывает целевую интеграцию, а не текущий production runtime. Любое browser WASM включение остаётся заблокированным до прохождения frame-budget gate.
 
 ```typescript
 // src/workers/analytics.worker.ts
@@ -153,7 +154,9 @@ export function analyzeSession(input: AnalyzeSessionInput): AnalyzeSessionOutput
 
 ---
 
-## Использование на сервере (Node.js / Rust)
+## Проектируемое использование на сервере (Node.js / Rust)
+
+Этот пример не описывает текущую production analytics authority.
 
 ```rust
 // Native Rust (server-side persistence)
@@ -215,63 +218,20 @@ async function buildFatigueTrend(last30DaysSessions: RawSession[]) {
 
 ---
 
-## Интеграция с Practice Flow
+## Целевая интеграция с Practice Flow
 
-1. **Во время игры**: UI собирает события → `AnalyzeSessionInput`
-2. **По завершении**: `analyzeSession(input)` → `AnalyzeSessionOutput`
-3. **Персист**: `POST /api/analytics/summaries` → сохраняется в `SessionAnalyticsSummary` (PostgreSQL)
-4. **Тренды**: `GET /api/analytics/cognitive-trend?moduleId=schulte&days=30` → `CognitiveTrend` (direction, slope, forecast)
-5. **Рекомендации**: `recommendationSignals` → Daily Practice Plan → UI
+Следующая последовательность описывает проектируемую интеграцию Rust core, а не текущий production pipeline:
 
----
+1. UI мог бы собирать минимизированные события в `AnalyzeSessionInput`.
+2. Rust/WASM core мог бы возвращать `AnalyzeSessionOutput`.
+3. Runtime persistence, trend routes и рекомендации должны оставаться отдельными JS/TypeScript contract surfaces до отдельного принятого изменения.
 
-## Сборка WASM
+## Целевая сборка WASM
 
-```bash
-# Установка wasm-pack
-cargo install wasm-pack
+Сборка и публикация WASM-артефакта не являются текущим runtime workflow. До включения необходимо пройти frame-budget gate, privacy review и отдельную integration/deployment проверку. Не используйте приведённые ранее команды или предполагаемые output paths как доступный production interface.
 
-# Сборка
-cd crates/kognitika-core
-wasm-pack build --target web --out-dir ../../src/wasm/kognitika-core --release
+## Фактические точки проверки
 
-# Результат: src/wasm/kognitika-core/{kognitika_core.js, kognitika_core_bg.wasm, ...}
-```
-
-**Зависимости** (`Cargo.toml`):
-```toml
-[package]
-name = "kognitika-core"
-version = "0.1.0"
-edition = "2021"
-
-[lib]
-crate-type = ["cdylib", "rlib"]
-
-[dependencies]
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
-chrono = { version = "0.4", features = ["serde"] }
-thiserror = "1.0"
-cfg-if = "1.0"
-
-[dependencies.wasm-bindgen]
-version = "0.2"
-features = ["serde-serialize"]
-```
-
----
-
-## Файлы
-
-| Путь | Назначение |
-|---|---|
-| `crates/kognitika-core/src/lib.rs` | Основной код (Rust) |
-| `crates/kognitika-core/Cargo.toml` | Зависимости |
-| `src/core/analyze-session/session-analysis.ts` | TS-версия (валидация, типы) |
-| `src/core/analyze-session/batch-analytics.ts` | Батч-обработка на сервере |
-| `src/workers/analytics.worker.ts` | WASM-воркер (браузер) |
-| `src/server/routes/analytics.ts` | REST API (`/export`, `/summaries`, `/trend`) |
-| `src/server/services/analytics-persistence.ts` | Prisma persistence |
-| `src/tests/analytics-export-privacy.test.ts` | Privacy контракт |
-| `src/tests/analyze-session-core.test.ts` | Golden tests (7 векторов) |
+- `crates/kognitika-core/` содержит Rust core и его тесты.
+- `src/core/analyze-session/` и server analytics services остаются текущими JS/TypeScript contract surfaces.
+- `src/tests/analyze-session-core.test.ts` и `src/tests/analytics-export-privacy.test.ts` дают targeted evidence, но итоговый suite status подтверждает CI.
