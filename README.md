@@ -13,7 +13,7 @@
     <img src="https://img.shields.io/badge/Tailwind_CSS-38B2AC?logo=tailwind-css&logoColor=fff" alt="Tailwind" />
     <img src="https://img.shields.io/badge/Socket.io-010101?logo=socket.io&logoColor=fff" alt="Socket.io" />
     <br />
-    <img src="https://img.shields.io/badge/тесты-357_пройдены-22c55e?logo=vitest&logoColor=fff" alt="Tests" />
+    <img src="https://img.shields.io/badge/тесты-CI_проверка-22c55e?logo=vitest&logoColor=fff" alt="Tests" />
     <img src="https://img.shields.io/badge/лицензия-Proprietary-ff69b4" alt="License" />
     <img src="https://img.shields.io/github/last-commit/xodapi/kognitika?logo=git" alt="Last commit" />
   </p>
@@ -42,7 +42,7 @@
 - ⚡ **Real-time duels** — Socket.io with resource bounds
 - 📊 **Когнитивная аналитика** — текущий JS/TypeScript pipeline, `kognitika-core` на Rust и план перехода shadow → canary → Rust-primary
 - 📱 **Native Android** — Capacitor 8, rolling debug APK on every push
-- ✅ **357 tests** — Vitest + Playwright E2E, navigation contracts
+- ✅ **Контрактные проверки** — Vitest + Playwright E2E, navigation и privacy contracts; точный текущий результат подтверждает CI
 
 ---
 
@@ -71,24 +71,31 @@ pnpm dev
 |---|---|
 | Архитектура и дизайн системы | [`ARCHITECTURE.md`](ARCHITECTURE.md), [`KOGNITIKA_CORE.md`](KOGNITIKA_CORE.md) |
 | Научная методология всех тренажёров | [Научная методология (вики)](https://github.com/xodapi/kognitika/wiki/Научная-методология) |
-| Все тесты: 84 файла, 357 проверок | [Тестирование (вики)](https://github.com/xodapi/kognitika/wiki/Тестирование) |
-| Экспорт данных для анализа в LLM | [Экспорт данных (вики)](https://github.com/xodapi/kognitika/wiki/Экспорт-данных) |
+| Тестирование и quality gates | [Тестирование (вики)](https://github.com/xodapi/kognitika/wiki/Testing-reference), текущий результат подтверждает CI |
+| Экспорт агрегированной аналитики | [Экспорт данных (вики)](https://github.com/xodapi/kognitika/wiki/Data-export) |
 | Безопасность и ответственное раскрытие уязвимостей | [`SECURITY.md`](SECURITY.md) |
 | Гайд по разработке для агентов | [`AGENTS.md`](AGENTS.md) |
-| Дорожная карта | [Issue #10](https://github.com/xodapi/kognitika/issues/10) |
+| Актуальная roadmap стабилизации | [Issues](https://github.com/xodapi/kognitika/issues?q=is%3Aissue%20is%3Aopen%20label%3Astatus%3Aplanned); historical [#10](https://github.com/xodapi/kognitika/issues/10) закрыт |
 | Переход аналитики и backend на Rust | [Roadmap #139](https://github.com/xodapi/kognitika/issues/139), [страница Wiki](https://github.com/xodapi/kognitika/wiki/rust-analytics-roadmap) |
+| Носимые устройства и физиологическая feedback-петля | [#148 consent/privacy](https://github.com/xodapi/kognitika/issues/148) → [#149 summary contract](https://github.com/xodapi/kognitika/issues/149) → [#150 Health Connect](https://github.com/xodapi/kognitika/issues/150) → [#151 shadow policy](https://github.com/xodapi/kognitika/issues/151) |
 | База знаний тренажёров (в приложении) | `src/lib/knowledge-base.ts` |
 | Описание для внешнего аудитора | [`docs/AUDIT_BRIEF.md`](docs/AUDIT_BRIEF.md) |
-| GLOBAL_VISION.md | `GLOBAL_VISION.md` |
-| API Reference (OpenAPI) | [Issue #138](https://github.com/xodapi/kognitika/issues/138) (planned) |
+| Стратегическое видение | [`GLOBAL_VISION.md`](GLOBAL_VISION.md), стратегическая заметка, не runtime source of truth |
+| API Reference (OpenAPI) | [Issue #138](https://github.com/xodapi/kognitika/issues/138), planned; `/api/docs` и `/api/docs.json` пока не доступны |
 
 ---
 
 ## Статус проекта
 
-**MVP / Техническая стабилизация.** Приоритет — снижение production-рисков: boot recovery, контракты хранилища, приватная идентификация, консистентность API, тестовое покрытие, воспроизводимость деплоя.
+**MVP / техническая стабилизация с поэтапным развитием аналитики.** Базовый приоритет остаётся прежним: production recovery, контракты хранилища, приватная идентификация, API consistency, CI evidence и воспроизводимый deploy. Historical roadmap [#10](https://github.com/xodapi/kognitika/issues/10) закрыт.
 
-Дорожная карта: [github.com/xodapi/kognitika/issues/10](https://github.com/xodapi/kognitika/issues/10)
+Активные направления:
+
+1. **Когнитивная аналитика на Rust:** [#139](https://github.com/xodapi/kognitika/issues/139), с canonical events → durable jobs → Axum shadow → canary → Rust-primary, при временном TypeScript fallback.
+2. **Носимые устройства, только opt-in:** отдельный privacy-first трек [#148](https://github.com/xodapi/kognitika/issues/148) → [#149](https://github.com/xodapi/kognitika/issues/149) → [#150](https://github.com/xodapi/kognitika/issues/150) → [#151](https://github.com/xodapi/kognitika/issues/151). Он начинается с локальных минимизированных summary и recommendation-only shadow режима, не с raw telemetry или медицинских claims.
+3. **Platform stabilization:** открытые planned issues и текущий CI определяют порядок безопасных runtime/deploy изменений.
+
+Wearable signals не являются обязательным условием когнитивной аналитики. Они могут войти позже как отдельный consented input: consent + local aggregation + signal quality → versioned physiological summary → bounded recommendation policy. Без consent, при отсутствии, low-quality, stale или revoked signal используется обычная cognitive-only логика.
 
 ---
 
@@ -102,7 +109,7 @@ pnpm dev
 | Аналитика | JS/TypeScript runtime сегодня; Rust `kognitika-core` уже реализует `AnalyzeSession`; целевой путь — native Rust/Axum analytics через shadow и canary |
 | API-контракт | OpenAPI/Swagger в работе: [#138](https://github.com/xodapi/kognitika/issues/138); спецификация должна оставаться независимой от Express/Rust реализации |
 | Мобильное приложение | Capacitor 8 (Android APK в CI) |
-| Тестирование | Vitest (84 файла, 357 тестов) + Playwright E2E |
+| Тестирование | Vitest + Playwright E2E; точный текущий результат подтверждается CI |
 | CI/CD | GitHub Actions: Lint → Test → Build → E2E → Deploy → APK |
 
 ---
@@ -119,7 +126,7 @@ kognitika/
 │   ├── server/                  # Express API, Socket.io, middleware, схемы
 │   ├── client/                  # Клиентский event-bus
 │   ├── workers/                 # Web Worker'ы (аналитика, сессии)
-│   ├── tests/                   # Vitest (84 файла, 357 тестов)
+│   ├── tests/                   # Vitest contract and integration tests
 │   ├── App.tsx                  # Корневой компонент с роутингом
 │   └── main.tsx                 # Точка входа
 ├── crates/
@@ -196,7 +203,7 @@ pnpm dev
 | `pnpm dev` | Запуск Express/Vite dev-сервера |
 | `pnpm start` | Запуск Express-сервера (production) |
 | `pnpm lint` | Prisma generate + TypeScript check |
-| `pnpm test` | Vitest (357 тестов) |
+| `pnpm test` | Vitest suite; точный текущий результат подтверждается CI |
 | `pnpm validate` | Базовый прогон валидации |
 | `pnpm build` | Prisma generate + Vite build |
 | `pnpm test:e2e` | Playwright E2E |
@@ -235,7 +242,8 @@ pnpm test:e2e
 - **Текущая аналитика**: production использует JS/TypeScript worker и серверные сервисы; упрощённый `ClickEvent` и full-session `AnalyzeSession` пока являются разными контрактами.
 - **Целевой Rust-контур**: единые события всех когнитивных модулей → durable analytics jobs → internal Axum analyzer → shadow → canary → Rust-primary с временным TS fallback. Roadmap: [#139](https://github.com/xodapi/kognitika/issues/139).
 - **Browser WASM**: включается только после frame-budget гейта `docs/frame-budget-benchmark.md`; серверный native Rust оценивается отдельно и не требует переписывания React UI.
-- **OpenAPI**: [#138](https://github.com/xodapi/kognitika/issues/138) должен описывать независимый от языка HTTP-контракт, совместимый с Express и будущими Rust endpoints.
+- **Wearable feedback, opt-in**: не относится к raw telemetry pipeline. Будущий mobile adapter сначала получает явное consent, локально агрегирует quality-aware summary и только затем может передать versioned physiological input в recommendation-only shadow policy. Без consent, при отсутствии, stale, low-quality или revoked signal применяется обычная cognitive-only логика. Roadmap: [#148](https://github.com/xodapi/kognitika/issues/148) → [#149](https://github.com/xodapi/kognitika/issues/149) → [#150](https://github.com/xodapi/kognitika/issues/150) → [#151](https://github.com/xodapi/kognitika/issues/151).
+- **OpenAPI**: [#138](https://github.com/xodapi/kognitika/issues/138) должен описывать независимый от языка HTTP-контракт, совместимый с Express и будущими Rust endpoints. `/api/docs` и `/api/docs.json` пока не доступны.
 - **Production-патчи**: запрещены без задокументированного hotfix-протокола.
 
 ---
