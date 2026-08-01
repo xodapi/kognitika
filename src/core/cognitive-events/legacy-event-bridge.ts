@@ -72,7 +72,6 @@ export class LegacyCognitiveEventBridge {
     ) return null;
     if (hasSensitiveKey(envelope.data)) return null;
 
-    this.seenLegacyEventIds.add(envelope.legacyEventId);
     const base = {
       schemaVersion: 1 as const,
       eventId: `legacy-${envelope.legacyEventId}`,
@@ -113,6 +112,7 @@ export class LegacyCognitiveEventBridge {
     }
 
     if (!event || !CognitiveInteractionEventSchema.safeParse(event).success) return null;
+    this.seenLegacyEventIds.add(envelope.legacyEventId);
     this.sequence += 1;
     this.lastTMs = envelope.tMs;
     return event;

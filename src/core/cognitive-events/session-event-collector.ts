@@ -67,17 +67,15 @@ export class CognitiveSessionEventCollector {
       sequence: this.events.length,
     } as CognitiveInteractionEvent;
 
+    if (byteLength([...this.events, canonical]) > MAX_SERIALIZED_BYTES) {
+      throw new Error('Cognitive session serialized byte limit exceeded');
+    }
+
     if (canonical.kind === 'session_completed' || canonical.kind === 'session_abandoned') {
       this.terminal = canonical;
     }
     this.events.push(canonical);
     this.lastTMs = canonical.tMs;
-
-    if (byteLength(this.events) > MAX_SERIALIZED_BYTES) {
-      this.events.pop();
-      this.terminal = null;
-      throw new Error('Cognitive session serialized byte limit exceeded');
-    }
 
     return canonical;
   }

@@ -80,6 +80,12 @@ describe('legacy cognitive EventBus bridge', () => {
       data: { type: 'NBACK', timeMs: 300 },
     })).toBeNull();
     expect(bridge.translate({
+      legacyEventId: 'wrong-terminal',
+      event: 'TRAINING_COMPLETE',
+      tMs: 300,
+      data: { type: 'NBACK', timeMs: 300 },
+    })).toBeNull();
+    expect(bridge.translate({
       legacyEventId: 'completed',
       event: 'TRAINING_COMPLETE',
       tMs: 400,
