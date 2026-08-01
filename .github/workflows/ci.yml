@@ -43,6 +43,8 @@ jobs:
           cache-dependency-path: pnpm-lock.yaml
 
       - run: pnpm install --frozen-lockfile
+      - name: Verify database migration baseline
+        run: node scripts/check-migration-baseline.mjs
       - name: Apply database migrations
         run: pnpm exec prisma migrate deploy
       - run: cargo test --manifest-path crates/kognitika-core/Cargo.toml

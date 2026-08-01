@@ -156,6 +156,9 @@ jobs:
             upsert_env GAME_SAVE_LEGACY_COMPAT_ENABLED "false"
           fi
 
+          echo "Verifying database migration baseline"
+          node scripts/check-migration-baseline.mjs
+
           echo "Applying committed database migrations (fail closed)"
           CI=true pnpm exec prisma migrate deploy
 
