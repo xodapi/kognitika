@@ -18,6 +18,9 @@ test.describe('Post-game navigation', () => {
       const answerButton = page.getByRole('button', { name: /^-?\d+%$/ }).first();
       await expect(answerButton).toBeVisible();
       await answerButton.click();
+      if (index < 4) {
+        await expect(page.getByText(`Вопрос ${index + 2} из 5:`)).toBeVisible();
+      }
     }
 
     await expect(page.getByRole('heading', { name: 'Анализ завершен' })).toBeVisible();
