@@ -79,7 +79,7 @@ pnpm dev
 | База знаний тренажёров (в приложении) | `src/lib/knowledge-base.ts` |
 | Описание для внешнего аудитора | [`docs/AUDIT_BRIEF.md`](docs/AUDIT_BRIEF.md) |
 | GLOBAL_VISION.md | `GLOBAL_VISION.md` |
-| API Reference (OpenAPI) | https://kognitika.syntog.ru/api/docs |
+| API Reference (OpenAPI) | [Issue #138](https://github.com/xodapi/kognitika/issues/138) (planned) |
 
 ---
 
