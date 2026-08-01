@@ -88,7 +88,7 @@ The server updates itself through the repository-first flow. Do not edit files u
 ## Health check
 
 ```bash
-curl https://kognitika.syntog.ru/api/health
+curl https://kognitika.ru/api/health
 ```
 
 Returns:

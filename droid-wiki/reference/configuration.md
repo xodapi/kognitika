@@ -22,7 +22,7 @@ All configuration is through environment variables. Copy `.env.example` to `.env
 
 | Variable | Description | Default |
 |---|---|---|
-| `CORS_ORIGIN` | Comma-separated list of allowed origins for CORS. Used by both Express and Socket.io. Must be an explicit allowlist in production. Example: `https://kognitika.ru,https://kognitika.syntog.ru` | -- |
+| `CORS_ORIGIN` | Comma-separated list of approved origins for CORS. Used by both Express and Socket.io. Must be an explicit allowlist in production. Canonical production origin: `https://kognitika.ru`; do not add legacy domains without an approved deployment requirement. | -- |
 | `CORS_ALLOW_DEV_WILDCARD` | When `"true"`, allows `CORS_ORIGIN=*` in development and test modes only. Ignored in production. | `false` |
 | `CORS_ALLOW_NATIVE_APP` | When `"true"`, adds Capacitor native app origins (`capacitor://localhost`, `https://localhost`) to the allowlist. | `true` |
 

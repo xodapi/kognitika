@@ -15,7 +15,7 @@
 | Метрика | Значение |
 |---|---|
 | Тренажёров | 28 |
-| Тестов | 357 (84 файла) |
+| Тесты | Vitest и Playwright; точный текущий результат подтверждает CI |
 | Prisma моделей | 12 |
 | CI/CD | GitHub Actions (lint → test → build → e2e → deploy) |
 | Платформа | https://kognitika.ru |
@@ -77,4 +77,4 @@ graph LR
 | Backend | Express 4, Socket.io 4, Prisma 7, PostgreSQL 15+ |
 | Аналитика | JS Web Worker, Rust/WASM-ready граница |
 | Mobile | Capacitor 8 (Android APK в CI) |
-| Тесты | Vitest (357 тестов), Playwright E2E |
+| Тесты | Vitest и Playwright E2E; точный текущий результат подтверждает CI |

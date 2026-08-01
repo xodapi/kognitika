@@ -1,65 +1,61 @@
-# Kognitika — описание проекта для внешнего аудитора
+# Kognitika, auditor-facing project brief
 
-> Версия: 1.0 | Обновлено: 2026-07-29 | Статус: Stabilized MVP
+> **Status:** Stabilized MVP. This brief describes the current tracked repository state and does not substitute for a deployment or production review.
 
-## 1. Что это за продукт
+## 1. Product and runtime
 
-Kognitika — приватная веб-платформа когнитивных тренировок (MVP, стадия технической стабилизации). Содержит 30+ тренажёров (таблицы Шульте, N-Back, тест Струпа, ментальная арифметика, «Страж Разума» — модули критического мышления), геймификацию (XP, уровни, лидерборды), real-time дуэли и адаптивную аналитику прогресса.
+Kognitika is a private cognitive-training web platform with trainer modules, gamification, real-time duels, and progress analytics.
 
-- Репозиторий: `github.com/xodapi/kognitika` (приватный, рабочая ветка `main`)
-- Продакшн: `https://kognitika.syntog.ru` (health-check: `/api/health`, возвращает `buildId` = short hash коммита)
-- Roadmap трекается в GitHub issue #10
+- Repository: `github.com/xodapi/kognitika` (private, primary branch `main`)
+- Canonical production domain: `https://kognitika.ru`
+- Health check: `https://kognitika.ru/api/health` (returns a `buildId`)
+- Runtime: one full-stack Express/Socket.io process in `server.ts`, default port `3006`; it serves API routes and the Vite production build.
 
-## 2. Технологический стек
+## 2. Technology boundaries
 
-| Слой | Технологии |
+| Layer | Current authority |
 |---|---|
-| Frontend | React 19 + Vite 7 + TypeScript, Tailwind 4, Motion, Recharts, react-router 7 |
-| Backend | Express 4 + Socket.io 4 (real-time дуэли, чат), один процесс `server.ts` на порту 3006 |
-| Данные | PostgreSQL 15+ через Prisma 7 (12 моделей: User, GameSession, XpEvent, LeaderboardEntry, Feedback, Idea, Achievement, DailyPracticePlan и др.) |
-| Аналитика | JS Web Worker (`analytics.worker.ts`) с WASM-ready контрактом; Rust-крейт `crates/kognitika-core` существует, но не является runtime-зависимостью |
-| Mobile | Capacitor 8 (`apps/capacitor`), ветка `apps/mobile` |
-| Тесты | Vitest (357 тестов, 84 файла — все зелёные), Playwright E2E |
-| CI/CD | GitHub Actions: `ci.yml` (lint+test+build+E2E), `deploy.yml` (деплой на сервер при мерже в main), `android.yml` (сборка APK) |
+| Frontend | React, Vite, TypeScript, Tailwind, Motion, Recharts |
+| Backend | Express, Socket.io, Prisma, PostgreSQL |
+| Mobile | Capacitor |
+| Analytics runtime | Current JS/TypeScript workers and server services |
+| Rust research/core | `crates/kognitika-core` implements `AnalyzeSession`, but is not the production analytics runtime authority |
 
-## 3. Ключевые архитектурные принципы
+Browser WASM work remains gated by the frame-budget acceptance criteria in `docs/frame-budget-benchmark.md`.
 
-- **Event-Driven Core**: бизнес-логика каждого тренажёра изолирована в hook `use{Module}Engine`, UI получает только state; связь через EventBus (`CELL_CLICK`, `TRAINING_COMPLETE`, `MISTAKE_MADE` и др.)
-- **Seeded determinism**: все генераторы принимают seed — тесты воспроизводимы
-- **Единый полно-стек сервер**: `server.ts` отдаёт и API, и статику Vite-билда; canonical port 3006
-- **Deploy только repository-first**: прямые правки на проде запрещены (кроме задокументированного hotfix-протокола в `AGENTS.md`)
+## 3. Identity and privacy boundaries
 
-## 4. Модель идентичности и приватности (зона особого внимания аудита)
+- Public authentication is Brain ID-first. Legacy email/password flows are not public runtime identity surfaces.
+- Raw Brain ID, email, password-like fields, and tokens must not be exposed in public UI/API contracts.
+- CORS uses `CORS_ORIGIN` allowlisting. Production wildcard CORS is rejected; an empty production allowlist fails closed for cross-origin browser requests.
+- JWT protects authenticated routes. Admin authorization performs a server-side role lookup rather than trusting a JWT role claim.
+- Logging and analytics-export privacy have dedicated contract tests.
 
-- **Brain ID-first**: публичная аутентификация только через Brain ID; email/password — legacy, явно отгейтованы. Firebase полностью выведён из runtime
-- Контракты приватности: сырой Brain ID, email, хэши, токены не должны появляться в UI/API — это проверяется контракт-тестами (`admin-route-privacy`, `analytics-export-privacy`, `app-identity-privacy`, `legacy-email-audit`)
-- CORS: allowlist через `CORS_ORIGIN`, wildcard только в dev при явном флаге; прод без allowlist закрывается fail-closed
-- JWT-авторизация, rate-limiting, helmet; роль ADMIN не доверяет подписанному JWT без серверной проверки
-- Границы хранения/восстановления Brain ID задокументированы в `docs/brain-id-identity.md`
+## 4. Database migration state
 
-## 5. Тестирование и качество
+The initial Prisma baseline and fail-closed preflight remediation are available on `main` starting with commit `af58af6`.
 
-- `pnpm lint` (tsc), `pnpm test` (Vitest), `pnpm build`, `pnpm test:e2e` (Playwright) — обязательный гейт перед production-risk изменениями
-- Контракт-тесты: навигация, база знаний, XP-события, приватность экспорта аналитики, socket-trust-boundary дуэлей
-- Известные неблокирующие предупреждения: Recharts zero-size в jsdom, React `act(...)` в dashboard-тестах
+- Fresh PostgreSQL databases use the normal committed migration chain.
+- Existing schemas require reviewed migration-history adoption before deployment can continue.
+- See `docs/database-migration-baseline.md` for the operator runbook.
 
-## 6. Текущее состояние репозитория (на 29.07.2026)
+## 5. Quality evidence
 
-- Последний коммит: `3724104 feat(ux): add Express Knowledge hub for tasks #7 and #8`
-- В работе: фиксы контракт-тестов (navigation, knowledge-base), статья `express-knowledge` в базе знаний
+The repository provides type-check, targeted coverage, Vitest, Playwright, bundle-budget, Rust, Docker, and Knip checks. Targeted privacy, route, navigation, and knowledge-base contracts provide specific evidence for their boundaries.
 
-## 7. Известные риски для аудитора
+Do not interpret a local Windows bind-mount timeout as a passing full Vitest suite. Full-suite success requires current Linux CI or another completed compatible execution. Local verification should report completed checks and environment limits separately.
 
-1. PWA/offline отключён до выполнения гейтов `docs/pwa-offline-strategy.md`
-2. Rust/WASM hot-path не должен начинаться без frame-budget гейта (`docs/frame-budget-benchmark.md`)
-3. Legacy email-функции должны оставаться отгейтованными
-4. Лицензия: проприетарная, см. `LICENSE` в корне репозитория
+## 6. Known review limits
 
-## 8. Ключевые документы для аудитора
+- PWA/offline-first remains disabled until `docs/pwa-offline-strategy.md` acceptance gates are met.
+- OpenAPI/Swagger work is planned in GitHub issue #138. `/api/docs` and `/api/docs.json` are not live endpoints.
+- Deployment follows the repository-first flow in `AGENTS.md`; direct production edits are prohibited outside its documented emergency procedure.
 
-- `AGENTS.md` — обязательные правила работы агентов (чеклист, deploy flow, изоляция write-set)
-- `ARCHITECTURE.md` / `KOGNITIKA_CORE.md` — архитектурный source of truth
-- `README.md` — установка, скрипты, runtime-контракты
-- `security_spec.md` — спецификация безопасности системы обратной связи (data invariants + threat model)
-- `docs/brain-id-identity.md` — границы идентичности Brain ID
-- `docs/feedback-operations.md` — операционная верификация feedback
+## 7. Key references
+
+- `AGENTS.md`, repository and deployment rules
+- `ARCHITECTURE.md` and `KOGNITIKA_CORE.md`, architecture context
+- `SECURITY.md`, security policy
+- `docs/brain-id-identity.md`, identity boundaries
+- `docs/database-migration-baseline.md`, migration baseline runbook
+- `docs/frame-budget-benchmark.md`, browser WASM performance gate
