@@ -156,6 +156,16 @@ jobs:
             upsert_env GAME_SAVE_LEGACY_COMPAT_ENABLED "false"
           fi
 
+          if [ ! -r "$production_env" ]; then
+            echo "Production environment file is required for database migration verification." >&2
+            exit 1
+          fi
+          # Migration checks and Prisma must use the same production DATABASE_URL
+          # as the service, without printing it into GitHub Actions logs.
+          set -a
+          . "$production_env"
+          set +a
+
           echo "Verifying database migration baseline"
           node scripts/check-migration-baseline.mjs
 
