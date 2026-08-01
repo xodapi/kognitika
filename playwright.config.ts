@@ -50,7 +50,9 @@ export default defineConfig({
           NO_PROXY: noProxy,
           no_proxy: noProxy,
           PORT: String(e2ePort),
-          JWT_SECRET: process.env.JWT_SECRET || 'e2e-only-replace-with-strong-secret',
+          // The E2E web server runs with NODE_ENV=production, so it needs a
+          // non-placeholder test secret even when CI supplies its own test-only value.
+          JWT_SECRET: 'e2e-runtime-test-secret-at-least-32-characters',
           DATABASE_URL:
             process.env.DATABASE_URL ||
             'postgresql://admin:adminpassword@127.0.0.1:5432/cognitika?schema=public',
