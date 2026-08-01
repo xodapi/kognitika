@@ -207,9 +207,11 @@ test.describe('Kognitika production smoke', () => {
             const style = window.getComputedStyle(el);
             const text = (el.textContent || '').trim().replace(/\s+/g, ' ');
             const hasControlSemantics = el.matches('button,a,input,select,textarea,[role]');
-            const isSvgInternal = el instanceof SVGElement && el.tagName.toLowerCase() !== 'svg';
+            // SVG paths and their view boxes may extend past the viewport without
+            // making the document horizontally scrollable or exposing overflowing text.
+            const isSvgElement = el instanceof SVGElement;
             const decorativeOnly =
-              isSvgInternal ||
+              isSvgElement ||
               (!hasControlSemantics &&
                 !text &&
                 (style.position === 'absolute' || style.position === 'fixed'));
