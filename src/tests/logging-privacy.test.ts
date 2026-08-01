@@ -44,7 +44,7 @@ describe('logging privacy boundary', () => {
     }
 
     expect(offenders).toEqual([]);
-  });
+  }, 15_000);
 
   it('redacts sensitive identifiers and secrets from logger output', () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);

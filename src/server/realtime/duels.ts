@@ -1,6 +1,7 @@
 import jwt from 'jsonwebtoken';
 import type { Server } from 'socket.io';
 import { generateExpectedSequence } from '../../lib/schulte-generator';
+import { createSafeLogger } from '../../lib/safe-logger.ts';
 
 const DUEL_SIZE = 5;
 const DUEL_MODE = 'classic';
@@ -57,10 +58,14 @@ export interface DuelRuntimeState {
   activeDuels: Map<string, ActiveDuel>;
 }
 
+interface DuelLogger {
+  debug(message: string, meta?: Record<string, unknown>): void;
+}
+
 interface RegisterDuelHandlersOptions {
   jwtSecret: string;
   prisma: DuelPrisma;
-  logger?: Pick<Console, 'log'>;
+  logger?: DuelLogger;
   now?: () => number;
   limits?: Partial<DuelSocketLimits>;
 }
@@ -133,7 +138,13 @@ function consumesDuelEvent(duel: ActiveDuel, userId: string, nowMs: number) {
 
 export function registerDuelHandlers(
   io: Server,
-  { jwtSecret, prisma, logger = console, now = Date.now, limits: limitOverrides }: RegisterDuelHandlersOptions,
+  {
+    jwtSecret,
+    prisma,
+    logger = createSafeLogger('duels'),
+    now = Date.now,
+    limits: limitOverrides,
+  }: RegisterDuelHandlersOptions,
   state: DuelRuntimeState = createDuelState(),
 ) {
   const limits = { ...resolveDuelSocketLimits(), ...limitOverrides };
@@ -177,7 +188,7 @@ export function registerDuelHandlers(
     if (!duel || duel.isFinished) return;
 
     duel.isFinished = true;
-    logger.log(`[Duel] Resolving match ${roomId}: Winner=${winnerId}`);
+    logger.debug('Resolving duel match');
 
     const winner = await prisma.user.findUnique({ where: { id: winnerId } });
     const loser = await prisma.user.findUnique({ where: { id: loserId } });
@@ -221,7 +232,7 @@ export function registerDuelHandlers(
         }),
       ]);
 
-      logger.log(`[Duel] Rating updated: ${winner.pseudonym} (+${winnerGain}), ${loser.pseudonym} (${loserLoss})`);
+      logger.debug('Duel ratings updated', { winnerGain, loserLoss });
     }
 
     const winnerIndex = participantIndex(duel, winnerId);
@@ -268,14 +279,14 @@ export function registerDuelHandlers(
       next();
     });
 
-    logger.log(`[Socket] Client connected: ${socket.id} user=${connectedUser.id}`);
+    logger.debug('Duel socket connected');
 
     socket.on('duel:matchmake', () => {
       const user = getSocketUser(socket);
       const userId = user.id;
       const rating = Number.isFinite(user.rating) ? Number(user.rating) : 1000;
       const name = displayNameFor(user);
-      logger.log(`[Matchmaking] User ${name} (${rating}) joined queue`);
+      logger.debug('Duel matchmaking joined');
 
       state.matchmakingQueue = state.matchmakingQueue.filter((queuedUser) => (
         queuedUser.userId !== userId && queuedUser.socketId !== socket.id
@@ -292,7 +303,7 @@ export function registerDuelHandlers(
         const opponent = state.matchmakingQueue.splice(opponentIndex, 1)[0];
         const roomId = `duel_${userId}_${opponent.userId}_${Date.now()}`;
 
-        logger.log(`[Matchmaking] Match found: ${name} vs ${opponent.name}`);
+        logger.debug('Duel matchmaking matched');
 
         io.to(socket.id).emit('duel:matched', {
           roomId,
@@ -327,7 +338,7 @@ export function registerDuelHandlers(
     socket.on('duel:leave-queue', () => {
       const userId = getSocketUser(socket).id;
       state.matchmakingQueue = state.matchmakingQueue.filter((queuedUser) => queuedUser.userId !== userId);
-      logger.log(`[Matchmaking] User ${userId} left queue`);
+      logger.debug('Duel matchmaking left queue');
     });
 
     socket.on('duel:join', (data) => {
@@ -342,7 +353,7 @@ export function registerDuelHandlers(
 
       duel.joinedUserIds.add(userId);
       socket.join(roomId);
-      logger.log(`[Socket] User ${userId} joined room ${roomId}`);
+      logger.debug('Duel participant joined room');
       socket.to(roomId).emit('duel:opponent-joined', { userId });
     });
 
@@ -438,12 +449,12 @@ export function registerDuelHandlers(
 
       for (const [roomId, duel] of state.activeDuels.entries()) {
         if (duel.players.includes(socket.id) && !duel.isFinished) {
-          logger.log(`[Duel] User disconnected from room ${roomId}. Aborting.`);
+          logger.debug('Duel participant disconnected');
           state.activeDuels.delete(roomId);
         }
       }
 
-      logger.log(`[Socket] Client disconnected: ${socket.id}`);
+      logger.debug('Duel socket disconnected');
     });
   });
 

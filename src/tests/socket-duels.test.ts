@@ -77,7 +77,7 @@ async function createHarness(limits?: Parameters<typeof registerDuelHandlers>[1]
   registerDuelHandlers(io, {
     jwtSecret: JWT_SECRET,
     prisma,
-    logger: { log: vi.fn() },
+    logger: { debug: vi.fn() },
     now: () => nowMs,
     limits,
   }, createDuelState());
