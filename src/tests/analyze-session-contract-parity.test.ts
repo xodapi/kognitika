@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { parseAnalyzeSessionInput } from '../core/analyze-session';
 
@@ -9,7 +10,7 @@ type ContractCase = {
   input: unknown;
 };
 
-const fixturePath = fileURLToPath(new URL('../../fixtures/analyze-session/contract-cases.json', import.meta.url));
+const fixturePath = resolve(process.cwd(), 'fixtures/analyze-session/contract-cases.json');
 const contractCases = JSON.parse(readFileSync(fixturePath, 'utf8')) as ContractCase[];
 
 describe('AnalyzeSession shared contract corpus', () => {
