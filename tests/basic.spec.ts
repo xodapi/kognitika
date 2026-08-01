@@ -207,7 +207,7 @@ test.describe('Kognitika production smoke', () => {
             const style = window.getComputedStyle(el);
             const text = (el.textContent || '').trim().replace(/\s+/g, ' ');
             const hasControlSemantics = el.matches('button,a,input,select,textarea,[role]');
-            const isSvgInternal = el instanceof SVGElement && !el.matches('svg');
+            const isSvgInternal = el instanceof SVGElement && el.tagName.toLowerCase() !== 'svg';
             const decorativeOnly =
               isSvgInternal ||
               (!hasControlSemantics &&

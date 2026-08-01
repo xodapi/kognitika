@@ -24,13 +24,13 @@ test.describe('Post-game navigation', () => {
     }
 
     await expect(page.getByRole('heading', { name: 'Анализ завершен' })).toBeVisible();
-    await expect(page.getByText('Логические матрицы')).toBeVisible();
+    await expect(page.getByText('Таблицы Шульте')).toBeVisible();
 
     await page.getByRole('button', { name: /Начать рекомендованное/i }).click();
 
-    await expect(page).toHaveURL(/\/logical$/);
+    await expect(page).toHaveURL(/\/schulte$/);
     await expectAppReady(page);
-    await expect(page.getByText(/Системная логика|Логическая матрица/i)).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Начать тест' })).toBeVisible();
     expect(browserErrors).toEqual([]);
   });
 
