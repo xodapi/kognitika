@@ -77,6 +77,12 @@ pub enum AnalyzeSessionError {
     InvalidSchema(String),
 }
 
+const MAX_SESSION_DURATION_MS: i64 = 24 * 60 * 60 * 1_000;
+const MAX_EVENT_T_MS: u32 = MAX_SESSION_DURATION_MS as u32;
+const MAX_REACTION_TIME_MS: u32 = 60_000;
+const MAX_SESSION_ID_LENGTH: usize = 120;
+const MAX_MODULE_ID_LENGTH: usize = 64;
+const MAX_CHECKPOINT_LENGTH: usize = 80;
 const SENSITIVE_KEYS: [&str; 14] = [
     "authorization",
     "auth",
@@ -168,24 +174,110 @@ pub fn analyze_session_json(input_json: &str) -> Result<String, JsValue> {
 
 fn validate_input(input: &AnalyzeSessionInput) -> Result<(), AnalyzeSessionError> {
     if input.schema_version != 1 {
-        return Err(AnalyzeSessionError::InvalidSchema(
-            "schemaVersion must be 1".to_string(),
-        ));
+        return invalid_schema("schemaVersion must be 1");
     }
 
-    if input.session_id.is_empty() || input.module_id.is_empty() {
-        return Err(AnalyzeSessionError::InvalidSchema(
-            "sessionId and moduleId are required".to_string(),
-        ));
+    if !is_valid_session_id(&input.session_id) {
+        return invalid_schema("sessionId must contain 1-120 ASCII letters, digits, dots, underscores, colons, or hyphens");
+    }
+
+    if !is_valid_module_id(&input.module_id) {
+        return invalid_schema(
+            "moduleId must contain 1-64 lowercase ASCII letters, digits, or hyphens",
+        );
+    }
+
+    let started_at = parse_rfc3339(&input.started_at, "startedAt")?;
+    if let Some(completed_at) = &input.completed_at {
+        let completed_at = parse_rfc3339(completed_at, "completedAt")?;
+        let duration_ms = (completed_at - started_at).num_milliseconds();
+        if duration_ms > MAX_SESSION_DURATION_MS {
+            return invalid_schema("completedAt must be at most 24 hours after startedAt");
+        }
     }
 
     if input.events.len() > 10_000 {
-        return Err(AnalyzeSessionError::InvalidSchema(
-            "events must contain at most 10000 items".to_string(),
-        ));
+        return invalid_schema("events must contain at most 10000 items");
+    }
+
+    for event in &input.events {
+        validate_event(event)?;
     }
 
     Ok(())
+}
+
+fn invalid_schema(message: impl Into<String>) -> Result<(), AnalyzeSessionError> {
+    Err(AnalyzeSessionError::InvalidSchema(message.into()))
+}
+
+fn parse_rfc3339(value: &str, field: &str) -> Result<DateTime<Utc>, AnalyzeSessionError> {
+    DateTime::parse_from_rfc3339(value)
+        .map(|timestamp| timestamp.with_timezone(&Utc))
+        .map_err(|_| {
+            AnalyzeSessionError::InvalidSchema(format!("{field} must be a valid RFC3339 timestamp"))
+        })
+}
+
+fn is_valid_session_id(value: &str) -> bool {
+    !value.is_empty()
+        && value.len() <= MAX_SESSION_ID_LENGTH
+        && value
+            .bytes()
+            .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'.' | b'_' | b':' | b'-'))
+}
+
+fn is_valid_module_id(value: &str) -> bool {
+    !value.is_empty()
+        && value.len() <= MAX_MODULE_ID_LENGTH
+        && value
+            .bytes()
+            .all(|byte| byte.is_ascii_lowercase() || byte.is_ascii_digit() || byte == b'-')
+}
+
+fn validate_event(event: &AnalyzeSessionEvent) -> Result<(), AnalyzeSessionError> {
+    if event.t_ms > MAX_EVENT_T_MS {
+        return invalid_schema("event.tMs must be at most 24 hours");
+    }
+
+    if event
+        .reaction_time_ms
+        .is_some_and(|value| value == 0 || value > MAX_REACTION_TIME_MS)
+    {
+        return invalid_schema("event.reactionTimeMs must be between 1 and 60000");
+    }
+
+    if event
+        .x
+        .is_some_and(|value| !value.is_finite() || !(0.0..=1.0).contains(&value))
+    {
+        return invalid_schema("event.x must be a finite number between 0 and 1");
+    }
+
+    if event
+        .y
+        .is_some_and(|value| !value.is_finite() || !(0.0..=1.0).contains(&value))
+    {
+        return invalid_schema("event.y must be a finite number between 0 and 1");
+    }
+
+    if event
+        .checkpoint
+        .as_deref()
+        .is_some_and(|value| !is_valid_checkpoint(value))
+    {
+        return invalid_schema("event.checkpoint must contain 1-80 ASCII letters, digits, colons, underscores, or hyphens");
+    }
+
+    Ok(())
+}
+
+fn is_valid_checkpoint(value: &str) -> bool {
+    !value.is_empty()
+        && value.len() <= MAX_CHECKPOINT_LENGTH
+        && value
+            .bytes()
+            .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b':' | b'_' | b'-'))
 }
 
 fn has_sensitive_key(value: &Value) -> bool {
@@ -213,7 +305,8 @@ fn calculate_duration_ms(input: &AnalyzeSessionInput) -> u32 {
             let completed = completed.with_timezone(&Utc);
 
             if completed >= started {
-                return (completed - started).num_milliseconds().max(0) as u32;
+                let duration_ms = (completed - started).num_milliseconds().max(0);
+                return u32::try_from(duration_ms).unwrap_or(u32::MAX);
             }
         }
     }
@@ -573,7 +666,10 @@ mod tests {
     }
 
     fn v2_fatigue_curve_session() -> AnalyzeSessionInput {
-        let mut events = vec![checkpoint(0, "route_loaded"), checkpoint(120_000, "midpoint")];
+        let mut events = vec![
+            checkpoint(0, "route_loaded"),
+            checkpoint(120_000, "midpoint"),
+        ];
 
         for index in 0..800 {
             let reaction = 180 + ((index * 230) / 799);
@@ -679,6 +775,27 @@ mod tests {
             result.recommendation_signals,
             vec![RecommendationSignal::StreakMaintenance]
         );
+    }
+
+    #[test]
+    fn matches_shared_contract_fixture_acceptance() {
+        let cases: Value = serde_json::from_str(include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../fixtures/analyze-session/contract-cases.json"
+        )))
+        .expect("shared contract fixture JSON is valid");
+
+        for case in cases.as_array().expect("fixture contains an array") {
+            let name = case["name"].as_str().expect("case has a name");
+            let expected_valid = case["valid"].as_bool().expect("case has a valid flag");
+            let result = parse_analyze_session_input(case["input"].clone());
+
+            assert_eq!(
+                result.is_ok(),
+                expected_valid,
+                "shared contract fixture {name} has unexpected Rust acceptance"
+            );
+        }
     }
 
     #[test]
