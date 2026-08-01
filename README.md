@@ -40,7 +40,7 @@
 
 - 🔐 **Brain ID** — Privacy-first auth (no Firebase, no email exposure)
 - ⚡ **Real-time duels** — Socket.io with resource bounds
-- 📊 **Adaptive analytics** — Web Worker + WASM-ready pipeline
+- 📊 **Когнитивная аналитика** — текущий JS/TypeScript pipeline, `kognitika-core` на Rust и план перехода shadow → canary → Rust-primary
 - 📱 **Native Android** — Capacitor 8, rolling debug APK on every push
 - ✅ **357 tests** — Vitest + Playwright E2E, navigation contracts
 
@@ -76,6 +76,7 @@ pnpm dev
 | Безопасность и ответственное раскрытие уязвимостей | [`SECURITY.md`](SECURITY.md) |
 | Гайд по разработке для агентов | [`AGENTS.md`](AGENTS.md) |
 | Дорожная карта | [Issue #10](https://github.com/xodapi/kognitika/issues/10) |
+| Переход аналитики и backend на Rust | [Roadmap #139](https://github.com/xodapi/kognitika/issues/139), [страница Wiki](https://github.com/xodapi/kognitika/wiki/rust-analytics-roadmap) |
 | База знаний тренажёров (в приложении) | `src/lib/knowledge-base.ts` |
 | Описание для внешнего аудитора | [`docs/AUDIT_BRIEF.md`](docs/AUDIT_BRIEF.md) |
 | GLOBAL_VISION.md | `GLOBAL_VISION.md` |
@@ -98,7 +99,8 @@ pnpm dev
 | Frontend | React 19 + Vite 7 + TypeScript + Tailwind CSS 4 + Motion + Recharts |
 | Backend | Express 4 + Socket.io 4 |
 | База данных | PostgreSQL 15+ через Prisma 7 (12 моделей) |
-| Аналитика | JS Web Worker + Rust/WASM-ready граница |
+| Аналитика | JS/TypeScript runtime сегодня; Rust `kognitika-core` уже реализует `AnalyzeSession`; целевой путь — native Rust/Axum analytics через shadow и canary |
+| API-контракт | OpenAPI/Swagger в работе: [#138](https://github.com/xodapi/kognitika/issues/138); спецификация должна оставаться независимой от Express/Rust реализации |
 | Мобильное приложение | Capacitor 8 (Android APK в CI) |
 | Тестирование | Vitest (84 файла, 357 тестов) + Playwright E2E |
 | CI/CD | GitHub Actions: Lint → Test → Build → E2E → Deploy → APK |
@@ -121,7 +123,7 @@ kognitika/
 │   ├── App.tsx                  # Корневой компонент с роутингом
 │   └── main.tsx                 # Точка входа
 ├── crates/
-│   └── kognitika-core/          # Rust/WASM исследовательский крейт
+│   └── kognitika-core/          # Rust AnalyzeSession core: native + WASM; основа поэтапной миграции аналитики
 ├── apps/
 │   ├── capacitor/               # Android/iOS через Capacitor
 │   └── mobile/                  # Мобильная конфигурация
@@ -230,8 +232,10 @@ pnpm test:e2e
 - **Идентификация**: Brain ID-first; сырой Brain ID, email, токены и хэши паролей не появляются в UI/API.
 - **Хранилище Brain ID**: `docs/brain-id-identity.md`.
 - **PWA/offline**: отключён до acceptance-гейтов `docs/pwa-offline-strategy.md`.
-- **Rust/WASM, 60 FPS**: требуют frame-budget гейта `docs/frame-budget-benchmark.md`.
-- **Аналитика**: `ClickEvent = { cellId, reactionTimeMs }`.
+- **Текущая аналитика**: production использует JS/TypeScript worker и серверные сервисы; упрощённый `ClickEvent` и full-session `AnalyzeSession` пока являются разными контрактами.
+- **Целевой Rust-контур**: единые события всех когнитивных модулей → durable analytics jobs → internal Axum analyzer → shadow → canary → Rust-primary с временным TS fallback. Roadmap: [#139](https://github.com/xodapi/kognitika/issues/139).
+- **Browser WASM**: включается только после frame-budget гейта `docs/frame-budget-benchmark.md`; серверный native Rust оценивается отдельно и не требует переписывания React UI.
+- **OpenAPI**: [#138](https://github.com/xodapi/kognitika/issues/138) должен описывать независимый от языка HTTP-контракт, совместимый с Express и будущими Rust endpoints.
 - **Production-патчи**: запрещены без задокументированного hotfix-протокола.
 
 ---
@@ -245,7 +249,7 @@ pnpm test:e2e
 Production health-check:
 
 ```bash
-curl https://kognitika.syntog.ru/api/health
+curl https://kognitika.ru/api/health
 ```
 
 Ответ содержит `buildId` = short hash коммита.

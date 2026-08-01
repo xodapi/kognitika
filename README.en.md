@@ -41,7 +41,7 @@
 
 - 🔐 **Brain ID** — Privacy-first auth (no Firebase, no email exposure)
 - ⚡ **Real-time duels** — Socket.io with resource bounds
-- 📊 **Adaptive analytics** — Web Worker + WASM-ready pipeline
+- 📊 **Cognitive analytics** — current JS/TypeScript pipeline, the Rust `kognitika-core`, and a shadow → canary → Rust-primary migration plan
 - 📱 **Native Android** — Capacitor 8, rolling debug APK on every push
 - ✅ **357 tests** — Vitest + Playwright E2E, navigation contracts
 
@@ -78,6 +78,7 @@ pnpm dev
 | Security boundaries and vulnerability reporting | [`SECURITY.md`](SECURITY.md) |
 | Agent development guide | [`AGENTS.md`](AGENTS.md) |
 | Roadmap | [Issue #10](https://github.com/xodapi/kognitika/issues/10) |
+| Rust analytics and backend migration | [Roadmap #139](https://github.com/xodapi/kognitika/issues/139), [Wiki page](https://github.com/xodapi/kognitika/wiki/rust-analytics-roadmap) |
 | Knowledge base (in-app articles) | `src/lib/knowledge-base.ts` |
 | Audit description for external reviewers | [`docs/AUDIT_BRIEF.md`](docs/AUDIT_BRIEF.md) |
 
@@ -96,7 +97,8 @@ Tracking roadmap: https://github.com/xodapi/kognitika/issues/10
 - Express + Socket.io
 - Prisma + PostgreSQL
 - Vitest + Playwright
-- JS analytics worker with a WASM-ready boundary for future hot paths
+- JS/TypeScript analytics runtime today; Rust `kognitika-core` already implements `AnalyzeSession`; the target path is native Rust/Axum analytics through shadow and canary rollout
+- OpenAPI/Swagger is being planned in [#138](https://github.com/xodapi/kognitika/issues/138) as an implementation-neutral contract for current Express and future Rust endpoints
 
 ## Project structure
 
@@ -114,7 +116,7 @@ kognitika/
 │   ├── App.tsx                  # Root app with routing
 │   └── main.tsx                 # Entry point
 ├── crates/
-│   └── kognitika-core/          # Rust/WASM research crate (not runtime-critical)
+│   └── kognitika-core/          # Native + WASM AnalyzeSession core; foundation for incremental analytics migration
 ├── apps/
 │   ├── capacitor/               # Android/iOS native build via Capacitor
 │   └── mobile/                  # Mobile-specific configuration
@@ -235,8 +237,10 @@ Known non-blocking local warnings currently include Recharts zero-size container
 - Public identity is Brain ID-first; do not expose raw Brain ID, email, token, or password hashes in UI/API responses.
 - Brain ID storage/recovery boundaries are defined in `docs/brain-id-identity.md`.
 - PWA/offline-first must remain disabled until `docs/pwa-offline-strategy.md` acceptance gates are met.
-- Rust/WASM and 60 FPS work must pass the frame-budget gate in `docs/frame-budget-benchmark.md` before implementation.
-- Client analytics `ClickEvent` uses `{ cellId, reactionTimeMs }`.
+- Production analytics currently uses JS/TypeScript workers and server services; the lightweight `ClickEvent` contract and full-session `AnalyzeSession` contract are still distinct.
+- Target Rust path: canonical events for every cognitive module → durable analytics jobs → internal Axum analyzer → shadow → canary → Rust-primary with a temporary TS fallback. Track it in [#139](https://github.com/xodapi/kognitika/issues/139).
+- Browser WASM still requires the frame-budget gate in `docs/frame-budget-benchmark.md`; server-side native Rust is evaluated independently and does not require a React rewrite.
+- OpenAPI issue [#138](https://github.com/xodapi/kognitika/issues/138) should define an implementation-neutral HTTP contract shared by Express and future Rust endpoints.
 - Direct production file patches are forbidden outside documented emergency hotfixes.
 
 ## Deploy
@@ -252,7 +256,7 @@ The server should update through the repository-first flow. Do not edit `/opt/ko
 Production health check:
 
 ```bash
-curl https://kognitika.syntog.ru/api/health
+curl https://kognitika.ru/api/health
 ```
 
 The response includes `buildId`, which should match the deployed commit short hash. The deploy workflow reads the internal health-check port from the server `.env` `PORT` value and falls back to `3006`, so production-only port overrides do not break deploy verification.
