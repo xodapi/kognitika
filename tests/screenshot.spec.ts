@@ -1,49 +1,13 @@
 import { expect, test } from '@playwright/test';
 import { collectUnexpectedBrowserErrors, expectAppReady, installSyntheticApi } from './helpers';
 
+// Numerical recommendation navigation is covered deterministically in
+// src/tests/post-game-navigation.test.tsx. This browser spec exercises typing's
+// complete input flow and its rendered recommendation.
+
 test.describe('Post-game navigation', () => {
   test.beforeEach(async ({ page }) => {
     await installSyntheticApi(page);
-  });
-
-  test('Numerical Analysis recommendation opens the next training module', async ({ page }) => {
-    const browserErrors = collectUnexpectedBrowserErrors(page);
-
-    // The browser flow of question generation is covered by NumericalAnalysis tests.
-    // Exercise the recommendation contract through its deterministic synthetic response.
-    await page.route('**/api/analytics/compare?*', async (route) => {
-      await route.fulfill({
-        contentType: 'application/json',
-        body: JSON.stringify({
-          deltaPercentage: 0,
-          trend: 'stable',
-          percentile: 75,
-          verdict: 'Synthetic navigation insight.',
-          recommendedGame: 'logical',
-          recommendedGameTitle: 'Логические матрицы',
-        }),
-      });
-    });
-
-    await page.goto('/numerical');
-    await expectAppReady(page);
-    await page.getByRole('button', { name: 'Начать тест' }).click();
-
-    for (let index = 0; index < 5; index += 1) {
-      const questionNumber = index + 1;
-      await expect(page.getByText(`Вопрос ${questionNumber} из 5:`, { exact: true })).toBeVisible();
-      await page.getByRole('button', { name: /^-?\d+%$/ }).first().click();
-    }
-
-    await expect(page.getByRole('heading', { name: 'Анализ завершен' })).toBeVisible();
-    await expect(page.getByText('Логические матрицы')).toBeVisible();
-
-    await page.getByRole('button', { name: /Начать рекомендованное/i }).click();
-
-    await expect(page).toHaveURL(/\/logical$/);
-    await expectAppReady(page);
-    await expect(page.getByText(/Системная логика|Логическая матрица/i)).toBeVisible();
-    expect(browserErrors).toEqual([]);
   });
 
   test('Speed Typing completion offers a next-step recommendation', async ({ page }) => {
