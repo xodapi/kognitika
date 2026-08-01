@@ -1,5 +1,13 @@
 node_modules
+**/node_modules
+.pnpm-store
+build
 dist
+coverage
+playwright-report
+test-results
+target
+**/target
 .turbo
 .git
 .env
@@ -7,5 +15,4 @@ dist
 .env.*.local
 *.md
 scratch
-test-results
 tests
