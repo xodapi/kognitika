@@ -1,0 +1,10 @@
+services:
+  analytics-sidecar:
+    build:
+      context: ../..
+      dockerfile: crates/kognitika-analytics-sidecar/Dockerfile
+    environment:
+      ANALYTICS_SIDECAR_ADDR: 0.0.0.0:3010
+    # Deliberately no host ports, database connection configuration, volumes, or database dependencies.
+    # Local compose does not publish host ports; production ingress is not configured by this crate.
+    # Attach only to a private application network when a local caller is needed.
