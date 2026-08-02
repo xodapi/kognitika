@@ -84,20 +84,20 @@ export async function inspectMigrationBaseline(client) {
   const legacyReconciliationOrder = MIGRATION_ORDER.slice(1);
   const isExactPrefix = (order) => applied.length <= order.length
     && order.slice(0, applied.length).every((migration) => appliedSet.has(migration));
-  const exactLegacyHistory = applied.length === LEGACY_MIGRATIONS.length
-    && isExactPrefix(LEGACY_MIGRATIONS);
   const reconciledLegacyHistory = appliedSet.has(RECONCILIATION_MIGRATION)
     && isExactPrefix(legacyReconciliationOrder);
   const baselineHistory = appliedSet.has(BASELINE_MIGRATION)
     && isExactPrefix(MIGRATION_ORDER);
 
-  const legacyCandidate = !appliedSet.has(BASELINE_MIGRATION)
-    && exactLegacyHistory
+  const approvedRecoveryHistory = applied.length === LEGACY_MIGRATIONS.length + 1
+    && appliedSet.has(BASELINE_MIGRATION)
+    && isExactPrefix([BASELINE_MIGRATION, ...LEGACY_MIGRATIONS]);
+  const approvedRecoveryCandidate = approvedRecoveryHistory
     && hasGameType
     && missingCoreTables.length === 0
     && missingBaselineTables.length === MISSING_BASELINE_TABLES.length;
 
-  if (legacyCandidate) {
+  if (approvedRecoveryCandidate) {
     const { rows: enumRows } = await client.query(`
       SELECT enumlabel
       FROM pg_enum
@@ -109,11 +109,7 @@ export async function inspectMigrationBaseline(client) {
     const enumMatches = enumLabels.length === EXPECTED_GAME_TYPES.length
       && EXPECTED_GAME_TYPES.every((label, index) => enumLabels[index] === label);
     if (enumMatches) {
-      return {
-        kind: 'invalid',
-        code: 16,
-        reason: 'Legacy schema fingerprint cannot be reconciled deterministically because its migration history contains no safe continuous Prisma prefix.',
-      };
+      return { kind: 'legacy-reconciliation-required' };
     }
   }
 

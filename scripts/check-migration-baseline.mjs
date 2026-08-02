@@ -15,6 +15,9 @@ try {
     case 'compatible':
       console.log('[migration-baseline] Existing schema and migration history are compatible; pending migrations may apply normally.');
       break;
+    case 'legacy-reconciliation-required':
+      console.log('[migration-baseline] Exact approved legacy recovery fingerprint confirmed; committed reconciliation migration may apply.');
+      break;
     case 'invalid':
       fail(`${state.reason} Stop deployment before DDL.`, state.code);
       break;

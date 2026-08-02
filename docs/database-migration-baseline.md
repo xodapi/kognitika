@@ -14,27 +14,37 @@ The baseline and all incremental migrations apply in chronological order.
 
 ## Existing Databases
 
-Do not run the baseline SQL against an existing Kognitika database. Before `prisma migrate deploy`, the deployment workflow runs `scripts/check-migration-baseline.mjs` and classifies the database as follows:
+Do not run baseline SQL against an existing Kognitika database. Before `prisma migrate deploy`, the deployment workflow runs `scripts/check-migration-baseline.mjs` and classifies the database as follows:
 
 - Empty database: no public tables, no `GameType` enum, and no `_prisma_migrations` table. The baseline applies normally.
 - Compatible existing database: all baseline tables and `GameType` exist, the baseline is recorded as applied, and migration history is a continuous successful prefix. Pending later migrations may then apply normally.
-- Legacy recovery laboratory state: the historic schema fingerprint (three `GameType` migrations, all core tables, all 24 `GameType` values in order, and both `session_analytics_summaries` and `daily_practice_plans` absent) is **blocked**. Its Prisma history cannot be reconciled deterministically as a continuous prefix.
-- Missing migration history, a legacy fingerprint, an incomplete legacy fingerprint, missing baseline history, incomplete schema, rolled-back migration, unfinished migration, or a gap in history: deployment stops before DDL, build, or restart.
+- **Exact approved legacy recovery fingerprint**: the baseline and exactly the three historic `GameType` migrations are successfully applied, all ten core tables exist, all 24 `GameType` labels exist in historical order, and both `session_analytics_summaries` and `daily_practice_plans` are absent. Only this fingerprint may continue to the committed `20260725140000_reconcile_legacy_baseline_gap` migration.
+- Missing migration history, an incomplete fingerprint, an extra record, missing baseline history, incomplete schema, rolled-back migration, unfinished migration, or a gap in history: deployment stops before DDL, build, or restart.
 
-### Legacy Recovery Laboratory Result
+## Approved Legacy Schema Adoption Exception
 
-The isolated PostgreSQL laboratory reproduces the historic schema fingerprint using schema metadata only. It proves that the two missing tables and their indexes can be created by the committed reconciliation migration, and that the later committed migrations can alter that isolated schema. It also proves this is **not** a safe Prisma recovery path: Prisma's migration history cannot be made a deterministic continuous prefix without recording a migration whose SQL has not run, or manually changing `_prisma_migrations`.
+`prisma migrate resolve --applied 20260701000000_baseline_schema` is permitted only as an explicitly approved operational exception for adoption of an already-existing legacy schema. It must be performed under the approved runbook after a verified backup and schema inspection. It records migration history only, and baseline SQL must **not** be physically run again.
 
-Therefore the preflight blocks the fingerprint. Do **not** mark `20260701000000_baseline_schema` as applied, use `prisma db push`, `migrate reset`, `migrate resolve`, or manually edit `_prisma_migrations` in production. Any production recovery requires a separately reviewed deterministic plan and remains outside this repository change.
+The current production baseline history is already marked applied after controlled recovery. Do not roll back, remove, or otherwise alter it. This repository's preflight verifies only the exact approved post-adoption fingerprint above; it does not perform adoption or modify `_prisma_migrations`.
 
-#### Run the isolated laboratory
+After preflight permits that fingerprint, Prisma applies the committed reconciliation migration. Its `IF NOT EXISTS` DDL creates the two missing baseline tables and indexes. Prisma then applies the later committed migrations. The post-deploy assertion must verify all nine successful migration records, no rolled-back or unfinished records, the two recovered tables, their expected indexes, and `GameAttempt` from later migrations.
 
-This command starts an ephemeral local PostgreSQL container, loads only synthetic schema metadata, verifies the expected blocked classification, applies only committed migration SQL to the isolated database, and verifies the expected tables and indexes:
+## Isolated Recovery Laboratory
+
+Run the schema-only, synthetic local proof:
 
 ```powershell
 ./scripts/run-migration-recovery-lab.ps1
 ```
 
-It does not read `.env`, contact a server, or use a production connection string. The fixture contains no application rows or sensitive data.
+The laboratory starts an ephemeral PostgreSQL container and, only there:
+
+1. creates the sanitized physical legacy schema without the two target tables;
+2. records the approved baseline and historic migration history via `prisma migrate resolve --applied`, without re-running baseline SQL;
+3. verifies that preflight permits the exact fingerprint;
+4. runs the full committed Prisma migration sequence and verifies post-deploy schema/history assertions;
+5. verifies the separate fresh empty database path.
+
+It reads no `.env`, contacts no server, and contains no application rows, user data, Brain ID, email, tokens, JWTs, or raw telemetry. Near-miss cases are covered by `src/tests/migration-baseline-state.test.ts` and remain fail-closed.
 
 The production health check remains `https://kognitika.ru/api/health`.

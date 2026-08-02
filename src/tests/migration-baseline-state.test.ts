@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  BASELINE_MIGRATION,
   CORE_TABLES,
   EXPECTED_GAME_TYPES,
   LEGACY_MIGRATIONS,
@@ -24,6 +25,7 @@ type Fixture = {
 const missingBaselineTables = ['session_analytics_summaries', 'daily_practice_plans'];
 const successful = (migration_name: string): MigrationRecord => ({ migration_name, finished_at: new Date('2026-07-25T00:00:00.000Z'), rolled_back_at: null });
 const rolledBack = (migration_name: string): MigrationRecord => ({ migration_name, finished_at: null, rolled_back_at: new Date('2026-07-25T00:00:00.000Z') });
+const approvedRecoveryHistory = [BASELINE_MIGRATION, ...LEGACY_MIGRATIONS].map(successful);
 
 function fixtureClient(fixture: Fixture = {}) {
   const tables = fixture.tables ?? [...CORE_TABLES];
@@ -36,7 +38,7 @@ function fixtureClient(fixture: Fixture = {}) {
         return { rows: tables.map((tablename) => ({ tablename })) };
       }
       if (query.includes('SELECT migration_name')) {
-        return { rows: fixture.migrations ?? LEGACY_MIGRATIONS.map(successful) };
+        return { rows: fixture.migrations ?? approvedRecoveryHistory };
       }
       if (query.includes('SELECT enumlabel')) {
         return { rows: (fixture.gameTypes ?? EXPECTED_GAME_TYPES).map((enumlabel) => ({ enumlabel })) };
@@ -46,13 +48,9 @@ function fixtureClient(fixture: Fixture = {}) {
   };
 }
 
-describe('isolated legacy recovery laboratory preflight', () => {
-  it('classifies the exact sanitized legacy restore as blocked, because Prisma cannot reconcile its history deterministically', async () => {
-    await expect(inspectMigrationBaseline(fixtureClient() as never)).resolves.toMatchObject({
-      kind: 'invalid',
-      code: 16,
-      reason: expect.stringContaining('cannot be reconciled deterministically'),
-    });
+describe('approved legacy recovery preflight', () => {
+  it('permits only the exact approved adoption fingerprint for reconciliation', async () => {
+    await expect(inspectMigrationBaseline(fixtureClient() as never)).resolves.toEqual({ kind: 'legacy-reconciliation-required' });
   });
 
   it('requires all 24 GameType values in historical order', async () => {
@@ -61,13 +59,13 @@ describe('isolated legacy recovery laboratory preflight', () => {
     }) as never)).resolves.toMatchObject({ kind: 'invalid', code: 11 });
   });
 
-  it('rejects a restore where one target table already exists', async () => {
+  it('rejects a recovery state where one target table already exists', async () => {
     await expect(inspectMigrationBaseline(fixtureClient({
       tables: [...CORE_TABLES, 'daily_practice_plans'],
     }) as never)).resolves.toMatchObject({ kind: 'invalid', code: 11 });
   });
 
-  it('rejects a restore with a missing core table', async () => {
+  it('rejects a recovery state with a missing core table', async () => {
     await expect(inspectMigrationBaseline(fixtureClient({
       tables: CORE_TABLES.slice(1),
     }) as never)).resolves.toMatchObject({ kind: 'invalid', code: 11 });
@@ -79,26 +77,35 @@ describe('isolated legacy recovery laboratory preflight', () => {
     }) as never)).resolves.toMatchObject({ kind: 'invalid', code: 11 });
   });
 
+  it('rejects a missing baseline adoption record', async () => {
+    await expect(inspectMigrationBaseline(fixtureClient({
+      migrations: LEGACY_MIGRATIONS.map(successful),
+    }) as never)).resolves.toMatchObject({ kind: 'invalid', code: 11 });
+  });
+
   it('rejects an extra migration record', async () => {
     await expect(inspectMigrationBaseline(fixtureClient({
-      migrations: [...LEGACY_MIGRATIONS.map(successful), successful('unexpected_migration')],
+      migrations: [...approvedRecoveryHistory, successful('unexpected_migration')],
     }) as never)).resolves.toMatchObject({ kind: 'invalid', code: 11 });
   });
 
   it('rejects an unfinished migration', async () => {
     await expect(inspectMigrationBaseline(fixtureClient({
-      migrations: [...LEGACY_MIGRATIONS.map(successful), { migration_name: RECONCILIATION_MIGRATION, finished_at: null, rolled_back_at: null }],
+      migrations: [...approvedRecoveryHistory, { migration_name: RECONCILIATION_MIGRATION, finished_at: null, rolled_back_at: null }],
     }) as never)).resolves.toMatchObject({ kind: 'invalid', code: 12 });
   });
 
-  it('rejects the documented rolled-back baseline attempt and resolved baseline record', async () => {
+  it('rejects a rolled-back baseline record even when a baseline adoption record exists', async () => {
     await expect(inspectMigrationBaseline(fixtureClient({
-      migrations: [
-        ...LEGACY_MIGRATIONS.map(successful),
-        rolledBack('20260701000000_baseline_schema'),
-        successful('20260701000000_baseline_schema'),
-      ],
+      migrations: [...approvedRecoveryHistory, rolledBack(BASELINE_MIGRATION)],
     }) as never)).resolves.toMatchObject({ kind: 'invalid', code: 13 });
+  });
+
+  it('accepts the reconciled continuous migration history after target tables exist', async () => {
+    await expect(inspectMigrationBaseline(fixtureClient({
+      tables: [...CORE_TABLES, ...missingBaselineTables],
+      migrations: [...approvedRecoveryHistory, successful(RECONCILIATION_MIGRATION)],
+    }) as never)).resolves.toEqual({ kind: 'compatible' });
   });
 
   it('accepts a fresh empty database for the normal migration path', async () => {

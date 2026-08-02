@@ -4,6 +4,7 @@ $root = Split-Path -Parent $PSScriptRoot
 $composeFile = Join-Path $root 'fixtures/migration-recovery-lab/docker-compose.yml'
 $fixture = Join-Path $root 'fixtures/migration-recovery-lab/legacy-recovery.sql'
 $project = 'kognitika-migration-recovery-lab'
+$databaseUrl = 'postgresql://laboratory:laboratory@127.0.0.1:55432/laboratory?schema=public'
 
 function Invoke-LabSql([string]$SqlFile) {
   for ($attempt = 1; $attempt -le 5; $attempt++) {
@@ -14,82 +15,85 @@ function Invoke-LabSql([string]$SqlFile) {
   }
 }
 
+function Invoke-LabStatement([string]$Sql) {
+  $Sql | docker compose -p $project -f $composeFile exec -T db psql --set ON_ERROR_STOP=1 --username laboratory --dbname laboratory
+  if ($LASTEXITCODE -ne 0) { throw 'Laboratory assertion failed.' }
+}
+
 try {
   $env:LAB_ROOT = $root
-  # Remove a previous interrupted laboratory run before creating the fixture.
+  $env:DATABASE_URL = $databaseUrl
+  $node = (Get-Command node -CommandType Application -ErrorAction Stop | Select-Object -First 1).Source
+
   docker compose -p $project -f $composeFile down --volumes --remove-orphans
   docker compose -p $project -f $composeFile up --wait --quiet-pull
   if ($LASTEXITCODE -ne 0) { throw 'Could not start the isolated PostgreSQL laboratory.' }
 
+  # Physical legacy schema only. The fixture does not create or edit migration history.
   Invoke-LabSql $fixture
 
-  # Assert the exact, intentionally unreconcilable history before any recovery
-  # DDL. The unit suite exercises the same fingerprint through the JS preflight.
-  @'
-DO $$
-BEGIN
-  IF (SELECT COUNT(*) FROM "_prisma_migrations") <> 5
-    OR (SELECT COUNT(*) FROM "_prisma_migrations" WHERE "rolled_back_at" IS NOT NULL) <> 1
-    OR (SELECT COUNT(*) FROM "_prisma_migrations" WHERE "migration_name" = '20260701000000_baseline_schema' AND "finished_at" IS NOT NULL) <> 1 THEN
-    RAISE EXCEPTION 'Expected blocked legacy migration-history fixture was not loaded';
-  END IF;
-  IF EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public'
-      AND tablename IN ('session_analytics_summaries', 'daily_practice_plans')) THEN
-    RAISE EXCEPTION 'Legacy fixture must not include baseline-gap tables';
-  END IF;
-END $$;
-'@ | docker compose -p $project -f $composeFile exec -T db psql --set ON_ERROR_STOP=1 --username laboratory --dbname laboratory
-  if ($LASTEXITCODE -ne 0) { throw 'Legacy fixture did not match the expected blocked fingerprint.' }
+  # Approved adoption exception: record the baseline without re-running baseline SQL,
+  # then record the three historic GameType migrations in the isolated fixture only.
+  & $node (Join-Path $root 'node_modules/prisma/build/index.js') migrate resolve --applied 20260701000000_baseline_schema
+  if ($LASTEXITCODE -ne 0) { throw 'Isolated baseline adoption failed.' }
+  foreach ($migration in @(
+    '20260724180000_add_express_knowledge_game_types',
+    '20260725120000_add_alphabet_table_game_type',
+    '20260725130000_add_stroop_alphabet_game_type'
+  )) {
+    & $node (Join-Path $root 'node_modules/prisma/build/index.js') migrate resolve --applied $migration
+    if ($LASTEXITCODE -ne 0) { throw "Isolated historic migration adoption failed: $migration" }
+  }
 
-  Invoke-LabSql (Join-Path $root 'prisma/migrations/20260725140000_reconcile_legacy_baseline_gap/migration.sql')
-  Invoke-LabSql (Join-Path $root 'prisma/migrations/20260731120000_add_analytics_summary_ownership/migration.sql')
-  Invoke-LabSql (Join-Path $root 'prisma/migrations/20260731130000_add_game_save_idempotency/migration.sql')
-  Invoke-LabSql (Join-Path $root 'prisma/migrations/20260731140000_add_game_attempt_lifecycle/migration.sql')
-  Invoke-LabSql (Join-Path $root 'prisma/migrations/20260731150000_remove_legacy_email_identity/migration.sql')
+  # Exact adopted fingerprint is the only legacy state preflight permits.
+  & $node (Join-Path $root 'scripts/check-migration-baseline.mjs')
+  if ($LASTEXITCODE -ne 0) { throw 'Exact approved recovery fingerprint was not permitted.' }
 
-  @'
-DO $$
-BEGIN
-  IF (SELECT COUNT(*) FROM pg_tables WHERE schemaname = 'public'
-      AND tablename IN ('session_analytics_summaries', 'daily_practice_plans', 'GameAttempt')) <> 3 THEN
-    RAISE EXCEPTION 'Expected isolated recovery tables were not created';
-  END IF;
-  IF (SELECT COUNT(*) FROM pg_indexes WHERE schemaname = 'public'
-      AND indexname IN ('session_analytics_summaries_jobId_key', 'daily_practice_plans_userId_date_key', 'GameAttempt_userId_clientRunId_key')) <> 3 THEN
-    RAISE EXCEPTION 'Expected isolated recovery indexes were not created';
-  END IF;
-END $$;
-'@ | docker compose -p $project -f $composeFile exec -T db psql --set ON_ERROR_STOP=1 --username laboratory --dbname laboratory
-  if ($LASTEXITCODE -ne 0) { throw 'Could not verify isolated recovery schema.' }
-
-  # A separate fresh database path must remain migratable through Prisma itself.
-  @'
-DROP SCHEMA public CASCADE;
-CREATE SCHEMA public;
-'@ | docker compose -p $project -f $composeFile exec -T db psql --set ON_ERROR_STOP=1 --username laboratory --dbname laboratory
-  if ($LASTEXITCODE -ne 0) { throw 'Could not reset the isolated database for the fresh migration test.' }
-
-  $env:DATABASE_URL = 'postgresql://laboratory:laboratory@127.0.0.1:55432/laboratory?schema=public'
-  $node = (Get-Command node -CommandType Application -ErrorAction Stop | Select-Object -First 1).Source
+  # Prisma applies the committed reconciliation and all subsequent migrations.
   & $node (Join-Path $root 'node_modules/prisma/build/index.js') migrate deploy
-  if ($LASTEXITCODE -ne 0) { throw 'Fresh Prisma migration path failed in the isolated laboratory.' }
+  if ($LASTEXITCODE -ne 0) { throw 'Approved recovery migration sequence failed.' }
 
-  @'
+  Invoke-LabStatement @'
 DO $$
 BEGIN
   IF (SELECT COUNT(*) FROM "_prisma_migrations" WHERE "finished_at" IS NOT NULL) <> 9 THEN
-    RAISE EXCEPTION 'Fresh Prisma migration history is not a complete successful prefix';
+    RAISE EXCEPTION 'Expected full successful migration history after reconciliation';
   END IF;
-  IF NOT EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = 'GameAttempt') THEN
-    RAISE EXCEPTION 'Fresh Prisma migration path did not create GameAttempt';
+  IF EXISTS (SELECT 1 FROM "_prisma_migrations" WHERE "rolled_back_at" IS NOT NULL OR "finished_at" IS NULL) THEN
+    RAISE EXCEPTION 'Post-deploy migration history must contain no rolled-back or unfinished records';
+  END IF;
+  IF (SELECT COUNT(*) FROM pg_tables WHERE schemaname = 'public'
+      AND tablename IN ('session_analytics_summaries', 'daily_practice_plans', 'GameAttempt')) <> 3 THEN
+    RAISE EXCEPTION 'Expected recovery and later-migration tables were not created';
+  END IF;
+  IF (SELECT COUNT(*) FROM pg_indexes WHERE schemaname = 'public'
+      AND indexname IN ('session_analytics_summaries_jobId_key', 'daily_practice_plans_userId_date_key', 'GameAttempt_userId_clientRunId_key')) <> 3 THEN
+    RAISE EXCEPTION 'Expected recovery and later-migration indexes were not created';
   END IF;
 END $$;
-'@ | docker compose -p $project -f $composeFile exec -T db psql --set ON_ERROR_STOP=1 --username laboratory --dbname laboratory
-  if ($LASTEXITCODE -ne 0) { throw 'Could not verify the fresh Prisma migration path.' }
+'@
 
-  Write-Host 'Recovery laboratory completed: committed SQL changes schema, Prisma history remains safely blocked for legacy state, and a fresh database migrates normally.'
+  & $node (Join-Path $root 'scripts/check-migration-baseline.mjs')
+  if ($LASTEXITCODE -ne 0) { throw 'Post-deploy schema and history were not compatible.' }
+
+  # A distinct fresh database remains able to use the ordinary Prisma sequence.
+  Invoke-LabStatement @'
+DROP SCHEMA public CASCADE;
+CREATE SCHEMA public;
+'@
+  & $node (Join-Path $root 'node_modules/prisma/build/index.js') migrate deploy
+  if ($LASTEXITCODE -ne 0) { throw 'Fresh Prisma migration path failed in the isolated laboratory.' }
+  Invoke-LabStatement @'
+DO $$
+BEGIN
+  IF (SELECT COUNT(*) FROM "_prisma_migrations" WHERE "finished_at" IS NOT NULL) <> 9 THEN
+    RAISE EXCEPTION 'Fresh Prisma migration history is not complete';
+  END IF;
+END $$;
+'@
+
+  Write-Host 'Recovery laboratory completed: exact approved adoption reconciles, later migrations apply, and near-miss checks remain fail-closed.'
 } finally {
-  # LAB_ROOT must remain available while Compose resolves the bind mount.
   docker compose -p $project -f $composeFile down --volumes --remove-orphans
   Remove-Item Env:DATABASE_URL -ErrorAction SilentlyContinue
   Remove-Item Env:LAB_ROOT -ErrorAction SilentlyContinue
