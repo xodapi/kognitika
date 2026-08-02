@@ -31,7 +31,7 @@ export const CORE_TABLES = [
 ];
 export const MISSING_BASELINE_TABLES = [
   'session_analytics_summaries', 'daily_practice_plans'];
-const EXPECTED_GAME_TYPES = [
+export const EXPECTED_GAME_TYPES = [
   'SCHULTE', 'SCHULTE_GORBOV', 'NUMERICAL_ANALYSIS', 'LOGICAL_SEQUENCE',
   'SITUATIONAL_JUDGMENT', 'STROOP', 'N_BACK', 'OBJECTIVE_FILTER',
   'PROFILING_RICE', 'ANOMALY_DETECTOR', 'DIALOGUE_2_1', 'SPEED_TYPING',
@@ -73,31 +73,31 @@ export async function inspectMigrationBaseline(client) {
     .filter((row) => row.finished_at !== null && row.rolled_back_at === null)
     .map((row) => row.migration_name);
   const appliedSet = new Set(applied);
+  const isExactAppliedPrefix = (order) => applied.length <= order.length
+    && order.slice(0, applied.length).every((migration) => appliedSet.has(migration));
+  const hasExactSingleRolledBackBaseline = rolledBack.length === 1
+    && rolledBack[0].migration_name === BASELINE_MIGRATION
+    && rolledBack[0].finished_at === null;
+  const hasNoRolledBackRecords = rolledBack.length === 0;
+  const hasExpectedAppliedHistory = (order) => applied.length === order.length
+    && isExactAppliedPrefix(order);
 
   if (failed.length > 0) {
     return { kind: 'invalid', code: 12, reason: 'Migration history contains unfinished migrations.' };
   }
-  if (rolledBack.length > 0) {
-    return { kind: 'invalid', code: 13, reason: 'Migration history contains rolled-back migrations.' };
+  if (!hasNoRolledBackRecords && !hasExactSingleRolledBackBaseline) {
+    return { kind: 'invalid', code: 13, reason: 'Migration history contains an unapproved rolled-back migration record.' };
   }
 
-  const legacyReconciliationOrder = MIGRATION_ORDER.slice(1);
-  const isExactPrefix = (order) => applied.length <= order.length
-    && order.slice(0, applied.length).every((migration) => appliedSet.has(migration));
-  const exactLegacyHistory = applied.length === LEGACY_MIGRATIONS.length
-    && isExactPrefix(LEGACY_MIGRATIONS);
-  const reconciledLegacyHistory = appliedSet.has(RECONCILIATION_MIGRATION)
-    && isExactPrefix(legacyReconciliationOrder);
-  const baselineHistory = appliedSet.has(BASELINE_MIGRATION)
-    && isExactPrefix(MIGRATION_ORDER);
-
-  const legacyCandidate = !appliedSet.has(BASELINE_MIGRATION)
-    && exactLegacyHistory
+  const approvedRecoveryHistory = hasExpectedAppliedHistory([BASELINE_MIGRATION, ...LEGACY_MIGRATIONS]);
+  const approvedRecoveryCandidate = approvedRecoveryHistory
+    && hasExactSingleRolledBackBaseline
+    && migrationRows.length === LEGACY_MIGRATIONS.length + 2
     && hasGameType
     && missingCoreTables.length === 0
     && missingBaselineTables.length === MISSING_BASELINE_TABLES.length;
 
-  if (legacyCandidate) {
+  if (approvedRecoveryCandidate) {
     const { rows: enumRows } = await client.query(`
       SELECT enumlabel
       FROM pg_enum
@@ -120,11 +120,11 @@ export async function inspectMigrationBaseline(client) {
       reason: `Existing database schema is incomplete or incompatible (missing enum or tables: ${[...missingCoreTables, ...missingBaselineTables].join(', ') || 'none'}).`,
     };
   }
-  if (!appliedSet.has(BASELINE_MIGRATION) && !reconciledLegacyHistory) {
-    return { kind: 'invalid', code: 14, reason: 'Existing schema is missing baseline history or a complete reviewed reconciliation history.' };
-  }
-  if (!baselineHistory && !reconciledLegacyHistory) {
-    return { kind: 'invalid', code: 15, reason: 'Migration history is not a continuous successful prefix.' };
+
+  const fullHistoryIsCompatible = hasExpectedAppliedHistory(MIGRATION_ORDER)
+    && (hasNoRolledBackRecords || (hasExactSingleRolledBackBaseline && migrationRows.length === MIGRATION_ORDER.length + 1));
+  if (!fullHistoryIsCompatible) {
+    return { kind: 'invalid', code: 15, reason: 'Migration history is not an approved successful migration sequence.' };
   }
 
   return { kind: 'compatible' };
