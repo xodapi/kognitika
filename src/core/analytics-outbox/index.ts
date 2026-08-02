@@ -45,6 +45,7 @@ export function createAnalyticsOutboxEntry(input: CreateAnalyticsOutboxEntryInpu
 
 export interface AnalyticsOutboxStore {
   all(): AnalyticsOutboxEntry[];
+  claimNext(workerId: string, now: Date, leaseMs: number): AnalyticsOutboxEntry | null;
   update(entry: AnalyticsOutboxEntry): void;
 }
 
@@ -59,6 +60,21 @@ export class InMemoryAnalyticsOutboxStore implements AnalyticsOutboxStore {
     return [...this.entries.values()];
   }
 
+  claimNext(workerId: string, now: Date, leaseMs: number): AnalyticsOutboxEntry | null {
+    for (const entry of this.entries.values()) {
+      if (entry.state !== 'pending' && entry.state !== 'retry') continue;
+      const claimed = {
+        ...entry,
+        state: 'processing' as const,
+        leaseOwner: workerId,
+        leaseExpiresAt: new Date(now.getTime() + leaseMs),
+      };
+      this.entries.set(claimed.id, claimed);
+      return { ...claimed };
+    }
+    return null;
+  }
+
   update(entry: AnalyticsOutboxEntry) {
     this.entries.set(entry.id, { ...entry });
   }
@@ -68,23 +84,19 @@ export class AnalyticsOutboxStateMachine {
   constructor(private readonly store: AnalyticsOutboxStore, private readonly options: { maxAttempts: number; leaseMs: number }) {}
 
   claim(workerId: string, now: Date): AnalyticsOutboxEntry | null {
-    const entry = this.store.all().find(candidate => candidate.state === 'pending' || candidate.state === 'retry');
-    if (!entry) return null;
-    const claimed = { ...entry, state: 'processing' as const, leaseOwner: workerId, leaseExpiresAt: new Date(now.getTime() + this.options.leaseMs) };
-    this.store.update(claimed);
-    return claimed;
+    return this.store.claimNext(workerId, now, this.options.leaseMs);
   }
 
   complete(id: string, workerId: string, now: Date): AnalyticsOutboxEntry | null {
-    const entry = this.processingEntry(id, workerId);
+    const entry = this.processingEntry(id, workerId, now);
     if (!entry) return null;
     const completed = { ...entry, state: 'completed' as const, leaseOwner: null, leaseExpiresAt: null, completedAt: now };
     this.store.update(completed);
     return completed;
   }
 
-  fail(id: string, workerId: string, _now: Date, errorCode: string): AnalyticsOutboxEntry | null {
-    const entry = this.processingEntry(id, workerId);
+  fail(id: string, workerId: string, now: Date, errorCode: string): AnalyticsOutboxEntry | null {
+    const entry = this.processingEntry(id, workerId, now);
     if (!entry) return null;
     const attemptCount = entry.attemptCount + 1;
     const failed = {
@@ -110,9 +122,14 @@ export class AnalyticsOutboxStateMachine {
     return recovered;
   }
 
-  private processingEntry(id: string, workerId: string) {
+  private processingEntry(id: string, workerId: string, now: Date) {
     const entry = this.store.all().find(candidate => candidate.id === id);
-    return entry?.state === 'processing' && entry.leaseOwner === workerId ? entry : null;
+    return entry?.state === 'processing'
+      && entry.leaseOwner === workerId
+      && entry.leaseExpiresAt !== null
+      && entry.leaseExpiresAt > now
+      ? entry
+      : null;
   }
 }
 

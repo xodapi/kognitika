@@ -55,7 +55,17 @@ describe('durable analytics outbox contract', () => {
     expect(createEntry().idempotencyKey).toBe('session-synthetic-001:rust-shadow-v1:analytics-contract-v1');
   });
 
-  it('leases, retries, recovers timeouts after restart, and dead-letters bounded failures', () => {
+  it('atomically leases a job to only one competing worker', () => {
+    const store = new InMemoryAnalyticsOutboxStore([createEntry()]);
+    const machine = new AnalyticsOutboxStateMachine(store, { maxAttempts: 2, leaseMs: 1_000 });
+
+    const [first, second] = [machine.claim('worker-a', now), machine.claim('worker-b', now)];
+
+    expect([first, second].filter(Boolean)).toHaveLength(1);
+    expect(store.all()[0]).toMatchObject({ state: 'processing', leaseOwner: 'worker-a' });
+  });
+
+  it('leases, retries, rejects expired workers, recovers timeouts, and dead-letters bounded failures', () => {
     const store = new InMemoryAnalyticsOutboxStore([createEntry()]);
     const machine = new AnalyticsOutboxStateMachine(store, { maxAttempts: 2, leaseMs: 1_000 });
     const first = machine.claim('worker-a', now);
@@ -63,12 +73,15 @@ describe('durable analytics outbox contract', () => {
     expect(machine.fail(first!.id, 'worker-a', now, 'analyzer unavailable')?.state).toBe('retry');
 
     const second = machine.claim('worker-b', new Date(now.getTime() + 1));
-    expect(machine.fail(second!.id, 'worker-b', now, 'analyzer unavailable')?.state).toBe('dead');
+    expect(machine.fail(second!.id, 'worker-b', new Date(now.getTime() + 1), 'analyzer unavailable')?.state).toBe('dead');
 
     const recoveryStore = new InMemoryAnalyticsOutboxStore([createEntry()]);
     const recoveryMachine = new AnalyticsOutboxStateMachine(recoveryStore, { maxAttempts: 2, leaseMs: 1_000 });
-    recoveryMachine.claim('worker-a', now);
-    expect(recoveryMachine.recoverExpiredLeases(new Date(now.getTime() + 1_001))).toBe(1);
+    const expired = recoveryMachine.claim('worker-a', now)!;
+    const afterExpiry = new Date(now.getTime() + 1_001);
+    expect(recoveryMachine.complete(expired.id, 'worker-a', afterExpiry)).toBeNull();
+    expect(recoveryMachine.fail(expired.id, 'worker-a', afterExpiry, 'analyzer unavailable')).toBeNull();
+    expect(recoveryMachine.recoverExpiredLeases(afterExpiry)).toBe(1);
     expect(recoveryStore.all()[0]).toMatchObject({ state: 'retry', leaseOwner: null, leaseExpiresAt: null });
   });
 
