@@ -62,6 +62,7 @@ describe('production database governance contracts', () => {
     const stopService = workflow.indexOf('sudo systemctl stop kognitika');
     const reset = workflow.indexOf('DROP SCHEMA public CASCADE');
     const migration = workflow.indexOf('pnpm exec prisma migrate deploy');
+    const finalStatus = workflow.lastIndexOf('pnpm exec prisma migrate status');
 
     expect(workflow).toContain('operation:');
     expect(workflow).toContain('clean_rebuild');
@@ -72,8 +73,11 @@ describe('production database governance contracts', () => {
     expect(backupReference).toBeGreaterThan(rebuildStep);
     expect(checksum).toBeGreaterThan(backupReference);
     expect(stopService).toBeGreaterThan(checksum);
+    expect(workflow).toContain('client_image=postgres:16');
+    expect(workflow).toContain('client psql "$DATABASE_URL"');
     expect(reset).toBeGreaterThan(stopService);
     expect(migration).toBeGreaterThan(reset);
+    expect(finalStatus).toBeGreaterThan(migration);
   });
 
   it('requires protected approval and an isolated restore before a backup can authorize a clean rebuild', () => {
