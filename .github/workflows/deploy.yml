@@ -128,8 +128,12 @@ jobs:
           fi
 
           build_id="$(git rev-parse --short HEAD)"
-          CI=true pnpm install --frozen-lockfile
+          # This host builds the Vite frontend, so it must install build-time dev dependencies
+          # even if its service environment was previously configured with NODE_ENV=production.
+          CI=true pnpm install --frozen-lockfile --prod=false
           CI=true pnpm exec prisma generate
+          CI=true pnpm exec vite --version
+          node -e 'require.resolve("tailwindcss/package.json")'
 
           production_env="/opt/kognitika/.env"
           if [ ! -r "$production_env" ]; then
