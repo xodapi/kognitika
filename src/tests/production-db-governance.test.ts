@@ -56,8 +56,10 @@ describe('production database governance contracts', () => {
   it('requires an explicit destructive acknowledgement and a durable verified-backup reference before a clean rebuild', () => {
     const workflow = read('.github/workflows/production-db-migration.yml');
     const acknowledgement = workflow.indexOf('DELETE_PRODUCTION_DATA');
-    const confirmationStep = workflow.indexOf('Validate clean rebuild acknowledgement');
-    const backupReference = workflow.indexOf('VERIFIED_BACKUP_REFERENCE', confirmationStep);
+    const rebuildStep = workflow.indexOf('Clean rebuild on protected host');
+    const backupReference = workflow.indexOf('VERIFIED_BACKUP_REFERENCE', rebuildStep);
+    const checksum = workflow.indexOf('sha256sum --check');
+    const stopService = workflow.indexOf('sudo systemctl stop kognitika');
     const reset = workflow.indexOf('DROP SCHEMA public CASCADE');
     const migration = workflow.indexOf('pnpm exec prisma migrate deploy');
 
@@ -66,9 +68,11 @@ describe('production database governance contracts', () => {
     expect(workflow).toContain('verified_backup_reference:');
     expect(workflow).not.toContain('actions/upload-artifact');
     expect(acknowledgement).toBeGreaterThanOrEqual(0);
-    expect(confirmationStep).toBeGreaterThan(acknowledgement);
-    expect(backupReference).toBeGreaterThan(confirmationStep);
-    expect(reset).toBeGreaterThan(backupReference);
+    expect(rebuildStep).toBeGreaterThan(acknowledgement);
+    expect(backupReference).toBeGreaterThan(rebuildStep);
+    expect(checksum).toBeGreaterThan(backupReference);
+    expect(stopService).toBeGreaterThan(checksum);
+    expect(reset).toBeGreaterThan(stopService);
     expect(migration).toBeGreaterThan(reset);
   });
 
