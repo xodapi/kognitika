@@ -124,6 +124,8 @@ jobs:
           . /opt/kognitika/.env
           set +a
           test -n "${DATABASE_URL:-}"
+          # Prisma accepts this query parameter; PostgreSQL client tools do not.
+          DATABASE_URL="${DATABASE_URL%%\?schema=public}"
 
           # A durable archive and its actual restore test must already exist before
           # this destructive workflow. Do not accept a runner-local or list-only check.
@@ -144,9 +146,16 @@ jobs:
           }
           trap restore_service EXIT
 
+          # The legacy pre-rebuild state intentionally has pending migrations. Do not
+          # run migrate status until the fresh schema has been created and migrated.
+          command -v docker >/dev/null
+          client_image=postgres:16
+          client() {
+            docker run --rm --network host -e DATABASE_URL "$client_image" "$@"
+          }
+
           sudo systemctl stop kognitika
-          pnpm exec prisma migrate status
-          psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --command 'DROP SCHEMA public CASCADE; CREATE SCHEMA public;'
+          client psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --command 'DROP SCHEMA public CASCADE; CREATE SCHEMA public;'
           pnpm exec prisma migrate deploy
           pnpm exec prisma migrate status
 
