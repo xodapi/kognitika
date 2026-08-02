@@ -5,6 +5,7 @@ import {
   EXPECTED_GAME_TYPES,
   LEGACY_MIGRATIONS,
   RECONCILIATION_MIGRATION,
+  MIGRATION_ORDER,
   inspectMigrationBaseline,
 } from '../../scripts/migration-baseline-state.mjs';
 
@@ -23,22 +24,37 @@ type Fixture = {
 };
 
 const missingBaselineTables = ['session_analytics_summaries', 'daily_practice_plans'];
-const successful = (migration_name: string): MigrationRecord => ({ migration_name, finished_at: new Date('2026-07-25T00:00:00.000Z'), rolled_back_at: null });
-const rolledBack = (migration_name: string): MigrationRecord => ({ migration_name, finished_at: null, rolled_back_at: new Date('2026-07-25T00:00:00.000Z') });
-const approvedRecoveryHistory = [BASELINE_MIGRATION, ...LEGACY_MIGRATIONS].map(successful);
+const successful = (migration_name: string): MigrationRecord => ({
+  migration_name,
+  finished_at: new Date('2026-07-25T00:00:00.000Z'),
+  rolled_back_at: null,
+});
+const rolledBack = (migration_name: string): MigrationRecord => ({
+  migration_name,
+  finished_at: null,
+  rolled_back_at: new Date('2026-07-25T00:00:00.000Z'),
+});
+const approvedAppliedHistory = [BASELINE_MIGRATION, ...LEGACY_MIGRATIONS].map(successful);
+const exactRecoveryHistory = [...LEGACY_MIGRATIONS.map(successful), rolledBack(BASELINE_MIGRATION), successful(BASELINE_MIGRATION)];
 
 function fixtureClient(fixture: Fixture = {}) {
   const tables = fixture.tables ?? [...CORE_TABLES];
   return {
     query: async (query: string) => {
       if (query.includes('tableCount')) {
-        return { rows: [{ tableCount: tables.length, hasMigrationTable: fixture.hasMigrationTable ?? true, hasGameType: fixture.gameType ?? true }] };
+        return {
+          rows: [{
+            tableCount: tables.length,
+            hasMigrationTable: fixture.hasMigrationTable ?? true,
+            hasGameType: fixture.gameType ?? true,
+          }],
+        };
       }
       if (query.includes('SELECT tablename')) {
         return { rows: tables.map((tablename) => ({ tablename })) };
       }
       if (query.includes('SELECT migration_name')) {
-        return { rows: fixture.migrations ?? approvedRecoveryHistory };
+        return { rows: fixture.migrations ?? exactRecoveryHistory };
       }
       if (query.includes('SELECT enumlabel')) {
         return { rows: (fixture.gameTypes ?? EXPECTED_GAME_TYPES).map((enumlabel) => ({ enumlabel })) };
@@ -49,7 +65,7 @@ function fixtureClient(fixture: Fixture = {}) {
 }
 
 describe('approved legacy recovery preflight', () => {
-  it('permits only the exact approved adoption fingerprint for reconciliation', async () => {
+  it('permits the exact observed rolled-back-plus-applied baseline fingerprint', async () => {
     await expect(inspectMigrationBaseline(fixtureClient() as never)).resolves.toEqual({ kind: 'legacy-reconciliation-required' });
   });
 
@@ -77,34 +93,40 @@ describe('approved legacy recovery preflight', () => {
     }) as never)).resolves.toMatchObject({ kind: 'invalid', code: 11 });
   });
 
-  it('rejects a missing baseline adoption record', async () => {
+  it('rejects a recovery state without the rolled-back baseline record', async () => {
     await expect(inspectMigrationBaseline(fixtureClient({
-      migrations: LEGACY_MIGRATIONS.map(successful),
+      migrations: approvedAppliedHistory,
     }) as never)).resolves.toMatchObject({ kind: 'invalid', code: 11 });
   });
 
   it('rejects an extra migration record', async () => {
     await expect(inspectMigrationBaseline(fixtureClient({
-      migrations: [...approvedRecoveryHistory, successful('unexpected_migration')],
+      migrations: [...exactRecoveryHistory, successful('unexpected_migration')],
     }) as never)).resolves.toMatchObject({ kind: 'invalid', code: 11 });
   });
 
   it('rejects an unfinished migration', async () => {
     await expect(inspectMigrationBaseline(fixtureClient({
-      migrations: [...approvedRecoveryHistory, { migration_name: RECONCILIATION_MIGRATION, finished_at: null, rolled_back_at: null }],
+      migrations: [...exactRecoveryHistory, { migration_name: RECONCILIATION_MIGRATION, finished_at: null, rolled_back_at: null }],
     }) as never)).resolves.toMatchObject({ kind: 'invalid', code: 12 });
   });
 
-  it('rejects a rolled-back baseline record even when a baseline adoption record exists', async () => {
+  it('rejects a rolled-back record for a migration other than the baseline', async () => {
     await expect(inspectMigrationBaseline(fixtureClient({
-      migrations: [...approvedRecoveryHistory, rolledBack(BASELINE_MIGRATION)],
+      migrations: [...approvedAppliedHistory, rolledBack(RECONCILIATION_MIGRATION)],
     }) as never)).resolves.toMatchObject({ kind: 'invalid', code: 13 });
   });
 
-  it('accepts the reconciled continuous migration history after target tables exist', async () => {
+  it('rejects multiple rolled-back baseline records', async () => {
     await expect(inspectMigrationBaseline(fixtureClient({
-      tables: [...CORE_TABLES, ...missingBaselineTables],
-      migrations: [...approvedRecoveryHistory, successful(RECONCILIATION_MIGRATION)],
+      migrations: [...exactRecoveryHistory, rolledBack(BASELINE_MIGRATION)],
+    }) as never)).resolves.toMatchObject({ kind: 'invalid', code: 13 });
+  });
+
+  it('accepts the full migrated history while retaining the exact rolled-back baseline audit record', async () => {
+    await expect(inspectMigrationBaseline(fixtureClient({
+      tables: [...CORE_TABLES, ...missingBaselineTables, 'GameAttempt'],
+      migrations: [...MIGRATION_ORDER.map(successful), rolledBack(BASELINE_MIGRATION)],
     }) as never)).resolves.toEqual({ kind: 'compatible' });
   });
 

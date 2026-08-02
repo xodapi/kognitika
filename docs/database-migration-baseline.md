@@ -17,17 +17,24 @@ The baseline and all incremental migrations apply in chronological order.
 Do not run baseline SQL against an existing Kognitika database. Before `prisma migrate deploy`, the deployment workflow runs `scripts/check-migration-baseline.mjs` and classifies the database as follows:
 
 - Empty database: no public tables, no `GameType` enum, and no `_prisma_migrations` table. The baseline applies normally.
-- Compatible existing database: all baseline tables and `GameType` exist, the baseline is recorded as applied, and migration history is a continuous successful prefix. Pending later migrations may then apply normally.
-- **Exact approved legacy recovery fingerprint**: the baseline and exactly the three historic `GameType` migrations are successfully applied, all ten core tables exist, all 24 `GameType` labels exist in historical order, and both `session_analytics_summaries` and `daily_practice_plans` are absent. Only this fingerprint may continue to the committed `20260725140000_reconcile_legacy_baseline_gap` migration.
-- Missing migration history, an incomplete fingerprint, an extra record, missing baseline history, incomplete schema, rolled-back migration, unfinished migration, or a gap in history: deployment stops before DDL, build, or restart.
+- Compatible existing database: all baseline tables and `GameType` exist, migration history is the complete successful migration sequence, or that same sequence plus the one documented rolled-back baseline audit record described below.
+- **Exact observed legacy recovery fingerprint**: all ten core tables exist; `GameType` has exactly 24 labels in historical order; `session_analytics_summaries` and `daily_practice_plans` are both absent; and `_prisma_migrations` has exactly five records:
+  1. the three historic `GameType` migrations, each successful;
+  2. one rolled-back `20260701000000_baseline_schema` record; and
+  3. one successful/applied `20260701000000_baseline_schema` record.
+
+  Only this exact fingerprint may continue to committed `20260725140000_reconcile_legacy_baseline_gap`.
+- Missing migration history, an incomplete fingerprint, an extra record, a rolled-back record for any migration other than the baseline, multiple rolled-back records, unfinished migration, incomplete schema, or a gap in history stops deployment before DDL, build, or restart.
 
 ## Approved Legacy Schema Adoption Exception
 
-`prisma migrate resolve --applied 20260701000000_baseline_schema` is permitted only as an explicitly approved operational exception for adoption of an already-existing legacy schema. It must be performed under the approved runbook after a verified backup and schema inspection. It records migration history only, and baseline SQL must **not** be physically run again.
+`prisma migrate resolve --applied 20260701000000_baseline_schema` is permitted only as an explicitly approved operational exception for adoption of an already-existing legacy schema. It must be performed under an approved runbook after a verified backup and schema inspection. It records migration history only, and baseline SQL must **not** be physically run again.
 
-The current production baseline history is already marked applied after controlled recovery. Do not roll back, remove, or otherwise alter it. This repository's preflight verifies only the exact approved post-adoption fingerprint above; it does not perform adoption or modify `_prisma_migrations`.
+The recorded recovery sequence first encountered a baseline failure because the existing `GameType` enum made baseline SQL invalid. Prisma then recorded that failed attempt with `migrate resolve --rolled-back`, followed by an applied baseline adoption record. Prisma 7.8.0 was verified in the isolated laboratory to retain both records, treat the successful baseline record as applied, and continue with reconciliation and later migrations. The rolled-back baseline record is audit history, not an instruction to rerun baseline SQL.
 
-After preflight permits that fingerprint, Prisma applies the committed reconciliation migration. Its `IF NOT EXISTS` DDL creates the two missing baseline tables and indexes. Prisma then applies the later committed migrations. The post-deploy assertion must verify all nine successful migration records, no rolled-back or unfinished records, the two recovered tables, their expected indexes, and `GameAttempt` from later migrations.
+This repository preflight never performs adoption or modifies `_prisma_migrations`. It permits only the exact observed post-adoption fingerprint above. After preflight permits that fingerprint, Prisma applies the committed reconciliation migration. Its `IF NOT EXISTS` DDL creates the two missing baseline tables and indexes. Prisma then applies later committed migrations.
+
+Post-deploy verification requires nine successful migration records plus the retained rolled-back baseline audit record, no unfinished records, the two recovered tables, their expected indexes, and `GameAttempt` from later migrations. The preflight intentionally rejects any other rolled-back record layout.
 
 ## Isolated Recovery Laboratory
 
@@ -40,10 +47,11 @@ Run the schema-only, synthetic local proof:
 The laboratory starts an ephemeral PostgreSQL container and, only there:
 
 1. creates the sanitized physical legacy schema without the two target tables;
-2. records the approved baseline and historic migration history via `prisma migrate resolve --applied`, without re-running baseline SQL;
-3. verifies that preflight permits the exact fingerprint;
-4. runs the full committed Prisma migration sequence and verifies post-deploy schema/history assertions;
-5. verifies the separate fresh empty database path.
+2. records the three historic migrations, demonstrates the baseline SQL failure against the pre-existing enum, then records the failed baseline as rolled back and records the approved baseline adoption without re-running baseline SQL;
+3. asserts the exact five-row observed metadata fingerprint and verifies preflight permits it;
+4. verifies `prisma migrate status`, runs the full committed Prisma migration sequence, and asserts the final ten-row history and recovered schema;
+5. verifies that the final Prisma status is up to date and the repository preflight is compatible;
+6. verifies the separate fresh empty database path.
 
 It reads no `.env`, contacts no server, and contains no application rows, user data, Brain ID, email, tokens, JWTs, or raw telemetry. Near-miss cases are covered by `src/tests/migration-baseline-state.test.ts` and remain fail-closed.
 
