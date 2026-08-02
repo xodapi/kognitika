@@ -101,6 +101,20 @@ describe('production database governance contracts', () => {
     expect(restore).toBeGreaterThan(checksum);
   });
 
+  it('requires protected approval and an exact synthetic marker before production smoke cleanup', () => {
+    const workflow = read('.github/workflows/production-smoke-data-cleanup.yml');
+
+    expect(workflow).toContain('workflow_dispatch:');
+    expect(workflow).toContain('environment: production-db-changes');
+    expect(workflow).toContain('DELETE_SYNTHETIC_SMOKE_DATA');
+    expect(workflow).toContain("metadata @> '{\"smokeTest\": true}'::jsonb");
+    expect(workflow).toContain('WITH smoke_sessions AS');
+    expect(workflow).toContain('BEGIN;');
+    expect(workflow).toContain('COMMIT;');
+    expect(workflow).not.toContain('DROP SCHEMA');
+    expect(workflow).not.toContain('actions/upload-artifact');
+  });
+
   it('fails closed without a valid runbook identifier and reviewable GitHub issue or pull-request URL', async () => {
     const { evaluateProductionDbGate } = await import('../../scripts/production-db-change-gate.mjs');
 
