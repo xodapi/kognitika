@@ -1,0 +1,163 @@
+{
+  "version": 1,
+  "policyId": "rust-postgresql-migration-authority",
+  "currentPhase": "prisma-authority",
+  "productionSchema": {
+    "name": "public",
+    "currentDdlOwner": "prisma"
+  },
+  "ownershipTransfer": {
+    "requiredPullRequest": true,
+    "requiredReview": true,
+    "enablesConcurrentPrismaAndSqlxMigrations": false,
+    "notImplementedByThisPolicy": true,
+    "requiredEvidence": [
+      "schema compatibility validation",
+      "rollback rehearsal",
+      "least-privilege credential review",
+      "privacy-safe observability review"
+    ]
+  },
+  "migrationEngines": {
+    "prisma": {
+      "mayModifyProductionSchema": true,
+      "migrationHistoryAuthority": "_prisma_migrations"
+    },
+    "sqlx": {
+      "mayModifyProductionSchema": false,
+      "migrationHistoryAuthority": "forbidden"
+    }
+  },
+  "phases": [
+    {
+      "id": "prisma-authority",
+      "status": "current",
+      "ddlOwner": "prisma",
+      "nodePrismaAuthorityOperational": true,
+      "rustComponents": [
+        {
+          "name": "kognitika-core",
+          "databaseUrlAccess": "forbidden",
+          "ddlMigrations": "forbidden",
+          "writes": "forbidden"
+        },
+        {
+          "name": "future-axum-analytics-sidecar",
+          "databaseUrlAccess": "forbidden",
+          "ddlMigrations": "forbidden",
+          "writes": "forbidden"
+        }
+      ],
+      "rollback": {
+        "restoresNodePrismaAuthority": true
+      }
+    },
+    {
+      "id": "rust-read-only-shadow",
+      "status": "planned",
+      "ddlOwner": "prisma",
+      "nodePrismaAuthorityOperational": true,
+      "rustComponents": [
+        {
+          "name": "kognitika-core",
+          "databaseUrlAccess": "forbidden",
+          "ddlMigrations": "forbidden",
+          "writes": "forbidden"
+        },
+        {
+          "name": "future-axum-analytics-sidecar",
+          "databaseUrlAccess": "forbidden",
+          "ddlMigrations": "forbidden",
+          "writes": "forbidden"
+        }
+      ],
+      "rollback": {
+        "restoresNodePrismaAuthority": true
+      }
+    },
+    {
+      "id": "bounded-rust-write-owner",
+      "status": "not-authorized-without-separate-transfer-pr",
+      "ddlOwner": "prisma",
+      "nodePrismaAuthorityOperational": true,
+      "rustComponents": [
+        {
+          "name": "kognitika-core",
+          "databaseUrlAccess": "forbidden",
+          "ddlMigrations": "forbidden",
+          "writes": "forbidden"
+        },
+        {
+          "name": "future-axum-analytics-sidecar",
+          "databaseUrlAccess": "forbidden",
+          "ddlMigrations": "forbidden",
+          "writes": "forbidden"
+        }
+      ],
+      "rollback": {
+        "restoresNodePrismaAuthority": true
+      }
+    },
+    {
+      "id": "explicit-full-transfer",
+      "status": "not-implemented",
+      "ddlOwner": "prisma",
+      "nodePrismaAuthorityOperational": true,
+      "rustComponents": [
+        {
+          "name": "kognitika-core",
+          "databaseUrlAccess": "forbidden",
+          "ddlMigrations": "forbidden",
+          "writes": "forbidden"
+        },
+        {
+          "name": "future-axum-analytics-sidecar",
+          "databaseUrlAccess": "forbidden",
+          "ddlMigrations": "forbidden",
+          "writes": "forbidden"
+        }
+      ],
+      "rollback": {
+        "restoresNodePrismaAuthority": true
+      }
+    }
+  ],
+  "compatibilityMatrix": [
+    {
+      "databaseState": "fresh",
+      "nodePrismaAuthorityOperational": true,
+      "rustReaderAccess": "node-mediated-only",
+      "rollbackRestoresNodePrismaAuthority": true
+    },
+    {
+      "databaseState": "legacy-production-like",
+      "nodePrismaAuthorityOperational": true,
+      "rustReaderAccess": "node-mediated-only",
+      "rollbackRestoresNodePrismaAuthority": true
+    },
+    {
+      "databaseState": "fully-migrated",
+      "nodePrismaAuthorityOperational": true,
+      "rustReaderAccess": "node-mediated-only",
+      "rollbackRestoresNodePrismaAuthority": true
+    }
+  ],
+  "readerSchemaContract": {
+    "nullableFieldsDocumented": true,
+    "enumValuesVersioned": true,
+    "requiredIndexesDocumented": true,
+    "foreignKeysDocumented": true,
+    "idempotencyKeysDocumented": true,
+    "transactionBoundariesDocumented": true
+  },
+  "leastPrivilege": {
+    "rustComponentsReceiveDatabaseUrl": false,
+    "rustComponentsReceiveDatabaseCredentials": false,
+    "nodeMigrationPrincipalIsDedicated": true
+  },
+  "observability": {
+    "permitsRawBrainId": false,
+    "permitsSecretsOrTokens": false,
+    "permitsRawPrivateTelemetry": false
+  }
+}
