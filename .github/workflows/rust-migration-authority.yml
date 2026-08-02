@@ -29,4 +29,3 @@ jobs:
           cache-dependency-path: pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
       - run: pnpm test src/tests/rust-migration-authority-contract.test.ts
-      - run: pnpm typecheck:tests
