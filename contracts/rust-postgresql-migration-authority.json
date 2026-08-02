@@ -153,7 +153,14 @@
   "leastPrivilege": {
     "rustComponentsReceiveDatabaseUrl": false,
     "rustComponentsReceiveDatabaseCredentials": false,
-    "nodeMigrationPrincipalIsDedicated": true
+    "nodeMigrationPrincipal": {
+      "status": "required-for-future-ownership-transfer",
+      "runtimeEnforcementVerified": false
+    },
+    "runtimeEnvironmentManifestValidation": {
+      "status": "not-implemented",
+      "requiredBeforeRustServiceDeployment": true
+    }
   },
   "observability": {
     "permitsRawBrainId": false,

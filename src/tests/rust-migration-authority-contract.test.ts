@@ -46,7 +46,14 @@ type MigrationAuthorityPolicy = {
   leastPrivilege: {
     rustComponentsReceiveDatabaseUrl: boolean;
     rustComponentsReceiveDatabaseCredentials: boolean;
-    nodeMigrationPrincipalIsDedicated: boolean;
+    nodeMigrationPrincipal: {
+      status: 'required-for-future-ownership-transfer';
+      runtimeEnforcementVerified: boolean;
+    };
+    runtimeEnvironmentManifestValidation: {
+      status: 'not-implemented';
+      requiredBeforeRustServiceDeployment: boolean;
+    };
   };
   observability: {
     permitsRawBrainId: boolean;
@@ -68,10 +75,11 @@ describe('Rust/PostgreSQL migration authority policy', () => {
   });
 
   it('requires a reviewed ownership-transfer PR and never permits concurrent engines', () => {
-    expect(policy.ownershipTransfer).toEqual({
+    expect(policy.ownershipTransfer).toMatchObject({
       requiredPullRequest: true,
       requiredReview: true,
       enablesConcurrentPrismaAndSqlxMigrations: false,
+      notImplementedByThisPolicy: true,
     });
 
     for (const phase of policy.phases) {
@@ -82,7 +90,14 @@ describe('Rust/PostgreSQL migration authority policy', () => {
   it('keeps Rust components read-only and disconnected from PostgreSQL credentials', () => {
     expect(policy.leastPrivilege.rustComponentsReceiveDatabaseUrl).toBe(false);
     expect(policy.leastPrivilege.rustComponentsReceiveDatabaseCredentials).toBe(false);
-    expect(policy.leastPrivilege.nodeMigrationPrincipalIsDedicated).toBe(true);
+    expect(policy.leastPrivilege.nodeMigrationPrincipal).toEqual({
+      status: 'required-for-future-ownership-transfer',
+      runtimeEnforcementVerified: false,
+    });
+    expect(policy.leastPrivilege.runtimeEnvironmentManifestValidation).toEqual({
+      status: 'not-implemented',
+      requiredBeforeRustServiceDeployment: true,
+    });
 
     for (const component of policy.phases.flatMap((phase) => phase.rustComponents)) {
       expect(component.databaseUrlAccess, component.name).toBe('forbidden');

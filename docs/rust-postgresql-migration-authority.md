@@ -23,9 +23,11 @@ work must satisfy without changing those shared operations.
 1. **Prisma is the only current production DDL owner for `public`.** Prisma's
    `_prisma_migrations` history remains authoritative.
 2. **Rust is read-only at the database boundary.** `kognitika-core` and any
-   future Axum analytics sidecar do not receive `DATABASE_URL` or PostgreSQL
-   credentials, do not execute DDL or SQLx migrations, and do not write product
-   data. Any input they process is passed through an owning Node service.
+   future Axum analytics sidecar are required not to receive `DATABASE_URL` or
+   PostgreSQL credentials, execute DDL or SQLx migrations, or write product
+   data. Any input they process is passed through an owning Node service. This
+   policy does not itself inspect a container or environment manifest, so it is
+   not runtime enforcement of those requirements.
 3. **Prisma and SQLx must never migrate the same schema concurrently.** SQLx
    migrations are forbidden for production `public` while Prisma owns it.
 4. **An ownership transfer is a separate, reviewed PR.** It must explicitly
@@ -70,9 +72,11 @@ or migration baseline files.
 
 ## Least privilege and privacy-safe observability
 
-- Only a dedicated Node/Prisma migration principal may receive migration
-  credentials. Rust components receive neither `DATABASE_URL` nor database
-  credentials.
+- A dedicated Node/Prisma migration principal is required before a future
+  ownership transfer. This ADR does not assert that one has been provisioned or
+  verified in the current environment. Rust components are required not to
+  receive `DATABASE_URL` or database credentials; container/environment
+  manifest validation must enforce this before a Rust service deployment.
 - Rust component logs, metrics, traces, fixtures, and contract reports must not
   contain raw Brain ID, secrets, tokens, or raw private telemetry.
 - Observability should use phase identifiers, component names, outcome classes,
