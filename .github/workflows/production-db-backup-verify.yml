@@ -69,6 +69,9 @@ jobs:
           . /opt/kognitika/.env
           set +a
           test -n "${DATABASE_URL:-}"
+          # Prisma accepts `schema=public`; PostgreSQL client CLIs reject that
+          # non-libpq query parameter. The workflow uses the default public schema.
+          DATABASE_URL="${DATABASE_URL%%\?schema=public}"
 
           backup_dir=/opt/kognitika-db-backups
           backup_file="$backup_dir/${BACKUP_REFERENCE}.dump"
