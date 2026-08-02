@@ -1,0 +1,66 @@
+name: Production Database Migration
+
+on:
+  workflow_dispatch:
+    inputs:
+      base_sha:
+        description: Previously deployed commit SHA for the reviewed change set
+        required: true
+        type: string
+      target_sha:
+        description: Reviewed commit SHA to migrate
+        required: true
+        type: string
+      db_change_runbook_id:
+        description: Reviewed runbook identifier, for example PDD-DB-2026-08-02-165
+        required: true
+        type: string
+      review_url:
+        description: Reviewable xodapi/kognitika GitHub issue or pull-request URL
+        required: true
+        type: string
+
+concurrency:
+  group: kognitika-production-db
+  cancel-in-progress: false
+
+jobs:
+  migrate:
+    # Configure this Environment with required human reviewers outside this repository.
+    environment: production-db-changes
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      # Scope this secret exclusively to the protected production-db-changes Environment.
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.target_sha }}
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 10.22.0
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Validate reviewed database change evidence
+        env:
+          DB_CHANGE_RUNBOOK_ID: ${{ inputs.db_change_runbook_id }}
+          DB_CHANGE_REVIEW_URL: ${{ inputs.review_url }}
+        run: node scripts/production-db-change-gate.mjs "${{ inputs.base_sha }}" "${{ inputs.target_sha }}"
+
+      - name: Preflight migration history before DDL
+        run: node scripts/check-migration-baseline.mjs
+
+      - name: Apply committed database migrations
+        run: pnpm exec prisma migrate deploy
