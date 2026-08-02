@@ -55,4 +55,8 @@ The laboratory starts an ephemeral PostgreSQL container and, only there:
 
 It reads no `.env`, contacts no server, and contains no application rows, user data, Brain ID, email, tokens, JWTs, or raw telemetry. Near-miss cases are covered by `src/tests/migration-baseline-state.test.ts` and remain fail-closed.
 
+### Explicit Clean Rebuild
+
+When retaining existing data is not required, the separate clean-rebuild path is documented in [`production-db-clean-rebuild-runbook.md`](./production-db-clean-rebuild-runbook.md). It requires a durable backup that has already been restore-tested outside GitHub Actions, protected-environment approval, an immutable reviewed target SHA, and the exact `DELETE_PRODUCTION_DATA` acknowledgement. It never runs from the normal deploy path.
+
 The production health check remains `https://kognitika.ru/api/health`.
