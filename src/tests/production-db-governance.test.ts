@@ -53,6 +53,25 @@ describe('production database governance contracts', () => {
     expect(preflight).toBeLessThan(ddl);
   });
 
+  it('requires an explicit destructive acknowledgement and a durable verified-backup reference before a clean rebuild', () => {
+    const workflow = read('.github/workflows/production-db-migration.yml');
+    const acknowledgement = workflow.indexOf('DELETE_PRODUCTION_DATA');
+    const confirmationStep = workflow.indexOf('Validate clean rebuild acknowledgement');
+    const backupReference = workflow.indexOf('VERIFIED_BACKUP_REFERENCE', confirmationStep);
+    const reset = workflow.indexOf('DROP SCHEMA public CASCADE');
+    const migration = workflow.indexOf('pnpm exec prisma migrate deploy');
+
+    expect(workflow).toContain('operation:');
+    expect(workflow).toContain('clean_rebuild');
+    expect(workflow).toContain('verified_backup_reference:');
+    expect(workflow).not.toContain('actions/upload-artifact');
+    expect(acknowledgement).toBeGreaterThanOrEqual(0);
+    expect(confirmationStep).toBeGreaterThan(acknowledgement);
+    expect(backupReference).toBeGreaterThan(confirmationStep);
+    expect(reset).toBeGreaterThan(backupReference);
+    expect(migration).toBeGreaterThan(reset);
+  });
+
   it('fails closed without a valid runbook identifier and reviewable GitHub issue or pull-request URL', async () => {
     const { evaluateProductionDbGate } = await import('../../scripts/production-db-change-gate.mjs');
 

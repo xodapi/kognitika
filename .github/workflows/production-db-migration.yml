@@ -19,6 +19,22 @@ on:
         description: Reviewable xodapi/kognitika GitHub issue or pull-request URL
         required: true
         type: string
+      operation:
+        description: "Apply committed migrations, or clean_rebuild after explicit destructive approval"
+        required: true
+        default: apply_migrations
+        type: choice
+        options:
+          - apply_migrations
+          - clean_rebuild
+      destructive_confirmation:
+        description: "Required for clean_rebuild: DELETE_PRODUCTION_DATA"
+        required: false
+        type: string
+      verified_backup_reference:
+        description: "Required for clean_rebuild: verified disposable restore evidence identifier"
+        required: false
+        type: string
 
 concurrency:
   group: kognitika-production-db
@@ -59,8 +75,39 @@ jobs:
           DB_CHANGE_REVIEW_URL: ${{ inputs.review_url }}
         run: node scripts/production-db-change-gate.mjs "${{ inputs.base_sha }}" "${{ inputs.target_sha }}"
 
-      - name: Preflight migration history before DDL
+      - name: Preflight migration history before incremental DDL
+        if: inputs.operation == 'apply_migrations'
         run: node scripts/check-migration-baseline.mjs
+
+      - name: Validate clean rebuild acknowledgement
+        if: inputs.operation == 'clean_rebuild'
+        env:
+          DESTRUCTIVE_CONFIRMATION: ${{ inputs.destructive_confirmation }}
+          VERIFIED_BACKUP_REFERENCE: ${{ inputs.verified_backup_reference }}
+        run: |
+          set -euo pipefail
+          test "$DESTRUCTIVE_CONFIRMATION" = "DELETE_PRODUCTION_DATA"
+          test -n "$VERIFIED_BACKUP_REFERENCE"
+
+      - name: Record verified backup boundary
+        if: inputs.operation == 'clean_rebuild'
+        env:
+          VERIFIED_BACKUP_REFERENCE: ${{ inputs.verified_backup_reference }}
+        run: |
+          set -euo pipefail
+          # The reference must identify an archive that was restored successfully outside
+          # GitHub Actions. A runner-local backup would disappear after this job and is not
+          # an acceptable recovery path.
+          printf 'Using pre-verified durable backup reference: %s\n' "$VERIFIED_BACKUP_REFERENCE"
+
+      - name: Reset production schema after verified backup
+        if: inputs.operation == 'clean_rebuild'
+        run: |
+          set -euo pipefail
+          psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --command 'DROP SCHEMA public CASCADE; CREATE SCHEMA public;'
 
       - name: Apply committed database migrations
         run: pnpm exec prisma migrate deploy
+
+      - name: Verify fresh database migration status
+        run: pnpm exec prisma migrate status
