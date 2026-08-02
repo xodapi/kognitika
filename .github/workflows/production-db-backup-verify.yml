@@ -83,7 +83,9 @@ jobs:
           # The host intentionally has no PostgreSQL client packages. Use the pinned
           # PostgreSQL client image instead of installing packages or changing host state.
           command -v docker >/dev/null
-          client_image=postgres:15
+          # PostgreSQL client major must be at least the production server major.
+          # The server reported 16.13 during the prior safe backup attempt.
+          client_image=postgres:16
           client() {
             docker run --rm --network host -e DATABASE_URL \
               -v "$backup_dir:$backup_dir" "$client_image" "$@"
