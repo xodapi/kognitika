@@ -86,6 +86,8 @@ describe('production database governance contracts', () => {
     expect(workflow).toContain('environment: production-db-changes');
     expect(workflow).toContain('backup_reference:');
     expect(workflow).toContain('review_url:');
+    expect(workflow).toContain('client_image=postgres:15');
+    expect(workflow).toContain('docker run --rm');
     expect(workflow).not.toContain('actions/upload-artifact');
     expect(dump).toBeGreaterThanOrEqual(0);
     expect(checksum).toBeGreaterThan(dump);

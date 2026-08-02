@@ -77,8 +77,17 @@ jobs:
           test ! -e "$backup_file"
           test ! -e "$checksum_file"
 
+          # The host intentionally has no PostgreSQL client packages. Use the pinned
+          # PostgreSQL client image instead of installing packages or changing host state.
+          command -v docker >/dev/null
+          client_image=postgres:15
+          client() {
+            docker run --rm --network host -e DATABASE_URL \
+              -v "$backup_dir:$backup_dir" "$client_image" "$@"
+          }
+
           umask 077
-          pg_dump --format=custom --no-owner --no-privileges --file "$backup_file" "$DATABASE_URL"
+          client pg_dump --format=custom --no-owner --no-privileges --file "$backup_file" "$DATABASE_URL"
           (cd "$backup_dir" && sha256sum "$(basename "$backup_file")" > "$(basename "$checksum_file")")
           (cd "$backup_dir" && sha256sum --check "$(basename "$checksum_file")")
           backup_checksum="$(cut -d ' ' -f 1 "$checksum_file")"
@@ -86,13 +95,13 @@ jobs:
           restore_db="kognitika_backup_verify_${BACKUP_REFERENCE//[^A-Za-z0-9_]/_}"
           restore_db="${restore_db:0:60}"
           cleanup() {
-            dropdb --if-exists "$restore_db" || true
+            client dropdb --if-exists "$restore_db" || true
           }
           trap cleanup EXIT
 
-          createdb "$restore_db"
-          pg_restore --exit-on-error --no-owner --no-privileges --dbname "$restore_db" "$backup_file"
-          psql "$restore_db" --set ON_ERROR_STOP=1 --tuples-only --no-align --command "SELECT CASE WHEN EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public') THEN 'restore-ok' ELSE 'restore-missing-public-schema' END;" | grep -qx 'restore-ok'
+          client createdb "$restore_db"
+          client pg_restore --exit-on-error --no-owner --no-privileges --dbname "$restore_db" "$backup_file"
+          client psql "$restore_db" --set ON_ERROR_STOP=1 --tuples-only --no-align --command "SELECT CASE WHEN EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public') THEN 'restore-ok' ELSE 'restore-missing-public-schema' END;" | grep -qx 'restore-ok'
           echo "Backup and isolated restore verified for reference: $BACKUP_REFERENCE"
           echo "Backup SHA-256: $backup_checksum"
           REMOTE
