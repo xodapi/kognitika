@@ -12,11 +12,11 @@ on:
         required: true
         type: string
       db_change_runbook_id:
-        description: Reviewed runbook identifier, for example PDD-DB-2026-08-02-165
+        description: Reviewed runbook identifier, for example PDD-DB-2026-08-02-175
         required: true
         type: string
       review_url:
-        description: Reviewable xodapi/kognitika GitHub issue or pull-request URL
+        description: Reviewable xodapi/kognitika GitHub issue or pull-request URL containing backup evidence
         required: true
         type: string
       operation:
@@ -32,7 +32,7 @@ on:
         required: false
         type: string
       verified_backup_reference:
-        description: "Required for clean_rebuild: verified disposable restore evidence identifier"
+        description: "Required for clean_rebuild: durable backup identifier already restore-tested"
         required: false
         type: string
 
@@ -42,14 +42,11 @@ concurrency:
 
 jobs:
   migrate:
-    # Configure this Environment with required human reviewers outside this repository.
+    # GitHub Environment approval is the external production-change boundary.
     environment: production-db-changes
     runs-on: ubuntu-latest
     permissions:
       contents: read
-    env:
-      # Scope this secret exclusively to the protected production-db-changes Environment.
-      DATABASE_URL: ${{ secrets.DATABASE_URL }}
 
     steps:
       - uses: actions/checkout@v6
@@ -77,37 +74,93 @@ jobs:
 
       - name: Preflight migration history before incremental DDL
         if: inputs.operation == 'apply_migrations'
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: node scripts/check-migration-baseline.mjs
 
-      - name: Validate clean rebuild acknowledgement
+      - name: Prepare protected host connection
         if: inputs.operation == 'clean_rebuild'
         env:
+          DEPLOY_HOST: ${{ secrets.KOGNITIKA_DEPLOY_HOST }}
+          DEPLOY_PORT: ${{ secrets.KOGNITIKA_DEPLOY_PORT }}
+          DEPLOY_KEY: ${{ secrets.KOGNITIKA_DEPLOY_SSH_KEY }}
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "$DEPLOY_KEY" > ~/.ssh/kognitika_db_rebuild_key
+          chmod 600 ~/.ssh/kognitika_db_rebuild_key
+          ssh-keyscan -p "$DEPLOY_PORT" -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts
+
+      - name: Clean rebuild on protected host
+        if: inputs.operation == 'clean_rebuild'
+        env:
+          DEPLOY_HOST: ${{ secrets.KOGNITIKA_DEPLOY_HOST }}
+          DEPLOY_PORT: ${{ secrets.KOGNITIKA_DEPLOY_PORT }}
+          DEPLOY_USER: ${{ secrets.KOGNITIKA_DEPLOY_USER }}
+          EXPECTED_SHA: ${{ inputs.target_sha }}
           DESTRUCTIVE_CONFIRMATION: ${{ inputs.destructive_confirmation }}
           VERIFIED_BACKUP_REFERENCE: ${{ inputs.verified_backup_reference }}
         run: |
           set -euo pipefail
+          ssh -i ~/.ssh/kognitika_db_rebuild_key \
+            -p "$DEPLOY_PORT" \
+            -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=yes \
+            "$DEPLOY_USER@$DEPLOY_HOST" \
+            "EXPECTED_SHA='$EXPECTED_SHA' DESTRUCTIVE_CONFIRMATION='$DESTRUCTIVE_CONFIRMATION' VERIFIED_BACKUP_REFERENCE='$VERIFIED_BACKUP_REFERENCE' bash -s" <<'REMOTE'
+          set -Eeuo pipefail
+
           test "$DESTRUCTIVE_CONFIRMATION" = "DELETE_PRODUCTION_DATA"
           test -n "$VERIFIED_BACKUP_REFERENCE"
+          case "$VERIFIED_BACKUP_REFERENCE" in
+            *[!A-Za-z0-9._-]* | '') echo 'Invalid verified backup reference.' >&2; exit 1 ;;
+          esac
 
-      - name: Record verified backup boundary
-        if: inputs.operation == 'clean_rebuild'
-        env:
-          VERIFIED_BACKUP_REFERENCE: ${{ inputs.verified_backup_reference }}
-        run: |
-          set -euo pipefail
-          # The reference must identify an archive that was restored successfully outside
-          # GitHub Actions. A runner-local backup would disappear after this job and is not
-          # an acceptable recovery path.
-          printf 'Using pre-verified durable backup reference: %s\n' "$VERIFIED_BACKUP_REFERENCE"
+          cd /opt/kognitika
+          test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+          test -r /opt/kognitika/.env
+          set -a
+          . /opt/kognitika/.env
+          set +a
+          test -n "${DATABASE_URL:-}"
 
-      - name: Reset production schema after verified backup
-        if: inputs.operation == 'clean_rebuild'
-        run: |
-          set -euo pipefail
+          # A durable archive and its actual restore test must already exist before
+          # this destructive workflow. Do not accept a runner-local or list-only check.
+          backup_dir=/opt/kognitika-db-backups
+          backup_file="$backup_dir/${VERIFIED_BACKUP_REFERENCE}.dump"
+          test -s "$backup_file"
+          test -s "${backup_file}.sha256"
+          (cd "$backup_dir" && sha256sum --check "$(basename "$backup_file").sha256")
+
+          service_was_active=false
+          if systemctl is-active --quiet kognitika; then
+            service_was_active=true
+          fi
+          restore_service() {
+            if "$service_was_active"; then
+              sudo systemctl start kognitika || true
+            fi
+          }
+          trap restore_service EXIT
+
+          sudo systemctl stop kognitika
+          pnpm exec prisma migrate status
           psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --command 'DROP SCHEMA public CASCADE; CREATE SCHEMA public;'
+          pnpm exec prisma migrate deploy
+          pnpm exec prisma migrate status
 
-      - name: Apply committed database migrations
-        run: pnpm exec prisma migrate deploy
-
-      - name: Verify fresh database migration status
-        run: pnpm exec prisma migrate status
+          if "$service_was_active"; then
+            sudo systemctl start kognitika
+            health_url=http://127.0.0.1:3006/api/health
+            for attempt in $(seq 1 30); do
+              if health="$(curl -fsS "$health_url" 2>/dev/null)"; then
+                break
+              fi
+              sleep 2
+            done
+            test -n "${health:-}"
+            printf '%s' "$health" | grep -q '"status":"ok"'
+          fi
+          trap - EXIT
+          REMOTE

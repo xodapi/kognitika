@@ -19,8 +19,8 @@ This runbook applies only to an explicitly approved clean rebuild. It deletes th
 All items must be attached to the GitHub review before dispatch:
 
 1. **Maintenance window.** Announce the expected short outage and stop new writes through the normal maintenance procedure.
-2. **Durable backup.** Create a timestamped logical PostgreSQL backup on the production host or approved durable storage, outside GitHub Actions. Do not store database dumps as Actions artifacts.
-3. **Verified restore.** Restore that exact archive into an isolated disposable PostgreSQL database. Record the archive path, SHA-256 checksum, restore command exit status, and isolated database identifier in the review. Do not put connection strings, rows, Brain IDs, email, JWTs, tokens, or telemetry in the review.
+2. **Durable backup.** Create a timestamped PostgreSQL custom-format archive at `/opt/kognitika-db-backups/<reference>.dump` and a matching `/opt/kognitika-db-backups/<reference>.dump.sha256` file on the production host or approved durable storage, outside GitHub Actions. Do not store database dumps as Actions artifacts.
+3. **Verified restore.** Restore that exact archive into an isolated disposable PostgreSQL database before dispatch. Record the archive reference, SHA-256 checksum, restore command exit status, and isolated database identifier in the review. Do not put connection strings, rows, Brain IDs, email, JWTs, tokens, or telemetry in the review.
 4. **Target review.** Record the exact immutable `target_sha`, this runbook ID, and a review URL. The target must be a green `main` commit.
 5. **Workflow environment.** Confirm `production-db-changes` has required reviewers, protected-branch policy, and only its scoped `DATABASE_URL` secret.
 6. **Rollback owner.** Name the operator who can restore the durable archive if the fresh migration or smoke checks fail.
@@ -37,7 +37,7 @@ Use the protected manual workflow with:
 - `destructive_confirmation`: exactly `DELETE_PRODUCTION_DATA`;
 - `verified_backup_reference`: the durable archive identifier already restore-tested outside Actions.
 
-The workflow validates the reviewed diff and identifier, validates that the destructive acknowledgement and backup reference are present, drops and recreates only the `public` schema, then runs `pnpm exec prisma migrate deploy` and `pnpm exec prisma migrate status`.
+The workflow validates the reviewed diff and identifier, stops the application service, verifies the durable archive checksum, drops and recreates only the `public` schema, then runs `pnpm exec prisma migrate deploy` and `pnpm exec prisma migrate status`. It restarts the service and verifies local health. If any step fails while the service was previously active, a trap attempts to restart it; database rollback remains restore from the verified archive.
 
 ## Postconditions
 
