@@ -99,14 +99,15 @@ jobs:
 
           restore_db="kognitika_backup_verify_${BACKUP_REFERENCE//[^A-Za-z0-9_]/_}"
           restore_db="${restore_db:0:60}"
+          restore_url="${DATABASE_URL%/*}/${restore_db}"
           cleanup() {
-            client dropdb --if-exists "$restore_db" || true
+            client dropdb --if-exists --maintenance-db="$DATABASE_URL" "$restore_db" || true
           }
           trap cleanup EXIT
 
-          client createdb "$restore_db"
-          client pg_restore --exit-on-error --no-owner --no-privileges --dbname "$restore_db" "$backup_file"
-          client psql "$restore_db" --set ON_ERROR_STOP=1 --tuples-only --no-align --command "SELECT CASE WHEN EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public') THEN 'restore-ok' ELSE 'restore-missing-public-schema' END;" | grep -qx 'restore-ok'
+          client createdb --maintenance-db="$DATABASE_URL" "$restore_db"
+          client pg_restore --exit-on-error --no-owner --no-privileges --dbname "$restore_url" "$backup_file"
+          client psql "$restore_url" --set ON_ERROR_STOP=1 --tuples-only --no-align --command "SELECT CASE WHEN EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public') THEN 'restore-ok' ELSE 'restore-missing-public-schema' END;" | grep -qx 'restore-ok'
           echo "Backup and isolated restore verified for reference: $BACKUP_REFERENCE"
           echo "Backup SHA-256: $backup_checksum"
           REMOTE
