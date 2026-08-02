@@ -132,6 +132,18 @@ jobs:
           CI=true pnpm exec prisma generate
 
           production_env="/opt/kognitika/.env"
+          if [ ! -r "$production_env" ]; then
+            echo "Production environment file is required for read-only database preflight." >&2
+            exit 1
+          fi
+          # Read-only preflight must complete before environment rewrite, proxy changes, build, or restart.
+          # Load the existing service configuration without printing its values.
+          set -a
+          . "$production_env"
+          set +a
+          echo "Verifying database migration baseline before deployment changes"
+          node scripts/check-migration-baseline.mjs
+
           if [ -f "$production_env" ]; then
             env_backup="/opt/kognitika-dist-backups/env-$(date -u +%Y%m%d%H%M%S)-${EXPECTED_SHA:0:7}"
             sudo cp "$production_env" "$env_backup"
@@ -150,22 +162,6 @@ jobs:
             upsert_env GAME_SAVE_LEGACY_COMPAT_ENABLED "false"
             upsert_env PORT "3006"
           fi
-
-          if [ ! -r "$production_env" ]; then
-            echo "Production environment file is required for database migration verification." >&2
-            exit 1
-          fi
-          # Migration checks and Prisma must use the same production DATABASE_URL
-          # as the service, without printing it into GitHub Actions logs.
-          set -a
-          . "$production_env"
-          set +a
-
-          echo "Verifying database migration baseline"
-          node scripts/check-migration-baseline.mjs
-
-          echo "Applying committed database migrations (fail closed)"
-          CI=true pnpm exec prisma migrate deploy
 
           BUILD_HASH="$build_id" VITE_BUILD_ID="$build_id" pnpm build
 

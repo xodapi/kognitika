@@ -1,0 +1,76 @@
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
+import { describe, expect, it } from 'vitest';
+
+const root = path.resolve(import.meta.dirname, '../..');
+const read = (file: string) => readFileSync(path.join(root, file), 'utf8');
+
+const dbSensitivePaths = [
+  'prisma/schema.prisma',
+  'prisma/migrations/20260802000000_example/migration.sql',
+  'scripts/run-production-migration.mjs',
+  '.github/workflows/deploy.yml',
+];
+
+describe('production database governance contracts', () => {
+  it('classifies schema, migrations, migration scripts, and deploy workflow changes as database-sensitive', async () => {
+    const { isDbSensitivePath } = await import('../../scripts/production-db-change-gate.mjs');
+
+    for (const file of dbSensitivePaths) {
+      expect(isDbSensitivePath(file)).toBe(true);
+    }
+    expect(isDbSensitivePath('src/lib/calculator.ts')).toBe(false);
+  });
+
+  it('keeps the normal production deploy path free of DDL and migration-history mutation', () => {
+    const deploy = read('.github/workflows/deploy.yml');
+    const productionDeploy = deploy.slice(deploy.indexOf("'REMOTE'"));
+    const preflight = productionDeploy.indexOf('node scripts/check-migration-baseline.mjs');
+
+    // The verify job may migrate its disposable PostgreSQL service. This contract covers the remote production path.
+    expect(productionDeploy).not.toContain('prisma migrate deploy');
+    expect(productionDeploy).not.toContain('prisma migrate resolve');
+    expect(preflight).toBeGreaterThanOrEqual(0);
+    expect(preflight).toBeLessThan(productionDeploy.indexOf('upsert_env APP_URL'));
+    expect(preflight).toBeLessThan(productionDeploy.indexOf('sudo cp deployment/nginx-kognitika.ru.conf'));
+    expect(preflight).toBeLessThan(productionDeploy.indexOf('pnpm build'));
+    expect(preflight).toBeLessThan(productionDeploy.indexOf('systemctl restart kognitika'));
+  });
+
+  it('requires a manual, externally approved DB-migration workflow with reviewable evidence before DDL', () => {
+    const workflow = read('.github/workflows/production-db-migration.yml');
+    const preflight = workflow.indexOf('node scripts/check-migration-baseline.mjs');
+    const ddl = workflow.indexOf('pnpm exec prisma migrate deploy');
+
+    expect(workflow).toContain('workflow_dispatch:');
+    expect(workflow).toContain('environment: production-db-changes');
+    expect(workflow).toContain('db_change_runbook_id:');
+    expect(workflow).toContain('review_url:');
+    expect(workflow).toContain('node scripts/production-db-change-gate.mjs');
+    expect(workflow).toContain('DATABASE_URL: ${{ secrets.DATABASE_URL }}');
+    expect(workflow).not.toContain('prisma migrate resolve');
+    expect(preflight).toBeGreaterThanOrEqual(0);
+    expect(preflight).toBeLessThan(ddl);
+  });
+
+  it('fails closed without a valid runbook identifier and reviewable GitHub issue or pull-request URL', async () => {
+    const { evaluateProductionDbGate } = await import('../../scripts/production-db-change-gate.mjs');
+
+    expect(evaluateProductionDbGate({ paths: dbSensitivePaths })).toMatchObject({ allowed: false });
+    expect(evaluateProductionDbGate({
+      paths: dbSensitivePaths,
+      runbookId: 'PDD-DB-2026-08-02-165',
+    })).toMatchObject({ allowed: false });
+    expect(evaluateProductionDbGate({
+      paths: dbSensitivePaths,
+      runbookId: 'PDD-DB-2026-08-02-165',
+      reviewUrl: 'https://github.com/xodapi/kognitika/issues/165',
+    })).toMatchObject({ allowed: true });
+  });
+
+  it('does not log credentials or protected user data from the governance gate', () => {
+    const gate = read('scripts/production-db-change-gate.mjs');
+
+    expect(gate).not.toMatch(/console\.(?:log|error)\([^\n]*(?:DATABASE_URL|password|credential|Brain ID|JWT|telemetry|user rows)/i);
+  });
+});
