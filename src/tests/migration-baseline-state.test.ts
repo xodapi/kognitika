@@ -48,6 +48,12 @@ describe('migration baseline legacy reconciliation guard', () => {
     await expect(inspectMigrationBaseline(fixtureClient() as never)).resolves.toEqual({ kind: 'legacy-reconciliation-required' });
   });
 
+  it('accepts the historical GameType label order when all expected labels exist', async () => {
+    await expect(inspectMigrationBaseline(fixtureClient({
+      gameTypes: ['SCHULTE', 'NUMERICAL_ANALYSIS', ...gameTypes.filter((label) => !['SCHULTE', 'NUMERICAL_ANALYSIS'].includes(label))],
+    }) as never)).resolves.toEqual({ kind: 'legacy-reconciliation-required' });
+  });
+
   it('rejects a partial missing-baseline schema', async () => {
     await expect(inspectMigrationBaseline(fixtureClient({
       tables: [...coreTables, 'daily_practice_plans'],
