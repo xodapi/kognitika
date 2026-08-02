@@ -1,0 +1,102 @@
+name: Remove Synthetic Production Smoke Data
+
+on:
+  workflow_dispatch:
+    inputs:
+      review_url:
+        description: Reviewable xodapi/kognitika issue or pull-request URL
+        required: true
+        type: string
+      cleanup_confirmation:
+        description: "Required: DELETE_SYNTHETIC_SMOKE_DATA"
+        required: true
+        type: string
+
+concurrency:
+  group: kognitika-production-db
+  cancel-in-progress: false
+
+jobs:
+  cleanup:
+    environment: production-db-changes
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Prepare protected host connection
+        env:
+          DEPLOY_HOST: ${{ secrets.KOGNITIKA_DEPLOY_HOST }}
+          DEPLOY_PORT: ${{ secrets.KOGNITIKA_DEPLOY_PORT }}
+          DEPLOY_KEY: ${{ secrets.KOGNITIKA_DEPLOY_SSH_KEY }}
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "$DEPLOY_KEY" > ~/.ssh/kognitika_smoke_cleanup_key
+          chmod 600 ~/.ssh/kognitika_smoke_cleanup_key
+          ssh-keyscan -p "$DEPLOY_PORT" -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts
+
+      - name: Delete only synthetic smoke-test data
+        env:
+          DEPLOY_HOST: ${{ secrets.KOGNITIKA_DEPLOY_HOST }}
+          DEPLOY_PORT: ${{ secrets.KOGNITIKA_DEPLOY_PORT }}
+          DEPLOY_USER: ${{ secrets.KOGNITIKA_DEPLOY_USER }}
+          CLEANUP_CONFIRMATION: ${{ inputs.cleanup_confirmation }}
+          REVIEW_URL: ${{ inputs.review_url }}
+        run: |
+          set -euo pipefail
+          ssh -i ~/.ssh/kognitika_smoke_cleanup_key \
+            -p "$DEPLOY_PORT" \
+            -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=yes \
+            "$DEPLOY_USER@$DEPLOY_HOST" \
+            "CLEANUP_CONFIRMATION='$CLEANUP_CONFIRMATION' REVIEW_URL='$REVIEW_URL' bash -s" <<'REMOTE'
+          set -Eeuo pipefail
+          test "$CLEANUP_CONFIRMATION" = "DELETE_SYNTHETIC_SMOKE_DATA"
+          case "$REVIEW_URL" in
+            https://github.com/xodapi/kognitika/issues/*|https://github.com/xodapi/kognitika/pull/*) ;;
+            *) echo 'Review URL must target xodapi/kognitika.' >&2; exit 1 ;;
+          esac
+
+          test -r /opt/kognitika/.env
+          set -a
+          . /opt/kognitika/.env
+          set +a
+          test -n "${DATABASE_URL:-}"
+          DATABASE_URL="${DATABASE_URL%%\?schema=public}"
+
+          command -v docker >/dev/null
+          docker run --rm --network host -e DATABASE_URL postgres:16 \
+            psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --tuples-only --no-align <<'SQL'
+          BEGIN;
+          WITH smoke_sessions AS (
+            SELECT id, "userId"
+            FROM "GameSession"
+            WHERE metadata @> '{"smokeTest": true}'::jsonb
+          ),
+          eligible_users AS (
+            SELECT DISTINCT s."userId"
+            FROM smoke_sessions s
+            WHERE NOT EXISTS (
+              SELECT 1
+              FROM "GameSession" other
+              WHERE other."userId" = s."userId"
+                AND other.id NOT IN (SELECT id FROM smoke_sessions)
+            )
+          ),
+          removed_sessions AS (
+            DELETE FROM "GameSession"
+            WHERE id IN (SELECT id FROM smoke_sessions)
+            RETURNING "userId"
+          ),
+          removed_users AS (
+            DELETE FROM "User"
+            WHERE id IN (SELECT "userId" FROM removed_sessions)
+              AND id IN (SELECT "userId" FROM eligible_users)
+            RETURNING id
+          )
+          SELECT 'synthetic-smoke-cleanup-complete';
+          COMMIT;
+          SQL
+          REMOTE
