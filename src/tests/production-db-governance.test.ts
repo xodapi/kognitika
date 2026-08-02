@@ -89,6 +89,8 @@ describe('production database governance contracts', () => {
     expect(workflow).toContain('client_image=postgres:16');
     expect(workflow).toContain('docker run --rm');
     expect(workflow).toContain('DATABASE_URL="${DATABASE_URL%%\\?schema=public}"');
+    expect(workflow).toContain('createdb --maintenance-db="$DATABASE_URL"');
+    expect(workflow).toContain('pg_restore --exit-on-error --no-owner --no-privileges --dbname "$restore_url"');
     expect(workflow).not.toContain('actions/upload-artifact');
     expect(dump).toBeGreaterThanOrEqual(0);
     expect(checksum).toBeGreaterThan(dump);
