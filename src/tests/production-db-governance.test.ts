@@ -76,6 +76,22 @@ describe('production database governance contracts', () => {
     expect(migration).toBeGreaterThan(reset);
   });
 
+  it('requires protected approval and an isolated restore before a backup can authorize a clean rebuild', () => {
+    const workflow = read('.github/workflows/production-db-backup-verify.yml');
+    const dump = workflow.indexOf('pg_dump --format=custom');
+    const checksum = workflow.indexOf('sha256sum --check');
+    const restore = workflow.indexOf('pg_restore --exit-on-error');
+
+    expect(workflow).toContain('workflow_dispatch:');
+    expect(workflow).toContain('environment: production-db-changes');
+    expect(workflow).toContain('backup_reference:');
+    expect(workflow).toContain('review_url:');
+    expect(workflow).not.toContain('actions/upload-artifact');
+    expect(dump).toBeGreaterThanOrEqual(0);
+    expect(checksum).toBeGreaterThan(dump);
+    expect(restore).toBeGreaterThan(checksum);
+  });
+
   it('fails closed without a valid runbook identifier and reviewable GitHub issue or pull-request URL', async () => {
     const { evaluateProductionDbGate } = await import('../../scripts/production-db-change-gate.mjs');
 
