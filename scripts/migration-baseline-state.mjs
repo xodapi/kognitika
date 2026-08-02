@@ -107,7 +107,7 @@ export async function inspectMigrationBaseline(client) {
     `);
     const enumLabels = enumRows.map((row) => row.enumlabel);
     const enumMatches = enumLabels.length === EXPECTED_GAME_TYPES.length
-      && EXPECTED_GAME_TYPES.every((label, index) => enumLabels[index] === label);
+      && EXPECTED_GAME_TYPES.every((label) => enumLabels.includes(label));
     if (enumMatches) {
       return { kind: 'legacy-reconciliation-required' };
     }

@@ -69,10 +69,10 @@ describe('approved legacy recovery preflight', () => {
     await expect(inspectMigrationBaseline(fixtureClient() as never)).resolves.toEqual({ kind: 'legacy-reconciliation-required' });
   });
 
-  it('requires all 24 GameType values in historical order', async () => {
+  it('accepts all 24 GameType values regardless of their historical enum order', async () => {
     await expect(inspectMigrationBaseline(fixtureClient({
       gameTypes: ['SCHULTE_GORBOV', 'SCHULTE', ...EXPECTED_GAME_TYPES.slice(2)],
-    }) as never)).resolves.toMatchObject({ kind: 'invalid', code: 11 });
+    }) as never)).resolves.toEqual({ kind: 'legacy-reconciliation-required' });
   });
 
   it('rejects a recovery state where one target table already exists', async () => {

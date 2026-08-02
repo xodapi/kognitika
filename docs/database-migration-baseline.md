@@ -18,7 +18,7 @@ Do not run baseline SQL against an existing Kognitika database. Before `prisma m
 
 - Empty database: no public tables, no `GameType` enum, and no `_prisma_migrations` table. The baseline applies normally.
 - Compatible existing database: all baseline tables and `GameType` exist, migration history is the complete successful migration sequence, or that same sequence plus the one documented rolled-back baseline audit record described below.
-- **Exact observed legacy recovery fingerprint**: all ten core tables exist; `GameType` has exactly 24 labels in historical order; `session_analytics_summaries` and `daily_practice_plans` are both absent; and `_prisma_migrations` has exactly five records:
+- **Exact observed legacy recovery fingerprint**: all ten core tables exist; `GameType` has exactly the 24 expected labels, regardless of PostgreSQL enum insertion order; `session_analytics_summaries` and `daily_practice_plans` are both absent; and `_prisma_migrations` has exactly five records:
   1. the three historic `GameType` migrations, each successful;
   2. one rolled-back `20260701000000_baseline_schema` record; and
   3. one successful/applied `20260701000000_baseline_schema` record.
