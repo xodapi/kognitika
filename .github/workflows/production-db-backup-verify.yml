@@ -1,0 +1,98 @@
+name: Verify Production Database Backup
+
+on:
+  workflow_dispatch:
+    inputs:
+      backup_reference:
+        description: "Safe identifier for a new archive, for example kognitika-pre-clean-rebuild-20260802T100000Z"
+        required: true
+        type: string
+      review_url:
+        description: Reviewable xodapi/kognitika GitHub issue or pull-request URL for the clean rebuild
+        required: true
+        type: string
+
+concurrency:
+  group: kognitika-production-db
+  cancel-in-progress: false
+
+jobs:
+  backup-and-restore-verify:
+    environment: production-db-changes
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Prepare protected host connection
+        env:
+          DEPLOY_HOST: ${{ secrets.KOGNITIKA_DEPLOY_HOST }}
+          DEPLOY_PORT: ${{ secrets.KOGNITIKA_DEPLOY_PORT }}
+          DEPLOY_KEY: ${{ secrets.KOGNITIKA_DEPLOY_SSH_KEY }}
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "$DEPLOY_KEY" > ~/.ssh/kognitika_db_backup_key
+          chmod 600 ~/.ssh/kognitika_db_backup_key
+          ssh-keyscan -p "$DEPLOY_PORT" -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts
+
+      - name: Create durable backup and verify isolated restore
+        env:
+          DEPLOY_HOST: ${{ secrets.KOGNITIKA_DEPLOY_HOST }}
+          DEPLOY_PORT: ${{ secrets.KOGNITIKA_DEPLOY_PORT }}
+          DEPLOY_USER: ${{ secrets.KOGNITIKA_DEPLOY_USER }}
+          BACKUP_REFERENCE: ${{ inputs.backup_reference }}
+          REVIEW_URL: ${{ inputs.review_url }}
+        run: |
+          set -euo pipefail
+          ssh -i ~/.ssh/kognitika_db_backup_key \
+            -p "$DEPLOY_PORT" \
+            -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=yes \
+            "$DEPLOY_USER@$DEPLOY_HOST" \
+            "BACKUP_REFERENCE='$BACKUP_REFERENCE' REVIEW_URL='$REVIEW_URL' bash -s" <<'REMOTE'
+          set -Eeuo pipefail
+
+          case "$BACKUP_REFERENCE" in
+            *[!A-Za-z0-9._-]* | '') echo 'Invalid backup reference.' >&2; exit 1 ;;
+          esac
+          case "$REVIEW_URL" in
+            https://github.com/xodapi/kognitika/issues/*|https://github.com/xodapi/kognitika/pull/*) ;;
+            *) echo 'Review URL must target xodapi/kognitika.' >&2; exit 1 ;;
+          esac
+
+          test -r /opt/kognitika/.env
+          set -a
+          . /opt/kognitika/.env
+          set +a
+          test -n "${DATABASE_URL:-}"
+
+          backup_dir=/opt/kognitika-db-backups
+          backup_file="$backup_dir/${BACKUP_REFERENCE}.dump"
+          checksum_file="${backup_file}.sha256"
+          mkdir -p "$backup_dir"
+          test ! -e "$backup_file"
+          test ! -e "$checksum_file"
+
+          umask 077
+          pg_dump --format=custom --no-owner --no-privileges --file "$backup_file" "$DATABASE_URL"
+          (cd "$backup_dir" && sha256sum "$(basename "$backup_file")" > "$(basename "$checksum_file")")
+          (cd "$backup_dir" && sha256sum --check "$(basename "$checksum_file")")
+          backup_checksum="$(cut -d ' ' -f 1 "$checksum_file")"
+
+          restore_db="kognitika_backup_verify_${BACKUP_REFERENCE//[^A-Za-z0-9_]/_}"
+          restore_db="${restore_db:0:60}"
+          cleanup() {
+            dropdb --if-exists "$restore_db" || true
+          }
+          trap cleanup EXIT
+
+          createdb "$restore_db"
+          pg_restore --exit-on-error --no-owner --no-privileges --dbname "$restore_db" "$backup_file"
+          psql "$restore_db" --set ON_ERROR_STOP=1 --tuples-only --no-align --command "SELECT CASE WHEN EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public') THEN 'restore-ok' ELSE 'restore-missing-public-schema' END;" | grep -qx 'restore-ok'
+          echo "Backup and isolated restore verified for reference: $BACKUP_REFERENCE"
+          echo "Backup SHA-256: $backup_checksum"
+          REMOTE
