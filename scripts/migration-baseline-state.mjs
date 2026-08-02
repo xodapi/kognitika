@@ -31,7 +31,7 @@ export const CORE_TABLES = [
 ];
 export const MISSING_BASELINE_TABLES = [
   'session_analytics_summaries', 'daily_practice_plans'];
-const EXPECTED_GAME_TYPES = [
+export const EXPECTED_GAME_TYPES = [
   'SCHULTE', 'SCHULTE_GORBOV', 'NUMERICAL_ANALYSIS', 'LOGICAL_SEQUENCE',
   'SITUATIONAL_JUDGMENT', 'STROOP', 'N_BACK', 'OBJECTIVE_FILTER',
   'PROFILING_RICE', 'ANOMALY_DETECTOR', 'DIALOGUE_2_1', 'SPEED_TYPING',
@@ -107,9 +107,13 @@ export async function inspectMigrationBaseline(client) {
     `);
     const enumLabels = enumRows.map((row) => row.enumlabel);
     const enumMatches = enumLabels.length === EXPECTED_GAME_TYPES.length
-      && EXPECTED_GAME_TYPES.every((label) => enumLabels.includes(label));
+      && EXPECTED_GAME_TYPES.every((label, index) => enumLabels[index] === label);
     if (enumMatches) {
-      return { kind: 'legacy-reconciliation-required' };
+      return {
+        kind: 'invalid',
+        code: 16,
+        reason: 'Legacy schema fingerprint cannot be reconciled deterministically because its migration history contains no safe continuous Prisma prefix.',
+      };
     }
   }
 

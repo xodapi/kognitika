@@ -12,9 +12,6 @@ try {
     case 'empty':
       console.log('[migration-baseline] Empty database detected; baseline migration will be applied normally.');
       break;
-    case 'legacy-reconciliation-required':
-      console.log('[migration-baseline] Confirmed legacy schema fingerprint; committed reconciliation migration may apply.');
-      break;
     case 'compatible':
       console.log('[migration-baseline] Existing schema and migration history are compatible; pending migrations may apply normally.');
       break;
