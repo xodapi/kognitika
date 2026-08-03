@@ -15,7 +15,6 @@ const base = {
 } as const;
 
 const validJob = {
-  schemaVersion: 1,
   jobId: 'analytics-job-synthetic-schulte',
   analyzerVersion: 'analyze-session-v1',
   receivedAt: '2026-01-02T00:01:00.000Z',
