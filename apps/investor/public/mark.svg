@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title">
+  <title id="title">Kognitika</title>
+  <rect width="64" height="64" rx="18" fill="#131817"/>
+  <path d="M18 17v30M20 33l20-16M20 32l23 15" fill="none" stroke="#c8ff67" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

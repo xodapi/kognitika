@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630">
+  <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#111715"/><stop offset="1" stop-color="#080a09"/></linearGradient><radialGradient id="r"><stop stop-color="#c8ff67" stop-opacity=".24"/><stop offset="1" stop-color="#c8ff67" stop-opacity="0"/></radialGradient></defs>
+  <rect width="1200" height="630" fill="url(#g)"/><circle cx="980" cy="130" r="400" fill="url(#r)"/>
+  <g fill="none" stroke="#c8ff67" stroke-width="13" stroke-linecap="round"><path d="M110 106v74M115 144l48-38M115 143l55 37"/></g>
+  <text x="205" y="158" fill="#f1f5ed" font-family="Arial, sans-serif" font-size="48" font-weight="700">KOGNITIKA</text>
+  <text x="110" y="330" fill="#f1f5ed" font-family="Arial, sans-serif" font-size="66" font-weight="600">Практика, которая</text>
+  <text x="110" y="410" fill="#c8ff67" font-family="Arial, sans-serif" font-size="66" font-weight="600">становится траекторией.</text>
+  <text x="110" y="510" fill="#9ba69f" font-family="Arial, sans-serif" font-size="30">Инвесторский обзор продукта и стратегии</text>
+</svg>
