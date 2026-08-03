@@ -108,19 +108,19 @@ function ClassicStroopTest() {
 
   if (!state.isActive && !state.isFinished) {
     return (
-      <div className="col-span-12 grid grid-cols-1 md:grid-cols-12 gap-4 h-full min-h-0">
-        <div className="md:col-start-4 md:col-span-6 bg-card/20 border border-border rounded-3xl p-8 flex flex-col items-center justify-center text-center">
-            <h2 className="text-2xl font-bold tracking-tight text-primary uppercase mb-4">Тест Струпа</h2>
-            <p className="text-sm text-muted-foreground mb-4">
+      <div className="col-span-12 grid grid-cols-1 gap-4 py-2 md:grid-cols-12 md:py-0 h-full min-h-0">
+        <div className="md:col-start-4 md:col-span-6 bg-card/20 border border-border rounded-3xl p-5 sm:p-8 flex flex-col items-center justify-center text-center">
+            <h2 className="text-xl font-black tracking-tight text-primary uppercase mb-3 sm:text-2xl sm:mb-4">Тест Струпа</h2>
+            <p className="text-sm leading-relaxed text-muted-foreground mb-4">
               Оценка когнитивной гибкости и избирательности внимания.
             </p>
-            <p className="text-xs text-foreground bg-secondary/50 p-4 rounded-xl border border-border mb-6">
+            <p className="text-xs leading-relaxed text-foreground bg-secondary/50 p-4 rounded-xl border border-border mb-5 sm:mb-6">
               Правило: Выбирайте <b>цвет</b>, которым написано слово, а не само слово.<br/><br/>
-              Вы можете использовать клавиши 1-2-3-4 на клавиатуре для быстрого ответа.
+              На телефоне отвечайте касанием. На компьютере можно использовать клавиши 1–4.
             </p>
             
             {/* Settings Selectors */}
-            <div className="flex flex-col sm:flex-row gap-4 mb-8 w-full max-w-md mx-auto">
+            <div className="flex flex-col gap-3 mb-6 w-full max-w-md mx-auto sm:flex-row sm:gap-4 sm:mb-8">
               <div className="flex-1 rounded-xl border border-primary/10 bg-primary/5 px-4 py-3 text-left">
                 <label className="flex min-h-11 cursor-pointer items-center gap-3 select-none">
                   <input
@@ -142,7 +142,7 @@ function ClassicStroopTest() {
                   </button>
                 )}
               </div>
-              <div className="flex-1 flex items-center gap-3 bg-destructive/5 border border-destructive/10 px-4 min-h-11 rounded-xl cursor-pointer select-none" onClick={() => setUseStress(!useStress)}>
+              <div className="flex-1 flex items-center gap-3 bg-destructive/5 border border-destructive/10 px-4 min-h-12 rounded-xl cursor-pointer select-none" onClick={() => setUseStress(!useStress)}>
                 <input 
                   type="checkbox" 
                   checked={useStress} 
@@ -153,7 +153,7 @@ function ClassicStroopTest() {
               </div>
             </div>
 
-            <button onClick={handleStartClick} className="w-full max-w-[250px] min-h-11 px-4 py-3 bg-primary text-primary-foreground text-xs uppercase tracking-wider rounded-lg font-bold hover:bg-primary/90 transition-colors">
+            <button onClick={handleStartClick} className="w-full max-w-sm min-h-12 px-4 py-3 bg-primary text-primary-foreground text-xs uppercase tracking-wider rounded-xl font-bold hover:bg-primary/90 transition-colors sm:max-w-[250px]">
               Начать тест
             </button>
         </div>
