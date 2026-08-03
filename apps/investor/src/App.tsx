@@ -17,10 +17,29 @@ import {
   TimerReset,
   Users,
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 
 const PRODUCT_URL = 'https://kognitika.ru';
 const CONTACT_URL = 'https://t.me/serg_borisovich';
+const INVESTOR_LEAD_API_URL = '/api/investor-leads';
+
+type InvestorInterest = 'meeting' | 'materials' | 'pilot';
+
+type InvestorLeadForm = {
+  name: string;
+  organization: string;
+  contact: string;
+  interest: InvestorInterest;
+  website: string;
+};
+
+const initialInvestorLead: InvestorLeadForm = {
+  name: '',
+  organization: '',
+  contact: '',
+  interest: 'meeting',
+  website: '',
+};
 
 const proofItems = [
   'Когнитивные тренажёры и история занятий',
@@ -64,7 +83,28 @@ function SectionIntro({ eyebrow, title, text }: { eyebrow: string; title: string
 
 function App() {
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
+  const [lead, setLead] = useState<InvestorLeadForm>(initialInvestorLead);
+  const [leadStatus, setLeadStatus] = useState<'idle' | 'sending' | 'success' | 'error'>('idle');
   useEffect(() => { document.documentElement.dataset.theme = theme; }, [theme]);
+
+  const submitLead = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setLeadStatus('sending');
+
+    try {
+      const response = await fetch(INVESTOR_LEAD_API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(lead),
+      });
+
+      if (!response.ok) throw new Error('Lead submission failed');
+      setLeadStatus('success');
+      setLead(initialInvestorLead);
+    } catch {
+      setLeadStatus('error');
+    }
+  };
 
   return (
     <div className="site-shell" id="top">
@@ -106,13 +146,21 @@ function App() {
 
         <section className="section trust-section" id="glossary"><div className="container glossary-layout"><SectionIntro eyebrow="Без жаргона" title="Словарь страницы" text="Нажмите на термин, если встретили незнакомое слово. Все будущие возможности на странице отделены от того, что уже работает." /><dl className="glossary-list">{glossary.map(([term, definition]) => <div key={term}><dt>{term}</dt><dd>{definition}</dd></div>)}</dl></div></section>
 
-        <section className="section container ask-section" id="ask"><div className="proof-panel ask-panel"><div className="proof-copy"><p className="eyebrow">Инвестиционное предложение</p><h2>Ищем pre-seed:<br /><em>5–10 млн ₽</em></h2><p>На условиях конвертируемого займа с капом оценки 100 млн ₽.</p><a className="button button-primary" href={CONTACT_URL} target="_blank" rel="noreferrer">Написать в Telegram <Mail size={17} aria-hidden="true" /></a></div><div className="ask-copy"><p>Средства идут на цели из раздела «Первый фокус»: ежедневный путь пользователя, мобильный опыт, проверка возврата и готовности платить.</p><p>Следующий раунд — после того как эти данные появятся и станут проверяемыми.</p></div></div></section>
+        <section className="section container ask-section" id="ask"><div className="proof-panel ask-panel"><div className="proof-copy"><p className="eyebrow">Инвестиционное предложение</p><h2>Ищем pre-seed:<br /><em>5–10 млн ₽</em></h2><p>На условиях конвертируемого займа с капом оценки 100 млн ₽.</p><a className="button button-primary" href="#contact">Запросить материалы <Mail size={17} aria-hidden="true" /></a></div><div className="ask-copy"><p>Средства идут на цели из раздела «Первый фокус»: ежедневный путь пользователя, мобильный опыт, проверка возврата и готовности платить.</p><p>Следующий раунд — после того как эти данные появятся и станут проверяемыми.</p></div></div></section>
 
         <section className="section evidence-section container"><div className="evidence-heading"><p className="eyebrow">Готовность к инвестициям</p><h2>Не прячем пробелы.<br /><em>Закрываем их данными.</em></h2><p>До привлечения капитала публичными должны стать только проверяемые показатели, с источником, датой и владельцем.</p></div><div className="evidence-checklist">{['Активные пользователи и завершённые занятия', 'Возврат на 1 / 7 / 30 день', 'Повторное использование ежедневного пути', 'Переход на платную версию и готовность платить', 'Стоимость привлечения и срок окупаемости', 'Интервью и конкретные примеры ценности'].map((item, index) => <div key={item}><span>{String(index + 1).padStart(2, '0')}</span><p>{item}</p><CircleDashed aria-label="Требует подтверждения" /></div>)}</div></section>
 
         <section className="section container limitations"><div className="limitations-panel"><div><p className="eyebrow">Прозрачные ограничения</p><h2>Планы развития — не текущая реализация</h2></div><div className="limitations-copy"><p>Kognitika не заявляет медицинскую диагностику, терапию или нейрофидбэк. Мы не обещаем полную обработку данных на устройстве и не гарантируем соответствие конкретным регуляторным режимам без отдельной проверки.</p><p>Интеграции с носимыми устройствами, расширенная персонализация, AI-подсказки и B2B-сценарии — направления будущей работы, а не функции текущего продукта.</p></div></div></section>
 
-        <section className="contact-section" id="contact"><div className="contact-glow" /><div className="container contact-content"><p className="eyebrow">Следующий разговор</p><h2>Обсудим продукт,<br /><em>доказательства и рост</em></h2><p>Открыты к разговору о продуктовой стратегии, доказательной базе и следующем этапе Kognitika.</p><div className="hero-actions"><a className="button button-primary" href={CONTACT_URL} target="_blank" rel="noreferrer">Написать в Telegram <Mail size={17} aria-hidden="true" /></a><a className="button button-ghost light-ghost" href={PRODUCT_URL} target="_blank" rel="noreferrer">Открыть Kognitika <ExternalLink size={17} aria-hidden="true" /></a></div></div></section>
+        <section className="contact-section" id="contact"><div className="contact-glow" /><div className="container contact-content"><p className="eyebrow">Следующий разговор</p><h2>Запросить материалы<br /><em>или назначить разговор</em></h2><p>Оставьте только удобный способ связи. Мы используем заявку, чтобы ответить по вашему запросу, и не добавляем контакты в публичные рассылки.</p><form className="investor-lead-form" onSubmit={submitLead} aria-describedby="lead-privacy-note">
+            <div className="lead-form-grid"><label>Имя<input name="name" value={lead.name} onChange={(event) => setLead({ ...lead, name: event.target.value })} maxLength={120} autoComplete="name" required /></label><label>Организация / фонд <span>необязательно</span><input name="organization" value={lead.organization} onChange={(event) => setLead({ ...lead, organization: event.target.value })} maxLength={160} autoComplete="organization" /></label></div>
+            <label>Telegram или email<input name="contact" value={lead.contact} onChange={(event) => setLead({ ...lead, contact: event.target.value })} maxLength={200} autoComplete="email" required /></label>
+            <fieldset><legend>Что интересно</legend><div className="interest-options"><label><input type="radio" name="interest" checked={lead.interest === 'meeting'} onChange={() => setLead({ ...lead, interest: 'meeting' })} />Назначить разговор</label><label><input type="radio" name="interest" checked={lead.interest === 'materials'} onChange={() => setLead({ ...lead, interest: 'materials' })} />Получить материалы</label><label><input type="radio" name="interest" checked={lead.interest === 'pilot'} onChange={() => setLead({ ...lead, interest: 'pilot' })} />Обсудить пилот</label></div></fieldset>
+            <label className="honeypot" aria-hidden="true">Сайт<input name="website" tabIndex={-1} autoComplete="off" value={lead.website} onChange={(event) => setLead({ ...lead, website: event.target.value })} /></label>
+            <button className="button button-primary" type="submit" disabled={leadStatus === 'sending'}>{leadStatus === 'sending' ? 'Отправляем…' : 'Отправить запрос'} <ArrowRight size={17} aria-hidden="true" /></button>
+            <p className="lead-privacy-note" id="lead-privacy-note">Минимальные данные, ограничение частоты заявок и защита от автоматических отправок.</p>
+            <div className="lead-status" role="status" aria-live="polite">{leadStatus === 'success' && 'Спасибо. Заявка отправлена, мы свяжемся с вами по указанному контакту.'}{leadStatus === 'error' && <>Не удалось отправить заявку. <a href={CONTACT_URL} target="_blank" rel="noreferrer">Напишите в Telegram</a>.</>}</div>
+          </form><a className="direct-telegram" href={CONTACT_URL} target="_blank" rel="noreferrer">Или напишите напрямую в Telegram <Mail size={16} aria-hidden="true" /></a></div></section>
       </main>
       <footer className="footer"><div className="container footer-inner"><Logo /><p>Регулярная когнитивная практика с понятным следующим шагом.</p><span>© {new Date().getFullYear()} Kognitika</span></div></footer>
     </div>

@@ -162,7 +162,7 @@ jobs:
             }
             upsert_env APP_URL "https://kognitika.ru"
             upsert_env FRONTEND_URL "https://kognitika.ru"
-            upsert_env CORS_ORIGIN "https://kognitika.ru,https://www.kognitika.ru,https://kognitika.syntog.ru,https://admin.kognitika.syntog.ru,https://m.kognitika.ru,https://m.kognitika.syntog.ru"
+            upsert_env CORS_ORIGIN "https://kognitika.ru,https://www.kognitika.ru,https://kognitika.syntog.ru,https://admin.kognitika.syntog.ru,https://m.kognitika.ru,https://m.kognitika.syntog.ru,https://p.kognitika.ru"
             upsert_env GAME_SAVE_LEGACY_COMPAT_ENABLED "false"
             upsert_env PORT "3006"
           fi
