@@ -4,35 +4,32 @@ export interface LuscherColor {
   id: number;
   hex: string;
   name: string;
-  meaning: string;
 }
 
 export const LUSCHER_COLORS: LuscherColor[] = [
-  { id: 0, hex: '#004983', name: 'Синий', meaning: 'Покой, удовлетворенность, гармония и привязанность' },
-  { id: 1, hex: '#1D9772', name: 'Зеленый', meaning: 'Настойчивость, самоутверждение, воля и упорство' },
-  { id: 2, hex: '#F12F23', name: 'Красный', meaning: 'Возбуждение, воля к действию, активность и успех' },
-  { id: 3, hex: '#F2DD00', name: 'Желтый', meaning: 'Оптимизм, надежда, ожидание лучшего и активность' },
-  { id: 4, hex: '#D42481', name: 'Фиолетовый', meaning: 'Чувствительность, интуиция, эмоциональность' },
-  { id: 5, hex: '#C55223', name: 'Коричневый', meaning: 'Физический стресс, потребность в покое и уюте' },
-  { id: 6, hex: '#231F20', name: 'Черный', meaning: 'Протест, отрицание, агрессия и защита' },
-  { id: 7, hex: '#98938D', name: 'Серый', meaning: 'Усталость, отгороженность, пассивность' }
+  { id: 0, hex: '#004983', name: 'Синий' },
+  { id: 1, hex: '#1D9772', name: 'Зеленый' },
+  { id: 2, hex: '#F12F23', name: 'Красный' },
+  { id: 3, hex: '#F2DD00', name: 'Желтый' },
+  { id: 4, hex: '#D42481', name: 'Фиолетовый' },
+  { id: 5, hex: '#C55223', name: 'Коричневый' },
+  { id: 6, hex: '#231F20', name: 'Черный' },
+  { id: 7, hex: '#98938D', name: 'Серый' },
 ];
 
 export interface LuscherResult {
   scoreChange: number;
-  emotionalState: 'improvement' | 'fatigue' | 'stable';
+  comparison: 'higher' | 'lower' | 'unchanged';
   preScore: number;
   postScore: number;
 }
 
 export function calculateLuscherShift(pre: number[], post: number[]): LuscherResult {
   if (pre.length !== 8 || post.length !== 8) {
-    return { scoreChange: 0, emotionalState: 'stable', preScore: 50, postScore: 50 };
+    return { scoreChange: 0, comparison: 'unchanged', preScore: 50, postScore: 50 };
   }
 
-  // Calculate score for a sequence:
-  // We award points if basic colors (0, 1, 2, 3) are in the first 4 slots (index 0, 1, 2, 3)
-  // and auxiliary colors (4, 5, 6, 7) are in the last 4 slots (index 4, 5, 6, 7).
+  // This is a deterministic comparison of two color orderings, not a measure of wellbeing.
   const getSequenceScore = (seq: number[]) => {
     let score = 0;
     seq.forEach((colorId, index) => {
@@ -56,18 +53,18 @@ export function calculateLuscherShift(pre: number[], post: number[]): LuscherRes
   const postPercent = Math.round((postScore / maxPossible) * 100);
   const scoreChange = postPercent - prePercent;
 
-  let emotionalState: 'improvement' | 'fatigue' | 'stable' = 'stable';
+  let comparison: 'higher' | 'lower' | 'unchanged' = 'unchanged';
   if (scoreChange > 3) {
-    emotionalState = 'improvement';
+    comparison = 'higher';
   } else if (scoreChange < -3) {
-    emotionalState = 'fatigue';
+    comparison = 'lower';
   }
 
   return {
     scoreChange,
-    emotionalState,
+    comparison,
     preScore: prePercent,
-    postScore: postPercent
+    postScore: postPercent,
   };
 }
 

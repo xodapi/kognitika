@@ -9,6 +9,10 @@ import { StressOverlay } from './StressOverlay';
 import { createSafeLogger, safeError } from '../lib/safe-logger';
 import { StroopAlphabetTrainer } from './StroopAlphabetTrainer';
 import { haptic } from '../lib/haptic';
+import {
+  isLuscherWellbeingEnabled,
+  setLuscherWellbeingEnabled,
+} from '../lib/luscher-wellbeing-preference';
 
 const logger = createSafeLogger('stroop-test');
 
@@ -17,8 +21,13 @@ function ClassicStroopTest() {
   const { token } = useAuth();
   const navigate = useNavigate();
 
-  const [useLuscher, setUseLuscher] = useState(false);
+  const [useLuscher, setUseLuscher] = useState(isLuscherWellbeingEnabled);
   const [useStress, setUseStress] = useState(false);
+
+  const handleLuscherChange = (enabled: boolean) => {
+    setUseLuscher(enabled);
+    setLuscherWellbeingEnabled(enabled);
+  };
   const [showPreLuscher, setShowPreLuscher] = useState(false);
   const [preSequence, setPreSequence] = useState<number[] | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -112,14 +121,26 @@ function ClassicStroopTest() {
             
             {/* Settings Selectors */}
             <div className="flex flex-col sm:flex-row gap-4 mb-8 w-full max-w-md mx-auto">
-              <div className="flex-1 flex items-center gap-3 bg-primary/5 border border-primary/10 px-4 min-h-11 rounded-xl cursor-pointer select-none" onClick={() => setUseLuscher(!useLuscher)}>
-                <input 
-                  type="checkbox" 
-                  checked={useLuscher} 
-                  onChange={() => {}} 
-                  className="w-4 h-4 rounded border-border text-primary focus:ring-primary"
-                />
-                <span className="text-[10px] font-black uppercase text-foreground">Барометр Люшера</span>
+              <div className="flex-1 rounded-xl border border-primary/10 bg-primary/5 px-4 py-3 text-left">
+                <label className="flex min-h-11 cursor-pointer items-center gap-3 select-none">
+                  <input
+                    type="checkbox"
+                    checked={useLuscher}
+                    onChange={(event) => handleLuscherChange(event.target.checked)}
+                    className="w-4 h-4 rounded border-border text-primary focus:ring-primary"
+                  />
+                  <span className="text-[10px] font-black uppercase text-foreground">Барометр Люшера</span>
+                </label>
+                <p className="mt-1 text-[10px] leading-relaxed text-muted-foreground">Самонаблюдение, не диагностика.</p>
+                {useLuscher && (
+                  <button
+                    type="button"
+                    onClick={() => handleLuscherChange(false)}
+                    className="mt-2 min-h-11 text-[10px] font-bold text-muted-foreground underline decoration-muted-foreground/40 underline-offset-4 hover:text-foreground"
+                  >
+                    Больше не предлагать
+                  </button>
+                )}
               </div>
               <div className="flex-1 flex items-center gap-3 bg-destructive/5 border border-destructive/10 px-4 min-h-11 rounded-xl cursor-pointer select-none" onClick={() => setUseStress(!useStress)}>
                 <input 

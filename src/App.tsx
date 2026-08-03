@@ -23,6 +23,10 @@ import { FeedbackModal } from './components/FeedbackModal';
 import { AppErrorBoundary } from './components/AppErrorBoundary';
 import { DonateButton } from './components/DonateButton';
 import { completeOnboarding, hasCompletedOnboarding } from './lib/onboarding-state';
+import {
+  isLuscherWellbeingEnabled,
+  setLuscherWellbeingEnabled,
+} from './lib/luscher-wellbeing-preference';
 import { GAME_ATTEMPT_AUTH_REQUIRED_EVENT } from './lib/game-attempt-client';
 import {
   Dashboard, LeaderboardView, SchulteGrid, NumericalAnalysis,
@@ -145,7 +149,13 @@ function AppContent() {
   const [isDonateOpen, setIsDonateOpen] = useState(false);
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
   const [isChatEnabled, setIsChatEnabled] = useState(false);
+  const [isLuscherWellbeingPreferenceEnabled, setIsLuscherWellbeingPreferenceEnabled] = useState(isLuscherWellbeingEnabled);
   const { user, logout, token, isReady } = useAuth();
+
+  const handleLuscherWellbeingPreferenceChange = (enabled: boolean) => {
+    setIsLuscherWellbeingPreferenceEnabled(enabled);
+    setLuscherWellbeingEnabled(enabled);
+  };
   const isAdmin = (user as any)?.role === 'ADMIN';
   usePracticeFlowAnalytics(location.pathname);
 
@@ -390,6 +400,24 @@ function AppContent() {
                          <span className="text-sm font-bold">Обратная связь</span>
                       </div>
                       <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                    </button>
+                    <button
+                       onClick={() => handleLuscherWellbeingPreferenceChange(!isLuscherWellbeingPreferenceEnabled)}
+                       className="w-full flex items-center justify-between min-h-11 px-3 py-3 rounded-xl hover:bg-secondary transition-all text-left"
+                       aria-pressed={isLuscherWellbeingPreferenceEnabled}
+                    >
+                      <div className="flex items-center gap-3">
+                         <div className={`p-1.5 rounded-lg ${isLuscherWellbeingPreferenceEnabled ? 'bg-primary/20 text-primary' : 'bg-muted text-muted-foreground'}`}>
+                            <Palette className="w-4 h-4" />
+                         </div>
+                         <div>
+                           <span className="block text-sm font-bold">Эмоциональный барометр</span>
+                           <span className="block text-[10px] leading-relaxed text-muted-foreground">До и после тренировки, без диагностики</span>
+                         </div>
+                      </div>
+                      <div className={`w-10 h-5 rounded-full relative transition-all duration-300 ${isLuscherWellbeingPreferenceEnabled ? 'bg-primary' : 'bg-muted-foreground/30'}`}>
+                         <div className={`absolute top-1 w-3 h-3 rounded-full bg-white shadow-sm transition-all duration-300 ${isLuscherWellbeingPreferenceEnabled ? 'right-1' : 'left-1'}`} />
+                      </div>
                     </button>
                     <button
                        onClick={() => setIsChatEnabled(!isChatEnabled)}

@@ -7,6 +7,10 @@ import { PostGameInsight } from './PostGameInsight';
 import { LuscherTest } from './LuscherTest';
 import { createSafeLogger, safeError } from '../lib/safe-logger';
 import { haptic } from '../lib/haptic';
+import {
+  isLuscherWellbeingEnabled,
+  setLuscherWellbeingEnabled,
+} from '../lib/luscher-wellbeing-preference';
 
 const logger = createSafeLogger('n-back-test');
 
@@ -15,8 +19,13 @@ export function NBackTest() {
   const { token } = useAuth();
   const navigate = useNavigate();
 
-  const [useLuscher, setUseLuscher] = useState(false);
+  const [useLuscher, setUseLuscher] = useState(isLuscherWellbeingEnabled);
   const [showPreLuscher, setShowPreLuscher] = useState(false);
+
+  const handleLuscherChange = (enabled: boolean) => {
+    setUseLuscher(enabled);
+    setLuscherWellbeingEnabled(enabled);
+  };
   const [preSequence, setPreSequence] = useState<number[] | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const { beginAttempt, saveAttempt } = useGameAttempt(token);
@@ -107,15 +116,28 @@ export function NBackTest() {
               Правило (2-назад): Жмите <b>Совпадение</b> или <b>Пробел</b>, если текущая буква совпадает с буквой, показанной <span className="text-primary font-bold">2 шага назад</span>.
             </p>
 
-            {/* Luscher Checkbox */}
-            <div className="flex items-center gap-3 mb-8 bg-primary/5 border border-primary/10 min-h-11 px-4 rounded-xl cursor-pointer select-none" onClick={() => setUseLuscher(!useLuscher)}>
-              <input 
-                type="checkbox" 
-                checked={useLuscher} 
-                onChange={() => {}} 
-                className="w-4 h-4 rounded border-border text-primary focus:ring-primary"
-              />
-              <span className="text-xs font-black uppercase text-foreground">Включить эмоциональный барометр Люшера</span>
+            <div className="mb-8 w-full rounded-xl border border-primary/10 bg-primary/5 p-4 text-left">
+              <label className="flex min-h-11 cursor-pointer items-center gap-3 select-none">
+                <input
+                  type="checkbox"
+                  checked={useLuscher}
+                  onChange={(event) => handleLuscherChange(event.target.checked)}
+                  className="w-4 h-4 rounded border-border text-primary focus:ring-primary"
+                />
+                <span className="text-xs font-black uppercase text-foreground">Эмоциональный барометр до и после тренировки</span>
+              </label>
+              <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
+                Необязательное самонаблюдение по выбору цветов. Это не психологическая диагностика.
+              </p>
+              {useLuscher && (
+                <button
+                  type="button"
+                  onClick={() => handleLuscherChange(false)}
+                  className="mt-3 min-h-11 text-[11px] font-bold text-muted-foreground underline decoration-muted-foreground/40 underline-offset-4 hover:text-foreground"
+                >
+                  Больше не предлагать
+                </button>
+              )}
             </div>
 
             <button onClick={handleStartClick} className="w-full max-w-[250px] min-h-11 px-4 py-3 bg-primary text-primary-foreground text-xs uppercase tracking-wider rounded-lg font-bold hover:bg-primary/90 transition-colors">

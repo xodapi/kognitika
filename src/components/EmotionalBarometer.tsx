@@ -9,7 +9,7 @@ interface EmotionalBarometerProps {
 
 export function EmotionalBarometer({ preSequence, postSequence }: EmotionalBarometerProps) {
   const result = calculateLuscherShift(preSequence, postSequence);
-  const { scoreChange, emotionalState, preScore, postScore } = result;
+  const { scoreChange, comparison, preScore, postScore } = result;
 
   const getColorHex = (id: number) => {
     return LUSCHER_COLORS.find(c => c.id === id)?.hex || '#ccc';
@@ -28,7 +28,10 @@ export function EmotionalBarometer({ preSequence, postSequence }: EmotionalBarom
         <h4 className="text-xs font-black uppercase tracking-wider text-foreground">Эмоциональный барометр</h4>
       </div>
 
-      {/* Comparison Progress Bars */}
+      <p className="text-[10px] leading-relaxed text-muted-foreground">
+        Условный показатель порядка выбора, только для сравнения двух прохождений.
+      </p>
+
       <div className="space-y-4">
         <div className="space-y-1">
           <div className="flex justify-between text-[10px] uppercase font-bold tracking-wider text-muted-foreground">
@@ -65,19 +68,19 @@ export function EmotionalBarometer({ preSequence, postSequence }: EmotionalBarom
       <div className="bg-primary/5 border border-primary/10 rounded-xl p-4 text-center sm:text-left">
         <p className="text-sm font-bold text-foreground">
           {scoreChange > 0 ? (
-            <span className="text-emerald-500">✨ Тренировка улучшила ваше состояние на +{scoreChange}%!</span>
+            <span className="text-emerald-500">Выбор цветов изменился на +{scoreChange}%.</span>
           ) : scoreChange < 0 ? (
-            <span className="text-rose-500">📉 Напряжение возросло на {Math.abs(scoreChange)}% (признак утомления).</span>
+            <span className="text-rose-500">Выбор цветов изменился на {Math.abs(scoreChange)}%.</span>
           ) : (
-            <span className="text-muted-foreground">⚖️ Состояние осталось стабильным (0% изменений).</span>
+            <span className="text-muted-foreground">Порядок выбора цветов не изменился.</span>
           )}
         </p>
         <p className="text-xs text-muted-foreground mt-2 leading-relaxed">
-          {emotionalState === 'improvement' 
-            ? 'Цвета спокойствия и активности сдвинулись вперед. Тренировка помогла переключить внимание и снять стресс.'
-            : emotionalState === 'fatigue'
-            ? 'Цвета усталости вышли вперед. Рекомендуем сделать перерыв и не перегружать рабочую память.'
-            : 'Ваш эмоциональный баланс остался неизменным. Хороший знак устойчивости нервной системы.'}
+          {comparison === 'higher'
+            ? 'Это повод отметить свои ощущения после тренировки, но не оценка улучшения состояния.'
+            : comparison === 'lower'
+            ? 'Это повод ненадолго остановиться и прислушаться к своему самочувствию, без выводов о его причинах.'
+            : 'Результат можно использовать как нейтральную точку для личного наблюдения.'}
         </p>
       </div>
 
@@ -120,7 +123,7 @@ export function EmotionalBarometer({ preSequence, postSequence }: EmotionalBarom
       <div className="bg-secondary/20 border border-border/30 rounded-xl p-3 flex gap-2 items-start">
         <AlertTriangle className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
         <p className="text-[9px] text-muted-foreground leading-relaxed">
-          <b>Дисклеймер:</b> Тест Люшера используется для самонаблюдения и оценки текущего тонуса. Это не является медицинской диагностикой или основанием для клинических выводов.
+          <b>Важно:</b> это необязательный инструмент самонаблюдения, а не способ оценить психологическое или физическое состояние. Он не является медицинской или психологической диагностикой и не служит основанием для выводов о здоровье.
         </p>
       </div>
     </div>
