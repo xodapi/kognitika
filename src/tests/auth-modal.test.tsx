@@ -77,6 +77,34 @@ describe('AuthModal Brain ID public contract', () => {
     });
   });
 
+  it('offers a text access file with only the Brain ID and site link after registration', async () => {
+    const createObjectUrl = vi.fn(() => 'blob:synthetic-access-file');
+    const revokeObjectUrl = vi.fn();
+    Object.defineProperty(window.URL, 'createObjectURL', { value: createObjectUrl, configurable: true });
+    Object.defineProperty(window.URL, 'revokeObjectURL', { value: revokeObjectUrl, configurable: true });
+    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+    const appendChild = vi.spyOn(document.body, 'appendChild');
+
+    render(<AuthModal isOpen onClose={() => {}} />);
+    fireEvent.click(screen.getByRole('button', { name: /Начать новую сессию/i }));
+
+    await screen.findByRole('button', { name: /Скачать файл доступа/i });
+    fireEvent.click(screen.getByRole('button', { name: /Скачать файл доступа/i }));
+
+    expect(createObjectUrl).toHaveBeenCalledOnce();
+    const [blob] = createObjectUrl.mock.calls[0];
+    expect(blob).toBeInstanceOf(Blob);
+    await expect((blob as Blob).text()).resolves.toContain('Brain ID: BR-SYNTHETIC-001');
+    await expect((blob as Blob).text()).resolves.toContain(`Сайт: ${window.location.origin}`);
+    await expect((blob as Blob).text()).resolves.not.toContain('synthetic-token');
+    expect(appendChild).toHaveBeenCalledWith(expect.objectContaining({
+      download: 'kognitika-access.txt',
+      href: 'blob:synthetic-access-file',
+    }));
+    expect(click).toHaveBeenCalledOnce();
+    expect(revokeObjectUrl).toHaveBeenCalledWith('blob:synthetic-access-file');
+  });
+
   it('restores a Brain ID session through /api/auth/restore', async () => {
     const onClose = vi.fn();
     render(<AuthModal isOpen onClose={onClose} />);

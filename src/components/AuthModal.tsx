@@ -20,6 +20,34 @@ export function AuthModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const downloadAccessFile = (brainId: string) => {
+    const siteUrl = window.location.origin;
+    const contents = [
+      'Когнитика — доступ к вашему прогрессу',
+      '',
+      `Brain ID: ${brainId}`,
+      '',
+      `Сайт: ${siteUrl}`,
+      '',
+      'Как восстановить доступ:',
+      '1. Откройте сайт по ссылке выше.',
+      '2. Нажмите «Войти».',
+      '3. Выберите «Восстановить» и введите Brain ID.',
+      '',
+      'Храните этот файл в безопасном месте. Brain ID даёт доступ к вашему прогрессу.',
+      'В файле нет пароля, токена или персональных данных.',
+    ].join('\n');
+    const blob = new Blob([contents], { type: 'text/plain;charset=utf-8' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'kognitika-access.txt';
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+  };
+
   const handleBrainInit = async () => {
     setError('');
     setLoading(true);
@@ -88,9 +116,16 @@ export function AuthModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
         </button>
           </div>
 
+          <button
+            onClick={() => downloadAccessFile(successBrainId)}
+            className="w-full min-h-11 py-4 bg-secondary text-foreground rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-secondary/80 transition-colors border border-border"
+          >
+            Скачать файл доступа
+          </button>
+
           <button 
             onClick={onClose}
-            className="w-full min-h-11 py-4 bg-primary text-primary-foreground rounded-2xl font-black uppercase tracking-widest text-xs hover:scale-[1.02] transition-transform shadow-lg shadow-primary/20"
+            className="mt-3 w-full min-h-11 py-4 bg-primary text-primary-foreground rounded-2xl font-black uppercase tracking-widest text-xs hover:scale-[1.02] transition-transform shadow-lg shadow-primary/20"
           >
             Начать тренировку
           </button>
