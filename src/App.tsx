@@ -23,6 +23,7 @@ import { FeedbackModal } from './components/FeedbackModal';
 import { AppErrorBoundary } from './components/AppErrorBoundary';
 import { DonateButton } from './components/DonateButton';
 import { completeOnboarding, hasCompletedOnboarding } from './lib/onboarding-state';
+import { GAME_ATTEMPT_AUTH_REQUIRED_EVENT } from './lib/game-attempt-client';
 import {
   Dashboard, LeaderboardView, SchulteGrid, NumericalAnalysis,
   LogicalMatrix, StroopTest, NBackTest, SituationalJudgmentTest,
@@ -151,6 +152,15 @@ function AppContent() {
   useEffect(() => {
     document.title = `${getRouteTitle(location.pathname)} | Когнитика`;
   }, [location.pathname]);
+
+  useEffect(() => {
+    const openAuthentication = () => {
+      setIsMobileMenuOpen(false);
+      setIsAuthOpen(true);
+    };
+    window.addEventListener(GAME_ATTEMPT_AUTH_REQUIRED_EVENT, openAuthentication);
+    return () => window.removeEventListener(GAME_ATTEMPT_AUTH_REQUIRED_EVENT, openAuthentication);
+  }, []);
 
   useEffect(() => {
     if (isReady && user && !isAuthOpen && !hasCompletedOnboarding()) {

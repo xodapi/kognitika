@@ -19,6 +19,12 @@ export interface GameSavePayload {
 
 export class GameAttemptError extends Error {}
 
+export const GAME_ATTEMPT_AUTH_REQUIRED_EVENT = 'kognitika:game-attempt-auth-required' as const;
+
+export function requestGameAttemptAuthentication(): void {
+  window.dispatchEvent(new Event(GAME_ATTEMPT_AUTH_REQUIRED_EVENT));
+}
+
 async function readJson(response: Response): Promise<unknown> {
   if (!response.ok) {
     throw new GameAttemptError(`Game attempt request failed with status ${response.status}`);
@@ -91,7 +97,10 @@ export function useGameAttempt(token: string | null | undefined) {
   }, []);
 
   const beginAttempt = useCallback(async (gameType: string) => {
-    if (!token) throw new GameAttemptError('Authentication is required to start a game attempt');
+    if (!token) {
+      requestGameAttemptAuthentication();
+      throw new GameAttemptError('Authentication is required to start a game attempt');
+    }
     const generation = generationRef.current + 1;
     generationRef.current = generation;
     credentialsRef.current = null;

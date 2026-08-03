@@ -1,5 +1,11 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { createGameAttempt, GameAttemptError, saveGameAttempt } from '../lib/game-attempt-client';
+import {
+  createGameAttempt,
+  GAME_ATTEMPT_AUTH_REQUIRED_EVENT,
+  GameAttemptError,
+  requestGameAttemptAuthentication,
+  saveGameAttempt,
+} from '../lib/game-attempt-client';
 
 const attemptResponse = {
   attemptId: 'attempt-1',
@@ -67,6 +73,17 @@ describe('game attempt client', () => {
         challenge: 'one-time-secret',
       });
     }
+  });
+
+  it('requests the shared authentication modal without carrying private data', () => {
+    const listener = vi.fn();
+    window.addEventListener(GAME_ATTEMPT_AUTH_REQUIRED_EVENT, listener);
+
+    requestGameAttemptAuthentication();
+
+    expect(listener).toHaveBeenCalledOnce();
+    expect(listener.mock.calls[0][0]).toEqual(expect.objectContaining({ type: GAME_ATTEMPT_AUTH_REQUIRED_EVENT }));
+    window.removeEventListener(GAME_ATTEMPT_AUTH_REQUIRED_EVENT, listener);
   });
 
   it('fails closed when the attempt response omits its challenge', async () => {
