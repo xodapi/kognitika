@@ -82,7 +82,16 @@ describe('durable analytics outbox contract', () => {
     expect(recoveryMachine.complete(expired.id, 'worker-a', afterExpiry)).toBeNull();
     expect(recoveryMachine.fail(expired.id, 'worker-a', afterExpiry, 'analyzer unavailable')).toBeNull();
     expect(recoveryMachine.recoverExpiredLeases(afterExpiry)).toBe(1);
-    expect(recoveryStore.all()[0]).toMatchObject({ state: 'retry', leaseOwner: null, leaseExpiresAt: null });
+    expect(recoveryStore.all()[0]).toMatchObject({ state: 'retry', attemptCount: 1, leaseOwner: null, leaseExpiresAt: null });
+  });
+
+  it('dead-letters a repeatedly expired lease within the bounded retry budget', () => {
+    const store = new InMemoryAnalyticsOutboxStore([createEntry()]);
+    const machine = new AnalyticsOutboxStateMachine(store, { maxAttempts: 1, leaseMs: 1_000 });
+    machine.claim('worker-a', now);
+
+    expect(machine.recoverExpiredLeases(new Date(now.getTime() + 1_001))).toBe(1);
+    expect(store.all()[0]).toMatchObject({ state: 'dead', attemptCount: 1, lastErrorCode: 'lease_expired' });
   });
 
   it('keeps TS authority separate from a Rust shadow candidate and exposes privacy-safe metrics', () => {

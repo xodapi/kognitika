@@ -115,7 +115,8 @@ model GameSession {
   metadata      Json
   clientRunId   String?
   xpEvent       XpEvent?
-  gameAttempt   GameAttempt?
+  gameAttempt           GameAttempt?
+  analyticsOutboxEntries AnalyticsOutboxEntry[]
 
   createdAt     DateTime     @default(now())
 
@@ -237,4 +238,28 @@ model DailyPracticePlan {
 
   @@unique([userId, date])
   @@map("daily_practice_plans")
+}
+
+model AnalyticsOutboxEntry {
+  id              String   @id @default(cuid())
+  sourceSessionId String
+  sourceSession   GameSession @relation(fields: [sourceSessionId], references: [id], onDelete: Cascade)
+  analyzerVersion String
+  contractVersion String
+  idempotencyKey  String   @unique
+  state           String   @default("pending")
+  attemptCount    Int      @default(0)
+  leaseOwner      String?
+  leaseExpiresAt  DateTime?
+  completedAt     DateTime?
+  lastErrorCode   String?
+  authority       String   @default("typescript")
+  shadowCandidate String   @default("rust")
+  occurredAt      DateTime
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([sourceSessionId])
+  @@index([state, leaseExpiresAt, occurredAt])
+  @@map("analytics_outbox")
 }

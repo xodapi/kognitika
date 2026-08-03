@@ -115,7 +115,15 @@ export class AnalyticsOutboxStateMachine {
     let recovered = 0;
     for (const entry of this.store.all()) {
       if (entry.state === 'processing' && entry.leaseExpiresAt && entry.leaseExpiresAt <= now) {
-        this.store.update({ ...entry, state: 'retry', leaseOwner: null, leaseExpiresAt: null, lastErrorCode: 'lease_expired' });
+        const attemptCount = entry.attemptCount + 1;
+        this.store.update({
+          ...entry,
+          attemptCount,
+          state: attemptCount >= this.options.maxAttempts ? 'dead' : 'retry',
+          leaseOwner: null,
+          leaseExpiresAt: null,
+          lastErrorCode: 'lease_expired',
+        });
         recovered += 1;
       }
     }

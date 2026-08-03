@@ -2,6 +2,13 @@ import { Prisma, type GameSession, type User } from '@prisma/client';
 import prisma from '../../lib/prisma.ts';
 import { challengeMatches, GameAttemptError } from './game-attempt.ts';
 import { computeServerScore } from './game-score.ts';
+import {
+  createAnalyticsOutboxEntry,
+  isAnalyticsOutboxEnabled,
+} from '../../core/analytics-outbox/index.ts';
+
+const SHADOW_ANALYZER_VERSION = 'rust-shadow-v1';
+const ANALYTICS_CONTRACT_VERSION = 'analytics-contract-v1';
 
 export type SaveGameInput = {
   userId: string;
@@ -157,6 +164,23 @@ export async function saveCompletedGame(input: SaveGameInput): Promise<SaveGameR
           metadata: (input.metadata || {}) as Prisma.InputJsonValue,
         },
       });
+      if (isAnalyticsOutboxEnabled()) {
+        const entry = createAnalyticsOutboxEntry({
+          sourceSession: session.id,
+          analyzerVersion: SHADOW_ANALYZER_VERSION,
+          contractVersion: ANALYTICS_CONTRACT_VERSION,
+          occurredAt: now,
+        });
+        await tx.analyticsOutboxEntry.create({
+          data: {
+            sourceSessionId: session.id,
+            analyzerVersion: entry.analyzerVersion,
+            contractVersion: entry.contractVersion,
+            idempotencyKey: entry.idempotencyKey,
+            occurredAt: entry.occurredAt,
+          },
+        });
+      }
       if (hasAttempt) {
         await tx.gameAttempt.update({
           where: { id: input.attemptId! },
