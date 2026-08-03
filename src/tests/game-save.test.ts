@@ -8,6 +8,7 @@ const transactionClient = vi.hoisted(() => ({
   gameSession: { findUnique: vi.fn(), create: vi.fn() },
   user: { findUniqueOrThrow: vi.fn(), update: vi.fn() },
   xpEvent: { create: vi.fn() },
+  analyticsOutboxEntry: { create: vi.fn() },
 }));
 
 const prismaMock = vi.hoisted(() => ({
@@ -22,6 +23,7 @@ describe('game save idempotency service', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     process.env.GAME_SAVE_LEGACY_COMPAT_ENABLED = 'true';
+    process.env.ANALYTICS_OUTBOX_SHADOW_ENABLED = 'false';
     prismaMock.$transaction.mockImplementation((callback: (tx: typeof transactionClient) => unknown) => callback(transactionClient));
     transactionClient.gameAttempt.findUnique.mockResolvedValue(null);
     transactionClient.gameAttempt.updateMany.mockResolvedValue({ count: 1 });
@@ -37,6 +39,7 @@ describe('game save idempotency service', () => {
       id: 'user-a', experience: 121, level: 1, streakDays: 1, lastPlayedAt: new Date(),
     });
     transactionClient.xpEvent.create.mockResolvedValue({ id: 'xp-a' });
+    transactionClient.analyticsOutboxEntry.create.mockResolvedValue({ id: 'outbox-a' });
   });
 
   it('awards XP once and links it to the created session', async () => {
@@ -59,6 +62,30 @@ describe('game save idempotency service', () => {
         reason: 'game:SCHULTE',
       },
     });
+  });
+
+  it('atomically creates a privacy-safe outbox job with a successful game save when enabled', async () => {
+    process.env.ANALYTICS_OUTBOX_SHADOW_ENABLED = 'true';
+    const { saveCompletedGame } = await import('../server/services/game-save.ts');
+
+    const result = await saveCompletedGame({
+      userId: 'user-a',
+      clientRunId: '11111111-1111-4111-8111-111111111111',
+      gameType: 'SCHULTE',
+      timeMs: 5000,
+      metadata: { size: 3, nested: { rawBrainId: 'must-not-be-queued' } },
+    });
+
+    expect(result.isReplay).toBe(false);
+    expect(transactionClient.analyticsOutboxEntry.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        sourceSessionId: 'session-a',
+        analyzerVersion: 'rust-shadow-v1',
+        contractVersion: 'analytics-contract-v1',
+        idempotencyKey: 'session-a:rust-shadow-v1:analytics-contract-v1',
+      }),
+    });
+    expect(JSON.stringify(transactionClient.analyticsOutboxEntry.create.mock.calls[0][0])).not.toMatch(/brainid|metadata|jwt|email|token/i);
   });
 
   it('returns the existing session without another XP award', async () => {
