@@ -58,13 +58,13 @@ export function NumericalAnalysis() {
 
   if (!state.isActive && !state.isFinished) {
     return (
-      <div className="col-span-12 grid grid-cols-1 md:grid-cols-12 gap-4 h-full min-h-0">
-        <div className="md:col-start-4 md:col-span-6 bg-card/20 border border-border rounded-3xl p-8 flex flex-col items-center justify-center text-center">
-            <h2 className="text-2xl font-bold tracking-tight text-primary uppercase mb-4">Числовой анализ</h2>
-            <p className="text-sm text-muted-foreground mb-8">
+      <div className="col-span-12 grid grid-cols-1 gap-4 py-2 md:grid-cols-12 md:py-0 h-full min-h-0">
+        <div className="md:col-start-4 md:col-span-6 bg-card/20 border border-border rounded-3xl p-5 sm:p-8 flex flex-col items-center justify-center text-center">
+            <h2 className="text-xl font-black tracking-tight text-primary uppercase mb-3 sm:text-2xl sm:mb-4">Числовой анализ</h2>
+            <p className="text-sm leading-relaxed text-muted-foreground mb-6 sm:mb-8">
               Оценка способности быстро оперировать данными. У вас будет 60 секунд на ответ серии вопросов (вычисление долей, процентных изменений и средневзвешенных значений).
             </p>
-            <button onClick={handleStart} className="w-full max-w-[250px] px-4 py-3 bg-primary text-primary-foreground text-xs uppercase tracking-wider rounded-lg font-bold hover:bg-primary/90 transition-colors">
+            <button onClick={handleStart} className="w-full max-w-sm min-h-12 px-4 py-3 bg-primary text-primary-foreground text-xs uppercase tracking-wider rounded-xl font-bold hover:bg-primary/90 transition-colors sm:max-w-[250px]">
               Начать тест
             </button>
         </div>
