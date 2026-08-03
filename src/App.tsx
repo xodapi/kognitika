@@ -291,7 +291,12 @@ function AppContent() {
               animate={{ x: 0, opacity: 1 }}
               exit={{ x: '-100%', opacity: 0 }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="fixed inset-y-0 left-0 w-[280px] bg-card/60 backdrop-blur-2xl border-r border-white/10 z-[51] 2xl:hidden flex flex-col p-6 shadow-2xl"
+              className="fixed inset-y-0 left-0 w-[min(22rem,calc(100vw-2rem))] bg-card/60 backdrop-blur-2xl border-r border-white/10 z-[51] 2xl:hidden flex flex-col shadow-2xl"
+              style={{
+                paddingTop: 'env(safe-area-inset-top)',
+                paddingBottom: 'env(safe-area-inset-bottom)',
+                paddingLeft: 'env(safe-area-inset-left)',
+              }}
             >
             <div className="p-6 border-b border-border flex justify-between items-center bg-secondary/30">
               <div className="flex items-center gap-2">
@@ -534,14 +539,15 @@ function AppContent() {
 
       <footer
         aria-label="Версия сборки"
-        className="fixed bottom-24 right-3 lg:bottom-3 z-40 rounded-lg border border-border bg-card/80 px-2.5 py-1 text-sm font-mono font-bold text-muted-foreground shadow-sm backdrop-blur-md"
+        className="fixed bottom-[max(6rem,calc(env(safe-area-inset-bottom)+5.25rem))] right-3 lg:bottom-3 z-40 rounded-lg border border-border bg-card/80 px-2.5 py-1 text-sm font-mono font-bold text-muted-foreground shadow-sm backdrop-blur-md"
       >
         build {appBuildId}
       </footer>
 
       {/* Floating Mobile Nav (hidden below sm on the dashboard route, which has its own bottom nav) */}
       <div
-        className={`fixed bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-sm h-16 bg-card/60 backdrop-blur-2xl border border-white/10 rounded-3xl lg:hidden z-50 items-center justify-around px-2 shadow-[0_15px_40px_-15px_rgba(0,0,0,0.3)] ${activeTab === 'dashboard' ? 'hidden sm:flex' : 'flex'}`}
+        className={`fixed left-1/2 -translate-x-1/2 w-[min(90%,24rem)] max-w-sm h-16 bg-card/60 backdrop-blur-2xl border border-white/10 rounded-3xl lg:hidden z-50 items-center justify-around px-2 shadow-[0_15px_40px_-15px_rgba(0,0,0,0.3)] ${activeTab === 'dashboard' ? 'hidden sm:flex' : 'flex'}`}
+        style={{ bottom: 'max(1.5rem, calc(env(safe-area-inset-bottom) + 0.75rem))' }}
       >
          {BOTTOM_NAV_ITEMS.map((item) => {
            const label = item.id === 'dashboard' ? 'Главная' : (item.id === 'schulte' ? 'Таблицы Шульте' : item.id === 'logical' ? 'Логика' : item.id === 'nback' ? 'Память' : item.id === 'situational' ? 'Ситуации' : item.id);
