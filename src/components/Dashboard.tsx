@@ -122,7 +122,7 @@ export function Dashboard({
   ];
 
   return (
-    <div className="space-y-8 flex flex-col pb-6 sm:pb-12">
+    <div className="flex flex-col space-y-6 pb-24 sm:space-y-8 sm:pb-12">
       {/* Navigation Tabs - hidden on mobile (replaced by bottom nav) */}
       <div className="hidden sm:flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
         <div className="grid w-full grid-cols-2 gap-2 bg-card/30 p-1.5 border border-border rounded-2xl sm:w-fit sm:flex sm:flex-wrap">
@@ -193,23 +193,26 @@ export function Dashboard({
                 const next = dailyTasks.find(t => !t.completed);
                 onStartGame(next?.id ? 'schulte' : 'schulte');
               }}
-              className="sm:hidden w-full py-5 bg-primary text-primary-foreground rounded-2xl font-black text-lg uppercase tracking-wider flex items-center justify-center gap-3 shadow-xl shadow-primary/30 active:scale-[0.98] transition-transform"
+              className="sm:hidden flex min-h-16 w-full items-center justify-center gap-3 rounded-2xl bg-primary px-5 py-5 text-base font-black uppercase tracking-wider text-primary-foreground shadow-xl shadow-primary/30 transition-transform active:scale-[0.98]"
             >
-              <Zap className="w-6 h-6" />
+              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary-foreground/15">
+                <Zap className="h-5 w-5" />
+              </span>
               Начать тренировку
             </button>
 
             {/* Welcome Header */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center md:gap-6">
               <div>
-                <h1 className="text-3xl font-black tracking-tight mb-2">Привет, {user?.pseudonym || user?.name || 'Мастер'}!</h1>
-                <p className="text-muted-foreground text-sm flex items-center gap-2">
-                  <Activity className="w-4 h-4 text-primary" />
-                  Ваш прогресс за сегодня: <span className="text-foreground font-bold">{dailyTasks.filter(t => t.completed).length}/{dailyTasks.length} задач</span>
+                <p className="mb-2 text-[10px] font-black uppercase tracking-[0.2em] text-primary sm:hidden">Ваш ежедневный фокус</p>
+                <h1 className="mb-2 text-2xl font-black tracking-tight sm:text-3xl">Привет, {user?.pseudonym || user?.name || 'Мастер'}!</h1>
+                <p className="flex items-center gap-2 text-xs text-muted-foreground sm:text-sm">
+                  <Activity className="h-4 w-4 shrink-0 text-primary" />
+                  Ваш прогресс за сегодня: <span className="font-bold text-foreground">{dailyTasks.filter(t => t.completed).length}/{dailyTasks.length} задач</span>
                 </p>
               </div>
 
-              <div className="bg-primary/5 border border-primary/10 rounded-2xl p-4 flex items-center gap-4 max-w-sm">
+              <div className="flex max-w-sm items-center gap-4 rounded-2xl border border-primary/10 bg-primary/5 p-4">
                 <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
                   <Lightbulb className="w-5 h-5 text-primary" />
                 </div>
