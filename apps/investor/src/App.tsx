@@ -1,14 +1,12 @@
 import {
   ArrowRight,
   BarChart3,
-  BrainCircuit,
   Check,
   ChevronRight,
   CircleDashed,
   Database,
   ExternalLink,
   Fingerprint,
-  Gauge,
   Layers3,
   LockKeyhole,
   Mail,
@@ -16,10 +14,13 @@ import {
   ServerCog,
   ShieldCheck,
   Sparkles,
+  Sun,
+  Moon,
   Target,
   TimerReset,
   Users,
 } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 const PRODUCT_URL = 'https://kognitika.ru';
 const CONTACT_EMAIL = 'admin@syntog.ru';
@@ -84,6 +85,14 @@ function SectionIntro({ eyebrow, title, text }: { eyebrow: string; title: string
 }
 
 function App() {
+  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+  }, [theme]);
+
+  const toggleTheme = () => setTheme((current) => current === 'dark' ? 'light' : 'dark');
+
   return (
     <div className="site-shell" id="top">
       <header className="nav-wrap">
@@ -94,7 +103,12 @@ function App() {
             <a href="#strategy">Стратегия</a>
             <a href="#trust">Архитектура</a>
           </div>
-          <a className="nav-cta" href="#contact">Связаться <ChevronRight size={15} aria-hidden="true" /></a>
+          <div className="nav-actions">
+            <button className="theme-toggle" type="button" onClick={toggleTheme} aria-label={theme === 'dark' ? 'Включить светлую тему' : 'Включить тёмную тему'} title={theme === 'dark' ? 'Светлая тема' : 'Тёмная тема'}>
+              {theme === 'dark' ? <Sun size={18} aria-hidden="true" /> : <Moon size={18} aria-hidden="true" />}
+            </button>
+            <a className="nav-cta" href="#contact">Связаться <ChevronRight size={15} aria-hidden="true" /></a>
+          </div>
         </nav>
       </header>
 
@@ -102,30 +116,26 @@ function App() {
         <section className="hero container" aria-labelledby="hero-title">
           <div className="hero-copy">
             <p className="eyebrow hero-eyebrow"><span className="status-dot" /> Работающий продукт · следующий этап роста</p>
-            <h1 id="hero-title">Практика, которая становится <em>траекторией.</em></h1>
-            <p className="hero-lead">Kognitika помогает тренировать внимание, память, скорость реакции и устойчивость через короткие интерактивные занятия — и превращает результат в следующий понятный шаг.</p>
+            <h1 id="hero-title">Когнитивная практика,<em>которая ведёт дальше.</em></h1>
+            <p className="hero-lead">Kognitika соединяет короткие тренировки внимания, памяти и скорости реакции с понятным прогрессом и следующим персональным шагом.</p>
             <div className="hero-actions">
               <a className="button button-primary" href={PRODUCT_URL} target="_blank" rel="noreferrer">Открыть продукт <ExternalLink size={17} aria-hidden="true" /></a>
               <a className="button button-ghost" href="#product">Изучить тезис <ArrowRight size={17} aria-hidden="true" /></a>
             </div>
-            <p className="hero-note">Не медицинский продукт. Не обещание будущих функций. Обзор текущего продукта и проверяемых гипотез.</p>
+            <p className="hero-note">Не медицинский продукт. Не обещание будущих функций. Обзор текущей реализации и проверяемых гипотез.</p>
           </div>
 
-          <div className="hero-visual" aria-label="Цикл пользовательской практики">
-            <div className="orbit orbit-one" />
-            <div className="orbit orbit-two" />
-            <div className="visual-core">
-              <BrainCircuit size={42} strokeWidth={1.35} aria-hidden="true" />
-              <span>Личная<br />траектория</span>
+          <div className="hero-product" aria-label="Стилизованный интерфейс продукта Kognitika">
+            <div className="product-window">
+              <div className="window-bar"><i /><i /><i /><span>Kognitika / Практика</span></div>
+              <div className="product-content">
+                <div className="product-topline"><span>Сегодня</span><strong>Личная траектория</strong></div>
+                <p className="product-title">Следующий шаг<span>Короткая практика для внимания</span></p>
+                <div className="product-grid" aria-hidden="true"><i>1</i><i>2</i><i>3</i><i>4</i><i>5</i><i>6</i><i>7</i><i>8</i><i>9</i></div>
+                <div className="product-progress"><p><span>Динамика практики</span><span>сессия → шаг</span></p><div className="progress-line"><b /></div></div>
+              </div>
             </div>
-            <div className="satellite satellite-a"><span>01</span> Практика</div>
-            <div className="satellite satellite-b"><span>02</span> Результат</div>
-            <div className="satellite satellite-c"><span>03</span> Следующий шаг</div>
-            <div className="metric-card">
-              <div className="metric-head"><Gauge size={16} aria-hidden="true" /> Прогресс</div>
-              <div className="metric-bars"><i /><i /><i /><i /><i /></div>
-              <small>Относительно собственной базы</small>
-            </div>
+            <p className="product-caption">Визуальная модель продукта: практика, результат и следующий шаг.</p>
           </div>
         </section>
 
