@@ -138,9 +138,9 @@ jobs:
           sudo systemctl reload nginx
 
           for attempt in $(seq 1 15); do
-            if body="$(curl -fsS -H 'Host: p.kognitika.ru' http://127.0.0.1/)" \
+            if body="$(curl -kfsS --resolve p.kognitika.ru:443:127.0.0.1 https://p.kognitika.ru/)" \
               && printf '%s' "$body" | grep -q '<title>Kognitika для инвесторов</title>'; then
-              echo "Local investor smoke check passed"
+              echo "Local investor HTTPS smoke check passed"
               break
             fi
             if [ "$attempt" -eq 15 ]; then
