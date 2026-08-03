@@ -97,18 +97,18 @@ export function NBackTest() {
 
   if (!state.isActive && !state.isFinished) {
     return (
-      <div className="col-span-12 grid grid-cols-1 md:grid-cols-12 gap-4 h-full min-h-0">
-        <div className="md:col-start-4 md:col-span-6 bg-card/20 border border-border rounded-3xl p-8 flex flex-col items-center justify-center text-center">
-            <h2 className="text-2xl font-bold tracking-tight text-primary uppercase mb-4">Задача N-назад</h2>
-            <p className="text-sm text-muted-foreground mb-4">
+      <div className="col-span-12 grid grid-cols-1 gap-4 py-2 md:grid-cols-12 md:py-0 h-full min-h-0">
+        <div className="md:col-start-4 md:col-span-6 bg-card/20 border border-border rounded-3xl p-5 sm:p-8 flex flex-col items-center justify-center text-center">
+            <h2 className="text-xl font-black tracking-tight text-primary uppercase mb-3 sm:text-2xl sm:mb-4">Задача N-назад</h2>
+            <p className="text-sm leading-relaxed text-muted-foreground mb-4">
               Оценка рабочей памяти. Вы увидите последовательность букв.
             </p>
-            <p className="text-xs text-foreground bg-secondary/50 p-4 rounded-xl border border-border mb-6">
-              Правило (2-назад): Жмите <b>Совпадение</b> или <b>Пробел</b>, если текущая буква совпадает с буквой, показанной <span className="text-primary font-bold">2 шага назад</span>.
+            <p className="text-xs leading-relaxed text-foreground bg-secondary/50 p-4 rounded-xl border border-border mb-5 sm:mb-6">
+              Правило (2-назад): нажимайте <b>Совпадение</b>, если текущая буква совпадает с буквой, показанной <span className="text-primary font-bold">2 шага назад</span>. На компьютере можно использовать Пробел.
             </p>
 
             {/* Luscher Checkbox */}
-            <div className="flex items-center gap-3 mb-8 bg-primary/5 border border-primary/10 min-h-11 px-4 rounded-xl cursor-pointer select-none" onClick={() => setUseLuscher(!useLuscher)}>
+            <div className="flex items-center gap-3 mb-6 bg-primary/5 border border-primary/10 min-h-12 px-4 rounded-xl cursor-pointer select-none sm:mb-8" onClick={() => setUseLuscher(!useLuscher)}>
               <input 
                 type="checkbox" 
                 checked={useLuscher} 
@@ -118,7 +118,7 @@ export function NBackTest() {
               <span className="text-xs font-black uppercase text-foreground">Включить эмоциональный барометр Люшера</span>
             </div>
 
-            <button onClick={handleStartClick} className="w-full max-w-[250px] min-h-11 px-4 py-3 bg-primary text-primary-foreground text-xs uppercase tracking-wider rounded-lg font-bold hover:bg-primary/90 transition-colors">
+            <button onClick={handleStartClick} className="w-full max-w-sm min-h-12 px-4 py-3 bg-primary text-primary-foreground text-xs uppercase tracking-wider rounded-xl font-bold hover:bg-primary/90 transition-colors sm:max-w-[250px]">
               Активировать
             </button>
         </div>
