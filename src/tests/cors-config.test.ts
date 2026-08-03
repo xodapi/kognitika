@@ -23,8 +23,19 @@ describe('CORS runtime config', () => {
 
     expect(isOriginAllowed('https://kognitika.syntog.ru', config)).toBe(true);
     expect(isOriginAllowed('https://admin.kognitika.syntog.ru', config)).toBe(true);
+    expect(isOriginAllowed('https://p.kognitika.ru', config)).toBe(false);
     expect(isOriginAllowed('https://example.test', config)).toBe(false);
     expect(config.warning).toBeUndefined();
+  });
+
+  it('allows the investor microsite only when explicitly allowlisted', () => {
+    const config = resolveCorsConfig({
+      NODE_ENV: 'production',
+      CORS_ORIGIN: 'https://kognitika.ru,https://p.kognitika.ru',
+    });
+
+    expect(isOriginAllowed('https://p.kognitika.ru', config)).toBe(true);
+    expect(isOriginAllowed('https://other.kognitika.ru', config)).toBe(false);
   });
 
   it('denies wildcard CORS in production and logs a safe warning', () => {

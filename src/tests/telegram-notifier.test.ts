@@ -4,6 +4,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   buildFeedbackTelegramMessage,
+  buildInvestorLeadTelegramMessage,
   sendTelegramAdminMessage,
 } from '../server/services/telegram-notifier.ts';
 
@@ -37,6 +38,21 @@ describe('telegram admin notifier', () => {
     expect(message).not.toContain('BR-SYNTHETIC-SECRET');
     expect(message).not.toContain('eyJabc.def.ghi');
     expect(message).toContain('[redacted]');
+  });
+
+  it('formats investor leads without leaking Bot API credentials', () => {
+    const message = buildInvestorLeadTelegramMessage({
+      name: 'Synthetic Investor',
+      organization: 'Synthetic Fund',
+      contact: '@synthetic_investor',
+      interest: 'materials',
+    });
+
+    expect(message).toContain('Kognitika: новый запрос инвестора');
+    expect(message).toContain('Имя: Synthetic Investor');
+    expect(message).toContain('Организация / фонд: Synthetic Fund');
+    expect(message).toContain('Контакт: @synthetic_investor');
+    expect(message).toContain('Интерес: Запросить материалы');
   });
 
   it('treats missing Telegram env as disabled without calling fetch', async () => {
