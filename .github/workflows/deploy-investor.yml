@@ -1,0 +1,169 @@
+name: Deploy investor microsite
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/investor/**"
+      - "deployment/nginx-p-kognitika.conf"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - ".github/workflows/deploy-investor.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: kognitika-investor-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 10.22.0
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - name: Typecheck investor microsite
+        run: pnpm typecheck:investor
+      - name: Build investor microsite
+        run: pnpm build:investor
+      - name: Package immutable release
+        run: tar -C apps/investor/dist -czf investor-${{ github.sha }}.tar.gz .
+      - uses: actions/upload-artifact@v6
+        with:
+          name: investor-${{ github.sha }}
+          path: investor-${{ github.sha }}.tar.gz
+          if-no-files-found: error
+          retention-days: 7
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    environment: production
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/download-artifact@v7
+        with:
+          name: investor-${{ github.sha }}
+      - name: Prepare SSH
+        env:
+          DEPLOY_HOST: ${{ secrets.KOGNITIKA_DEPLOY_HOST }}
+          DEPLOY_PORT: ${{ secrets.KOGNITIKA_DEPLOY_PORT }}
+          DEPLOY_KEY: ${{ secrets.KOGNITIKA_DEPLOY_SSH_KEY }}
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "$DEPLOY_KEY" > ~/.ssh/kognitika_deploy_key
+          chmod 600 ~/.ssh/kognitika_deploy_key
+          ssh-keyscan -p "$DEPLOY_PORT" -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts
+      - name: Upload release and nginx manifest
+        env:
+          DEPLOY_HOST: ${{ secrets.KOGNITIKA_DEPLOY_HOST }}
+          DEPLOY_PORT: ${{ secrets.KOGNITIKA_DEPLOY_PORT }}
+          DEPLOY_USER: ${{ secrets.KOGNITIKA_DEPLOY_USER }}
+        run: |
+          set -euo pipefail
+          scp -i ~/.ssh/kognitika_deploy_key -P "$DEPLOY_PORT" \
+            -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes \
+            "investor-${{ github.sha }}.tar.gz" deployment/nginx-p-kognitika.conf \
+            "$DEPLOY_USER@$DEPLOY_HOST:/tmp/"
+      - name: Activate atomic static release
+        env:
+          DEPLOY_HOST: ${{ secrets.KOGNITIKA_DEPLOY_HOST }}
+          DEPLOY_PORT: ${{ secrets.KOGNITIKA_DEPLOY_PORT }}
+          DEPLOY_USER: ${{ secrets.KOGNITIKA_DEPLOY_USER }}
+          RELEASE_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          ssh -i ~/.ssh/kognitika_deploy_key -p "$DEPLOY_PORT" \
+            -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes \
+            "$DEPLOY_USER@$DEPLOY_HOST" \
+            "RELEASE_SHA='$RELEASE_SHA' bash -s" <<'REMOTE'
+          set -Eeuo pipefail
+
+          root=/var/www/p-kognitika
+          releases="$root/releases"
+          release="$releases/$RELEASE_SHA"
+          current="$root/current"
+          previous=""
+
+          if [ -L "$current" ]; then
+            previous="$(readlink -f "$current")"
+          fi
+
+          rollback() {
+            code=$?
+            if [ "$code" -ne 0 ] && [ -n "$previous" ] && [ -d "$previous" ]; then
+              echo "Deployment failed; restoring $previous" >&2
+              sudo ln -sfn "$previous" "$root/current.rollback"
+              sudo mv -Tf "$root/current.rollback" "$current"
+              sudo nginx -t && sudo systemctl reload nginx
+            fi
+            exit "$code"
+          }
+          trap rollback EXIT
+
+          sudo mkdir -p "$releases"
+          sudo rm -rf "$release"
+          sudo mkdir -p "$release"
+          sudo tar -xzf "/tmp/investor-$RELEASE_SHA.tar.gz" -C "$release"
+          test -s "$release/index.html"
+
+          sudo chown -R www-data:www-data "$release"
+          sudo find "$release" -type d -exec chmod 755 {} +
+          sudo find "$release" -type f -exec chmod 644 {} +
+
+          sudo cp /tmp/nginx-p-kognitika.conf /etc/nginx/sites-available/p-kognitika
+          sudo ln -sfn /etc/nginx/sites-available/p-kognitika /etc/nginx/sites-enabled/p-kognitika
+          sudo nginx -t
+          sudo systemctl reload nginx
+          sudo certbot --nginx -d p.kognitika.ru \
+            --non-interactive --agree-tos --email admin@syntog.ru \
+            --redirect --keep-until-expiring
+          sudo nginx -t
+
+          sudo ln -sfn "$release" "$root/current.next"
+          sudo mv -Tf "$root/current.next" "$current"
+          sudo systemctl reload nginx
+
+          for attempt in $(seq 1 15); do
+            if body="$(curl -fsS -H 'Host: p.kognitika.ru' http://127.0.0.1/)" \
+              && printf '%s' "$body" | grep -q '<title>Kognitika для инвесторов</title>'; then
+              echo "Local investor smoke check passed"
+              break
+            fi
+            if [ "$attempt" -eq 15 ]; then
+              echo "Local investor smoke check failed" >&2
+              exit 1
+            fi
+            sleep 2
+          done
+
+          sudo find "$releases" -mindepth 1 -maxdepth 1 -type d -printf '%T@ %p\n' \
+            | sort -nr | tail -n +6 | cut -d' ' -f2- | xargs -r sudo rm -rf
+          rm -f "/tmp/investor-$RELEASE_SHA.tar.gz" /tmp/nginx-p-kognitika.conf
+          trap - EXIT
+          REMOTE
+      - name: External HTTPS smoke test
+        run: |
+          set -euo pipefail
+          for attempt in $(seq 1 15); do
+            if body="$(curl -fsS --retry 2 --connect-timeout 10 https://p.kognitika.ru/)" \
+              && printf '%s' "$body" | grep -q '<title>Kognitika для инвесторов</title>'; then
+              exit 0
+            fi
+            sleep 4
+          done
+          echo "External investor smoke check failed" >&2
+          exit 1

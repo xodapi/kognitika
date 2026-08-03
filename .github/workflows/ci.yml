@@ -58,6 +58,10 @@ jobs:
       - run: pnpm test
       - run: pnpm validate
       - run: pnpm build
+      - name: Typecheck investor microsite
+        run: pnpm typecheck:investor
+      - name: Build investor microsite
+        run: pnpm build:investor
       - run: pnpm check:bundle
       - run: pnpm exec playwright install --with-deps chromium
       - run: pnpm test:e2e

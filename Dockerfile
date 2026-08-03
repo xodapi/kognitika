@@ -11,6 +11,7 @@ RUN apt-get update && apt-get install -y \
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
 COPY apps/mobile/package.json ./apps/mobile/package.json
 COPY apps/capacitor/package.json ./apps/capacitor/package.json
+COPY apps/investor/package.json ./apps/investor/package.json
 COPY packages/shared-types/package.json ./packages/shared-types/package.json
 COPY packages/shared-types/tsconfig.json ./packages/shared-types/tsconfig.json
 COPY packages/shared-types/src ./packages/shared-types/src
@@ -41,6 +42,7 @@ RUN apt-get update && apt-get install -y \
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
 COPY apps/mobile/package.json ./apps/mobile/package.json
 COPY apps/capacitor/package.json ./apps/capacitor/package.json
+COPY apps/investor/package.json ./apps/investor/package.json
 COPY packages/shared-types/package.json ./packages/shared-types/package.json
 
 # Schema must be present so prisma generate can run in this stage
