@@ -445,23 +445,23 @@ export function SchulteGrid() {
 
   if (showBriefing) {
     return (
-      <div className="col-span-12 flex items-center justify-center h-full min-h-[500px]">
+      <div className="col-span-12 flex items-center justify-center py-2 sm:min-h-[500px]">
         <motion.div 
           initial={{ opacity: 0, scale: 0.95, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
-          className="max-w-2xl w-full bg-card/80 backdrop-blur-2xl border border-border rounded-[2.5rem] p-10 sm:p-14 shadow-2xl relative overflow-hidden"
+          className="max-w-2xl w-full bg-card/80 backdrop-blur-2xl border border-border rounded-3xl p-5 sm:rounded-[2.5rem] sm:p-14 shadow-2xl relative overflow-hidden"
         >
           <div className="absolute top-0 right-0 w-80 h-80 bg-primary/10 rounded-full blur-[120px] -translate-y-1/2 translate-x-1/2" />
           <div className="absolute bottom-0 left-0 w-80 h-80 bg-destructive/10 rounded-full blur-[120px] translate-y-1/2 -translate-x-1/2" />
 
           <div className="relative z-10">
-            <div className="flex items-center gap-6 mb-10">
-              <div className="w-16 h-16 rounded-3xl bg-primary flex items-center justify-center text-primary-foreground shadow-2xl shadow-primary/30">
-                <Activity className="w-8 h-8" />
+            <div className="flex items-start gap-3 mb-6 sm:items-center sm:gap-6 sm:mb-10">
+              <div className="w-12 h-12 shrink-0 rounded-2xl bg-primary flex items-center justify-center text-primary-foreground shadow-2xl shadow-primary/30 sm:w-16 sm:h-16 sm:rounded-3xl">
+                <Activity className="w-6 h-6 sm:w-8 sm:h-8" />
               </div>
-              <div>
-                <h2 className="text-3xl font-black tracking-tight text-foreground uppercase">Когнитивный Брифинг</h2>
-                <div className="flex gap-2 mt-1">
+              <div className="min-w-0">
+                <h2 className="text-xl font-black tracking-tight text-foreground uppercase sm:text-3xl">Когнитивный Брифинг</h2>
+                <div className="flex flex-wrap gap-2 mt-2 sm:mt-1">
                   <span className="text-xs bg-primary/10 text-primary px-3 py-1 rounded-full font-black uppercase tracking-widest border border-primary/20">
                     {isGorbov ? 'Протокол Горбова' : `Протокол ${mode.toUpperCase()}`}
                   </span>
@@ -472,9 +472,9 @@ export function SchulteGrid() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 mb-12">
-               <div className="space-y-4">
-                  <h4 className="text-xs text-muted-foreground uppercase font-black tracking-[0.2em]">Целевой алгоритм</h4>
+            <div className="grid grid-cols-1 gap-4 mb-6 sm:grid-cols-2 sm:gap-8 sm:mb-12">
+               <div className="space-y-3 sm:space-y-4">
+                  <h4 className="text-[10px] text-muted-foreground uppercase font-black tracking-[0.2em] sm:text-xs">Целевой алгоритм</h4>
                   <p className="text-sm text-foreground leading-relaxed font-medium">
                     {isGorbov 
                       ? "ЧЕРЕДОВАНИЕ: 1 Черное → 24 Красное → 2 Черное → 23 Красное... Это тест на переключение когнитивных установок."
@@ -489,7 +489,7 @@ export function SchulteGrid() {
                   </div>
                </div>
 
-               <div className="bg-secondary/40 border border-border/50 rounded-3xl p-6 flex flex-col justify-center gap-4">
+               <div className="bg-secondary/40 border border-border/50 rounded-2xl p-4 flex flex-col justify-center gap-3 sm:rounded-3xl sm:p-6 sm:gap-4">
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-muted-foreground uppercase font-black">Норматив</span>
                     <span className="text-sm font-mono font-black text-primary">{targetTime}s</span>
@@ -511,7 +511,7 @@ export function SchulteGrid() {
               whileHover={{ scale: 1.02, boxShadow: '0 20px 40px -10px rgba(var(--primary-rgb), 0.3)' }}
               whileTap={{ scale: 0.98 }}
               onClick={confirmStart}
-              className="w-full py-5 bg-primary text-primary-foreground rounded-[1.5rem] font-black text-sm uppercase tracking-[0.3em] shadow-2xl shadow-primary/20 transition-all"
+              className="w-full min-h-12 py-4 bg-primary text-primary-foreground rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-2xl shadow-primary/20 transition-all sm:rounded-[1.5rem] sm:py-5 sm:text-sm sm:tracking-[0.3em]"
             >
               Инициализировать Тест
             </motion.button>
