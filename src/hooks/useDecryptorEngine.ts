@@ -1,6 +1,10 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { eventBus } from '../client/analytics/event-bus';
 import { RULE_SETS, CARDS_BY_RULESET, ContentCard } from '../lib/content-db';
+import {
+  CognitiveSessionEventCollector,
+  type CompletedSessionAnalyticsJob,
+} from '../core/cognitive-events';
 
 interface DecryptorState {
   phase: 'memorize' | 'scan' | 'result';
@@ -29,6 +33,10 @@ export const useDecryptorEngine = (initialLevel: number = 1) => {
     memorizeTimeLeft: 10,
   });
 
+  const startTimeRef = useRef(0);
+  const collectorRef = useRef<CognitiveSessionEventCollector | null>(null);
+  const completedAnalyticsJobRef = useRef<CompletedSessionAnalyticsJob | null>(null);
+
   const cards = useMemo(() => CARDS_BY_RULESET['distortions'] || [], []);
 
   const generateOptions = useCallback((correctFact: string) => {
@@ -45,6 +53,22 @@ export const useDecryptorEngine = (initialLevel: number = 1) => {
   }, [cards, generateOptions]);
 
   const startGame = useCallback((level: number) => {
+    startTimeRef.current = Date.now();
+    const startedAt = new Date(startTimeRef.current).toISOString();
+    completedAnalyticsJobRef.current = null;
+    collectorRef.current = new CognitiveSessionEventCollector({
+      sessionId: `decryptor-${startTimeRef.current}-${level}`,
+      moduleId: 'decryptor',
+      moduleVersion: '1',
+      category: 'cognitive',
+      startedAt,
+    });
+    collectorRef.current.record({
+      kind: 'trial_started',
+      tMs: 0,
+      trialType: 'decryptor:fact-selection',
+      difficulty: `level-${level}`,
+    });
     setState(s => ({
       ...s,
       phase: 'memorize',
@@ -61,6 +85,12 @@ export const useDecryptorEngine = (initialLevel: number = 1) => {
     if (!state.activeCard) return;
 
     const isCorrect = selectedFact === state.activeCard.metadata?.fact;
+    collectorRef.current?.record({
+      kind: 'trial_answered',
+      tMs: Math.max(0, Date.now() - startTimeRef.current),
+      trialType: 'decryptor:fact-selection',
+      isCorrect,
+    });
     
     if (isCorrect) {
       eventBus.emit('HIT', { module: 'decryptor', xp: 100 } as any);
@@ -93,6 +123,12 @@ export const useDecryptorEngine = (initialLevel: number = 1) => {
       interval = setInterval(() => {
         setState(s => {
           if (s.timeMs <= 100) {
+            const collector = collectorRef.current;
+            if (collector && !completedAnalyticsJobRef.current) {
+              const completedAt = new Date(startTimeRef.current + 60_000).toISOString();
+              collector.complete(60_000, completedAt);
+              completedAnalyticsJobRef.current = collector.createCompletedJob(completedAt);
+            }
             return { ...s, phase: 'result', timeMs: 0 };
           }
           return { ...s, timeMs: s.timeMs - 100 };
@@ -102,5 +138,7 @@ export const useDecryptorEngine = (initialLevel: number = 1) => {
     return () => clearInterval(interval);
   }, [state.phase, state.timeMs]);
 
-  return { state, startGame, handleAnswer };
+  const getCompletedAnalyticsJob = useCallback(() => completedAnalyticsJobRef.current, []);
+
+  return { state, startGame, handleAnswer, getCompletedAnalyticsJob };
 };
