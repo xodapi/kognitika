@@ -47,11 +47,11 @@ Never include raw Brain ID, user ID in analytics payloads, email, tokens, creden
 
 ### Phase 1, collector adoption in engines
 
-- [ ] Add module metadata, lifecycle ownership, and collector integration to each supported cognitive engine.
-- [ ] Record `trial_started`, `trial_answered`, checkpoints, and exactly one terminal event where applicable.
+- [~] Add module metadata, lifecycle ownership, and collector integration to each supported cognitive engine. Schulte is the first adopter.
+- [~] Record `trial_started`, `trial_answered`, checkpoints, and exactly one terminal event where applicable. Schulte records start, answers, and completion; checkpoint adoption remains pending.
 - [ ] Preserve legacy events only through the bridge while adopters migrate.
-- [ ] Reject oversized, unordered, duplicate-terminal, and sensitive event records before any transport.
-- [ ] Add deterministic synthetic fixtures for each module family.
+- [x] Reject oversized, unordered, duplicate-terminal, and sensitive event records before any transport.
+- [~] Add deterministic synthetic fixtures for each module family. Schulte coverage is added; remaining module families are pending.
 
 **Acceptance gate:** a completed supported training session produces a valid `CompletedSessionAnalyticsJob` with non-empty events. Abandoned sessions do not masquerade as completed jobs.
 

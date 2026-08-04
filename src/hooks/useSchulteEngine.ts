@@ -1,6 +1,10 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { emitEvent } from './useEventBus';
 import { eventBus } from '../client/analytics/event-bus';
+import {
+  CognitiveSessionEventCollector,
+  type CompletedSessionAnalyticsJob,
+} from '../core/cognitive-events';
 import { generateGrid, generateExpectedSequence } from '../lib/schulte-generator';
 
 export type GameMode = 'classic' | 'reverse' | 'gorbov' | 'gorbov_v1' | 'gorbov_v2' | 'gorbov_v3' | 'gorbov_v4' | 'colorNoise' | 'scattered' | 'peripheral' | 'hardcore';
@@ -65,6 +69,11 @@ export function useSchulteEngine(initialSize: number = 5, mode: GameMode = 'clas
 
   const timerRef = useRef<number | null>(null);
   const startTimeRef = useRef<number>(0);
+  const sessionStartedAtRef = useRef<string | null>(null);
+  const collectorRef = useRef<CognitiveSessionEventCollector | null>(null);
+  const completedAnalyticsJobRef = useRef<CompletedSessionAnalyticsJob | null>(null);
+  const sessionConfigRef = useRef({ mode: state.mode, size: state.size });
+  sessionConfigRef.current = { mode: state.mode, size: state.size };
 
   useEffect(() => {
     return () => {
@@ -91,6 +100,21 @@ export function useSchulteEngine(initialSize: number = 5, mode: GameMode = 'clas
     });
     
     startTimeRef.current = performance.now();
+    sessionStartedAtRef.current = new Date().toISOString();
+    completedAnalyticsJobRef.current = null;
+    collectorRef.current = new CognitiveSessionEventCollector({
+      sessionId: `schulte-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
+      moduleId: 'schulte',
+      moduleVersion: '1',
+      category: 'cognitive',
+      startedAt: sessionStartedAtRef.current,
+    });
+    collectorRef.current.record({
+      kind: 'trial_started',
+      tMs: 0,
+      trialType: `schulte:${sessionConfigRef.current.mode}`,
+      difficulty: `${sessionConfigRef.current.size}x${sessionConfigRef.current.size}`,
+    });
     if (timerRef.current) cancelAnimationFrame(timerRef.current);
     
     const updateTime = () => {
@@ -133,7 +157,7 @@ export function useSchulteEngine(initialSize: number = 5, mode: GameMode = 'clas
 
   const clickCell = useCallback(
     (cell: CellValue, gridIndex: number, coords?: { x: number; y: number }, onSuccess?: () => void, onError?: () => void) => {
-      if (!state.isActive) return;
+      if (!state.isActive || completedAnalyticsJobRef.current) return;
 
       const expected = state.expectedSequence[state.expectedIndex];
       const isMatch = (state.mode === 'gorbov' || state.mode.startsWith('gorbov_'))
@@ -154,8 +178,26 @@ export function useSchulteEngine(initialSize: number = 5, mode: GameMode = 'clas
         x: coords?.x,
         y: coords?.y
       });
+      collectorRef.current?.record({
+        kind: 'trial_answered',
+        tMs: currentTime,
+        trialType: `schulte:${state.mode}`,
+        isCorrect: isMatch,
+        ...(reactionTimeMs > 0 ? { reactionTimeMs } : {}),
+        difficulty: `${state.size}x${state.size}`,
+      });
 
       if (isMatch) {
+        const isDone = state.expectedIndex + 1 >= state.expectedSequence.length;
+        if (isDone) {
+          const startedAt = sessionStartedAtRef.current;
+          const collector = collectorRef.current;
+          if (startedAt && collector) {
+            const completedAt = new Date(Date.parse(startedAt) + currentTime).toISOString();
+            collector.complete(currentTime, completedAt);
+            completedAnalyticsJobRef.current = collector.createCompletedJob(completedAt);
+          }
+        }
         onSuccess?.();
         setState((s) => {
           const nextIndex = s.expectedIndex + 1;
@@ -225,5 +267,7 @@ export function useSchulteEngine(initialSize: number = 5, mode: GameMode = 'clas
     return unsub;
   }, [isAIAdaptationEnabled, state.isActive, applyDifficultySuggestion]);
 
-  return { state, startGame, stopGame, resetGame, clickCell, setSettings, applyDifficultySuggestion };
+  const getCompletedAnalyticsJob = useCallback(() => completedAnalyticsJobRef.current, []);
+
+  return { state, startGame, stopGame, resetGame, clickCell, setSettings, applyDifficultySuggestion, getCompletedAnalyticsJob };
 }
