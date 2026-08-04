@@ -41,7 +41,7 @@ const ACTION_BUTTONS: ReadonlyArray<{
 ];
 
 export function AlphabetTableTrainer() {
-  const { state, startGame, stopGame, resetGame, submitAction } = useAlphabetTableEngine();
+  const { state, startGame, stopGame, resetGame, submitAction, getCompletedAnalyticsJob } = useAlphabetTableEngine();
   const { token, refreshUser } = useAuth();
   const navigate = useNavigate();
   const [preset, setPreset] = useState<AlphabetTablePreset>('balanced');
@@ -118,6 +118,7 @@ export function AlphabetTableTrainer() {
         errors: state.errors,
         averageReactionTimeMs: state.averageReactionTimeMs,
       },
+      analyticsJob: getCompletedAnalyticsJob() ?? undefined,
     })
       .then((data) => {
         if (data.session?.score) refreshUser();
@@ -139,6 +140,7 @@ export function AlphabetTableTrainer() {
     token,
     refreshUser,
     saveAttempt,
+    getCompletedAnalyticsJob,
   ]);
 
   const accuracy = useMemo(() => {

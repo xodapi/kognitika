@@ -25,6 +25,9 @@ const ANALYTICS_MODULE_GAME_TYPES: Record<string, readonly string[]> = {
   spatial: ['SPATIAL_CONCEALMENT'],
   'stroop-alphabet': ['STROOP_ALPHABET'],
   'schulte-90': ['SCHULTE_90'],
+  'alphabet-table': ['ALPHABET_TABLE'],
+  collision: ['COLLISION_DETECTOR'],
+  dispatcher: ['ASYNC_DISPATCHER'],
 };
 
 function validateAnalyticsJob(input: SaveGameInput): CompletedSessionAnalyticsJob | undefined {

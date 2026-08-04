@@ -225,6 +225,9 @@ describe('game save idempotency service', () => {
     ['spatial', 'SPATIAL_CONCEALMENT', 'spatial:recall'],
     ['stroop-alphabet', 'STROOP_ALPHABET', 'stroop-alphabet:color-action'],
     ['schulte-90', 'SCHULTE_90', 'schulte-90:cell-selection'],
+    ['alphabet-table', 'ALPHABET_TABLE', 'alphabet-table:action-selection'],
+    ['collision', 'COLLISION_DETECTOR', 'collision:filter'],
+    ['dispatcher', 'ASYNC_DISPATCHER', 'dispatcher:stream-session'],
   ])('binds a validated %s canonical job to %s', async (moduleId, gameType, trialType) => {
     const { saveCompletedGame } = await import('../server/services/game-save.ts');
     const analyticsJob = completedAnalyticsJob(moduleId, moduleId, trialType);
@@ -250,6 +253,9 @@ describe('game save idempotency service', () => {
     ['spatial', 'SPATIAL_CONCEALMENT', 'spatial:recall'],
     ['stroop-alphabet', 'STROOP_ALPHABET', 'stroop-alphabet:color-action'],
     ['schulte-90', 'SCHULTE_90', 'schulte-90:cell-selection'],
+    ['alphabet-table', 'ALPHABET_TABLE', 'alphabet-table:action-selection'],
+    ['collision', 'COLLISION_DETECTOR', 'collision:filter'],
+    ['dispatcher', 'ASYNC_DISPATCHER', 'dispatcher:stream-session'],
   ])('rejects %s canonical jobs for a different game type before starting a transaction', async (moduleId, gameType, trialType) => {
     const { saveCompletedGame } = await import('../server/services/game-save.ts');
 

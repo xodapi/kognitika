@@ -8,7 +8,7 @@ import { CompletionRecommendation } from './CompletionRecommendation';
 import { haptic } from '../lib/haptic';
 
 export function AsyncDispatcher() {
-  const { state, startGame, triggerStream } = useDispatcherEngine();
+  const { state, startGame, triggerStream, getCompletedAnalyticsJob } = useDispatcherEngine();
   const { token } = useAuth();
   const { beginAttempt, saveAttempt } = useGameAttempt(token);
   const handleStart = useCallback(async (level: number) => {
@@ -25,9 +25,10 @@ export function AsyncDispatcher() {
       saveAttempt({
         timeMs: state.timeMs,
         metadata: { score: state.score, level: state.level, triggers: state.totalTriggers, overflows: state.totalOverflows },
+        analyticsJob: getCompletedAnalyticsJob() ?? undefined,
       }).catch(() => {});
     }
-  }, [state.isFinished, token, state.timeMs, state.score, state.level, state.totalTriggers, state.totalOverflows, saveAttempt]);
+  }, [state.isFinished, token, state.timeMs, state.score, state.level, state.totalTriggers, state.totalOverflows, saveAttempt, getCompletedAnalyticsJob]);
 
   // Intro
   if (!state.isActive && !state.isFinished) {
