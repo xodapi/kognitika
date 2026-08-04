@@ -1,5 +1,5 @@
-import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { afterEach, describe, it, expect, vi } from 'vitest';
+import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import { CognitiveTrendCurve } from '../components/CognitiveTrendCurve';
 
 global.ResizeObserver = class ResizeObserver {
@@ -14,21 +14,37 @@ vi.mock('../hooks/useAuth', () => ({
 }));
 
 describe('CognitiveTrendCurve', () => {
+  afterEach(() => {
+    cleanup();
+    mockUseAuth.mockReset();
+    vi.unstubAllGlobals();
+  });
+
   it('shows empty state when no token', () => {
     mockUseAuth.mockReturnValue({ token: null });
     render(<CognitiveTrendCurve />);
     expect(screen.getByText(/недостаточно данных/i)).toBeDefined();
   });
 
-  it('shows loading state when token is present', () => {
+  it('shows loading state when token is present', async () => {
     mockUseAuth.mockReturnValue({ token: 'synthetic-token' });
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('synthetic network failure')));
     render(<CognitiveTrendCurve compact />);
     expect(screen.getByText(/загрузка тренда/i)).toBeDefined();
+
+    await waitFor(() => {
+      expect(screen.getByText(/недостаточно данных/i)).toBeDefined();
+    });
   });
 
-  it('shows loading state in full mode', () => {
+  it('shows loading state in full mode', async () => {
     mockUseAuth.mockReturnValue({ token: 'synthetic-token' });
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('synthetic network failure')));
     render(<CognitiveTrendCurve />);
     expect(screen.getByText(/загрузка тренда/i)).toBeDefined();
+
+    await waitFor(() => {
+      expect(screen.getByText(/недостаточно данных/i)).toBeDefined();
+    });
   });
 });
