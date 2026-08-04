@@ -71,9 +71,9 @@ Never include raw Brain ID, user ID in analytics payloads, email, tokens, creden
 - [x] Maintain TypeScript/Rust `AnalyzeSession` contract fixtures and privacy validation.
 - [x] Provide `kognitika-core` as a deterministic native and WASM computation boundary.
 - [x] Provide an internal-only Axum sidecar with no database configuration.
-- [ ] Add a Node adapter with request timeout, contract-version mapping, and aggregate-only error telemetry.
-- [ ] Run TypeScript and Rust over the same synthetic corpus and compare normalized outputs with documented tolerances.
-- [ ] Store only aggregate mismatch counts and safe error codes, not raw event payloads.
+- [x] Add a Node adapter with request timeout, contract-version mapping, strict response validation, and aggregate-only safe error telemetry. It remains disabled unless both the Node dispatcher and Rust-sidecar flags are enabled.
+- [~] Run TypeScript and Rust over the same synthetic corpus and compare normalized outputs with documented tolerances. Shared validation corpus and deterministic fixture coverage are present; live sidecar parity is gated behind the disabled internal sidecar deployment.
+- [x] Store only aggregate mismatch counts and safe error codes, not raw event payloads.
 
 **Acceptance gate:** all required synthetic fixtures meet exact or documented-tolerance parity; invalid and sensitive inputs are rejected consistently; sidecar unavailability produces retryable shadow work only.
 

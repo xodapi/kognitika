@@ -14,6 +14,7 @@ import {
   type SessionAnalyticsSummaryRecord,
 } from '../../core/analyze-session/batch-analytics.ts';
 import { persistSessionAnalyticsSummary } from './analytics-persistence.ts';
+import type { RustAnalyticsSidecarClient } from './rust-analytics-sidecar.ts';
 
 const CLAIMABLE_STATES: AnalyticsOutboxState[] = ['pending', 'retry'];
 const CLAIMABLE_STATE_SQL = Prisma.join(CLAIMABLE_STATES.map(state => Prisma.sql`${state}`));
@@ -63,6 +64,8 @@ function toEntry(record: {
  * through a Node-mediated boundary and has no database credentials.
  */
 export class PrismaAnalyticsOutboxStore {
+  constructor(private readonly rustSidecar: RustAnalyticsSidecarClient | null = null) {}
+
   async claimNext(workerId: string, now: Date, leaseMs: number): Promise<AnalyticsOutboxEntry | null> {
     const leaseExpiresAt = new Date(now.getTime() + leaseMs);
 
@@ -209,6 +212,25 @@ export class PrismaAnalyticsOutboxStore {
         session: { ...canonicalSession, sessionId: entry.sourceSession },
       });
       await persistSessionAnalyticsSummary(ownerId, summary);
+      if (this.rustSidecar) {
+        try {
+          await this.rustSidecar.analyze(canonicalSession, {
+            schemaVersion: 1,
+            durationMs: summary.durationMs,
+            clickCount: summary.clickCount,
+            p50ReactionMs: summary.p50ReactionMs,
+            p95ReactionMs: summary.p95ReactionMs,
+            speedSlope: summary.speedSlope,
+            accuracy: summary.accuracy,
+            fatigueIndex: summary.fatigueIndex,
+            engagementIndex: summary.engagementIndex,
+            suspiciousPatternScore: summary.suspiciousPatternScore,
+            recommendationSignals: summary.recommendationSignals,
+          });
+        } catch {
+          // Rust is shadow-only. Its availability must never delay or roll back a saved summary.
+        }
+      }
       const completed = await this.complete(entry.id, options.workerId, now);
       if (!completed) throw new Error('outbox lease was lost');
       return { status: 'completed', summary };

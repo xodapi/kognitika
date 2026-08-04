@@ -1,5 +1,6 @@
 import { createSafeLogger } from '../../lib/safe-logger.ts';
 import { PrismaAnalyticsOutboxStore } from './analytics-outbox.ts';
+import { createRustAnalyticsSidecarClient } from './rust-analytics-sidecar.ts';
 
 const logger = createSafeLogger('analytics-outbox-worker');
 
@@ -94,7 +95,7 @@ export class AnalyticsOutboxWorker {
 export function startAnalyticsOutboxWorker(environment: Record<string, string | undefined> = process.env) {
   if (!isAnalyticsOutboxDispatcherEnabled(environment)) return null;
   const worker = new AnalyticsOutboxWorker(
-    new PrismaAnalyticsOutboxStore(),
+    new PrismaAnalyticsOutboxStore(createRustAnalyticsSidecarClient(environment)),
     {
       ...DEFAULT_ANALYTICS_OUTBOX_WORKER_OPTIONS,
       workerId: `node-${process.pid}`,
