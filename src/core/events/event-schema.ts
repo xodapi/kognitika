@@ -87,11 +87,33 @@ export const ScoreUpdateSchema = z.object({
   points: z.number().finite(),
 }).passthrough();
 
+const LegacyExpectedActualSchema = z.union([z.string().min(1).max(120), z.number().finite()]);
+
+/** Compatibility-only UI-local error signal. New analytics use canonical events. */
+export const MistakeMadeSchema = z.object({
+  expected: LegacyExpectedActualSchema,
+  actual: LegacyExpectedActualSchema,
+  cellId: z.union([z.string().min(1).max(120), z.number().finite()]).optional(),
+  level: z.number().int().nonnegative().optional(),
+  round: z.number().int().nonnegative().optional(),
+  isCongruent: z.boolean().optional(),
+}).passthrough();
+
+/** Compatibility-only UI-local score signals. */
+export const HitSchema = z.object({
+  module: z.string().min(1).max(64),
+  xp: z.number().finite().nonnegative(),
+}).passthrough();
+
+export const MissSchema = z.object({
+  module: z.string().min(1).max(64),
+}).passthrough();
+
 // Registry of all events and their payloads
 export const EventRegistry = {
   'TRAINING_COMPLETE': TrainingCompleteSchema,
   'CELL_CLICK': CellClickSchema,
-  'MISTAKE_MADE': z.any(),
+  'MISTAKE_MADE': MistakeMadeSchema,
   'FEEDBACK_SUBMITTED': FeedbackSubmittedSchema,
   'IDEA_SUBMITTED': IdeaSubmittedSchema,
   'DIFFICULTY_SUGGESTION': DifficultySuggestionSchema,
@@ -104,8 +126,8 @@ export const EventRegistry = {
   'GAME_START': GameStartSchema,
   'GAME_END': GameEndSchema,
   'SCORE_UPDATE': ScoreUpdateSchema,
-  'HIT': z.any(),
-  'MISS': z.any()
+  'HIT': HitSchema,
+  'MISS': MissSchema
 };
 
 export type EventMap = {

@@ -20,4 +20,12 @@ describe('server EventBus contract schemas', () => {
     expect(EventRegistry.SCORE_UPDATE.safeParse({ points: 100 }).success).toBe(true);
     expect(EventRegistry.SCORE_UPDATE.safeParse({ points: '100' }).success).toBe(false);
   });
+
+  it('validates compatibility-only mistake, hit, and miss payloads', () => {
+    expect(EventRegistry.MISTAKE_MADE.safeParse({ expected: 1, actual: 2 }).success).toBe(true);
+    expect(EventRegistry.MISTAKE_MADE.safeParse({ expected: null, actual: 2 }).success).toBe(false);
+    expect(EventRegistry.HIT.safeParse({ module: 'decryptor', xp: 100 }).success).toBe(true);
+    expect(EventRegistry.HIT.safeParse({ module: 'decryptor' }).success).toBe(false);
+    expect(EventRegistry.MISS.safeParse({ module: 'decryptor' }).success).toBe(true);
+  });
 });

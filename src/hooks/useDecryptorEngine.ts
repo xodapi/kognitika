@@ -93,10 +93,10 @@ export const useDecryptorEngine = (initialLevel: number = 1) => {
     });
     
     if (isCorrect) {
-      eventBus.emit('HIT', { module: 'decryptor', xp: 100 } as any);
+      eventBus.emit('HIT', { module: 'decryptor', xp: 100 });
       setState(s => ({ ...s, score: s.score + 100, hits: s.hits + 1 }));
     } else {
-      eventBus.emit('MISS', { module: 'decryptor' } as any);
+      eventBus.emit('MISS', { module: 'decryptor' });
       setState(s => ({ ...s, score: Math.max(0, s.score - 50), misses: s.misses + 1 }));
     }
 
