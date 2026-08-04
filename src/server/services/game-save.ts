@@ -29,6 +29,7 @@ const ANALYTICS_MODULE_GAME_TYPES: Record<string, readonly string[]> = {
   collision: ['COLLISION_DETECTOR'],
   dispatcher: ['ASYNC_DISPATCHER'],
   topology: ['TOPOLOGY_MEMORY'],
+  typing: ['SPEED_TYPING'],
 };
 
 function validateAnalyticsJob(input: SaveGameInput): CompletedSessionAnalyticsJob | undefined {

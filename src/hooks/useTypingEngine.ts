@@ -15,6 +15,7 @@ export interface TypingState {
   cpm: number;
   accuracy: number;
   errors: number;
+  timeMs: number;
 }
 
 function selectTextIndex(textCount: number, previousIndex: number | null) {
@@ -37,7 +38,8 @@ export function useTypingEngine(texts: string[]) {
     isActive: false,
     cpm: 0,
     accuracy: 100,
-    errors: 0
+    errors: 0,
+    timeMs: 0,
   });
 
   const startTest = useCallback(() => {
@@ -71,7 +73,8 @@ export function useTypingEngine(texts: string[]) {
       isActive: true,
       cpm: 0,
       accuracy: 100,
-      errors: 0
+      errors: 0,
+      timeMs: 0,
     });
   }, [texts]);
 
@@ -128,6 +131,7 @@ export function useTypingEngine(texts: string[]) {
       setState(s => ({
         ...s,
         ...stats,
+        timeMs: finalTime,
         isFinished: true,
         isActive: false
       }));
