@@ -41,7 +41,7 @@ Never include raw Brain ID, user ID in analytics payloads, email, tokens, creden
 - [x] Add a bounded transport-free `CognitiveSessionEventCollector`.
 - [x] Keep a legacy bridge as a migration adapter, not the target contract.
 - [x] Replace server-relevant `z.any()` legacy EventBus schemas with strict, minimal payloads or retire the events. `MISTAKE_MADE`, `HIT`, and `MISS` are now explicit compatibility-only UI-local schemas.
-- [ ] Classify every EventBus event as `ui-local`, `server-domain`, or `durable-analytics` in code and tests.
+- [x] Classify every EventBus event as `ui-local`, `server-domain`, or `durable-analytics` in code and tests. The EventBus registry is fully classified; canonical jobs and the Node/Prisma outbox remain the only durable-analytics path.
 
 **Acceptance gate:** no new analytics consumer may depend on unversioned or `z.any()` payloads; boundary tests prove client code does not import server infrastructure.
 

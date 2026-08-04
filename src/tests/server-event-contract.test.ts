@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { EventRegistry } from '../core/events/event-schema';
+import { EventClassifications, EventRegistry } from '../core/events/event-schema';
 
 describe('server EventBus contract schemas', () => {
   it('rejects an unstructured game completion event', () => {
@@ -27,5 +27,12 @@ describe('server EventBus contract schemas', () => {
     expect(EventRegistry.HIT.safeParse({ module: 'decryptor', xp: 100 }).success).toBe(true);
     expect(EventRegistry.HIT.safeParse({ module: 'decryptor' }).success).toBe(false);
     expect(EventRegistry.MISS.safeParse({ module: 'decryptor' }).success).toBe(true);
+  });
+
+  it('classifies every EventBus message and reserves durable analytics for its canonical contract', () => {
+    expect(Object.keys(EventClassifications).sort()).toEqual(Object.keys(EventRegistry).sort());
+    expect(EventClassifications['game:completed']).toBe('server-domain');
+    expect(EventClassifications.TRAINING_COMPLETE).toBe('ui-local');
+    expect(Object.values(EventClassifications)).not.toContain('durable-analytics');
   });
 });

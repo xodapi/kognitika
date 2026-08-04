@@ -133,3 +133,29 @@ export const EventRegistry = {
 export type EventMap = {
   [K in keyof typeof EventRegistry]: z.infer<typeof EventRegistry[K]>;
 };
+
+export type EventClassification = 'ui-local' | 'server-domain' | 'durable-analytics';
+
+/**
+ * EventBus messages are in-process only. Durable analytics uses the separate,
+ * versioned cognitive-events contract and Node/Prisma outbox, never this bus.
+ */
+export const EventClassifications: Record<keyof EventMap, EventClassification> = {
+  TRAINING_COMPLETE: 'ui-local',
+  CELL_CLICK: 'ui-local',
+  MISTAKE_MADE: 'ui-local',
+  FEEDBACK_SUBMITTED: 'server-domain',
+  IDEA_SUBMITTED: 'server-domain',
+  DIFFICULTY_SUGGESTION: 'ui-local',
+  PRACTICE_RECOMMENDED: 'ui-local',
+  'game:completed': 'server-domain',
+  'feedback:submitted': 'server-domain',
+  'idea:submitted': 'server-domain',
+  error: 'ui-local',
+  STABILITY_UPDATE: 'ui-local',
+  GAME_START: 'ui-local',
+  GAME_END: 'ui-local',
+  SCORE_UPDATE: 'ui-local',
+  HIT: 'ui-local',
+  MISS: 'ui-local',
+};
