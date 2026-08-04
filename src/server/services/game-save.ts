@@ -28,6 +28,7 @@ const ANALYTICS_MODULE_GAME_TYPES: Record<string, readonly string[]> = {
   'alphabet-table': ['ALPHABET_TABLE'],
   collision: ['COLLISION_DETECTOR'],
   dispatcher: ['ASYNC_DISPATCHER'],
+  topology: ['TOPOLOGY_MEMORY'],
 };
 
 function validateAnalyticsJob(input: SaveGameInput): CompletedSessionAnalyticsJob | undefined {

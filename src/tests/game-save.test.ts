@@ -228,6 +228,7 @@ describe('game save idempotency service', () => {
     ['alphabet-table', 'ALPHABET_TABLE', 'alphabet-table:action-selection'],
     ['collision', 'COLLISION_DETECTOR', 'collision:filter'],
     ['dispatcher', 'ASYNC_DISPATCHER', 'dispatcher:stream-session'],
+    ['topology', 'TOPOLOGY_MEMORY', 'topology:state-recall'],
   ])('binds a validated %s canonical job to %s', async (moduleId, gameType, trialType) => {
     const { saveCompletedGame } = await import('../server/services/game-save.ts');
     const analyticsJob = completedAnalyticsJob(moduleId, moduleId, trialType);
@@ -256,6 +257,7 @@ describe('game save idempotency service', () => {
     ['alphabet-table', 'ALPHABET_TABLE', 'alphabet-table:action-selection'],
     ['collision', 'COLLISION_DETECTOR', 'collision:filter'],
     ['dispatcher', 'ASYNC_DISPATCHER', 'dispatcher:stream-session'],
+    ['topology', 'TOPOLOGY_MEMORY', 'topology:state-recall'],
   ])('rejects %s canonical jobs for a different game type before starting a transaction', async (moduleId, gameType, trialType) => {
     const { saveCompletedGame } = await import('../server/services/game-save.ts');
 

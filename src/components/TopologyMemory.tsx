@@ -1,7 +1,7 @@
 import { motion, AnimatePresence } from 'motion/react';
 import { useTopologyEngine, NodeState, NodeId } from '../hooks/useTopologyEngine';
 import { useAuth } from '../hooks/useAuth';
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { useGameAttempt } from '../lib/game-attempt-client';
 import { GitBranch, ChevronRight, CheckCircle } from 'lucide-react';
 import { CompletionRecommendation } from './CompletionRecommendation';
@@ -130,24 +130,36 @@ function GraphView({ nodes, edges, interactive, userAnswers, onSetAnswer }: {
 }
 
 export function TopologyMemory() {
-  const { state, startGame, nextEvent, setNodeAnswer, submitAnswers, nextLevel } = useTopologyEngine();
+  const { state, startGame, nextEvent, setNodeAnswer, submitAnswers, nextLevel, getCompletedAnalyticsJob } = useTopologyEngine();
   const { token } = useAuth();
   const { beginAttempt, saveAttempt } = useGameAttempt(token);
+  const savePromiseRef = useRef<Promise<unknown> | null>(null);
   const handleStart = useCallback((level: number) => {
     void beginAttempt('TOPOLOGY_MEMORY').then(() => startGame(level)).catch(() => {});
   }, [beginAttempt, startGame]);
   const handleNextLevel = useCallback(() => {
-    void beginAttempt('TOPOLOGY_MEMORY').then(() => nextLevel()).catch(() => {});
+    void (async () => {
+      try {
+        await savePromiseRef.current;
+        await beginAttempt('TOPOLOGY_MEMORY');
+        nextLevel();
+      } catch {
+        // Preserve the completed attempt when its save cannot be confirmed.
+      }
+    })();
   }, [beginAttempt, nextLevel]);
 
   useEffect(() => {
     if (state.isFinished && token) {
-      void saveAttempt({
+      const savePromise = saveAttempt({
         timeMs: state.timeMs,
         metadata: { score: state.score, maxScore: state.maxScore, level: state.level },
-      }).catch(() => {});
+        analyticsJob: getCompletedAnalyticsJob() ?? undefined,
+      });
+      savePromiseRef.current = savePromise;
+      void savePromise.catch(() => {});
     }
-  }, [saveAttempt, state.isFinished, state.level, state.maxScore, state.score, state.timeMs, token]);
+  }, [getCompletedAnalyticsJob, saveAttempt, state.isFinished, state.level, state.maxScore, state.score, state.timeMs, token]);
 
   // Intro screen
   if (state.nodes.length === 0) {
