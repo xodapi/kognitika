@@ -102,17 +102,19 @@ jobs:
           set +a
           test -n "${DATABASE_URL:-}"
           DATABASE_URL="${DATABASE_URL%%\?schema=public}"
-          command -v docker >/dev/null
 
           client() {
             docker run --rm --network host -e DATABASE_URL postgres:16 "$@"
           }
 
-          # This must pass before generating a credential or opening a write transaction.
-          # A dry run reports only the anonymous guard result so an operator can tell
-          # whether the blocker is host/DB access or a non-Kognitika schema.
-          schema_status='kognitika-schema-query-failed'
-          if schema_status="$(client psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --tuples-only --no-align <<'SQL'
+          # Dry-run diagnostics intentionally expose only a fixed status code. They
+          # never print the DB URL, host, database name, credentials, or user rows.
+          diagnostic_status='database-client-unavailable'
+          if command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1 && client psql --version >/dev/null 2>&1; then
+            diagnostic_status='database-connection-failed'
+            if client psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --quiet --command 'SELECT 1;' >/dev/null 2>&1; then
+              diagnostic_status='kognitika-schema-query-failed'
+              if schema_status="$(client psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --tuples-only --no-align <<'SQL'
           SELECT CASE WHEN
             to_regclass('public."User"') IS NOT NULL
             AND EXISTS (
@@ -129,18 +131,21 @@ jobs:
             )
           THEN 'kognitika-schema-ok' ELSE 'kognitika-schema-mismatch' END;
           SQL
-          )"; then
-            schema_status="$(printf '%s' "$schema_status" | tr -d '[:space:]')"
+              )"; then
+                diagnostic_status="$(printf '%s' "$schema_status" | tr -d '[:space:]')"
+              fi
+            fi
           fi
 
-          if [ "$schema_status" != 'kognitika-schema-ok' ]; then
-            case "$schema_status" in
-              kognitika-schema-mismatch) echo 'Kognitika schema guard mismatch.' >&2 ;;
-              *) echo 'Kognitika schema guard query failed.' >&2 ;;
-            esac
-            exit 1
-          fi
-          echo 'Kognitika schema guard passed.'
+          case "$diagnostic_status" in
+            kognitika-schema-ok) echo 'Kognitika schema guard passed.' ;;
+            kognitika-schema-mismatch) echo 'Kognitika schema guard mismatch.' >&2; exit 1 ;;
+            database-client-unavailable|database-connection-failed|kognitika-schema-query-failed)
+              echo "ADMIN recovery dry-run status: $diagnostic_status" >&2
+              exit 1
+              ;;
+            *) echo 'ADMIN recovery dry-run status: unexpected-diagnostic-state' >&2; exit 1 ;;
+          esac
 
           if [ "$OPERATION" = 'dry_run' ]; then
             echo 'Dry run completed. No user or credential was created.'
