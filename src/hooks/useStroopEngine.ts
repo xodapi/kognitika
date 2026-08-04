@@ -1,5 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { emitEvent } from './useEventBus';
+import {
+  CognitiveSessionEventCollector,
+  type CompletedSessionAnalyticsJob,
+} from '../core/cognitive-events';
 import { STROOP_COLORS } from '../lib/stroop-colors';
 export { STROOP_COLORS } from '../lib/stroop-colors';
 
@@ -37,6 +41,9 @@ export function useStroopEngine() {
   const lastTickRef = useRef<number>(0);
   const questionStartTimeRef = useRef<number>(0);
   const seedRef = useRef<number | undefined>(undefined);
+  const sessionStartedAtRef = useRef<string | null>(null);
+  const collectorRef = useRef<CognitiveSessionEventCollector | null>(null);
+  const completedAnalyticsJobRef = useRef<CompletedSessionAnalyticsJob | null>(null);
 
   const seededRandom = () => {
     if (seedRef.current !== undefined) {
@@ -69,6 +76,20 @@ export function useStroopEngine() {
   const startGame = useCallback((seed?: number) => {
     seedRef.current = seed;
     const firstQ = generateQuestion();
+    sessionStartedAtRef.current = new Date().toISOString();
+    completedAnalyticsJobRef.current = null;
+    collectorRef.current = new CognitiveSessionEventCollector({
+      sessionId: `stroop-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
+      moduleId: 'stroop',
+      moduleVersion: '1',
+      category: 'cognitive',
+      startedAt: sessionStartedAtRef.current,
+    });
+    collectorRef.current.record({
+      kind: 'trial_started',
+      tMs: 0,
+      trialType: firstQ.isCongruent ? 'stroop:congruent' : 'stroop:incongruent',
+    });
     
     setState({
       question: firstQ,
@@ -95,6 +116,13 @@ export function useStroopEngine() {
         if (!prev.isActive || prev.isFinished) return prev;
         const next = Math.max(0, prev.timeLeftMs - delta);
         if (next === 0) {
+           const startedAt = sessionStartedAtRef.current;
+           const collector = collectorRef.current;
+           if (startedAt && collector && !completedAnalyticsJobRef.current) {
+             const completedAt = new Date(Date.parse(startedAt) + 60000).toISOString();
+             collector.complete(60000, completedAt);
+             completedAnalyticsJobRef.current = collector.createCompletedJob(completedAt);
+           }
            return { ...prev, timeLeftMs: 0, isActive: false, isFinished: true };
         }
         return { ...prev, timeLeftMs: next };
@@ -132,6 +160,13 @@ export function useStroopEngine() {
         num: 0,
         isCorrect,
         reactionTimeMs: reactionTime
+      });
+      collectorRef.current?.record({
+        kind: 'trial_answered',
+        tMs: Math.max(0, Math.round(60000 - s.timeLeftMs + reactionTime)),
+        trialType: s.question.isCongruent ? 'stroop:congruent' : 'stroop:incongruent',
+        isCorrect,
+        ...(reactionTime > 0 ? { reactionTimeMs: Math.round(reactionTime) } : {}),
       });
 
       if (!isCorrect) {
@@ -173,10 +208,13 @@ export function useStroopEngine() {
     };
   }, []);
 
-  return { 
-    state, 
-    startGame, 
+  const getCompletedAnalyticsJob = useCallback(() => completedAnalyticsJobRef.current, []);
+
+  return {
+    state,
+    startGame,
     answerQuestion,
-    colors: STROOP_COLORS 
+    getCompletedAnalyticsJob,
+    colors: STROOP_COLORS,
   };
 }

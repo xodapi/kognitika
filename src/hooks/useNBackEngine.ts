@@ -1,5 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { emitEvent } from './useEventBus';
+import {
+  CognitiveSessionEventCollector,
+  type CompletedSessionAnalyticsJob,
+} from '../core/cognitive-events';
 
 const LETTERS = ['А', 'Б', 'В', 'Г', 'Д', 'Е', 'Ж', 'З', 'К', 'Л'];
 const ROUNDS = 20;
@@ -32,6 +36,9 @@ export function useNBackEngine(nBack: number = 2) {
   const sequenceRef = useRef<string[]>([]);
   const userHasAnsweredRef = useRef<boolean>(false);
   const seedRef = useRef<number | undefined>(undefined);
+  const collectorRef = useRef<CognitiveSessionEventCollector | null>(null);
+  const completedAnalyticsJobRef = useRef<CompletedSessionAnalyticsJob | null>(null);
+  const startedAtRef = useRef<string | null>(null);
 
   const seededRandom = () => {
     if (seedRef.current !== undefined) {
@@ -44,6 +51,13 @@ export function useNBackEngine(nBack: number = 2) {
   const nextRound = useCallback(() => {
     setState(prev => {
       if (prev.round >= ROUNDS) {
+        const startedAt = startedAtRef.current;
+        const collector = collectorRef.current;
+        if (startedAt && collector && !completedAnalyticsJobRef.current) {
+          const completedAt = new Date(Date.parse(startedAt) + ROUNDS * 2500).toISOString();
+          collector.complete(ROUNDS * 2500, completedAt);
+          completedAnalyticsJobRef.current = collector.createCompletedJob(completedAt);
+        }
         emitEvent('TRAINING_COMPLETE', {
            type: 'NBACK',
            score: prev.score,
@@ -80,6 +94,12 @@ export function useNBackEngine(nBack: number = 2) {
 
       seq.push(nextLetter);
       userHasAnsweredRef.current = false;
+      collectorRef.current?.record({
+        kind: 'trial_started',
+        tMs: (prev.round + 1) * 2500,
+        trialType: 'nback:letter',
+        difficulty: `n-${prev.nBack}`,
+      });
 
       return {
         ...prev,
@@ -96,6 +116,20 @@ export function useNBackEngine(nBack: number = 2) {
     seedRef.current = seed;
     sequenceRef.current = [];
     userHasAnsweredRef.current = false;
+    startedAtRef.current = new Date().toISOString();
+    completedAnalyticsJobRef.current = null;
+    collectorRef.current = new CognitiveSessionEventCollector({
+      sessionId: `nback-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
+      moduleId: 'nback',
+      moduleVersion: '1',
+      category: 'cognitive',
+      startedAt: startedAtRef.current,
+    });
+    collectorRef.current.record({
+      kind: 'checkpoint',
+      tMs: 0,
+      checkpoint: 'session_started',
+    });
     setState({
       currentStimulus: null,
       score: 0,
@@ -127,6 +161,13 @@ export function useNBackEngine(nBack: number = 2) {
       const isCorrect = prev.isMatch === true;
       
       emitEvent('CELL_CLICK', { num: 0, isCorrect, reactionTimeMs: 0 });
+      collectorRef.current?.record({
+        kind: 'trial_answered',
+        tMs: prev.round * 2500,
+        trialType: 'nback:letter',
+        isCorrect,
+        difficulty: `n-${prev.nBack}`,
+      });
 
       if (!isCorrect) {
         emitEvent('MISTAKE_MADE', {
@@ -145,5 +186,7 @@ export function useNBackEngine(nBack: number = 2) {
     });
   }, []);
 
-  return { state, startGame, answerMatch };
+  const getCompletedAnalyticsJob = useCallback(() => completedAnalyticsJobRef.current, []);
+
+  return { state, startGame, answerMatch, getCompletedAnalyticsJob };
 }
