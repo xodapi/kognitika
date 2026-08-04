@@ -23,7 +23,18 @@
    RUST_ANALYTICS_SIDECAR_ROLLOUT_PERCENT=0
    ```
 
-4. In a non-production internal environment, enable the worker and sidecar with rollout still at `0`, then run the synthetic HTTP parity check:
+4. In a non-production internal environment, enable the worker and sidecar with rollout still at `0`, then verify the complete switch set before the synthetic HTTP parity check:
+
+   ```bash
+   ANALYTICS_OUTBOX_SHADOW_ENABLED=true \
+   ANALYTICS_OUTBOX_DISPATCH_ENABLED=true \
+   RUST_ANALYTICS_SIDECAR_ENABLED=true \
+   RUST_ANALYTICS_SIDECAR_URL=http://analytics-sidecar:3010 \
+   RUST_ANALYTICS_SIDECAR_ROLLOUT_PERCENT=0 \
+   pnpm check:rust-analytics-canary
+   ```
+
+   Then run the synthetic HTTP parity check:
 
    ```bash
    RUST_ANALYTICS_SIDECAR_URL=http://analytics-sidecar:3010 \

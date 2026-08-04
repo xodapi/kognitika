@@ -164,6 +164,38 @@ describe('game save idempotency service', () => {
     });
   });
 
+  it('binds a validated N-Back canonical job to an N_BACK game session', async () => {
+    const { saveCompletedGame } = await import('../server/services/game-save.ts');
+    const analyticsJob = {
+      schemaVersion: 1,
+      jobId: 'analytics-job-synthetic-nback',
+      analyzerVersion: 'analyze-session-v1',
+      receivedAt: '2026-08-04T00:00:02.000Z',
+      sessionId: 'browser-nback-synthetic',
+      moduleId: 'nback',
+      moduleVersion: '1',
+      category: 'cognitive',
+      startedAt: '2026-08-04T00:00:00.000Z',
+      completedAt: '2026-08-04T00:00:01.000Z',
+      events: [
+        { schemaVersion: 1, eventId: 'browser-nback-synthetic:0', sessionId: 'browser-nback-synthetic', moduleId: 'nback', moduleVersion: '1', category: 'cognitive', sequence: 0, tMs: 0, kind: 'checkpoint', checkpoint: 'session_started' },
+        { schemaVersion: 1, eventId: 'browser-nback-synthetic:1', sessionId: 'browser-nback-synthetic', moduleId: 'nback', moduleVersion: '1', category: 'cognitive', sequence: 1, tMs: 1_000, kind: 'session_completed', completedAt: '2026-08-04T00:00:01.000Z' },
+      ],
+    };
+
+    await saveCompletedGame({
+      userId: 'user-a',
+      clientRunId: '11111111-1111-4111-8111-111111111111',
+      gameType: 'N_BACK',
+      timeMs: 5_000,
+      analyticsJob,
+    });
+
+    expect(transactionClient.completedSessionAnalyticsJob.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ moduleId: 'nback', jobId: analyticsJob.jobId }),
+    });
+  });
+
   it('rejects a canonical job for a different game type before starting a transaction', async () => {
     const { saveCompletedGame } = await import('../server/services/game-save.ts');
     await expect(saveCompletedGame({

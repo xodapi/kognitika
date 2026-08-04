@@ -15,7 +15,7 @@ import {
 const logger = createSafeLogger('n-back-test');
 
 export function NBackTest() {
-  const { state, startGame, answerMatch } = useNBackEngine();
+  const { state, startGame, answerMatch, getCompletedAnalyticsJob } = useNBackEngine();
   const { token } = useAuth();
   const navigate = useNavigate();
 
@@ -74,13 +74,14 @@ export function NBackTest() {
             errors: state.errors,
             preSequence: preSequence || undefined,
           },
+          analyticsJob: getCompletedAnalyticsJob() ?? undefined,
         })
         .then(data => {
           if (data?.session?.id) setSessionId(data.session.id);
         })
         .catch(err => logger.error('Session save failed', { error: safeError(err), gameType: 'N_BACK' }));
      }
-  }, [state.isFinished, state.round, token, state.score, state.errors, preSequence, saveAttempt]);
+  }, [state.isFinished, state.round, token, state.score, state.errors, preSequence, saveAttempt, getCompletedAnalyticsJob]);
 
   if (showPreLuscher) {
     return (
