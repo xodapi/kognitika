@@ -19,6 +19,8 @@ Use this runbook only to recover administrative access to the **Kognitika** depl
 2. Record a review URL and a unique `PDD-ADMIN-YYYY-MM-DD-<ID>` recovery identifier in the review. Do not include a raw Brain ID, JWT, password, database URL, user row, IP address, or telemetry.
 3. Confirm `production-db-changes` requires the intended reviewer and has only scoped deployment secrets.
 4. Run `dry_run` first. It must report `Kognitika schema guard passed` and `No user or credential was created`.
+   - A failed dry run emits only one fixed diagnostic: `database-client-unavailable`, `database-connection-failed`, `kognitika-schema-query-failed`, or `kognitika-schema-mismatch`. It must not expose the DB URL, host, database name, credentials, row contents, or identity material.
+   - Treat `database-client-unavailable` or `database-connection-failed` as protected-host operations blockers. Treat `kognitika-schema-query-failed` as a schema-query blocker. Do not retry a write operation until the corresponding repository-reviewed infrastructure issue is resolved.
 5. Decide whether an existing, securely selected profile should be elevated instead. This workflow deliberately does **not** accept a Brain ID as an Actions input. That operation needs a separate reviewed path with an out-of-band selection mechanism.
 
 ## Create one recovery administrator
