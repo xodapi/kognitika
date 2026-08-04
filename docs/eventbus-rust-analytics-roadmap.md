@@ -59,8 +59,8 @@ Never include raw Brain ID, user ID in analytics payloads, email, tokens, creden
 
 - [x] Insert opt-in `analytics_outbox` metadata in the authoritative Node/Prisma game-save transaction.
 - [x] Implement idempotency, worker leases, bounded retry, dead-letter state, and aggregate-only outbox metrics.
-- [ ] Implement the production dispatcher that leases an outbox row and retrieves a privacy-reviewed canonical job through Node.
-- [ ] Persist or otherwise bind the canonical job to the source session under an explicit reviewed storage contract.
+- [x] Implement a Node-owned dispatcher method that leases an outbox row, reloads and revalidates the canonical job by source session, persists the TypeScript summary, and completes or retries the lease. Rust sidecar delivery remains Phase 3.
+- [x] Persist a validated canonical job in `completed_session_analytics_jobs`, bound one-to-one to the source `GameSession`, outside `GameSession.metadata` and within the authoritative transaction. The initial request binding is Schulte only.
 - [ ] Remove the current fallback subscriber path that analyzes `events: []` once collector delivery is available.
 
 **Acceptance gate:** a game save and its outbox entry commit atomically; worker failure never rolls back a saved game; restart recovery processes eligible rows exactly once per successful lease.

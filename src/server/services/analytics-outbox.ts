@@ -5,9 +5,24 @@ import {
   type AnalyticsOutboxState,
   buildAnalyticsOutboxMetrics,
 } from '../../core/analytics-outbox/index.ts';
+import {
+  completedSessionJobToAnalyzeSessionInput,
+  parseCompletedSessionAnalyticsJob,
+} from '../../core/cognitive-events/index.ts';
+import {
+  createSessionAnalyticsSummary,
+  type SessionAnalyticsSummaryRecord,
+} from '../../core/analyze-session/batch-analytics.ts';
+import { persistSessionAnalyticsSummary } from './analytics-persistence.ts';
 
 const CLAIMABLE_STATES: AnalyticsOutboxState[] = ['pending', 'retry'];
 const CLAIMABLE_STATE_SQL = Prisma.join(CLAIMABLE_STATES.map(state => Prisma.sql`${state}`));
+
+export type AnalyticsDispatchResult =
+  | { status: 'idle' }
+  | { status: 'skipped'; reason: 'canonical_job_not_found' }
+  | { status: 'completed'; summary: SessionAnalyticsSummaryRecord }
+  | { status: 'failed'; errorCode: 'persistence_failed' };
 
 function toEntry(record: {
   id: string;
@@ -144,6 +159,56 @@ export class PrismaAnalyticsOutboxStore {
       recovered += result.count;
     }
     return recovered;
+  }
+
+  async getCanonicalJob(sourceSessionId: string) {
+    const record = await prisma.completedSessionAnalyticsJob.findUnique({
+      where: { gameSessionId: sourceSessionId },
+      select: { payload: true },
+    });
+    if (!record) return null;
+    const parsed = parseCompletedSessionAnalyticsJob(record.payload);
+    return parsed.success ? parsed.data : null;
+  }
+
+  async getSessionOwner(sourceSessionId: string) {
+    const session = await prisma.gameSession.findUnique({
+      where: { id: sourceSessionId },
+      select: { userId: true },
+    });
+    return session?.userId ?? null;
+  }
+
+  async dispatchNext(options: { workerId: string; now?: Date; leaseMs: number; maxAttempts: number }): Promise<AnalyticsDispatchResult> {
+    const now = options.now ?? new Date();
+    const entry = await this.claimNext(options.workerId, now, options.leaseMs);
+    if (!entry) return { status: 'idle' };
+
+    const job = await this.getCanonicalJob(entry.sourceSession);
+    if (!job) {
+      await this.complete(entry.id, options.workerId, now);
+      return { status: 'skipped', reason: 'canonical_job_not_found' };
+    }
+
+    try {
+      const ownerId = await this.getSessionOwner(entry.sourceSession);
+      if (!ownerId) throw new Error('session owner not found');
+      const canonicalSession = completedSessionJobToAnalyzeSessionInput(job);
+      const summary = createSessionAnalyticsSummary({
+        schemaVersion: 1,
+        jobId: job.jobId,
+        analyzerVersion: job.analyzerVersion,
+        receivedAt: job.receivedAt,
+        session: { ...canonicalSession, sessionId: entry.sourceSession },
+      });
+      await persistSessionAnalyticsSummary(ownerId, summary);
+      const completed = await this.complete(entry.id, options.workerId, now);
+      if (!completed) throw new Error('outbox lease was lost');
+      return { status: 'completed', summary };
+    } catch {
+      await this.fail(entry.id, options.workerId, now, options.maxAttempts, 'canonical job processing failed');
+      return { status: 'failed', errorCode: 'persistence_failed' };
+    }
   }
 
   async metrics(now: Date) {

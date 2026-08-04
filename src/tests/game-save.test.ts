@@ -8,6 +8,7 @@ const transactionClient = vi.hoisted(() => ({
   gameSession: { findUnique: vi.fn(), create: vi.fn() },
   user: { findUniqueOrThrow: vi.fn(), update: vi.fn() },
   xpEvent: { create: vi.fn() },
+  completedSessionAnalyticsJob: { create: vi.fn() },
   analyticsOutboxEntry: { create: vi.fn() },
 }));
 
@@ -39,6 +40,7 @@ describe('game save idempotency service', () => {
       id: 'user-a', experience: 121, level: 1, streakDays: 1, lastPlayedAt: new Date(),
     });
     transactionClient.xpEvent.create.mockResolvedValue({ id: 'xp-a' });
+    transactionClient.completedSessionAnalyticsJob.create.mockResolvedValue({ id: 'analytics-job-row-a' });
     transactionClient.analyticsOutboxEntry.create.mockResolvedValue({ id: 'outbox-a' });
   });
 
@@ -86,6 +88,60 @@ describe('game save idempotency service', () => {
       }),
     });
     expect(JSON.stringify(transactionClient.analyticsOutboxEntry.create.mock.calls[0][0])).not.toMatch(/brainid|metadata|jwt|email|token/i);
+  });
+
+  it('binds a validated Schulte canonical job outside GameSession metadata', async () => {
+    process.env.ANALYTICS_OUTBOX_SHADOW_ENABLED = 'true';
+    const { saveCompletedGame } = await import('../server/services/game-save.ts');
+    const analyticsJob = {
+      schemaVersion: 1,
+      jobId: 'analytics-job-synthetic-schulte',
+      analyzerVersion: 'analyze-session-v1',
+      receivedAt: '2026-08-04T00:00:02.000Z',
+      sessionId: 'browser-session-synthetic',
+      moduleId: 'schulte',
+      moduleVersion: '1',
+      category: 'cognitive',
+      startedAt: '2026-08-04T00:00:00.000Z',
+      completedAt: '2026-08-04T00:00:01.000Z',
+      events: [
+        { schemaVersion: 1, eventId: 'browser-session-synthetic:0', sessionId: 'browser-session-synthetic', moduleId: 'schulte', moduleVersion: '1', category: 'cognitive', sequence: 0, tMs: 0, kind: 'trial_started', trialType: 'schulte:cell' },
+        { schemaVersion: 1, eventId: 'browser-session-synthetic:1', sessionId: 'browser-session-synthetic', moduleId: 'schulte', moduleVersion: '1', category: 'cognitive', sequence: 1, tMs: 1_000, kind: 'session_completed', completedAt: '2026-08-04T00:00:01.000Z' },
+      ],
+    };
+
+    await saveCompletedGame({
+      userId: 'user-a',
+      clientRunId: '11111111-1111-4111-8111-111111111111',
+      gameType: 'SCHULTE',
+      timeMs: 5000,
+      metadata: { size: 3 },
+      analyticsJob,
+    });
+
+    expect(transactionClient.gameSession.create.mock.calls[0][0]).not.toHaveProperty('analyticsJob');
+    expect(JSON.stringify(transactionClient.gameSession.create.mock.calls[0][0])).not.toContain('browser-session-synthetic');
+    expect(transactionClient.completedSessionAnalyticsJob.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        jobId: analyticsJob.jobId,
+        gameSessionId: 'session-a',
+        moduleId: 'schulte',
+        payload: analyticsJob,
+      }),
+    });
+    expect(transactionClient.analyticsOutboxEntry.create).toHaveBeenCalledOnce();
+  });
+
+  it('rejects a sensitive canonical job before starting a transaction', async () => {
+    const { saveCompletedGame } = await import('../server/services/game-save.ts');
+    await expect(saveCompletedGame({
+      userId: 'user-a',
+      clientRunId: '11111111-1111-4111-8111-111111111111',
+      gameType: 'SCHULTE',
+      timeMs: 5000,
+      analyticsJob: { brainId: 'synthetic-brain-id' },
+    })).rejects.toMatchObject({ code: 'INVALID_ANALYTICS_JOB' });
+    expect(prismaMock.$transaction).not.toHaveBeenCalled();
   });
 
   it('returns the existing session without another XP award', async () => {
