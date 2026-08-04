@@ -602,8 +602,7 @@ describe('Integration Tests - EventBus / Subscribers', () => {
       userId: 'u1',
       gameType: 'STROOP',
       score: 50,
-      accuracy: 0.8,
-      durationMs: 30000,
+      timeMs: 30000,
       metadata: { difficulty: 'hard' }
     });
 

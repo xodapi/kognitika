@@ -57,6 +57,36 @@ export const PracticeRecommendedSchema = z.object({
   sourceSessionId: z.string().min(1)
 });
 
+/** Server-only, post-persistence notification. It is not a durable work item. */
+export const GameCompletedSchema = z.object({
+  userId: z.string().min(1).max(120),
+  sessionId: z.string().min(1).max(120),
+  score: z.number().finite(),
+  gameType: z.string().min(1).max(64),
+  timeMs: z.number().finite().nonnegative().optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
+}).passthrough();
+
+export const ErrorEventSchema = z.object({
+  message: z.string().min(1).max(500),
+}).passthrough();
+
+export const GameStartSchema = z.object({
+  type: z.string().min(1).max(64),
+  level: z.number().int().nonnegative().optional(),
+}).passthrough();
+
+export const GameEndSchema = z.object({
+  score: z.number().finite(),
+  timeMs: z.number().finite().nonnegative(),
+  accuracy: z.number().finite().optional(),
+  vigilance: z.number().finite().optional(),
+}).passthrough();
+
+export const ScoreUpdateSchema = z.object({
+  points: z.number().finite(),
+}).passthrough();
+
 // Registry of all events and their payloads
 export const EventRegistry = {
   'TRAINING_COMPLETE': TrainingCompleteSchema,
@@ -66,14 +96,14 @@ export const EventRegistry = {
   'IDEA_SUBMITTED': IdeaSubmittedSchema,
   'DIFFICULTY_SUGGESTION': DifficultySuggestionSchema,
   'PRACTICE_RECOMMENDED': PracticeRecommendedSchema,
-  'game:completed': z.any(), // Legacy/Bridge
+  'game:completed': GameCompletedSchema,
   'feedback:submitted': FeedbackSubmittedSchema, // Legacy/Bridge alias
   'idea:submitted': IdeaSubmittedSchema, // Legacy/Bridge alias
-  'error': z.any(),
+  'error': ErrorEventSchema,
   'STABILITY_UPDATE': z.object({ avg: z.number(), stability: z.number() }),
-  'GAME_START': z.any(),
-  'GAME_END': z.any(),
-  'SCORE_UPDATE': z.any(),
+  'GAME_START': GameStartSchema,
+  'GAME_END': GameEndSchema,
+  'SCORE_UPDATE': ScoreUpdateSchema,
   'HIT': z.any(),
   'MISS': z.any()
 };

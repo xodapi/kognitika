@@ -14,7 +14,7 @@ const logger = createSafeLogger('observability-subscriber');
 // Performance Monitoring: Log slow sessions
 eventBus.on('game:completed', (data) => {
   const { timeMs, gameType } = data;
-  if (timeMs > 60000 && gameType === 'SCHULTE') {
+  if (timeMs !== undefined && timeMs > 60000 && gameType === 'SCHULTE') {
     logger.warn('Slow Schulte session detected', { gameType, timeMs });
   }
 });

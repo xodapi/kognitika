@@ -48,12 +48,18 @@ describe('EDA Logic Verification (Headless)', () => {
     }));
   });
 
-  it('triggers subscribers (simulated)', async () => {
+  it('triggers subscribers for a valid server-domain completion event', async () => {
     const handler = vi.fn();
     eventBus.on('game:completed', handler);
 
-    eventBus.emit('game:completed', { test: true });
+    const event = {
+      userId: 'test-user-id',
+      sessionId: 'test-session-id',
+      score: 100,
+      gameType: 'SCHULTE',
+    };
+    eventBus.emit('game:completed', event);
     
-    expect(handler).toHaveBeenCalledWith({ test: true });
+    expect(handler).toHaveBeenCalledWith(expect.objectContaining(event));
   });
 });
