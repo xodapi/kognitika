@@ -109,7 +109,10 @@ jobs:
           }
 
           # This must pass before generating a credential or opening a write transaction.
-          schema_status="$(client psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --tuples-only --no-align <<'SQL'
+          # A dry run reports only the anonymous guard result so an operator can tell
+          # whether the blocker is host/DB access or a non-Kognitika schema.
+          schema_status='kognitika-schema-query-failed'
+          if schema_status="$(client psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --tuples-only --no-align <<'SQL'
           SELECT CASE WHEN
             to_regclass('public."User"') IS NOT NULL
             AND EXISTS (
@@ -126,8 +129,17 @@ jobs:
             )
           THEN 'kognitika-schema-ok' ELSE 'kognitika-schema-mismatch' END;
           SQL
-          )"
-          test "$schema_status" = 'kognitika-schema-ok'
+          )"; then
+            schema_status="$(printf '%s' "$schema_status" | tr -d '[:space:]')"
+          fi
+
+          if [ "$schema_status" != 'kognitika-schema-ok' ]; then
+            case "$schema_status" in
+              kognitika-schema-mismatch) echo 'Kognitika schema guard mismatch.' >&2 ;;
+              *) echo 'Kognitika schema guard query failed.' >&2 ;;
+            esac
+            exit 1
+          fi
           echo 'Kognitika schema guard passed.'
 
           if [ "$OPERATION" = 'dry_run' ]; then
