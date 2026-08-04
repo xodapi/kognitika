@@ -47,11 +47,11 @@ Never include raw Brain ID, user ID in analytics payloads, email, tokens, creden
 
 ### Phase 1, collector adoption in engines
 
-- [~] Add module metadata, lifecycle ownership, and collector integration to each supported cognitive engine. Schulte, N-Back, and Stroop are adopters; remaining engines are pending.
-- [~] Record `trial_started`, `trial_answered`, checkpoints, and exactly one terminal event where applicable. Schulte, N-Back, and Stroop record start, answers where available, and completion; checkpoint adoption remains module-specific.
+- [~] Add module metadata, lifecycle ownership, and collector integration to each supported cognitive engine. Schulte, N-Back, Stroop, Numerical, and Logical are adopters; remaining engines are pending.
+- [~] Record `trial_started`, `trial_answered`, checkpoints, and exactly one terminal event where applicable. The adopted engines record start, answers where available, and completion; checkpoint adoption remains module-specific.
 - [ ] Preserve legacy events only through the bridge while adopters migrate.
 - [x] Reject oversized, unordered, duplicate-terminal, and sensitive event records before any transport.
-- [~] Add deterministic synthetic fixtures for each module family. Schulte, N-Back, and Stroop coverage is added; remaining module families are pending.
+- [~] Add deterministic synthetic fixtures for each module family. Schulte, N-Back, Stroop, Numerical, and Logical coverage is added; remaining module families are pending.
 
 **Acceptance gate:** a completed supported training session produces a valid `CompletedSessionAnalyticsJob` with non-empty events. Abandoned sessions do not masquerade as completed jobs.
 

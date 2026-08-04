@@ -1,5 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { emitEvent } from './useEventBus';
+import {
+  CognitiveSessionEventCollector,
+  type CompletedSessionAnalyticsJob,
+} from '../core/cognitive-events';
 
 type QuestionType = 'percentage_change' | 'share' | 'weighted_average';
 
@@ -26,6 +30,9 @@ export function useNumericalEngine() {
   const timerRef = useRef<number | null>(null);
   const lastTickRef = useRef<number>(0);
   const seedRef = useRef<number | undefined>(undefined);
+  const sessionStartedAtRef = useRef<string | null>(null);
+  const collectorRef = useRef<CognitiveSessionEventCollector | null>(null);
+  const completedAnalyticsJobRef = useRef<CompletedSessionAnalyticsJob | null>(null);
 
   const seededRandom = () => {
     if (seedRef.current !== undefined) {
@@ -105,6 +112,20 @@ export function useNumericalEngine() {
   const startGame = useCallback((seed?: number) => {
     seedRef.current = seed;
     const newQuestions = Array.from({ length: 5 }).map(() => generateQuestion());
+    sessionStartedAtRef.current = new Date().toISOString();
+    completedAnalyticsJobRef.current = null;
+    collectorRef.current = new CognitiveSessionEventCollector({
+      sessionId: `numerical-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
+      moduleId: 'numerical',
+      moduleVersion: '1',
+      category: 'cognitive',
+      startedAt: sessionStartedAtRef.current,
+    });
+    collectorRef.current.record({
+      kind: 'trial_started',
+      tMs: 0,
+      trialType: `numerical:${newQuestions[0]?.type || 'question'}`,
+    });
     
     setState({
       questions: newQuestions,
@@ -146,6 +167,13 @@ export function useNumericalEngine() {
       const isCorrect = curQ.correctAnswer === answer;
 
       emitEvent('CELL_CLICK', { num: prev.currentIndex, isCorrect, reactionTimeMs: 0 });
+      const elapsed = Math.max(0, Math.round(60000 - prev.timeLeftMs));
+      collectorRef.current?.record({
+        kind: 'trial_answered',
+        tMs: elapsed,
+        trialType: `numerical:${curQ.type}`,
+        isCorrect,
+      });
 
       if (!isCorrect) {
         emitEvent('MISTAKE_MADE', { expected: curQ.correctAnswer, actual: answer });
@@ -153,6 +181,13 @@ export function useNumericalEngine() {
 
       const isLast = prev.currentIndex + 1 >= prev.questions.length;
       if (isLast) {
+        const startedAt = sessionStartedAtRef.current;
+        const collector = collectorRef.current;
+        if (startedAt && collector && !completedAnalyticsJobRef.current) {
+          const completedAt = new Date(Date.parse(startedAt) + elapsed).toISOString();
+          collector.complete(elapsed, completedAt);
+          completedAnalyticsJobRef.current = collector.createCompletedJob(completedAt);
+        }
         emitEvent('TRAINING_COMPLETE', {
           type: 'NUMERICAL_ANALYSIS',
           score: isCorrect ? prev.score + 1 : prev.score,
@@ -188,5 +223,7 @@ export function useNumericalEngine() {
     };
   }, []);
 
-  return { state, startGame, stopGame, answerQuestion };
+  const getCompletedAnalyticsJob = useCallback(() => completedAnalyticsJobRef.current, []);
+
+  return { state, startGame, stopGame, answerQuestion, getCompletedAnalyticsJob };
 }
