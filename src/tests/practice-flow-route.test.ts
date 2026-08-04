@@ -20,9 +20,11 @@ beforeAll(async () => {
 
 beforeEach(() => {
   clearPracticeFlowEventsForTests();
+  delete process.env.PRACTICE_FLOW_TELEMETRY_ENABLED;
 });
 
 afterEach(async () => {
+  delete process.env.PRACTICE_FLOW_TELEMETRY_ENABLED;
   await Promise.all(servers.splice(0).map((server) => (
     new Promise<void>((resolve, reject) => {
       server.close((error) => (error ? reject(error) : resolve()));
@@ -50,9 +52,10 @@ async function postJson(baseUrl: string, body: unknown) {
     body: JSON.stringify(body),
   });
 
+  const responseBody = await response.text();
   return {
     status: response.status,
-    body: await response.json(),
+    body: responseBody ? JSON.parse(responseBody) : undefined,
   };
 }
 
@@ -69,7 +72,16 @@ const validEvent = {
 };
 
 describe('practice flow route', () => {
-  it('stores privacy-safe practice flow events', async () => {
+  it('does not accept telemetry while the privacy default-deny flag is disabled', async () => {
+    const baseUrl = await createHarness();
+    const response = await postJson(baseUrl, validEvent);
+
+    expect(response.status).toBe(204);
+    expect(getPracticeFlowEvents()).toHaveLength(0);
+  });
+
+  it('stores privacy-safe practice flow events only after explicit server opt-in', async () => {
+    process.env.PRACTICE_FLOW_TELEMETRY_ENABLED = 'true';
     const baseUrl = await createHarness();
     const response = await postJson(baseUrl, validEvent);
 
@@ -78,7 +90,8 @@ describe('practice flow route', () => {
     expect(getPracticeFlowEvents()).toHaveLength(1);
   });
 
-  it('rejects PII-like event fields before storage', async () => {
+  it('rejects PII-like event fields before storage after explicit server opt-in', async () => {
+    process.env.PRACTICE_FLOW_TELEMETRY_ENABLED = 'true';
     const baseUrl = await createHarness();
     const response = await postJson(baseUrl, {
       ...validEvent,
