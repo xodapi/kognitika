@@ -29,8 +29,29 @@ export interface RustAnalyticsSidecarMetrics {
 export interface RustAnalyticsSidecarOptions {
   baseUrl: string;
   timeoutMs: number;
+  rolloutPercent?: number;
   fetchImpl?: typeof fetch;
 }
+
+export interface RustAnalyticsCanaryThresholds {
+  minRequests: number;
+  maxMismatchRate: number;
+  maxTimeoutRate: number;
+  maxOutboxLagMs: number;
+  maxDeadLetters: number;
+}
+
+export const DEFAULT_RUST_ANALYTICS_CANARY_THRESHOLDS: RustAnalyticsCanaryThresholds = {
+  minRequests: 100,
+  maxMismatchRate: 0.01,
+  maxTimeoutRate: 0.02,
+  maxOutboxLagMs: 60_000,
+  maxDeadLetters: 0,
+};
+
+export type RustAnalyticsCanaryDecision =
+  | { eligible: false; reason: 'insufficient_samples' | 'mismatch_rate' | 'timeout_rate' | 'outbox_lag' | 'dead_letters' }
+  | { eligible: true };
 
 function freshMetrics(): RustAnalyticsSidecarMetrics {
   return {
@@ -53,12 +74,46 @@ function normalizedOutput(value: AnalyzeSessionOutput) {
   });
 }
 
+function normalizedRolloutPercent(value: number | undefined) {
+  if (!Number.isFinite(value)) return 0;
+  return Math.max(0, Math.min(100, Math.floor(value!)));
+}
+
+export function isRustAnalyticsShadowSelected(sourceSessionId: string, rolloutPercent: number) {
+  const normalized = normalizedRolloutPercent(rolloutPercent);
+  if (normalized === 0) return false;
+  if (normalized === 100) return true;
+
+  let hash = 0;
+  for (let index = 0; index < sourceSessionId.length; index += 1) {
+    hash = ((hash << 5) - hash + sourceSessionId.charCodeAt(index)) | 0;
+  }
+  return (hash >>> 0) % 100 < normalized;
+}
+
+export function evaluateRustAnalyticsCanary(
+  metrics: RustAnalyticsSidecarMetrics,
+  outbox: { oldestLagMs: number; dead: number },
+  thresholds: RustAnalyticsCanaryThresholds = DEFAULT_RUST_ANALYTICS_CANARY_THRESHOLDS,
+): RustAnalyticsCanaryDecision {
+  if (metrics.requests < thresholds.minRequests) return { eligible: false, reason: 'insufficient_samples' };
+  if (metrics.mismatched / metrics.requests > thresholds.maxMismatchRate) return { eligible: false, reason: 'mismatch_rate' };
+  if (metrics.failures.sidecar_timeout / metrics.requests > thresholds.maxTimeoutRate) return { eligible: false, reason: 'timeout_rate' };
+  if (outbox.oldestLagMs > thresholds.maxOutboxLagMs) return { eligible: false, reason: 'outbox_lag' };
+  if (outbox.dead > thresholds.maxDeadLetters) return { eligible: false, reason: 'dead_letters' };
+  return { eligible: true };
+}
+
 export class RustAnalyticsSidecarClient {
   private readonly fetchImpl: typeof fetch;
   private readonly metrics = freshMetrics();
 
   constructor(private readonly options: RustAnalyticsSidecarOptions) {
     this.fetchImpl = options.fetchImpl ?? fetch;
+  }
+
+  shouldAnalyze(sourceSessionId: string) {
+    return isRustAnalyticsShadowSelected(sourceSessionId, this.options.rolloutPercent ?? 0);
   }
 
   async analyze(input: AnalyzeSessionInput, typescriptOutput: AnalyzeSessionOutput): Promise<AnalyzeSessionOutput> {
@@ -119,5 +174,6 @@ export function createRustAnalyticsSidecarClient(environment: Record<string, str
   return new RustAnalyticsSidecarClient({
     baseUrl: environment.RUST_ANALYTICS_SIDECAR_URL || 'http://127.0.0.1:3010',
     timeoutMs: Number(environment.RUST_ANALYTICS_SIDECAR_TIMEOUT_MS) || 1_000,
+    rolloutPercent: Number(environment.RUST_ANALYTICS_SIDECAR_ROLLOUT_PERCENT) || 0,
   });
 }

@@ -212,7 +212,7 @@ export class PrismaAnalyticsOutboxStore {
         session: { ...canonicalSession, sessionId: entry.sourceSession },
       });
       await persistSessionAnalyticsSummary(ownerId, summary);
-      if (this.rustSidecar) {
+      if (this.rustSidecar?.shouldAnalyze(entry.sourceSession)) {
         try {
           await this.rustSidecar.analyze(canonicalSession, {
             schemaVersion: 1,

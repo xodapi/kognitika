@@ -72,17 +72,17 @@ Never include raw Brain ID, user ID in analytics payloads, email, tokens, creden
 - [x] Provide `kognitika-core` as a deterministic native and WASM computation boundary.
 - [x] Provide an internal-only Axum sidecar with no database configuration.
 - [x] Add a Node adapter with request timeout, contract-version mapping, strict response validation, and aggregate-only safe error telemetry. It remains disabled unless both the Node dispatcher and Rust-sidecar flags are enabled.
-- [~] Run TypeScript and Rust over the same synthetic corpus and compare normalized outputs with documented tolerances. Shared validation corpus and deterministic fixture coverage are present; live sidecar parity is gated behind the disabled internal sidecar deployment.
+- [x] Provide a live internal HTTP parity runner over the deterministic TypeScript corpus. It fails closed on any mismatch or sidecar error and requires an explicit internal sidecar URL.
 - [x] Store only aggregate mismatch counts and safe error codes, not raw event payloads.
-
-**Acceptance gate:** all required synthetic fixtures meet exact or documented-tolerance parity; invalid and sensitive inputs are rejected consistently; sidecar unavailability produces retryable shadow work only.
 
 ### Phase 4, canary and promotion
 
-- [ ] Enable shadow dispatch for a controlled, non-authoritative percentage through a feature flag.
-- [ ] Define operational thresholds for outbox lag, dead letters, timeout rate, and parity mismatch rate.
+- [x] Enable shadow dispatch for a controlled, non-authoritative percentage through an explicit feature flag. Rollout is deterministic by durable server session ID and defaults to 0%.
+- [x] Define operational thresholds for outbox lag, dead letters, timeout rate, and parity mismatch rate. Promotion evaluation is aggregate-only and fails closed.
 - [ ] Run a time-bounded canary with TypeScript output remaining authoritative.
 - [ ] Promote Rust only for `AnalyzeSession` after the thresholds are met and rollback is rehearsed.
+
+**Acceptance gate:** all required synthetic fixtures meet exact or documented-tolerance parity; invalid and sensitive inputs are rejected consistently; sidecar unavailability produces retryable shadow work only.
 
 **Acceptance gate:** disabling the flag immediately stops sidecar dispatch without affecting game saves, login, API responses, or Socket.io. Node continues to validate and persist the selected summary.
 

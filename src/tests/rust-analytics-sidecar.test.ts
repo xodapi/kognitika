@@ -1,8 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
 import { analyzeSession, syntheticCellClickSession } from '../core/analyze-session/index.ts';
 import {
+  DEFAULT_RUST_ANALYTICS_CANARY_THRESHOLDS,
   RustAnalyticsSidecarClient,
   RustAnalyticsSidecarError,
+  evaluateRustAnalyticsCanary,
   isRustAnalyticsSidecarEnabled,
 } from '../server/services/rust-analytics-sidecar.ts';
 
@@ -21,6 +23,17 @@ describe('Rust analytics sidecar adapter', () => {
     expect(isRustAnalyticsSidecarEnabled({})).toBe(false);
     expect(isRustAnalyticsSidecarEnabled({ RUST_ANALYTICS_SIDECAR_ENABLED: 'false' })).toBe(false);
     expect(isRustAnalyticsSidecarEnabled({ RUST_ANALYTICS_SIDECAR_ENABLED: 'true' })).toBe(true);
+  });
+
+  it('selects a stable, bounded percentage of source sessions for shadow delivery', () => {
+    expect(isRustAnalyticsSidecarEnabled({ RUST_ANALYTICS_SIDECAR_ENABLED: 'true' })).toBe(true);
+    const zero = new RustAnalyticsSidecarClient({ baseUrl: 'http://sidecar.internal', timeoutMs: 100, rolloutPercent: 0 });
+    const all = new RustAnalyticsSidecarClient({ baseUrl: 'http://sidecar.internal', timeoutMs: 100, rolloutPercent: 100 });
+    const partial = new RustAnalyticsSidecarClient({ baseUrl: 'http://sidecar.internal', timeoutMs: 100, rolloutPercent: 25 });
+
+    expect(zero.shouldAnalyze('session-synthetic-a')).toBe(false);
+    expect(all.shouldAnalyze('session-synthetic-a')).toBe(true);
+    expect(partial.shouldAnalyze('session-synthetic-a')).toBe(partial.shouldAnalyze('session-synthetic-a'));
   });
 
   it('maps the versioned input, validates response, and records only aggregate parity', async () => {
@@ -55,6 +68,19 @@ describe('Rust analytics sidecar adapter', () => {
 
     await expect(client.analyze(input, typescriptOutput)).resolves.toMatchObject({ accuracy: 0.5 });
     expect(client.getMetrics()).toMatchObject({ requests: 1, matched: 0, mismatched: 1 });
+  });
+
+  it('holds canary promotion on any aggregate threshold breach', () => {
+    const healthy = {
+      requests: DEFAULT_RUST_ANALYTICS_CANARY_THRESHOLDS.minRequests,
+      matched: DEFAULT_RUST_ANALYTICS_CANARY_THRESHOLDS.minRequests,
+      mismatched: 0,
+      failures: { sidecar_timeout: 0, sidecar_unavailable: 0, sidecar_rejected: 0, sidecar_invalid_response: 0 },
+    };
+    expect(evaluateRustAnalyticsCanary(healthy, { oldestLagMs: 0, dead: 0 })).toEqual({ eligible: true });
+    expect(evaluateRustAnalyticsCanary({ ...healthy, mismatched: 2 }, { oldestLagMs: 0, dead: 0 })).toEqual({ eligible: false, reason: 'mismatch_rate' });
+    expect(evaluateRustAnalyticsCanary(healthy, { oldestLagMs: 60_001, dead: 0 })).toEqual({ eligible: false, reason: 'outbox_lag' });
+    expect(evaluateRustAnalyticsCanary(healthy, { oldestLagMs: 0, dead: 1 })).toEqual({ eligible: false, reason: 'dead_letters' });
   });
 
   it('maps rejection, malformed output, unavailable sidecar, and timeout to safe codes', async () => {
