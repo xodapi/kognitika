@@ -46,7 +46,7 @@ function RenderShape({ item }: { item: MatrixItem }) {
 }
 
 export function LogicalMatrix() {
-  const { state, startGame, answerQuestion } = useLogicalEngine();
+  const { state, startGame, answerQuestion, getCompletedAnalyticsJob } = useLogicalEngine();
   const { token } = useAuth();
   const navigate = useNavigate();
   const { beginAttempt, saveAttempt } = useGameAttempt(token);
@@ -64,9 +64,10 @@ export function LogicalMatrix() {
         saveAttempt({
           timeMs: state.timeMs,
           metadata: { score: state.score },
+          analyticsJob: getCompletedAnalyticsJob() ?? undefined,
         }).catch(err => logger.error('Session save failed', { error: safeError(err), gameType: 'LOGICAL_SEQUENCE' }));
      }
-  }, [state.isFinished, state.timeMs, token, state.score, saveAttempt]);
+  }, [state.isFinished, state.timeMs, token, state.score, saveAttempt, getCompletedAnalyticsJob]);
 
   if (!state.isActive && !state.isFinished) {
     return (

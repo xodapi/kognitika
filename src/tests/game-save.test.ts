@@ -20,6 +20,27 @@ const prismaMock = vi.hoisted(() => ({
 
 vi.mock('../lib/prisma.ts', () => ({ default: prismaMock }));
 
+function completedAnalyticsJob(moduleId: string, suffix: string, trialType: string) {
+  const sessionId = `browser-${suffix}`;
+  const completedAt = '2026-08-04T00:00:01.000Z';
+  return {
+    schemaVersion: 1,
+    jobId: `analytics-job-${suffix}`,
+    analyzerVersion: 'analyze-session-v1',
+    receivedAt: '2026-08-04T00:00:02.000Z',
+    sessionId,
+    moduleId,
+    moduleVersion: '1',
+    category: 'cognitive',
+    startedAt: '2026-08-04T00:00:00.000Z',
+    completedAt,
+    events: [
+      { schemaVersion: 1, eventId: `${sessionId}:0`, sessionId, moduleId, moduleVersion: '1', category: 'cognitive', sequence: 0, tMs: 0, kind: 'trial_started', trialType },
+      { schemaVersion: 1, eventId: `${sessionId}:1`, sessionId, moduleId, moduleVersion: '1', category: 'cognitive', sequence: 1, tMs: 1_000, kind: 'session_completed', completedAt },
+    ],
+  };
+}
+
 describe('game save idempotency service', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -194,6 +215,52 @@ describe('game save idempotency service', () => {
     expect(transactionClient.completedSessionAnalyticsJob.create).toHaveBeenCalledWith({
       data: expect.objectContaining({ moduleId: 'nback', jobId: analyticsJob.jobId }),
     });
+  });
+
+  it.each([
+    ['numerical', 'NUMERICAL_ANALYSIS', 'numerical:question'],
+    ['logical-sequence', 'LOGICAL_SEQUENCE', 'logical:matrix'],
+    ['mental-math', 'MENTAL_MATH', 'mental-math:question'],
+    ['situational', 'SITUATIONAL_JUDGMENT', 'situational:judgment'],
+    ['spatial', 'SPATIAL_CONCEALMENT', 'spatial:recall'],
+    ['stroop-alphabet', 'STROOP_ALPHABET', 'stroop-alphabet:color-action'],
+    ['schulte-90', 'SCHULTE_90', 'schulte-90:cell-selection'],
+  ])('binds a validated %s canonical job to %s', async (moduleId, gameType, trialType) => {
+    const { saveCompletedGame } = await import('../server/services/game-save.ts');
+    const analyticsJob = completedAnalyticsJob(moduleId, moduleId, trialType);
+
+    await saveCompletedGame({
+      userId: 'user-a',
+      clientRunId: '11111111-1111-4111-8111-111111111111',
+      gameType,
+      timeMs: 5_000,
+      analyticsJob,
+    });
+
+    expect(transactionClient.completedSessionAnalyticsJob.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ moduleId, jobId: analyticsJob.jobId }),
+    });
+  });
+
+  it.each([
+    ['numerical', 'NUMERICAL_ANALYSIS', 'numerical:question'],
+    ['logical-sequence', 'LOGICAL_SEQUENCE', 'logical:matrix'],
+    ['mental-math', 'MENTAL_MATH', 'mental-math:question'],
+    ['situational', 'SITUATIONAL_JUDGMENT', 'situational:judgment'],
+    ['spatial', 'SPATIAL_CONCEALMENT', 'spatial:recall'],
+    ['stroop-alphabet', 'STROOP_ALPHABET', 'stroop-alphabet:color-action'],
+    ['schulte-90', 'SCHULTE_90', 'schulte-90:cell-selection'],
+  ])('rejects %s canonical jobs for a different game type before starting a transaction', async (moduleId, gameType, trialType) => {
+    const { saveCompletedGame } = await import('../server/services/game-save.ts');
+
+    await expect(saveCompletedGame({
+      userId: 'user-a',
+      clientRunId: '11111111-1111-4111-8111-111111111111',
+      gameType: gameType === 'SCHULTE' ? 'STROOP' : 'SCHULTE',
+      timeMs: 5_000,
+      analyticsJob: completedAnalyticsJob(moduleId, `${moduleId}-mismatch`, trialType),
+    })).rejects.toMatchObject({ code: 'ANALYTICS_GAME_TYPE_MISMATCH' });
+    expect(prismaMock.$transaction).not.toHaveBeenCalled();
   });
 
   it('rejects a canonical job for a different game type before starting a transaction', async () => {

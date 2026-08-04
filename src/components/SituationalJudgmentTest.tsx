@@ -9,7 +9,7 @@ import { CompletionRecommendation } from './CompletionRecommendation';
 const logger = createSafeLogger('situational-judgment-test');
 
 export function SituationalJudgmentTest() {
-  const { state, startGame, answerQuestion } = useSituationalEngine();
+  const { state, startGame, answerQuestion, getCompletedAnalyticsJob } = useSituationalEngine();
   const { token } = useAuth();
   const { beginAttempt, saveAttempt } = useGameAttempt(token);
   const handleStart = useCallback(async () => {
@@ -27,9 +27,10 @@ export function SituationalJudgmentTest() {
         void saveAttempt({
           timeMs: state.timeMs,
           metadata: { score: state.score, maxScore: state.maxScore },
+          analyticsJob: getCompletedAnalyticsJob() ?? undefined,
         }).catch(err => logger.error('Session save failed', { error: safeError(err), gameType: 'SITUATIONAL_JUDGMENT' }));
      }
-  }, [state.isFinished, state.timeMs, token, state.score, state.maxScore, saveAttempt]);
+  }, [state.isFinished, state.timeMs, token, state.score, state.maxScore, saveAttempt, getCompletedAnalyticsJob]);
 
   if (!state.isActive && !state.isFinished) {
     return (

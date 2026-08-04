@@ -32,7 +32,7 @@ function renderShareLabel({ name, value, x, y, cx }: any) {
 }
 
 export function NumericalAnalysis() {
-  const { state, startGame, stopGame, answerQuestion } = useNumericalEngine();
+  const { state, startGame, stopGame, answerQuestion, getCompletedAnalyticsJob } = useNumericalEngine();
   const [showCalc, setShowCalc] = useState(false);
   const { token } = useAuth();
   const navigate = useNavigate();
@@ -52,9 +52,10 @@ export function NumericalAnalysis() {
         saveAttempt({
           timeMs: 60000 - state.timeLeftMs,
           metadata: { score: state.score },
+          analyticsJob: getCompletedAnalyticsJob() ?? undefined,
         }).catch(err => logger.error('Session save failed', { error: safeError(err), gameType: 'NUMERICAL_ANALYSIS' }));
      }
-  }, [state.isFinished, state.timeLeftMs, token, state.score, saveAttempt]);
+  }, [state.isFinished, state.timeLeftMs, token, state.score, saveAttempt, getCompletedAnalyticsJob]);
 
   if (!state.isActive && !state.isFinished) {
     return (

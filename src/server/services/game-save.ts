@@ -18,6 +18,13 @@ const ANALYTICS_MODULE_GAME_TYPES: Record<string, readonly string[]> = {
   schulte: ['SCHULTE', 'SCHULTE_GORBOV'],
   stroop: ['STROOP'],
   nback: ['N_BACK'],
+  numerical: ['NUMERICAL_ANALYSIS'],
+  'logical-sequence': ['LOGICAL_SEQUENCE'],
+  'mental-math': ['MENTAL_MATH'],
+  situational: ['SITUATIONAL_JUDGMENT'],
+  spatial: ['SPATIAL_CONCEALMENT'],
+  'stroop-alphabet': ['STROOP_ALPHABET'],
+  'schulte-90': ['SCHULTE_90'],
 };
 
 function validateAnalyticsJob(input: SaveGameInput): CompletedSessionAnalyticsJob | undefined {

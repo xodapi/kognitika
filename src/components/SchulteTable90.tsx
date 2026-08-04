@@ -39,7 +39,7 @@ function isGorbovRuleId(value: string): value is GorbovRuleId {
 }
 
 export function SchulteTable90() {
-  const { state, startGame, stopGame, resetGame, clickCell } = useSchulte90Engine();
+  const { state, startGame, stopGame, resetGame, clickCell, getCompletedAnalyticsJob } = useSchulte90Engine();
   const { token, refreshUser } = useAuth();
   const navigate = useNavigate();
   const [showBriefing, setShowBriefing] = useState(false);
@@ -66,6 +66,7 @@ export function SchulteTable90() {
           errors: state.errors,
           clickHistory: state.clickHistory,
         },
+        analyticsJob: getCompletedAnalyticsJob() ?? undefined,
       })
         .then((resData) => {
           if (resData.session?.score) {
@@ -76,7 +77,7 @@ export function SchulteTable90() {
           logger.error('Session save failed', { error: safeError(err), gameType: 'SCHULTE_90' })
         );
     }
-  }, [state.outcome, state.timeMs, token, refreshUser, state.errors, state.clickHistory, saveAttempt]);
+  }, [state.outcome, state.timeMs, token, refreshUser, state.errors, state.clickHistory, saveAttempt, getCompletedAnalyticsJob]);
 
   const beginGame = useCallback(async () => {
     try {
