@@ -1,5 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { emitEvent } from './useEventBus';
+import {
+  CognitiveSessionEventCollector,
+  type CompletedSessionAnalyticsJob,
+} from '../core/cognitive-events';
 
 export type ShapeType = 'circle' | 'square' | 'triangle';
 export type PatternType = 'count' | 'rotation' | 'color';
@@ -36,6 +40,9 @@ export function useLogicalEngine() {
   const timerRef = useRef<number | null>(null);
   const startTimeRef = useRef<number>(0);
   const seedRef = useRef<number | undefined>(undefined);
+  const sessionStartedAtRef = useRef<string | null>(null);
+  const collectorRef = useRef<CognitiveSessionEventCollector | null>(null);
+  const completedAnalyticsJobRef = useRef<CompletedSessionAnalyticsJob | null>(null);
 
   const seededRandom = () => {
     if (seedRef.current !== undefined) {
@@ -130,6 +137,20 @@ export function useLogicalEngine() {
   const startGame = useCallback((seed?: number) => {
     seedRef.current = seed;
     const newQuestions = Array.from({ length: 3 }).map(() => generateMatrixQuestion());
+    sessionStartedAtRef.current = new Date().toISOString();
+    completedAnalyticsJobRef.current = null;
+    collectorRef.current = new CognitiveSessionEventCollector({
+      sessionId: `logical-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
+      moduleId: 'logical-sequence',
+      moduleVersion: '1',
+      category: 'cognitive',
+      startedAt: sessionStartedAtRef.current,
+    });
+    collectorRef.current.record({
+      kind: 'trial_started',
+      tMs: 0,
+      trialType: 'logical:matrix',
+    });
     
     setState({
       questions: newQuestions,
@@ -170,10 +191,23 @@ export function useLogicalEngine() {
       } else {
         emitEvent('MISTAKE_MADE', { expected: cur.correctOptionIndex, actual: optIndex, level: prev.currentIndex });
       }
+      collectorRef.current?.record({
+        kind: 'trial_answered',
+        tMs: Math.max(0, Math.round(elapsed)),
+        trialType: 'logical:matrix',
+        isCorrect,
+      });
 
       const isLast = prev.currentIndex + 1 >= prev.questions.length;
       
       if (isLast) {
+        const startedAt = sessionStartedAtRef.current;
+        const collector = collectorRef.current;
+        if (startedAt && collector && !completedAnalyticsJobRef.current) {
+          const completedAt = new Date(Date.parse(startedAt) + elapsed).toISOString();
+          collector.complete(Math.max(0, Math.round(elapsed)), completedAt);
+          completedAnalyticsJobRef.current = collector.createCompletedJob(completedAt);
+        }
         emitEvent('TRAINING_COMPLETE', {
           type: 'LOGICAL_SEQUENCE',
           score: isCorrect ? prev.score + 1 : prev.score,
@@ -207,5 +241,7 @@ export function useLogicalEngine() {
     };
   }, []);
 
-  return { state, startGame, answerQuestion };
+  const getCompletedAnalyticsJob = useCallback(() => completedAnalyticsJobRef.current, []);
+
+  return { state, startGame, answerQuestion, getCompletedAnalyticsJob };
 }

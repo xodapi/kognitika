@@ -85,7 +85,7 @@ export function SchulteGrid() {
   const [distraction, setDistraction] = useState<'none' | 'audio' | 'visual' | 'chaos'>('none');
   const isAIAdaptationEnabled = false; // AI Adaptation disabled as per user request
 
-  const { state, startGame, stopGame, resetGame, clickCell, setSettings, applyDifficultySuggestion } = useSchulteEngine(5, 'classic', distraction, isAIAdaptationEnabled);
+  const { state, startGame, stopGame, resetGame, clickCell, setSettings, applyDifficultySuggestion, getCompletedAnalyticsJob } = useSchulteEngine(5, 'classic', distraction, isAIAdaptationEnabled);
   const [isHardcore, setIsHardcore] = useState(false);
   const [showBriefing, setShowBriefing] = useState(false);
   const [bonusAwarded, setBonusAwarded] = useState(0);
@@ -225,6 +225,7 @@ export function SchulteGrid() {
          void saveAttempt({
            timeMs: state.timeMs,
            metadata: { score: finalScore, mode, size, distraction, errors: state.errors, modifications: state.modifications, clickHistory: state.clickHistory },
+           analyticsJob: getCompletedAnalyticsJob() ?? undefined,
          })
          .then(resData => {
             if (resData?.session?.score) {

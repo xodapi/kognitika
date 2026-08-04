@@ -24,7 +24,7 @@ const ACTIONS: ReadonlyArray<{ action: AlphabetAction; label: string; shortcut: 
 ];
 
 export function StroopAlphabetTrainer() {
-  const { state, startGame, stopGame, resetGame, submitColor, submitAction } = useStroopAlphabetEngine();
+  const { state, startGame, stopGame, resetGame, submitColor, submitAction, getCompletedAnalyticsJob } = useStroopAlphabetEngine();
   const { token, refreshUser } = useAuth();
   const navigate = useNavigate();
   const [questionCount, setQuestionCount] = useState(DEFAULT_STROOP_ALPHABET_COUNT);
@@ -99,6 +99,7 @@ export function StroopAlphabetTrainer() {
         accuracy,
         averageReactionTimeMs: state.averageReactionTimeMs,
       },
+      analyticsJob: getCompletedAnalyticsJob() ?? undefined,
     })
       .then((data) => {
         if (data?.session?.score) refreshUser();
@@ -107,6 +108,7 @@ export function StroopAlphabetTrainer() {
         logger.error('Session save failed', { error: safeError(error), gameType: 'STROOP_ALPHABET' });
       });
   }, [
+    getCompletedAnalyticsJob,
     refreshUser,
     saveAttempt,
     state.actionErrors,

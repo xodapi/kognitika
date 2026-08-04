@@ -15,6 +15,15 @@ services:
       retries: 5
       start_period: 10s
 
+  analytics-sidecar:
+    build:
+      context: .
+      dockerfile: crates/kognitika-analytics-sidecar/Dockerfile
+    environment:
+      ANALYTICS_SIDECAR_ADDR: 0.0.0.0:3010
+    # Internal-only: no host port, database credentials, app secrets, or volumes.
+    # The Node app can reach this service only on the Compose network.
+
   app:
     build: .
     container_name: cognitika_app
@@ -34,9 +43,17 @@ services:
       - GAME_SAVE_LEGACY_COMPAT_ENABLED=${GAME_SAVE_LEGACY_COMPAT_ENABLED:-false}
       - GAME_ATTEMPT_TTL_SECONDS=${GAME_ATTEMPT_TTL_SECONDS:-900}
       - GAME_ATTEMPT_NOT_BEFORE_MS=${GAME_ATTEMPT_NOT_BEFORE_MS:-0}
+      - ANALYTICS_OUTBOX_SHADOW_ENABLED=${ANALYTICS_OUTBOX_SHADOW_ENABLED:-false}
+      - ANALYTICS_OUTBOX_DISPATCH_ENABLED=${ANALYTICS_OUTBOX_DISPATCH_ENABLED:-false}
+      - RUST_ANALYTICS_SIDECAR_ENABLED=${RUST_ANALYTICS_SIDECAR_ENABLED:-false}
+      - RUST_ANALYTICS_SIDECAR_URL=http://analytics-sidecar:3010
+      - RUST_ANALYTICS_SIDECAR_TIMEOUT_MS=${RUST_ANALYTICS_SIDECAR_TIMEOUT_MS:-1000}
+      - RUST_ANALYTICS_SIDECAR_ROLLOUT_PERCENT=${RUST_ANALYTICS_SIDECAR_ROLLOUT_PERCENT:-0}
     depends_on:
       db:
         condition: service_healthy
+      analytics-sidecar:
+        condition: service_started
 
 volumes:
   pgdata:

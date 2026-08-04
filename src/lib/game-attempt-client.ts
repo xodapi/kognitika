@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef } from 'react';
+import type { CompletedSessionAnalyticsJob } from '../core/cognitive-events';
 import { createClientRunId } from './client-run-id';
 
 export interface GameAttemptCredentials {
@@ -15,6 +16,7 @@ export interface GameSavePayload {
   timeMs: number;
   metadata?: Record<string, unknown>;
   isCompleted?: boolean;
+  analyticsJob?: CompletedSessionAnalyticsJob;
 }
 
 export class GameAttemptError extends Error {}

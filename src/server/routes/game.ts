@@ -38,7 +38,7 @@ router.post('/attempts', authenticate, validateBody(startGameAttemptSchema), asy
 });
 
 router.post('/save', authenticate, validateBody(saveGameSchema), async (req: any, res) => {
-  const { clientRunId, attemptId, challenge, gameType, timeMs, metadata } = req.validated.body;
+  const { clientRunId, attemptId, challenge, gameType, timeMs, metadata, analyticsJob } = req.validated.body;
   if (!timeMs || timeMs < 100) {
     return res.status(400).json({ error: 'Invalid performance data' });
   }
@@ -59,6 +59,7 @@ router.post('/save', authenticate, validateBody(saveGameSchema), async (req: any
       gameType,
       timeMs,
       metadata,
+      ...(analyticsJob === undefined ? {} : { analyticsJob }),
     });
     const currentLevel = Math.floor(saveResult.user.experience / 500) + 1;
     if (!saveResult.isReplay) {

@@ -57,27 +57,105 @@ export const PracticeRecommendedSchema = z.object({
   sourceSessionId: z.string().min(1)
 });
 
+/** Server-only, post-persistence notification. It is not a durable work item. */
+export const GameCompletedSchema = z.object({
+  userId: z.string().min(1).max(120),
+  sessionId: z.string().min(1).max(120),
+  score: z.number().finite(),
+  gameType: z.string().min(1).max(64),
+  timeMs: z.number().finite().nonnegative().optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
+}).passthrough();
+
+export const ErrorEventSchema = z.object({
+  message: z.string().min(1).max(500),
+}).passthrough();
+
+export const GameStartSchema = z.object({
+  type: z.string().min(1).max(64),
+  level: z.number().int().nonnegative().optional(),
+}).passthrough();
+
+export const GameEndSchema = z.object({
+  score: z.number().finite(),
+  timeMs: z.number().finite().nonnegative(),
+  accuracy: z.number().finite().optional(),
+  vigilance: z.number().finite().optional(),
+}).passthrough();
+
+export const ScoreUpdateSchema = z.object({
+  points: z.number().finite(),
+}).passthrough();
+
+const LegacyExpectedActualSchema = z.union([z.string().min(1).max(120), z.number().finite()]);
+
+/** Compatibility-only UI-local error signal. New analytics use canonical events. */
+export const MistakeMadeSchema = z.object({
+  expected: LegacyExpectedActualSchema,
+  actual: LegacyExpectedActualSchema,
+  cellId: z.union([z.string().min(1).max(120), z.number().finite()]).optional(),
+  level: z.number().int().nonnegative().optional(),
+  round: z.number().int().nonnegative().optional(),
+  isCongruent: z.boolean().optional(),
+}).passthrough();
+
+/** Compatibility-only UI-local score signals. */
+export const HitSchema = z.object({
+  module: z.string().min(1).max(64),
+  xp: z.number().finite().nonnegative(),
+}).passthrough();
+
+export const MissSchema = z.object({
+  module: z.string().min(1).max(64),
+}).passthrough();
+
 // Registry of all events and their payloads
 export const EventRegistry = {
   'TRAINING_COMPLETE': TrainingCompleteSchema,
   'CELL_CLICK': CellClickSchema,
-  'MISTAKE_MADE': z.any(),
+  'MISTAKE_MADE': MistakeMadeSchema,
   'FEEDBACK_SUBMITTED': FeedbackSubmittedSchema,
   'IDEA_SUBMITTED': IdeaSubmittedSchema,
   'DIFFICULTY_SUGGESTION': DifficultySuggestionSchema,
   'PRACTICE_RECOMMENDED': PracticeRecommendedSchema,
-  'game:completed': z.any(), // Legacy/Bridge
+  'game:completed': GameCompletedSchema,
   'feedback:submitted': FeedbackSubmittedSchema, // Legacy/Bridge alias
   'idea:submitted': IdeaSubmittedSchema, // Legacy/Bridge alias
-  'error': z.any(),
+  'error': ErrorEventSchema,
   'STABILITY_UPDATE': z.object({ avg: z.number(), stability: z.number() }),
-  'GAME_START': z.any(),
-  'GAME_END': z.any(),
-  'SCORE_UPDATE': z.any(),
-  'HIT': z.any(),
-  'MISS': z.any()
+  'GAME_START': GameStartSchema,
+  'GAME_END': GameEndSchema,
+  'SCORE_UPDATE': ScoreUpdateSchema,
+  'HIT': HitSchema,
+  'MISS': MissSchema
 };
 
 export type EventMap = {
   [K in keyof typeof EventRegistry]: z.infer<typeof EventRegistry[K]>;
+};
+
+export type EventClassification = 'ui-local' | 'server-domain' | 'durable-analytics';
+
+/**
+ * EventBus messages are in-process only. Durable analytics uses the separate,
+ * versioned cognitive-events contract and Node/Prisma outbox, never this bus.
+ */
+export const EventClassifications: Record<keyof EventMap, EventClassification> = {
+  TRAINING_COMPLETE: 'ui-local',
+  CELL_CLICK: 'ui-local',
+  MISTAKE_MADE: 'ui-local',
+  FEEDBACK_SUBMITTED: 'server-domain',
+  IDEA_SUBMITTED: 'server-domain',
+  DIFFICULTY_SUGGESTION: 'ui-local',
+  PRACTICE_RECOMMENDED: 'ui-local',
+  'game:completed': 'server-domain',
+  'feedback:submitted': 'server-domain',
+  'idea:submitted': 'server-domain',
+  error: 'ui-local',
+  STABILITY_UPDATE: 'ui-local',
+  GAME_START: 'ui-local',
+  GAME_END: 'ui-local',
+  SCORE_UPDATE: 'ui-local',
+  HIT: 'ui-local',
+  MISS: 'ui-local',
 };

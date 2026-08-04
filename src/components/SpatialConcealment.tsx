@@ -22,7 +22,7 @@ type Cell = {
 import { useSpatialEngine } from '../hooks/useSpatialEngine';
 
 export function SpatialConcealment() {
-  const { state, startTraining, handleCellClick } = useSpatialEngine();
+  const { state, startTraining, handleCellClick, getCompletedAnalyticsJob } = useSpatialEngine();
   const { level, gridSize, activeCount, grid, phase, score, errors } = state;
   const { token } = useAuth();
   const { beginAttempt, saveAttempt } = useGameAttempt(token);
@@ -44,10 +44,11 @@ export function SpatialConcealment() {
         void saveAttempt({
           timeMs: 1000,
           metadata: { level, score, errors },
+          analyticsJob: getCompletedAnalyticsJob() ?? undefined,
         }).catch(err => logger.error('Session save failed', { error: safeError(err), gameType: 'SPATIAL_CONCEALMENT' }));
       }
     }
-  }, [phase, level, score, errors, token, saveAttempt]);
+  }, [phase, level, score, errors, token, saveAttempt, getCompletedAnalyticsJob]);
 
   return (
     <div className="col-span-12 grid grid-cols-1 lg:grid-cols-12 gap-4 h-full min-h-0 pb-4">

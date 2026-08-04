@@ -6,6 +6,10 @@
  */
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { emitEvent } from './useEventBus';
+import {
+  CognitiveSessionEventCollector,
+  type CompletedSessionAnalyticsJob,
+} from '../core/cognitive-events';
 
 // ──────────────────────────────────────────────
 // Типы
@@ -126,6 +130,8 @@ export function useNoiseReductionEngine() {
   const missesRef       = useRef(0);
   const falseAlarmsRef  = useRef(0);
   const configRef       = useRef<LevelConfig>(LEVEL_CONFIGS[1]);
+  const collectorRef = useRef<CognitiveSessionEventCollector | null>(null);
+  const completedAnalyticsJobRef = useRef<CompletedSessionAnalyticsJob | null>(null);
 
   const cleanup = useCallback(() => {
     [timerRef, signalRef, distractorRef, sessionRef].forEach(r => {
@@ -174,6 +180,22 @@ export function useNoiseReductionEngine() {
 
     const cfg = LEVEL_CONFIGS[Math.min(level, 4)] ?? LEVEL_CONFIGS[4];
     configRef.current = cfg;
+    startTimeRef.current = Date.now();
+    const startedAt = new Date(startTimeRef.current).toISOString();
+    completedAnalyticsJobRef.current = null;
+    collectorRef.current = new CognitiveSessionEventCollector({
+      sessionId: `noise-reduction-${startTimeRef.current}-${level}`,
+      moduleId: 'noise-reduction',
+      moduleVersion: '1',
+      category: 'cognitive',
+      startedAt,
+    });
+    collectorRef.current.record({
+      kind: 'trial_started',
+      tMs: 0,
+      trialType: 'noise-reduction:signal-response',
+      difficulty: `level-${level}`,
+    });
 
     setState({
       phase: 'training',
@@ -192,8 +214,6 @@ export function useNoiseReductionEngine() {
       isFinished: false,
       sessionDurationMs: cfg.sessionDurationMs,
     });
-
-    startTimeRef.current = Date.now();
 
     // Таймер сессии
     timerRef.current = setInterval(() => {
@@ -217,34 +237,38 @@ export function useNoiseReductionEngine() {
     // Конец сессии
     sessionRef.current = setTimeout(() => {
       cleanup();
-      setState(prev => {
-        const finalScore = Math.max(0,
-          hitsRef.current * 10 - falseAlarmsRef.current * cfg.penaltyPerFalseAlarm
-        );
-        emitEvent('TRAINING_COMPLETE', {
-          type: 'SCHULTE',
-          timeMs: cfg.sessionDurationMs,
-          score: finalScore,
-          level,
-          metadata: {
-            module: 'noise_reduction',
-            hits: hitsRef.current,
-            misses: missesRef.current,
-            falseAlarms: falseAlarmsRef.current,
-            inhibitoryControlIndex: hitsRef.current / Math.max(1, hitsRef.current + falseAlarmsRef.current),
-          },
-        });
-        return {
-          ...prev,
-          phase: 'result',
-          isFinished: true,
-          score: finalScore,
+      const finalScore = Math.max(0,
+        hitsRef.current * 10 - falseAlarmsRef.current * cfg.penaltyPerFalseAlarm
+      );
+      const collector = collectorRef.current;
+      if (collector && !completedAnalyticsJobRef.current) {
+        const completedAt = new Date(startTimeRef.current + cfg.sessionDurationMs).toISOString();
+        collector.complete(cfg.sessionDurationMs, completedAt);
+        completedAnalyticsJobRef.current = collector.createCompletedJob(completedAt);
+      }
+      emitEvent('TRAINING_COMPLETE', {
+        type: 'SCHULTE',
+        timeMs: cfg.sessionDurationMs,
+        score: finalScore,
+        level,
+        metadata: {
+          module: 'noise_reduction',
           hits: hitsRef.current,
           misses: missesRef.current,
           falseAlarms: falseAlarmsRef.current,
-          timeMs: cfg.sessionDurationMs,
-        };
+          inhibitoryControlIndex: hitsRef.current / Math.max(1, hitsRef.current + falseAlarmsRef.current),
+        },
       });
+      setState(prev => ({
+        ...prev,
+        phase: 'result',
+        isFinished: true,
+        score: finalScore,
+        hits: hitsRef.current,
+        misses: missesRef.current,
+        falseAlarms: falseAlarmsRef.current,
+        timeMs: cfg.sessionDurationMs,
+      }));
     }, cfg.sessionDurationMs);
 
     // Запустить первый сигнал
@@ -255,7 +279,14 @@ export function useNoiseReductionEngine() {
    * Вызывается когда пользователь нажимает на ЦЕНТРАЛЬНУЮ зону (целевой паттерн)
    */
   const reactToSignal = useCallback(() => {
-    if (signalActiveRef.current) {
+    const isCorrect = signalActiveRef.current;
+    collectorRef.current?.record({
+      kind: 'trial_answered',
+      tMs: Math.max(0, Date.now() - startTimeRef.current),
+      trialType: 'noise-reduction:signal-response',
+      isCorrect,
+    });
+    if (isCorrect) {
       // Правильная реакция
       hitsRef.current += 1;
       signalActiveRef.current = false;
@@ -286,6 +317,12 @@ export function useNoiseReductionEngine() {
    * Вызывается когда пользователь нажал на дистрактор (штраф)
    */
   const reactToDistractor = useCallback(() => {
+    collectorRef.current?.record({
+      kind: 'trial_answered',
+      tMs: Math.max(0, Date.now() - startTimeRef.current),
+      trialType: 'noise-reduction:signal-response',
+      isCorrect: false,
+    });
     falseAlarmsRef.current += 1;
     setState(prev => ({
       ...prev,
@@ -301,5 +338,7 @@ export function useNoiseReductionEngine() {
     setState(prev => ({ ...prev, phase: 'result', isFinished: true }));
   }, [cleanup]);
 
-  return { state, startGame, stopGame, reactToSignal, reactToDistractor };
+  const getCompletedAnalyticsJob = useCallback(() => completedAnalyticsJobRef.current, []);
+
+  return { state, startGame, stopGame, reactToSignal, reactToDistractor, getCompletedAnalyticsJob };
 }

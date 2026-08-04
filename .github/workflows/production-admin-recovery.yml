@@ -1,0 +1,171 @@
+name: Recover Kognitika ADMIN Access
+
+on:
+  workflow_dispatch:
+    inputs:
+      recovery_runbook_id:
+        description: Reviewed recovery identifier, for example PDD-ADMIN-2026-08-05-220
+        required: true
+        type: string
+      review_url:
+        description: Reviewable xodapi/kognitika issue or pull-request URL
+        required: true
+        type: string
+      operation:
+        description: Dry-run only by default. Creating an ADMIN requires Environment approval and confirmation.
+        required: true
+        default: dry_run
+        type: choice
+        options:
+          - dry_run
+          - create_recovery_admin
+      recovery_confirmation:
+        description: "Required for create_recovery_admin: CREATE_ONE_RECOVERY_ADMIN"
+        required: false
+        type: string
+
+concurrency:
+  group: kognitika-production-db
+  cancel-in-progress: false
+
+jobs:
+  recover-admin:
+    # GitHub Environment approval is the production write boundary.
+    environment: production-db-changes
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Validate recovery evidence
+        env:
+          RECOVERY_RUNBOOK_ID: ${{ inputs.recovery_runbook_id }}
+          REVIEW_URL: ${{ inputs.review_url }}
+          OPERATION: ${{ inputs.operation }}
+          RECOVERY_CONFIRMATION: ${{ inputs.recovery_confirmation }}
+        run: |
+          set -euo pipefail
+          case "$RECOVERY_RUNBOOK_ID" in
+            PDD-ADMIN-[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]-[A-Z0-9][A-Z0-9-][A-Z0-9-]*) ;;
+            *) echo 'Invalid recovery runbook identifier.' >&2; exit 1 ;;
+          esac
+          case "$REVIEW_URL" in
+            https://github.com/xodapi/kognitika/issues/*|https://github.com/xodapi/kognitika/pull/*) ;;
+            *) echo 'Review URL must target xodapi/kognitika.' >&2; exit 1 ;;
+          esac
+          case "$OPERATION" in
+            dry_run) ;;
+            create_recovery_admin)
+              test "$RECOVERY_CONFIRMATION" = 'CREATE_ONE_RECOVERY_ADMIN'
+              ;;
+            *) echo 'Unsupported recovery operation.' >&2; exit 1 ;;
+          esac
+
+      - name: Prepare protected host connection
+        env:
+          DEPLOY_HOST: ${{ secrets.KOGNITIKA_DEPLOY_HOST }}
+          DEPLOY_PORT: ${{ secrets.KOGNITIKA_DEPLOY_PORT }}
+          DEPLOY_KEY: ${{ secrets.KOGNITIKA_DEPLOY_SSH_KEY }}
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "$DEPLOY_KEY" > ~/.ssh/kognitika_admin_recovery_key
+          chmod 600 ~/.ssh/kognitika_admin_recovery_key
+          ssh-keyscan -p "$DEPLOY_PORT" -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts
+
+      - name: Verify Kognitika schema and optionally create one recovery ADMIN
+        env:
+          DEPLOY_HOST: ${{ secrets.KOGNITIKA_DEPLOY_HOST }}
+          DEPLOY_PORT: ${{ secrets.KOGNITIKA_DEPLOY_PORT }}
+          DEPLOY_USER: ${{ secrets.KOGNITIKA_DEPLOY_USER }}
+          RECOVERY_RUNBOOK_ID: ${{ inputs.recovery_runbook_id }}
+          OPERATION: ${{ inputs.operation }}
+        run: |
+          set -euo pipefail
+          ssh -i ~/.ssh/kognitika_admin_recovery_key \
+            -p "$DEPLOY_PORT" \
+            -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=yes \
+            "$DEPLOY_USER@$DEPLOY_HOST" \
+            "RECOVERY_RUNBOOK_ID='$RECOVERY_RUNBOOK_ID' OPERATION='$OPERATION' bash -s" <<'REMOTE'
+          set -Eeuo pipefail
+
+          case "$RECOVERY_RUNBOOK_ID" in
+            *[!A-Z0-9-]*|'') echo 'Invalid recovery runbook identifier.' >&2; exit 1 ;;
+          esac
+          case "$OPERATION" in dry_run|create_recovery_admin) ;; *) exit 1 ;; esac
+
+          test -r /opt/kognitika/.env
+          set -a
+          . /opt/kognitika/.env
+          set +a
+          test -n "${DATABASE_URL:-}"
+          DATABASE_URL="${DATABASE_URL%%\?schema=public}"
+          command -v docker >/dev/null
+
+          client() {
+            docker run --rm --network host -e DATABASE_URL postgres:16 "$@"
+          }
+
+          # This must pass before generating a credential or opening a write transaction.
+          schema_status="$(client psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --tuples-only --no-align <<'SQL'
+          SELECT CASE WHEN
+            to_regclass('public."User"') IS NOT NULL
+            AND EXISTS (
+              SELECT 1 FROM information_schema.columns
+              WHERE table_schema = 'public' AND table_name = 'User' AND column_name = 'brainId'
+            )
+            AND EXISTS (
+              SELECT 1 FROM information_schema.columns
+              WHERE table_schema = 'public' AND table_name = 'User' AND column_name = 'pseudonym'
+            )
+            AND EXISTS (
+              SELECT 1 FROM information_schema.columns
+              WHERE table_schema = 'public' AND table_name = 'User' AND column_name = 'role'
+            )
+          THEN 'kognitika-schema-ok' ELSE 'kognitika-schema-mismatch' END;
+          SQL
+          )"
+          test "$schema_status" = 'kognitika-schema-ok'
+          echo 'Kognitika schema guard passed.'
+
+          if [ "$OPERATION" = 'dry_run' ]; then
+            echo 'Dry run completed. No user or credential was created.'
+            exit 0
+          fi
+
+          recovery_dir=/opt/kognitika-admin-recovery
+          recovery_file="$recovery_dir/${RECOVERY_RUNBOOK_ID}.brain-id"
+          test ! -e "$recovery_file"
+          umask 077
+          install -d -m 700 "$recovery_dir"
+
+          brain_id="$(cat /proc/sys/kernel/random/uuid)"
+          pseudonym="Recovery-Admin-${RECOVERY_RUNBOOK_ID##*-}"
+          user_id="recovery-admin-${RECOVERY_RUNBOOK_ID,,}"
+
+          creation_status="$(client psql "$DATABASE_URL" --quiet --set ON_ERROR_STOP=1 \
+            --set=brain_id="$brain_id" \
+            --set=pseudonym="$pseudonym" \
+            --set=user_id="$user_id" --tuples-only --no-align <<'SQL'
+          BEGIN;
+          INSERT INTO "User" (id, "brainId", pseudonym, name, role, level, experience, rating, bonuses, "streakDays", "createdAt")
+          SELECT :'user_id', :'brain_id', :'pseudonym', :'pseudonym', 'ADMIN', 1, 0, 1000, 0, 0, NOW()
+          WHERE NOT EXISTS (SELECT 1 FROM "User" WHERE "brainId" = :'brain_id')
+            AND NOT EXISTS (SELECT 1 FROM "User" WHERE id = :'user_id');
+          SELECT CASE WHEN COUNT(*) = 1 THEN 'recovery-admin-created' ELSE 'recovery-admin-not-created' END
+          FROM "User" WHERE id = :'user_id' AND role = 'ADMIN';
+          COMMIT;
+          SQL
+          )"
+          printf '%s\n' "$creation_status" | grep -qx 'recovery-admin-created'
+
+          # Keep the recovery credential off workflow output. A configured Environment
+          # reviewer retrieves it only through the documented secure handoff procedure.
+          printf '%s\n' "$brain_id" > "$recovery_file"
+          chmod 600 "$recovery_file"
+          unset brain_id DATABASE_URL
+          # Do not reveal recovery-file names or paths in Actions output.
+          echo 'Recovery ADMIN created; credential retained for approved secure handoff.'
+          REMOTE

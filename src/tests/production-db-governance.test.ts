@@ -115,6 +115,29 @@ describe('production database governance contracts', () => {
     expect(workflow).not.toContain('actions/upload-artifact');
   });
 
+  it('keeps ADMIN recovery dry-run by default and schema-guards the only supported write', () => {
+    const workflow = read('.github/workflows/production-admin-recovery.yml');
+    const schemaGuard = workflow.indexOf("schema_status=");
+    const credentialGeneration = workflow.indexOf('brain_id="$(cat /proc/sys/kernel/random/uuid)"');
+    const write = workflow.indexOf('INSERT INTO "User"');
+
+    expect(workflow).toContain('workflow_dispatch:');
+    expect(workflow).toContain('environment: production-db-changes');
+    expect(workflow).toContain('default: dry_run');
+    expect(workflow).toContain('CREATE_ONE_RECOVERY_ADMIN');
+    expect(workflow).toContain('test -r /opt/kognitika/.env');
+    expect(workflow).toContain("column_name = 'brainId'");
+    expect(workflow).toContain("column_name = 'pseudonym'");
+    expect(workflow).toContain("column_name = 'role'");
+    expect(workflow).toContain('recovery-admin-created');
+    expect(workflow).toContain('test ! -e "$recovery_file"');
+    expect(workflow).not.toContain('DROP SCHEMA');
+    expect(workflow).not.toContain('actions/upload-artifact');
+    expect(schemaGuard).toBeGreaterThanOrEqual(0);
+    expect(credentialGeneration).toBeGreaterThan(schemaGuard);
+    expect(write).toBeGreaterThan(credentialGeneration);
+  });
+
   it('fails closed without a valid runbook identifier and reviewable GitHub issue or pull-request URL', async () => {
     const { evaluateProductionDbGate } = await import('../../scripts/production-db-change-gate.mjs');
 

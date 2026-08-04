@@ -1,4 +1,8 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
+import {
+  CognitiveSessionEventCollector,
+  type CompletedSessionAnalyticsJob,
+} from '../core/cognitive-events';
 
 export interface SituationalQuestion {
   id: string;
@@ -51,6 +55,12 @@ export function useSituationalEngine() {
   const [isFinished, setIsFinished] = useState(false);
   const [startTime, setStartTime] = useState(0);
   const [timeMs, setTimeMs] = useState(0);
+  const startTimeRef = useRef(0);
+  const sessionStartedAtRef = useRef<string | null>(null);
+  const questionsRef = useRef<SituationalQuestion[]>([]);
+  const currentIndexRef = useRef(0);
+  const collectorRef = useRef<CognitiveSessionEventCollector | null>(null);
+  const completedAnalyticsJobRef = useRef<CompletedSessionAnalyticsJob | null>(null);
 
   const startGame = useCallback(() => {
     // Shuffle options a bit, keep questions same order for now
@@ -59,28 +69,68 @@ export function useSituationalEngine() {
       options: [...q.options].sort(() => Math.random() - 0.5)
     }));
     
+    const startedAtMs = performance.now();
+    startTimeRef.current = startedAtMs;
+    questionsRef.current = shuffledQs;
+    currentIndexRef.current = 0;
+    const startedAt = new Date().toISOString();
+    sessionStartedAtRef.current = startedAt;
+    completedAnalyticsJobRef.current = null;
+    collectorRef.current = new CognitiveSessionEventCollector({
+      sessionId: `situational-${Date.now()}`,
+      moduleId: 'situational',
+      moduleVersion: '1',
+      category: 'cognitive',
+      startedAt,
+    });
+    collectorRef.current.record({
+      kind: 'trial_started',
+      tMs: 0,
+      trialType: 'situational:judgment',
+    });
     setQuestions(shuffledQs);
     setCurrentIndex(0);
     setScore(0);
     setIsActive(true);
     setIsFinished(false);
-    setStartTime(performance.now());
+    setStartTime(startedAtMs);
   }, []);
 
   const answerQuestion = useCallback((optionScore: number) => {
+    const currentQuestion = questionsRef.current[currentIndexRef.current];
+    if (!currentQuestion) return;
+    const isCorrect = optionScore === Math.max(...currentQuestion.options.map((option) => option.score));
+    const elapsedMs = Math.max(0, Math.floor(performance.now() - startTimeRef.current));
+    collectorRef.current?.record({
+      kind: 'trial_answered',
+      tMs: elapsedMs,
+      trialType: 'situational:judgment',
+      isCorrect,
+    });
     setScore(s => s + optionScore);
-    
-    if (currentIndex + 1 < questions.length) {
-      setCurrentIndex(i => i + 1);
+
+    const nextIndex = currentIndexRef.current + 1;
+    currentIndexRef.current = nextIndex;
+    if (nextIndex < questionsRef.current.length) {
+      setCurrentIndex(nextIndex);
     } else {
+      const collector = collectorRef.current;
+      const startedAt = sessionStartedAtRef.current;
+      if (collector && startedAt && !completedAnalyticsJobRef.current) {
+        const completedAt = new Date(Date.parse(startedAt) + elapsedMs).toISOString();
+        collector.complete(elapsedMs, completedAt);
+        completedAnalyticsJobRef.current = collector.createCompletedJob(completedAt);
+      }
       setIsActive(false);
       setIsFinished(true);
-      setTimeMs(performance.now() - startTime);
+      setTimeMs(elapsedMs);
     }
-  }, [currentIndex, questions, startTime]);
+  }, []);
 
   // Expose total possible score
   const maxScore = questions.reduce((acc, q) => acc + Math.max(...q.options.map(o => o.score)), 0) || 30;
 
-  return { state: { questions, currentIndex, score, isActive, isFinished, timeMs, maxScore }, startGame, answerQuestion };
+  const getCompletedAnalyticsJob = useCallback(() => completedAnalyticsJobRef.current, []);
+
+  return { state: { questions, currentIndex, score, isActive, isFinished, timeMs, maxScore }, startGame, answerQuestion, getCompletedAnalyticsJob };
 }

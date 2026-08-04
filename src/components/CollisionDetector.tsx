@@ -9,7 +9,7 @@ import { useGameAttempt } from '../lib/game-attempt-client';
 import { haptic } from '../lib/haptic';
 
 export function CollisionDetector() {
-  const { state, startGame, flagCard } = useCollisionEngine();
+  const { state, startGame, flagCard, getCompletedAnalyticsJob } = useCollisionEngine();
   const { token } = useAuth();
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedMode, setGeneratedMode] = useState(false);
@@ -50,9 +50,10 @@ export function CollisionDetector() {
       saveAttempt({
         timeMs: state.timeMs,
         metadata: { score: state.score, hits: state.hits, misses: state.misses, fp: state.falsePositives, level: state.level },
+        analyticsJob: getCompletedAnalyticsJob() ?? undefined,
       }).catch(() => {});
     }
-  }, [state.isFinished, token, state.timeMs, state.score, state.hits, state.misses, state.falsePositives, state.level, saveAttempt]);
+  }, [state.isFinished, token, state.timeMs, state.score, state.hits, state.misses, state.falsePositives, state.level, saveAttempt, getCompletedAnalyticsJob]);
 
   // Intro
   if (state.rules.length === 0) {

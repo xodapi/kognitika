@@ -6,9 +6,43 @@ import {
   createAnalyticsOutboxEntry,
   isAnalyticsOutboxEnabled,
 } from '../../core/analytics-outbox/index.ts';
+import {
+  parseCompletedSessionAnalyticsJob,
+  type CompletedSessionAnalyticsJob,
+} from '../../core/cognitive-events/index.ts';
 
 const SHADOW_ANALYZER_VERSION = 'rust-shadow-v1';
 const ANALYTICS_CONTRACT_VERSION = 'analytics-contract-v1';
+
+const ANALYTICS_MODULE_GAME_TYPES: Record<string, readonly string[]> = {
+  schulte: ['SCHULTE', 'SCHULTE_GORBOV'],
+  stroop: ['STROOP'],
+  nback: ['N_BACK'],
+  numerical: ['NUMERICAL_ANALYSIS'],
+  'logical-sequence': ['LOGICAL_SEQUENCE'],
+  'mental-math': ['MENTAL_MATH'],
+  situational: ['SITUATIONAL_JUDGMENT'],
+  spatial: ['SPATIAL_CONCEALMENT'],
+  'stroop-alphabet': ['STROOP_ALPHABET'],
+  'schulte-90': ['SCHULTE_90'],
+  'alphabet-table': ['ALPHABET_TABLE'],
+  collision: ['COLLISION_DETECTOR'],
+  dispatcher: ['ASYNC_DISPATCHER'],
+  topology: ['TOPOLOGY_MEMORY'],
+  typing: ['SPEED_TYPING'],
+};
+
+function validateAnalyticsJob(input: SaveGameInput): CompletedSessionAnalyticsJob | undefined {
+  if (input.analyticsJob === undefined) return undefined;
+  const parsed = parseCompletedSessionAnalyticsJob(input.analyticsJob);
+  if (!parsed.success) {
+    throw new GameAttemptError('Invalid canonical analytics job', 400, 'INVALID_ANALYTICS_JOB');
+  }
+  if (!ANALYTICS_MODULE_GAME_TYPES[parsed.data.moduleId]?.includes(input.gameType)) {
+    throw new GameAttemptError('Analytics job does not match game type', 400, 'ANALYTICS_GAME_TYPE_MISMATCH');
+  }
+  return parsed.data;
+}
 
 export type SaveGameInput = {
   userId: string;
@@ -18,6 +52,7 @@ export type SaveGameInput = {
   gameType: string;
   timeMs: number;
   metadata?: Record<string, unknown>;
+  analyticsJob?: unknown;
 };
 
 export type SaveGameResult = {
@@ -94,6 +129,7 @@ export async function saveCompletedGame(input: SaveGameInput): Promise<SaveGameR
     throw new GameAttemptError('A game attempt is required', 400, 'ATTEMPT_REQUIRED');
   }
 
+  const analyticsJob = validateAnalyticsJob(input);
   const score = computeServerScore(input);
   try {
     return await prisma.$transaction(async (tx) => {
@@ -164,6 +200,20 @@ export async function saveCompletedGame(input: SaveGameInput): Promise<SaveGameR
           metadata: (input.metadata || {}) as Prisma.InputJsonValue,
         },
       });
+      if (analyticsJob) {
+        await tx.completedSessionAnalyticsJob.create({
+          data: {
+            jobId: analyticsJob.jobId,
+            gameSessionId: session.id,
+            moduleId: analyticsJob.moduleId,
+            moduleVersion: analyticsJob.moduleVersion,
+            category: analyticsJob.category,
+            analyzerVersion: analyticsJob.analyzerVersion,
+            completedAt: new Date(analyticsJob.completedAt),
+            payload: analyticsJob as unknown as Prisma.InputJsonValue,
+          },
+        });
+      }
       if (isAnalyticsOutboxEnabled()) {
         const entry = createAnalyticsOutboxEntry({
           sourceSession: session.id,

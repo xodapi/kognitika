@@ -5,6 +5,10 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { emitEvent } from './useEventBus';
 import { getSessionForLevel, ContentCard as DBCard } from '../lib/content-db';
+import {
+  CognitiveSessionEventCollector,
+  type CompletedSessionAnalyticsJob,
+} from '../core/cognitive-events';
 
 export interface Rule {
   id: number;
@@ -150,6 +154,9 @@ export function useCollisionEngine() {
   const hitsRef = useRef(0);
   const missesRef = useRef(0);
   const fpRef = useRef(0);
+  const levelRef = useRef(1);
+  const collectorRef = useRef<CognitiveSessionEventCollector | null>(null);
+  const completedAnalyticsJobRef = useRef<CompletedSessionAnalyticsJob | null>(null);
 
   useEffect(() => () => {
     [timerRef, memorizeRef, cardTimerRef].forEach(r => r.current && clearInterval(r.current));
@@ -159,30 +166,33 @@ export function useCollisionEngine() {
     if (queueRef.current.length === 0) {
       // Done
       if (timerRef.current) clearInterval(timerRef.current);
-      const timeMs = Date.now() - startTimeRef.current;
-      const violations = queueRef.current.filter(c => c.isViolation).length;
-      
-      setState(prev => {
-        const finalScore = Math.max(0, hitsRef.current - fpRef.current);
-        emitEvent('TRAINING_COMPLETE', {
-          type: 'SCHULTE',
-          timeMs,
-          score: finalScore,
-          level: prev.level,
-          metadata: { module: 'collision', hits: hitsRef.current, misses: missesRef.current, fp: fpRef.current },
-        });
-        return {
-          ...prev,
-          phase: 'result',
-          activeCard: null,
-          score: finalScore,
-          hits: hitsRef.current,
-          misses: missesRef.current,
-          falsePositives: fpRef.current,
-          timeMs,
-          isFinished: true,
-        };
+      const timeMs = Math.max(0, Date.now() - startTimeRef.current);
+      const finalScore = Math.max(0, hitsRef.current - fpRef.current);
+      const collector = collectorRef.current;
+      if (collector && !completedAnalyticsJobRef.current) {
+        const completedAt = new Date(startTimeRef.current + timeMs).toISOString();
+        collector.complete(timeMs, completedAt);
+        completedAnalyticsJobRef.current = collector.createCompletedJob(completedAt);
+      }
+
+      emitEvent('TRAINING_COMPLETE', {
+        type: 'SCHULTE',
+        timeMs,
+        score: finalScore,
+        level: levelRef.current,
+        metadata: { module: 'collision', hits: hitsRef.current, misses: missesRef.current, fp: fpRef.current },
       });
+      setState(prev => ({
+        ...prev,
+        phase: 'result',
+        activeCard: null,
+        score: finalScore,
+        hits: hitsRef.current,
+        misses: missesRef.current,
+        falsePositives: fpRef.current,
+        timeMs,
+        isFinished: true,
+      }));
       return;
     }
 
@@ -206,6 +216,8 @@ export function useCollisionEngine() {
     hitsRef.current = 0;
     missesRef.current = 0;
     fpRef.current = 0;
+    levelRef.current = level;
+    completedAnalyticsJobRef.current = null;
 
     const scenario = getScenario(level);
     const violations = scenario.cards.filter(c => c.isViolation).length;
@@ -231,6 +243,21 @@ export function useCollisionEngine() {
       cardSpeedMs: speedMs,
     });
 
+    const startedAt = new Date().toISOString();
+    collectorRef.current = new CognitiveSessionEventCollector({
+      sessionId: `collision-${Date.now()}-${level}`,
+      moduleId: 'collision',
+      moduleVersion: '1',
+      category: 'cognitive',
+      startedAt,
+    });
+    collectorRef.current.record({
+      kind: 'trial_started',
+      tMs: 0,
+      trialType: 'collision:filter',
+      difficulty: `level-${level}`,
+    });
+
     let timeLeft = MEMORIZE_SECS;
     memorizeRef.current = setInterval(() => {
       timeLeft -= 1;
@@ -250,6 +277,12 @@ export function useCollisionEngine() {
 
   const flagCard = useCallback((card: Card) => {
     if (cardTimerRef.current) clearTimeout(cardTimerRef.current);
+    collectorRef.current?.record({
+      kind: 'trial_answered',
+      tMs: Math.max(0, Date.now() - startTimeRef.current),
+      trialType: 'collision:filter',
+      isCorrect: card.isViolation,
+    });
 
     if (card.isViolation) {
       hitsRef.current += 1;
@@ -267,5 +300,7 @@ export function useCollisionEngine() {
     showNextCard(state.cardSpeedMs);
   }, [showNextCard, state.cardSpeedMs]);
 
-  return { state, startGame, flagCard };
+  const getCompletedAnalyticsJob = useCallback(() => completedAnalyticsJobRef.current, []);
+
+  return { state, startGame, flagCard, getCompletedAnalyticsJob };
 }

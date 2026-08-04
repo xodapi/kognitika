@@ -15,7 +15,7 @@ import {
 const logger = createSafeLogger('n-back-test');
 
 export function NBackTest() {
-  const { state, startGame, answerMatch } = useNBackEngine();
+  const { state, startGame, answerMatch, getCompletedAnalyticsJob } = useNBackEngine();
   const { token } = useAuth();
   const navigate = useNavigate();
 
@@ -74,13 +74,14 @@ export function NBackTest() {
             errors: state.errors,
             preSequence: preSequence || undefined,
           },
+          analyticsJob: getCompletedAnalyticsJob() ?? undefined,
         })
         .then(data => {
           if (data?.session?.id) setSessionId(data.session.id);
         })
         .catch(err => logger.error('Session save failed', { error: safeError(err), gameType: 'N_BACK' }));
      }
-  }, [state.isFinished, state.round, token, state.score, state.errors, preSequence, saveAttempt]);
+  }, [state.isFinished, state.round, token, state.score, state.errors, preSequence, saveAttempt, getCompletedAnalyticsJob]);
 
   if (showPreLuscher) {
     return (
@@ -106,17 +107,17 @@ export function NBackTest() {
 
   if (!state.isActive && !state.isFinished) {
     return (
-      <div className="col-span-12 grid grid-cols-1 md:grid-cols-12 gap-4 h-full min-h-0">
-        <div className="md:col-start-4 md:col-span-6 bg-card/20 border border-border rounded-3xl p-8 flex flex-col items-center justify-center text-center">
-            <h2 className="text-2xl font-bold tracking-tight text-primary uppercase mb-4">Задача N-назад</h2>
-            <p className="text-sm text-muted-foreground mb-4">
+      <div className="col-span-12 grid grid-cols-1 gap-4 py-2 md:grid-cols-12 md:py-0 h-full min-h-0">
+        <div className="md:col-start-4 md:col-span-6 bg-card/20 border border-border rounded-3xl p-5 sm:p-8 flex flex-col items-center justify-center text-center">
+            <h2 className="text-xl font-black tracking-tight text-primary uppercase mb-3 sm:text-2xl sm:mb-4">Задача N-назад</h2>
+            <p className="text-sm leading-relaxed text-muted-foreground mb-4">
               Оценка рабочей памяти. Вы увидите последовательность букв.
             </p>
-            <p className="text-xs text-foreground bg-secondary/50 p-4 rounded-xl border border-border mb-6">
-              Правило (2-назад): Жмите <b>Совпадение</b> или <b>Пробел</b>, если текущая буква совпадает с буквой, показанной <span className="text-primary font-bold">2 шага назад</span>.
+            <p className="text-xs leading-relaxed text-foreground bg-secondary/50 p-4 rounded-xl border border-border mb-5 sm:mb-6">
+              Правило (2-назад): нажимайте <b>Совпадение</b>, если текущая буква совпадает с буквой, показанной <span className="text-primary font-bold">2 шага назад</span>. На компьютере можно использовать Пробел.
             </p>
 
-            <div className="mb-8 w-full rounded-xl border border-primary/10 bg-primary/5 p-4 text-left">
+            <div className="mb-6 w-full rounded-xl border border-primary/10 bg-primary/5 p-4 text-left sm:mb-8">
               <label className="flex min-h-11 cursor-pointer items-center gap-3 select-none">
                 <input
                   type="checkbox"
@@ -140,7 +141,7 @@ export function NBackTest() {
               )}
             </div>
 
-            <button onClick={handleStartClick} className="w-full max-w-[250px] min-h-11 px-4 py-3 bg-primary text-primary-foreground text-xs uppercase tracking-wider rounded-lg font-bold hover:bg-primary/90 transition-colors">
+            <button onClick={handleStartClick} className="w-full max-w-sm min-h-12 px-4 py-3 bg-primary text-primary-foreground text-xs uppercase tracking-wider rounded-xl font-bold hover:bg-primary/90 transition-colors sm:max-w-[250px]">
               Активировать
             </button>
         </div>

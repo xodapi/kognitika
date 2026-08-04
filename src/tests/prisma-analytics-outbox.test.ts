@@ -7,9 +7,14 @@ const prismaMock = vi.hoisted(() => ({
     updateMany: vi.fn(),
     findMany: vi.fn(),
   },
+  completedSessionAnalyticsJob: { findUnique: vi.fn() },
+  gameSession: { findUnique: vi.fn() },
 }));
 
 vi.mock('../lib/prisma.ts', () => ({ default: prismaMock }));
+vi.mock('../server/services/analytics-persistence.ts', () => ({
+  persistSessionAnalyticsSummary: vi.fn(),
+}));
 
 const now = new Date('2026-08-03T02:20:00.000Z');
 const baseRecord = {
@@ -68,6 +73,72 @@ describe('Prisma analytics outbox store', () => {
     for (const call of prismaMock.analyticsOutboxEntry.updateMany.mock.calls) {
       expect(call[0].where).toMatchObject({ state: 'processing', leaseOwner: 'node-worker-a', leaseExpiresAt: { gt: now } });
     }
+  });
+
+  it('completes legacy rows without a canonical job instead of retrying indefinitely', async () => {
+    prismaMock.$queryRaw.mockResolvedValue([{ ...baseRecord, state: 'processing', leaseOwner: 'node-worker-a', leaseExpiresAt: new Date(now.getTime() + 1_000) }]);
+    prismaMock.completedSessionAnalyticsJob.findUnique.mockResolvedValue(null);
+    prismaMock.analyticsOutboxEntry.updateMany.mockResolvedValue({ count: 1 });
+    const { PrismaAnalyticsOutboxStore } = await import('../server/services/analytics-outbox.ts');
+
+    await expect(new PrismaAnalyticsOutboxStore().dispatchNext({
+      workerId: 'node-worker-a', now, leaseMs: 1_000, maxAttempts: 2,
+    })).resolves.toEqual({ status: 'skipped', reason: 'canonical_job_not_found' });
+    expect(prismaMock.analyticsOutboxEntry.findFirst).not.toHaveBeenCalled();
+    expect(prismaMock.analyticsOutboxEntry.updateMany).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({ state: 'completed' }),
+    }));
+  });
+
+  it('retries a persisted canonical job that fails revalidation', async () => {
+    prismaMock.$queryRaw.mockResolvedValue([{ ...baseRecord, state: 'processing', leaseOwner: 'node-worker-a', leaseExpiresAt: new Date(now.getTime() + 1_000) }]);
+    prismaMock.completedSessionAnalyticsJob.findUnique.mockResolvedValue({ payload: { schemaVersion: 999 } });
+    prismaMock.analyticsOutboxEntry.findFirst.mockResolvedValue({
+      ...baseRecord, state: 'processing', leaseOwner: 'node-worker-a', leaseExpiresAt: new Date(now.getTime() + 1_000),
+    });
+    prismaMock.analyticsOutboxEntry.updateMany.mockResolvedValue({ count: 1 });
+    const { PrismaAnalyticsOutboxStore } = await import('../server/services/analytics-outbox.ts');
+
+    await expect(new PrismaAnalyticsOutboxStore().dispatchNext({
+      workerId: 'node-worker-a', now, leaseMs: 1_000, maxAttempts: 2,
+    })).resolves.toEqual({ status: 'failed', errorCode: 'invalid_canonical_job' });
+    expect(prismaMock.analyticsOutboxEntry.updateMany).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({ state: 'retry' }),
+    }));
+  });
+
+  it('dispatches a leased canonical job through Node and persists only its summary', async () => {
+    const canonicalJob = {
+      schemaVersion: 1,
+      jobId: 'analytics-job-synthetic-dispatch',
+      analyzerVersion: 'analyze-session-v1',
+      receivedAt: '2026-08-03T02:20:01.000Z',
+      sessionId: 'browser-session-synthetic',
+      moduleId: 'schulte',
+      moduleVersion: '1',
+      category: 'cognitive',
+      startedAt: '2026-08-03T02:20:00.000Z',
+      completedAt: '2026-08-03T02:20:01.000Z',
+      events: [
+        { schemaVersion: 1, eventId: 'browser-session-synthetic:0', sessionId: 'browser-session-synthetic', moduleId: 'schulte', moduleVersion: '1', category: 'cognitive', sequence: 0, tMs: 0, kind: 'trial_started', trialType: 'schulte:cell' },
+        { schemaVersion: 1, eventId: 'browser-session-synthetic:1', sessionId: 'browser-session-synthetic', moduleId: 'schulte', moduleVersion: '1', category: 'cognitive', sequence: 1, tMs: 500, kind: 'trial_answered', trialType: 'schulte:cell', isCorrect: true, reactionTimeMs: 500 },
+        { schemaVersion: 1, eventId: 'browser-session-synthetic:2', sessionId: 'browser-session-synthetic', moduleId: 'schulte', moduleVersion: '1', category: 'cognitive', sequence: 2, tMs: 1_000, kind: 'session_completed', completedAt: '2026-08-03T02:20:01.000Z' },
+      ],
+    };
+    prismaMock.$queryRaw.mockResolvedValue([{ ...baseRecord, state: 'processing', leaseOwner: 'node-worker-a', leaseExpiresAt: new Date(now.getTime() + 1_000) }]);
+    prismaMock.completedSessionAnalyticsJob.findUnique.mockResolvedValue({ payload: canonicalJob });
+    prismaMock.gameSession.findUnique.mockResolvedValue({ userId: 'user-synthetic' });
+    prismaMock.analyticsOutboxEntry.updateMany.mockResolvedValue({ count: 1 });
+    const { persistSessionAnalyticsSummary } = await import('../server/services/analytics-persistence.ts');
+    const { PrismaAnalyticsOutboxStore } = await import('../server/services/analytics-outbox.ts');
+
+    const result = await new PrismaAnalyticsOutboxStore().dispatchNext({
+      workerId: 'node-worker-a', now, leaseMs: 1_000, maxAttempts: 2,
+    });
+
+    expect(result).toMatchObject({ status: 'completed', summary: { jobId: canonicalJob.jobId, sourceSessionId: baseRecord.sourceSessionId } });
+    expect(persistSessionAnalyticsSummary).toHaveBeenCalledWith('user-synthetic', expect.objectContaining({ jobId: canonicalJob.jobId }));
+    expect(JSON.stringify(prismaMock.completedSessionAnalyticsJob.findUnique.mock.calls[0][0])).not.toMatch(/brainid|jwt|email|token|metadata/i);
   });
 
   it('recovers expired leases within the retry budget and emits aggregate-only metrics', async () => {

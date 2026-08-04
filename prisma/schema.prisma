@@ -117,6 +117,7 @@ model GameSession {
   xpEvent       XpEvent?
   gameAttempt           GameAttempt?
   analyticsOutboxEntries AnalyticsOutboxEntry[]
+  analyticsJob           CompletedSessionAnalyticsJob?
 
   createdAt     DateTime     @default(now())
 
@@ -238,6 +239,23 @@ model DailyPracticePlan {
 
   @@unique([userId, date])
   @@map("daily_practice_plans")
+}
+
+model CompletedSessionAnalyticsJob {
+  id              String   @id @default(cuid())
+  jobId           String   @unique
+  gameSessionId   String   @unique
+  gameSession     GameSession @relation(fields: [gameSessionId], references: [id], onDelete: Cascade)
+  moduleId        String
+  moduleVersion   String
+  category        String
+  analyzerVersion String
+  completedAt     DateTime
+  payload         Json
+  createdAt       DateTime @default(now())
+
+  @@index([moduleId, completedAt])
+  @@map("completed_session_analytics_jobs")
 }
 
 model AnalyticsOutboxEntry {

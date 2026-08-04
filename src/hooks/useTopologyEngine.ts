@@ -5,6 +5,10 @@
  */
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { emitEvent } from './useEventBus';
+import {
+  CognitiveSessionEventCollector,
+  type CompletedSessionAnalyticsJob,
+} from '../core/cognitive-events';
 
 export type NodeState = 'idle' | 'active' | 'error' | 'success' | 'warning';
 export type NodeId = string;
@@ -128,6 +132,10 @@ export function useTopologyEngine() {
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const memorizeRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const startTimeRef = useRef<number>(0);
+  const finalStatesRef = useRef<Record<NodeId, NodeState>>({});
+  const userAnswersRef = useRef<Record<NodeId, NodeState>>({});
+  const collectorRef = useRef<CognitiveSessionEventCollector | null>(null);
+  const completedAnalyticsJobRef = useRef<CompletedSessionAnalyticsJob | null>(null);
 
   // Cleanup
   useEffect(() => () => {
@@ -138,6 +146,21 @@ export function useTopologyEngine() {
   const startGame = useCallback((level: number = 1) => {
     const scenario = generateScenario(level);
     startTimeRef.current = Date.now();
+    const startedAt = new Date(startTimeRef.current).toISOString();
+    completedAnalyticsJobRef.current = null;
+    collectorRef.current = new CognitiveSessionEventCollector({
+      sessionId: `topology-${startTimeRef.current}-${level}`,
+      moduleId: 'topology',
+      moduleVersion: '1',
+      category: 'cognitive',
+      startedAt,
+    });
+    collectorRef.current.record({
+      kind: 'trial_started',
+      tMs: 0,
+      trialType: 'topology:state-recall',
+      difficulty: `level-${level}`,
+    });
 
     // Apply final states to compute correct answers upfront
     const finalNodes = scenario.nodes.map(n => ({ ...n }));
@@ -145,6 +168,8 @@ export function useTopologyEngine() {
       const node = finalNodes.find(n => n.id === ev.nodeId);
       if (node && ev.newState) node.state = ev.newState;
     });
+    finalStatesRef.current = Object.fromEntries(finalNodes.map((node) => [node.id, node.state]));
+    userAnswersRef.current = {};
 
     setState({
       phase: 'memorize',
@@ -200,9 +225,17 @@ export function useTopologyEngine() {
   }, []);
 
   const setNodeAnswer = useCallback((nodeId: NodeId, state: NodeState) => {
+    const isCorrect = finalStatesRef.current[nodeId] === state;
+    collectorRef.current?.record({
+      kind: 'trial_answered',
+      tMs: Math.max(0, Date.now() - startTimeRef.current),
+      trialType: 'topology:state-recall',
+      isCorrect,
+    });
+    userAnswersRef.current = { ...userAnswersRef.current, [nodeId]: state };
     setState(prev => ({
       ...prev,
-      userAnswers: { ...prev.userAnswers, [nodeId]: state },
+      userAnswers: userAnswersRef.current,
     }));
   }, []);
 
@@ -210,19 +243,18 @@ export function useTopologyEngine() {
     if (timerRef.current) clearInterval(timerRef.current);
 
     setState(prev => {
-      // Rebuild final state
-      const finalStates: Record<NodeId, NodeState> = {};
-      prev.nodes.forEach(n => { finalStates[n.id] = 'idle'; });
-      prev.events.forEach(ev => {
-        if (ev.newState) finalStates[ev.nodeId] = ev.newState;
-      });
-
       let correct = 0;
-      Object.entries(finalStates).forEach(([id, correctState]) => {
-        if (prev.userAnswers[id] === correctState) correct++;
+      Object.entries(finalStatesRef.current).forEach(([id, correctState]) => {
+        if (userAnswersRef.current[id] === correctState) correct++;
       });
 
-      const timeMs = Date.now() - startTimeRef.current;
+      const timeMs = Math.max(0, Date.now() - startTimeRef.current);
+      const collector = collectorRef.current;
+      if (collector && !completedAnalyticsJobRef.current) {
+        const completedAt = new Date(startTimeRef.current + timeMs).toISOString();
+        collector.complete(timeMs, completedAt);
+        completedAnalyticsJobRef.current = collector.createCompletedJob(completedAt);
+      }
       emitEvent('TRAINING_COMPLETE', {
         type: 'SCHULTE', // reuse schema type for now
         timeMs,
@@ -249,5 +281,7 @@ export function useTopologyEngine() {
     });
   }, [startGame]);
 
-  return { state, startGame, nextEvent, setNodeAnswer, submitAnswers, nextLevel };
+  const getCompletedAnalyticsJob = useCallback(() => completedAnalyticsJobRef.current, []);
+
+  return { state, startGame, nextEvent, setNodeAnswer, submitAnswers, nextLevel, getCompletedAnalyticsJob };
 }

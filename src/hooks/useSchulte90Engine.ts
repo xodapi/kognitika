@@ -1,5 +1,9 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { emitEvent } from './useEventBus';
+import {
+  CognitiveSessionEventCollector,
+  type CompletedSessionAnalyticsJob,
+} from '../core/cognitive-events';
 import type { CellValue } from './useSchulteEngine';
 import {
   computeSchulte90Score,
@@ -63,6 +67,9 @@ export function useSchulte90Engine() {
   const lastClickTimeRef = useRef(0);
   const sequenceRef = useRef<CellValue[]>([]);
   const ruleRef = useRef<GorbovRuleId | 'classic'>('classic');
+  const sessionStartedAtRef = useRef<string | null>(null);
+  const collectorRef = useRef<CognitiveSessionEventCollector | null>(null);
+  const completedAnalyticsJobRef = useRef<CompletedSessionAnalyticsJob | null>(null);
 
   useEffect(() => {
     return () => {
@@ -84,6 +91,22 @@ export function useSchulte90Engine() {
     sequenceRef.current = seq;
     ruleRef.current = rule;
     displayedTimeRef.current = 0;
+    const startedAt = new Date().toISOString();
+    sessionStartedAtRef.current = startedAt;
+    completedAnalyticsJobRef.current = null;
+    collectorRef.current = new CognitiveSessionEventCollector({
+      sessionId: `schulte-90-${Date.now()}-${rule}`,
+      moduleId: 'schulte-90',
+      moduleVersion: '1',
+      category: 'cognitive',
+      startedAt,
+    });
+    collectorRef.current.record({
+      kind: 'trial_started',
+      tMs: 0,
+      trialType: 'schulte-90:cell-selection',
+      difficulty: rule,
+    });
 
     setState({
       ...DEFAULT_STATE,
@@ -161,6 +184,13 @@ export function useSchulte90Engine() {
         x: coords?.x,
         y: coords?.y,
       });
+      collectorRef.current?.record({
+        kind: 'trial_answered',
+        tMs: Math.max(0, currentTime),
+        trialType: 'schulte-90:cell-selection',
+        isCorrect: isMatch,
+        ...(reactionTimeMs > 0 ? { reactionTimeMs } : {}),
+      });
 
       if (isMatch) {
         onSuccess?.();
@@ -174,6 +204,13 @@ export function useSchulte90Engine() {
           if (timerRef.current) cancelAnimationFrame(timerRef.current);
           const errors = errorsRef.current;
           const accuracy = (sequenceRef.current.length / (sequenceRef.current.length + errors)) * 100;
+          const collector = collectorRef.current;
+          const startedAt = sessionStartedAtRef.current;
+          if (collector && startedAt && !completedAnalyticsJobRef.current) {
+            const completedAt = new Date(Date.parse(startedAt) + currentTime).toISOString();
+            collector.complete(currentTime, completedAt);
+            completedAnalyticsJobRef.current = collector.createCompletedJob(completedAt);
+          }
 
           emitEvent('TRAINING_COMPLETE', {
             type: 'SCHULTE_90',
@@ -233,5 +270,7 @@ export function useSchulte90Engine() {
     []
   );
 
-  return { state, startGame, stopGame, resetGame, clickCell };
+  const getCompletedAnalyticsJob = useCallback(() => completedAnalyticsJobRef.current, []);
+
+  return { state, startGame, stopGame, resetGame, clickCell, getCompletedAnalyticsJob };
 }

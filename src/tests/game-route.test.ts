@@ -188,6 +188,28 @@ describe('game route XP event contract', () => {
     }));
   });
 
+  it('forwards an optional canonical job without emitting it through EventBus', async () => {
+    process.env.GAME_SAVE_LEGACY_COMPAT_ENABLED = 'true';
+    gameSaveMock.saveCompletedGame.mockResolvedValue({
+      session: { id: 'session_synthetic_analytics', score: 21 },
+      user: { experience: 121, streakDays: 1 },
+      isReplay: false,
+    });
+    const analyticsJob = { schemaVersion: 1, jobId: 'analytics-job-synthetic-schulte' };
+    const baseUrl = await createGameHarness();
+    const token = userToken({ id: 'user_synthetic_game' });
+    const response = await postJson(baseUrl, '/api/game/save', token, {
+      clientRunId: '11111111-1111-4111-8111-111111111111',
+      gameType: 'SCHULTE',
+      timeMs: 5000,
+      analyticsJob,
+    });
+
+    expect(response.status).toBe(200);
+    expect(gameSaveMock.saveCompletedGame).toHaveBeenCalledWith(expect.objectContaining({ analyticsJob }));
+    expect(eventBusMock.emit).toHaveBeenCalledWith('game:completed', expect.not.objectContaining({ analyticsJob }));
+  });
+
   it('does not emit completion again for an idempotent attempt replay', async () => {
     gameSaveMock.saveCompletedGame.mockResolvedValue({
       session: { id: 'session_synthetic_1', score: 21 },

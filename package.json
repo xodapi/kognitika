@@ -15,6 +15,8 @@
     "typecheck:tests": "tsc --project tsconfig.tests.json --noEmit",
     "benchmark:analyze-session": "tsx scripts/benchmark-analyze-session-worker.ts",
     "benchmark:analyze-session:browser": "tsx scripts/benchmark-analyze-session-browser.ts",
+    "check:rust-analytics-parity": "tsx scripts/check-rust-analytics-parity.ts",
+    "check:rust-analytics-canary": "tsx scripts/check-rust-analytics-canary-preflight.ts",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",

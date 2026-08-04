@@ -9,7 +9,7 @@ import { CompletionRecommendation } from './CompletionRecommendation';
 const logger = createSafeLogger('situational-judgment-test');
 
 export function SituationalJudgmentTest() {
-  const { state, startGame, answerQuestion } = useSituationalEngine();
+  const { state, startGame, answerQuestion, getCompletedAnalyticsJob } = useSituationalEngine();
   const { token } = useAuth();
   const { beginAttempt, saveAttempt } = useGameAttempt(token);
   const handleStart = useCallback(async () => {
@@ -27,19 +27,20 @@ export function SituationalJudgmentTest() {
         void saveAttempt({
           timeMs: state.timeMs,
           metadata: { score: state.score, maxScore: state.maxScore },
+          analyticsJob: getCompletedAnalyticsJob() ?? undefined,
         }).catch(err => logger.error('Session save failed', { error: safeError(err), gameType: 'SITUATIONAL_JUDGMENT' }));
      }
-  }, [state.isFinished, state.timeMs, token, state.score, state.maxScore, saveAttempt]);
+  }, [state.isFinished, state.timeMs, token, state.score, state.maxScore, saveAttempt, getCompletedAnalyticsJob]);
 
   if (!state.isActive && !state.isFinished) {
     return (
-      <div className="col-span-12 grid grid-cols-1 lg:grid-cols-12 gap-4 h-full min-h-0">
-        <div className="lg:col-start-4 lg:col-span-6 bg-card/20 border border-border rounded-3xl p-6 sm:p-8 flex flex-col items-center justify-center text-center">
-            <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-primary uppercase mb-4 text-balance">Ситуационные задачи</h2>
-            <p className="text-sm text-muted-foreground mb-8 text-balance">
+      <div className="col-span-12 grid grid-cols-1 gap-4 py-2 lg:grid-cols-12 lg:py-0 h-full min-h-0">
+        <div className="lg:col-start-4 lg:col-span-6 bg-card/20 border border-border rounded-3xl p-5 sm:p-8 flex flex-col items-center justify-center text-center">
+            <h2 className="text-xl sm:text-2xl font-black tracking-tight text-primary uppercase mb-3 sm:mb-4 text-balance">Ситуационные задачи</h2>
+            <p className="text-sm leading-relaxed text-muted-foreground mb-6 sm:mb-8 text-balance">
               Оценка управленческого и эмоционального интеллекта. Вам будут предложены гипотетические рабочие ситуации. Выберите наиболее подходящий вариант действий.
             </p>
-            <button onClick={handleStart} className="w-full max-w-[250px] min-h-11 px-4 py-3 bg-primary text-primary-foreground text-xs uppercase tracking-wider rounded-lg font-bold hover:bg-primary/90 transition-colors">
+            <button onClick={handleStart} className="w-full max-w-sm min-h-12 px-4 py-3 bg-primary text-primary-foreground text-xs uppercase tracking-wider rounded-xl font-bold hover:bg-primary/90 transition-colors sm:max-w-[250px]">
               Начать анализ
             </button>
         </div>

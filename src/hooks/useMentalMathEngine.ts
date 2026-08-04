@@ -8,6 +8,10 @@ import {
   type GeneratedMathSet,
 } from '../lib/mentmath-generator';
 import { emitEvent } from './useEventBus';
+import {
+  CognitiveSessionEventCollector,
+  type CompletedSessionAnalyticsJob,
+} from '../core/cognitive-events';
 
 export interface MentalMathState {
   questions: MathQuestion[];
@@ -45,6 +49,9 @@ export function useMentalMathEngine() {
   const startTimeRef = useRef<number>(0);
   const displayedTimeRef = useRef(0);
   const activeRef = useRef(false);
+  const sessionStartedAtRef = useRef<string | null>(null);
+  const collectorRef = useRef<CognitiveSessionEventCollector | null>(null);
+  const completedAnalyticsJobRef = useRef<CompletedSessionAnalyticsJob | null>(null);
 
   useEffect(() => {
     return () => {
@@ -62,6 +69,22 @@ export function useMentalMathEngine() {
     const set = generatedSet ?? generateMathSet(count, level, seed);
     activeRef.current = true;
     displayedTimeRef.current = 0;
+    const startedAt = new Date().toISOString();
+    sessionStartedAtRef.current = startedAt;
+    completedAnalyticsJobRef.current = null;
+    collectorRef.current = new CognitiveSessionEventCollector({
+      sessionId: `mental-math-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
+      moduleId: 'mental-math',
+      moduleVersion: '1',
+      category: 'cognitive',
+      startedAt,
+    });
+    collectorRef.current.record({
+      kind: 'trial_started',
+      tMs: 0,
+      trialType: 'mental-math:question',
+      difficulty: `level-${level}`,
+    });
     setState({
       questions: set.questions,
       legend: set.legend,
@@ -126,10 +149,24 @@ export function useMentalMathEngine() {
 
       const accuracy = (newCorrect / s.questions.length) * 100;
       const newScore = computeMentalMathScore(currentTime, accuracy, newErrors);
+      collectorRef.current?.record({
+        kind: 'trial_answered',
+        tMs: currentTime,
+        trialType: 'mental-math:question',
+        isCorrect,
+        difficulty: `level-${s.level}`,
+      });
 
       if (isDone) {
         activeRef.current = false;
         if (timerRef.current) cancelAnimationFrame(timerRef.current);
+        const startedAt = sessionStartedAtRef.current;
+        const collector = collectorRef.current;
+        if (startedAt && collector && !completedAnalyticsJobRef.current) {
+          const completedAt = new Date(Date.parse(startedAt) + currentTime).toISOString();
+          collector.complete(currentTime, completedAt);
+          completedAnalyticsJobRef.current = collector.createCompletedJob(completedAt);
+        }
         emitEvent('TRAINING_COMPLETE', {
           type: 'MENTAL_MATH',
           level: s.level,
@@ -162,5 +199,7 @@ export function useMentalMathEngine() {
     });
   }, []);
 
-  return { state, startGame, stopGame, resetGame, submitAnswer };
+  const getCompletedAnalyticsJob = useCallback(() => completedAnalyticsJobRef.current, []);
+
+  return { state, startGame, stopGame, resetGame, submitAnswer, getCompletedAnalyticsJob };
 }

@@ -19,7 +19,7 @@ import { useGameAttempt } from '../lib/game-attempt-client';
 const logger = createSafeLogger('mental-math');
 
 export function MentalMathTrainer() {
-  const { state, startGame, stopGame, resetGame, submitAnswer } = useMentalMathEngine();
+  const { state, startGame, stopGame, resetGame, submitAnswer, getCompletedAnalyticsJob } = useMentalMathEngine();
   const { token, refreshUser } = useAuth();
   const navigate = useNavigate();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -115,6 +115,7 @@ export function MentalMathTrainer() {
           accuracy: (state.correctAnswers / Math.max(1, state.questions.length)) * 100,
           errors: state.errors,
         },
+        analyticsJob: getCompletedAnalyticsJob() ?? undefined,
       })
         .then((resData) => {
           if (resData.session?.score) {
@@ -125,7 +126,7 @@ export function MentalMathTrainer() {
           logger.error('Session save failed', { error: safeError(err), gameType: 'MENTAL_MATH' });
         });
     }
-  }, [state.outcome, state.timeMs, token, refreshUser, state.correctAnswers, state.errors, state.questions.length, state.level, saveAttempt]);
+  }, [state.outcome, state.timeMs, token, refreshUser, state.correctAnswers, state.errors, state.questions.length, state.level, saveAttempt, getCompletedAnalyticsJob]);
 
   const handleReset = useCallback(() => {
     setGenerationSource(null);

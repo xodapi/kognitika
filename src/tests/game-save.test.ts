@@ -8,6 +8,7 @@ const transactionClient = vi.hoisted(() => ({
   gameSession: { findUnique: vi.fn(), create: vi.fn() },
   user: { findUniqueOrThrow: vi.fn(), update: vi.fn() },
   xpEvent: { create: vi.fn() },
+  completedSessionAnalyticsJob: { create: vi.fn() },
   analyticsOutboxEntry: { create: vi.fn() },
 }));
 
@@ -18,6 +19,27 @@ const prismaMock = vi.hoisted(() => ({
 }));
 
 vi.mock('../lib/prisma.ts', () => ({ default: prismaMock }));
+
+function completedAnalyticsJob(moduleId: string, suffix: string, trialType: string) {
+  const sessionId = `browser-${suffix}`;
+  const completedAt = '2026-08-04T00:00:01.000Z';
+  return {
+    schemaVersion: 1,
+    jobId: `analytics-job-${suffix}`,
+    analyzerVersion: 'analyze-session-v1',
+    receivedAt: '2026-08-04T00:00:02.000Z',
+    sessionId,
+    moduleId,
+    moduleVersion: '1',
+    category: 'cognitive',
+    startedAt: '2026-08-04T00:00:00.000Z',
+    completedAt,
+    events: [
+      { schemaVersion: 1, eventId: `${sessionId}:0`, sessionId, moduleId, moduleVersion: '1', category: 'cognitive', sequence: 0, tMs: 0, kind: 'trial_started', trialType },
+      { schemaVersion: 1, eventId: `${sessionId}:1`, sessionId, moduleId, moduleVersion: '1', category: 'cognitive', sequence: 1, tMs: 1_000, kind: 'session_completed', completedAt },
+    ],
+  };
+}
 
 describe('game save idempotency service', () => {
   beforeEach(() => {
@@ -39,6 +61,7 @@ describe('game save idempotency service', () => {
       id: 'user-a', experience: 121, level: 1, streakDays: 1, lastPlayedAt: new Date(),
     });
     transactionClient.xpEvent.create.mockResolvedValue({ id: 'xp-a' });
+    transactionClient.completedSessionAnalyticsJob.create.mockResolvedValue({ id: 'analytics-job-row-a' });
     transactionClient.analyticsOutboxEntry.create.mockResolvedValue({ id: 'outbox-a' });
   });
 
@@ -86,6 +109,207 @@ describe('game save idempotency service', () => {
       }),
     });
     expect(JSON.stringify(transactionClient.analyticsOutboxEntry.create.mock.calls[0][0])).not.toMatch(/brainid|metadata|jwt|email|token/i);
+  });
+
+  it('binds a validated Schulte canonical job outside GameSession metadata', async () => {
+    process.env.ANALYTICS_OUTBOX_SHADOW_ENABLED = 'true';
+    const { saveCompletedGame } = await import('../server/services/game-save.ts');
+    const analyticsJob = {
+      schemaVersion: 1,
+      jobId: 'analytics-job-synthetic-schulte',
+      analyzerVersion: 'analyze-session-v1',
+      receivedAt: '2026-08-04T00:00:02.000Z',
+      sessionId: 'browser-session-synthetic',
+      moduleId: 'schulte',
+      moduleVersion: '1',
+      category: 'cognitive',
+      startedAt: '2026-08-04T00:00:00.000Z',
+      completedAt: '2026-08-04T00:00:01.000Z',
+      events: [
+        { schemaVersion: 1, eventId: 'browser-session-synthetic:0', sessionId: 'browser-session-synthetic', moduleId: 'schulte', moduleVersion: '1', category: 'cognitive', sequence: 0, tMs: 0, kind: 'trial_started', trialType: 'schulte:cell' },
+        { schemaVersion: 1, eventId: 'browser-session-synthetic:1', sessionId: 'browser-session-synthetic', moduleId: 'schulte', moduleVersion: '1', category: 'cognitive', sequence: 1, tMs: 1_000, kind: 'session_completed', completedAt: '2026-08-04T00:00:01.000Z' },
+      ],
+    };
+
+    await saveCompletedGame({
+      userId: 'user-a',
+      clientRunId: '11111111-1111-4111-8111-111111111111',
+      gameType: 'SCHULTE',
+      timeMs: 5000,
+      metadata: { size: 3 },
+      analyticsJob,
+    });
+
+    expect(transactionClient.gameSession.create.mock.calls[0][0]).not.toHaveProperty('analyticsJob');
+    expect(JSON.stringify(transactionClient.gameSession.create.mock.calls[0][0])).not.toContain('browser-session-synthetic');
+    expect(transactionClient.completedSessionAnalyticsJob.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        jobId: analyticsJob.jobId,
+        gameSessionId: 'session-a',
+        moduleId: 'schulte',
+        payload: analyticsJob,
+      }),
+    });
+    expect(transactionClient.analyticsOutboxEntry.create).toHaveBeenCalledOnce();
+  });
+
+  it('binds a validated Stroop canonical job to a Stroop game session', async () => {
+    const { saveCompletedGame } = await import('../server/services/game-save.ts');
+    const analyticsJob = {
+      schemaVersion: 1,
+      jobId: 'analytics-job-synthetic-stroop',
+      analyzerVersion: 'analyze-session-v1',
+      receivedAt: '2026-08-04T00:00:02.000Z',
+      sessionId: 'browser-stroop-synthetic',
+      moduleId: 'stroop',
+      moduleVersion: '1',
+      category: 'cognitive',
+      startedAt: '2026-08-04T00:00:00.000Z',
+      completedAt: '2026-08-04T00:00:01.000Z',
+      events: [
+        { schemaVersion: 1, eventId: 'browser-stroop-synthetic:0', sessionId: 'browser-stroop-synthetic', moduleId: 'stroop', moduleVersion: '1', category: 'cognitive', sequence: 0, tMs: 0, kind: 'trial_started', trialType: 'stroop:congruent' },
+        { schemaVersion: 1, eventId: 'browser-stroop-synthetic:1', sessionId: 'browser-stroop-synthetic', moduleId: 'stroop', moduleVersion: '1', category: 'cognitive', sequence: 1, tMs: 1_000, kind: 'session_completed', completedAt: '2026-08-04T00:00:01.000Z' },
+      ],
+    };
+
+    await saveCompletedGame({
+      userId: 'user-a',
+      clientRunId: '11111111-1111-4111-8111-111111111111',
+      gameType: 'STROOP',
+      timeMs: 5_000,
+      analyticsJob,
+    });
+
+    expect(transactionClient.completedSessionAnalyticsJob.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ moduleId: 'stroop', jobId: analyticsJob.jobId }),
+    });
+  });
+
+  it('binds a validated N-Back canonical job to an N_BACK game session', async () => {
+    const { saveCompletedGame } = await import('../server/services/game-save.ts');
+    const analyticsJob = {
+      schemaVersion: 1,
+      jobId: 'analytics-job-synthetic-nback',
+      analyzerVersion: 'analyze-session-v1',
+      receivedAt: '2026-08-04T00:00:02.000Z',
+      sessionId: 'browser-nback-synthetic',
+      moduleId: 'nback',
+      moduleVersion: '1',
+      category: 'cognitive',
+      startedAt: '2026-08-04T00:00:00.000Z',
+      completedAt: '2026-08-04T00:00:01.000Z',
+      events: [
+        { schemaVersion: 1, eventId: 'browser-nback-synthetic:0', sessionId: 'browser-nback-synthetic', moduleId: 'nback', moduleVersion: '1', category: 'cognitive', sequence: 0, tMs: 0, kind: 'checkpoint', checkpoint: 'session_started' },
+        { schemaVersion: 1, eventId: 'browser-nback-synthetic:1', sessionId: 'browser-nback-synthetic', moduleId: 'nback', moduleVersion: '1', category: 'cognitive', sequence: 1, tMs: 1_000, kind: 'session_completed', completedAt: '2026-08-04T00:00:01.000Z' },
+      ],
+    };
+
+    await saveCompletedGame({
+      userId: 'user-a',
+      clientRunId: '11111111-1111-4111-8111-111111111111',
+      gameType: 'N_BACK',
+      timeMs: 5_000,
+      analyticsJob,
+    });
+
+    expect(transactionClient.completedSessionAnalyticsJob.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ moduleId: 'nback', jobId: analyticsJob.jobId }),
+    });
+  });
+
+  it.each([
+    ['numerical', 'NUMERICAL_ANALYSIS', 'numerical:question'],
+    ['logical-sequence', 'LOGICAL_SEQUENCE', 'logical:matrix'],
+    ['mental-math', 'MENTAL_MATH', 'mental-math:question'],
+    ['situational', 'SITUATIONAL_JUDGMENT', 'situational:judgment'],
+    ['spatial', 'SPATIAL_CONCEALMENT', 'spatial:recall'],
+    ['stroop-alphabet', 'STROOP_ALPHABET', 'stroop-alphabet:color-action'],
+    ['schulte-90', 'SCHULTE_90', 'schulte-90:cell-selection'],
+    ['alphabet-table', 'ALPHABET_TABLE', 'alphabet-table:action-selection'],
+    ['collision', 'COLLISION_DETECTOR', 'collision:filter'],
+    ['dispatcher', 'ASYNC_DISPATCHER', 'dispatcher:stream-session'],
+    ['topology', 'TOPOLOGY_MEMORY', 'topology:state-recall'],
+    ['typing', 'SPEED_TYPING', 'typing:text'],
+  ])('binds a validated %s canonical job to %s', async (moduleId, gameType, trialType) => {
+    const { saveCompletedGame } = await import('../server/services/game-save.ts');
+    const analyticsJob = completedAnalyticsJob(moduleId, moduleId, trialType);
+
+    await saveCompletedGame({
+      userId: 'user-a',
+      clientRunId: '11111111-1111-4111-8111-111111111111',
+      gameType,
+      timeMs: 5_000,
+      analyticsJob,
+    });
+
+    expect(transactionClient.completedSessionAnalyticsJob.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ moduleId, jobId: analyticsJob.jobId }),
+    });
+  });
+
+  it.each([
+    ['numerical', 'NUMERICAL_ANALYSIS', 'numerical:question'],
+    ['logical-sequence', 'LOGICAL_SEQUENCE', 'logical:matrix'],
+    ['mental-math', 'MENTAL_MATH', 'mental-math:question'],
+    ['situational', 'SITUATIONAL_JUDGMENT', 'situational:judgment'],
+    ['spatial', 'SPATIAL_CONCEALMENT', 'spatial:recall'],
+    ['stroop-alphabet', 'STROOP_ALPHABET', 'stroop-alphabet:color-action'],
+    ['schulte-90', 'SCHULTE_90', 'schulte-90:cell-selection'],
+    ['alphabet-table', 'ALPHABET_TABLE', 'alphabet-table:action-selection'],
+    ['collision', 'COLLISION_DETECTOR', 'collision:filter'],
+    ['dispatcher', 'ASYNC_DISPATCHER', 'dispatcher:stream-session'],
+    ['topology', 'TOPOLOGY_MEMORY', 'topology:state-recall'],
+    ['typing', 'SPEED_TYPING', 'typing:text'],
+  ])('rejects %s canonical jobs for a different game type before starting a transaction', async (moduleId, gameType, trialType) => {
+    const { saveCompletedGame } = await import('../server/services/game-save.ts');
+
+    await expect(saveCompletedGame({
+      userId: 'user-a',
+      clientRunId: '11111111-1111-4111-8111-111111111111',
+      gameType: gameType === 'SCHULTE' ? 'STROOP' : 'SCHULTE',
+      timeMs: 5_000,
+      analyticsJob: completedAnalyticsJob(moduleId, `${moduleId}-mismatch`, trialType),
+    })).rejects.toMatchObject({ code: 'ANALYTICS_GAME_TYPE_MISMATCH' });
+    expect(prismaMock.$transaction).not.toHaveBeenCalled();
+  });
+
+  it('rejects a canonical job for a different game type before starting a transaction', async () => {
+    const { saveCompletedGame } = await import('../server/services/game-save.ts');
+    await expect(saveCompletedGame({
+      userId: 'user-a',
+      clientRunId: '11111111-1111-4111-8111-111111111111',
+      gameType: 'SCHULTE',
+      timeMs: 5000,
+      analyticsJob: {
+        schemaVersion: 1,
+        jobId: 'analytics-job-synthetic-mismatch',
+        analyzerVersion: 'analyze-session-v1',
+        receivedAt: '2026-08-04T00:00:02.000Z',
+        sessionId: 'browser-stroop-mismatch',
+        moduleId: 'stroop',
+        moduleVersion: '1',
+        category: 'cognitive',
+        startedAt: '2026-08-04T00:00:00.000Z',
+        completedAt: '2026-08-04T00:00:01.000Z',
+        events: [
+          { schemaVersion: 1, eventId: 'browser-stroop-mismatch:0', sessionId: 'browser-stroop-mismatch', moduleId: 'stroop', moduleVersion: '1', category: 'cognitive', sequence: 0, tMs: 0, kind: 'trial_started', trialType: 'stroop:congruent' },
+          { schemaVersion: 1, eventId: 'browser-stroop-mismatch:1', sessionId: 'browser-stroop-mismatch', moduleId: 'stroop', moduleVersion: '1', category: 'cognitive', sequence: 1, tMs: 1_000, kind: 'session_completed', completedAt: '2026-08-04T00:00:01.000Z' },
+        ],
+      },
+    })).rejects.toMatchObject({ code: 'ANALYTICS_GAME_TYPE_MISMATCH' });
+    expect(prismaMock.$transaction).not.toHaveBeenCalled();
+  });
+
+  it('rejects a sensitive canonical job before starting a transaction', async () => {
+    const { saveCompletedGame } = await import('../server/services/game-save.ts');
+    await expect(saveCompletedGame({
+      userId: 'user-a',
+      clientRunId: '11111111-1111-4111-8111-111111111111',
+      gameType: 'SCHULTE',
+      timeMs: 5000,
+      analyticsJob: { brainId: 'synthetic-brain-id' },
+    })).rejects.toMatchObject({ code: 'INVALID_ANALYTICS_JOB' });
+    expect(prismaMock.$transaction).not.toHaveBeenCalled();
   });
 
   it('returns the existing session without another XP award', async () => {

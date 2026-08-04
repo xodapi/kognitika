@@ -20,6 +20,10 @@ interface ActivePractice {
 const ANONYMOUS_SESSION_KEY = 'kognitika:session:practiceFlow';
 let activePractice: ActivePractice | null = null;
 
+function isPracticeFlowTelemetryEnabled() {
+  return import.meta.env.VITE_PRACTICE_FLOW_TELEMETRY_ENABLED === 'true';
+}
+
 function getBuildId() {
   return String(import.meta.env.VITE_BUILD_ID || import.meta.env.VITE_GIT_COMMIT || 'dev');
 }
@@ -55,6 +59,8 @@ function baseEvent(practice: Pick<ActivePractice, 'category' | 'moduleId' | 'rou
 }
 
 function sendPracticeFlowEvent(event: PracticeFlowEvent) {
+  if (!isPracticeFlowTelemetryEnabled()) return;
+
   const parsed = parsePracticeFlowEvent(event);
   if (!parsed.success || typeof window === 'undefined') return;
 
@@ -71,6 +77,11 @@ function sendPracticeFlowEvent(event: PracticeFlowEvent) {
 }
 
 export function startPracticeFlow(pathname: string) {
+  if (!isPracticeFlowTelemetryEnabled()) {
+    activePractice = null;
+    return null;
+  }
+
   const route = normalizePracticeRoute(pathname);
   const meta = routeToPracticeMeta(route);
   if (!meta) {

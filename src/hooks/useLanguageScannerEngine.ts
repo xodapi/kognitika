@@ -5,6 +5,10 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { emitEvent } from './useEventBus';
 import { getUniqueSession, getScannerSessionForLevel, ContentCard as DBCard } from '../lib/content-db';
+import {
+  CognitiveSessionEventCollector,
+  type CompletedSessionAnalyticsJob,
+} from '../core/cognitive-events';
 
 export interface Rule {
   id: number;
@@ -78,6 +82,8 @@ export function useLanguageScannerEngine() {
   const hitsRef = useRef(0);
   const missesRef = useRef(0);
   const fpRef = useRef(0);
+  const collectorRef = useRef<CognitiveSessionEventCollector | null>(null);
+  const completedAnalyticsJobRef = useRef<CompletedSessionAnalyticsJob | null>(null);
 
   useEffect(() => () => {
     [timerRef, memorizeRef, cardTimerRef].forEach(r => {
@@ -91,10 +97,16 @@ export function useLanguageScannerEngine() {
   const showNextCard = useCallback((durationMs: number) => {
     if (queueRef.current.length === 0) {
       if (timerRef.current) clearInterval(timerRef.current);
-      const timeMs = Date.now() - startTimeRef.current;
+      const timeMs = Math.max(0, Date.now() - startTimeRef.current);
+      const finalScore = Math.max(0, hitsRef.current - fpRef.current);
+      const collector = collectorRef.current;
+      if (collector && !completedAnalyticsJobRef.current) {
+        const completedAt = new Date(startTimeRef.current + timeMs).toISOString();
+        collector.complete(timeMs, completedAt);
+        completedAnalyticsJobRef.current = collector.createCompletedJob(completedAt);
+      }
       
       setState(prev => {
-        const finalScore = Math.max(0, hitsRef.current - fpRef.current);
         const totalPossible = prev.maxScore;
         const avgTimePerCard = timeMs / prev.cards.length;
 
@@ -171,6 +183,21 @@ export function useLanguageScannerEngine() {
     hitsRef.current = 0;
     missesRef.current = 0;
     fpRef.current = 0;
+    const startedAtMs = Date.now();
+    completedAnalyticsJobRef.current = null;
+    collectorRef.current = new CognitiveSessionEventCollector({
+      sessionId: `language-scanner-${startedAtMs}-${level}`,
+      moduleId: 'language-scanner',
+      moduleVersion: '1',
+      category: 'cognitive',
+      startedAt: new Date(startedAtMs).toISOString(),
+    });
+    collectorRef.current.record({
+      kind: 'trial_started',
+      tMs: 0,
+      trialType: 'language-scanner:rule-selection',
+      difficulty: `level-${level}`,
+    });
 
     const seed = userId * 1337 + level * 42;
     const session = getScannerSessionForLevel(level, userId);
@@ -219,6 +246,12 @@ export function useLanguageScannerEngine() {
 
       const isCorrect = prev.activeCard.isViolation && prev.activeCard.ruleRef === ruleId;
       const correctRule = prev.rules.find(r => r.id === prev.activeCard?.ruleRef);
+      collectorRef.current?.record({
+        kind: 'trial_answered',
+        tMs: Math.max(0, Date.now() - startTimeRef.current),
+        trialType: 'language-scanner:rule-selection',
+        isCorrect,
+      });
       
       if (isCorrect) {
         hitsRef.current += 1;
@@ -267,5 +300,7 @@ export function useLanguageScannerEngine() {
     });
   }, [showNextCard]);
 
-  return { state, startGame, flagCard, startScan, skipCard };
+  const getCompletedAnalyticsJob = useCallback(() => completedAnalyticsJobRef.current, []);
+
+  return { state, startGame, flagCard, startScan, skipCard, getCompletedAnalyticsJob };
 }

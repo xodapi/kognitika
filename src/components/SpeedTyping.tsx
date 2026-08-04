@@ -4,6 +4,7 @@ import { Keyboard, Zap, Target, RefreshCw, Trophy, AlertCircle } from 'lucide-re
 import { useAuth } from '../hooks/useAuth';
 import { emitEvent } from '../hooks/useEventBus';
 import { useSessionRecording } from '../hooks/useSessionRecording';
+import { useGameAttempt } from '../lib/game-attempt-client';
 
 import { useTypingEngine } from '../hooks/useTypingEngine';
 import { CompletionRecommendation } from './CompletionRecommendation';
@@ -33,9 +34,10 @@ export function formatTypingAccuracy(value: number) {
 }
 
 export function SpeedTyping() {
-  const { state, startTest, handleInput } = useTypingEngine(TEXTS);
+  const { state, startTest, handleInput, getCompletedAnalyticsJob } = useTypingEngine(TEXTS);
   const { text, userInput, isFinished, cpm, accuracy, errors, isActive } = state;
   const { token } = useAuth();
+  const { beginAttempt, saveAttempt } = useGameAttempt(token);
   const displayCpm = formatTypingCpm(cpm);
   const displayAccuracy = formatTypingAccuracy(accuracy);
   
@@ -43,9 +45,28 @@ export function SpeedTyping() {
   
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
+  const handleStart = useCallback(async () => {
+    try {
+      await beginAttempt('SPEED_TYPING');
+      startTest();
+    } catch {
+      // Do not start a client session when a protected attempt cannot be issued.
+    }
+  }, [beginAttempt, startTest]);
+
   const onInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    handleInput(e.target.value);
+    void handleInput(e.target.value);
   };
+
+  useEffect(() => {
+    if (!isFinished || !token || state.timeMs <= 0) return;
+
+    void saveAttempt({
+      timeMs: state.timeMs,
+      metadata: { cpm, accuracy, errors },
+      analyticsJob: getCompletedAnalyticsJob() ?? undefined,
+    }).catch(() => {});
+  }, [accuracy, cpm, errors, getCompletedAnalyticsJob, isFinished, saveAttempt, state.timeMs, token]);
 
   useEffect(() => {
     if (isActive) {
@@ -87,7 +108,7 @@ export function SpeedTyping() {
           </div>
 
           <button 
-            onClick={startTest} 
+            onClick={handleStart}
             className="mt-auto w-full min-h-11 px-4 py-3 bg-primary text-primary-foreground text-xs uppercase tracking-wider rounded-lg font-bold hover:bg-primary/90 transition-colors flex items-center justify-center gap-2"
           >
             <RefreshCw className="w-4 h-4" /> Начать заново
@@ -117,7 +138,7 @@ export function SpeedTyping() {
                   </p>
                 </div>
                 <button 
-                  onClick={startTest}
+                  onClick={handleStart}
                   className="min-h-11 px-8 py-4 bg-primary text-primary-foreground rounded-2xl font-black uppercase tracking-widest text-xs shadow-lg shadow-primary/20 hover:scale-105 transition-transform"
                 >
                   Запустить тест
@@ -156,7 +177,7 @@ export function SpeedTyping() {
                   score={cpm}
                   accuracy={accuracy}
                   errors={errors}
-                  onRepeat={startTest}
+                  onRepeat={handleStart}
                   className="max-w-3xl"
                 />
               </motion.div>

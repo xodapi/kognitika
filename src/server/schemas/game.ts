@@ -39,7 +39,8 @@ export const saveGameSchema = z.object({
   gameType: gameTypeSchema,
   timeMs: z.number().int().min(100).optional(),
   isCompleted: z.boolean().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional()
+  metadata: z.record(z.string(), z.unknown()).optional(),
+  analyticsJob: z.unknown().optional()
 }).strict();
 
 export const updateMetadataSchema = z.object({
