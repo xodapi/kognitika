@@ -130,6 +130,8 @@ describe('production database governance contracts', () => {
     expect(workflow).toContain("column_name = 'pseudonym'");
     expect(workflow).toContain("column_name = 'role'");
     expect(workflow).toContain('recovery-admin-created');
+    expect(workflow).toContain('Kognitika schema guard mismatch.');
+    expect(workflow).toContain('Kognitika schema guard query failed.');
     expect(workflow).toContain('test ! -e "$recovery_file"');
     expect(workflow).not.toContain('DROP SCHEMA');
     expect(workflow).not.toContain('actions/upload-artifact');
