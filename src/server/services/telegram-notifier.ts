@@ -25,14 +25,6 @@ export type IdeaTelegramMessage = {
   description: string;
 };
 
-export type InvestorLeadTelegramMessage = {
-  name: string;
-  organization?: string;
-  contact: string;
-  interest: 'meeting' | 'materials' | 'pilot';
-  message?: string;
-};
-
 function envValue(name: string) {
   const value = process.env[name]?.trim() ?? '';
   return DISABLED_VALUES.has(value.toLowerCase()) ? '' : value;
@@ -52,10 +44,6 @@ function safeField(value: unknown, maxLength = 120) {
 
 function safePreview(value: unknown) {
   return redactText(value, CONTENT_PREVIEW_LIMIT).trim() || 'n/a';
-}
-
-function safeLeadContact(value: unknown) {
-  return String(value ?? '').replace(/[\r\n\t]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 200) || 'n/a';
 }
 
 function clampTelegramMessage(message: string) {
@@ -84,25 +72,6 @@ export function buildIdeaTelegramMessage(input: IdeaTelegramMessage) {
     '',
     'Описание:',
     safePreview(input.description),
-  ].join('\n'));
-}
-
-const investorInterestLabels: Record<InvestorLeadTelegramMessage['interest'], string> = {
-  meeting: 'Назначить разговор',
-  materials: 'Запросить материалы',
-  pilot: 'Обсудить пилот',
-};
-
-export function buildInvestorLeadTelegramMessage(input: InvestorLeadTelegramMessage) {
-  return clampTelegramMessage([
-    'Kognitika: новый запрос инвестора',
-    `Имя: ${safeField(input.name)}`,
-    `Организация / фонд: ${safeField(input.organization)}`,
-    `Контакт: ${safeLeadContact(input.contact)}`,
-    `Интерес: ${investorInterestLabels[input.interest]}`,
-    '',
-    'Сообщение:',
-    safePreview(input.message),
   ].join('\n'));
 }
 

@@ -31,14 +31,6 @@ const authLimiter = rateLimit({
   message: { error: 'Too many authentication attempts, please try again after an hour.' }
 });
 
-const investorLeadLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000,
-  max: 5,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { error: 'Слишком много заявок. Попробуйте позже или напишите нам в Telegram.' },
-});
-
 // Register subscribers
 import './src/lib/subscribers.ts';
 import './src/lib/observability-subscriber.ts';
@@ -56,7 +48,6 @@ import feedbackRoutes from './src/server/routes/feedback.ts';
 import practiceFlowRoutes from './src/server/routes/practice-flow.ts';
 import dailyTrajectoryRoutes from './src/server/routes/daily-trajectory.ts';
 import neurotrainerRoutes from './src/server/routes/neurotrainer.ts';
-import investorLeadRoutes from './src/server/routes/investor-leads.ts';
 import { authenticate } from './src/server/middleware/auth.ts';
 import { apiErrorHandler, apiNotFound } from './src/server/middleware/api-errors.ts';
 import { privacyGuard } from './src/server/middleware/privacy.ts';
@@ -142,7 +133,6 @@ async function startServer() {
   app.use('/api/feedback', apiLimiter, feedbackRoutes);
   app.use('/api/daily-trajectory', apiLimiter, dailyTrajectoryRoutes);
   app.use('/api/neurotrainer', apiLimiter, neurotrainerRoutes);
-  app.use('/api/investor-leads', investorLeadLimiter, investorLeadRoutes);
 
   app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString(), buildId: BUILD_ID });
