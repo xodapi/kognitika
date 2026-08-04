@@ -4,6 +4,10 @@
  */
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { emitEvent } from './useEventBus';
+import {
+  CognitiveSessionEventCollector,
+  type CompletedSessionAnalyticsJob,
+} from '../core/cognitive-events';
 
 export interface Stream {
   id: number;
@@ -78,6 +82,8 @@ export function useDispatcherEngine() {
   const overflowsRef = useRef(0);
   const missesRef = useRef(0);
   const levelRef = useRef(1);
+  const collectorRef = useRef<CognitiveSessionEventCollector | null>(null);
+  const completedAnalyticsJobRef = useRef<CompletedSessionAnalyticsJob | null>(null);
 
   useEffect(() => () => {
     if (tickRef.current) clearInterval(tickRef.current);
@@ -85,32 +91,37 @@ export function useDispatcherEngine() {
 
   const endGame = useCallback(() => {
     if (tickRef.current) clearInterval(tickRef.current);
-    const timeMs = Date.now() - startTimeRef.current;
+    const timeMs = Math.max(0, Date.now() - startTimeRef.current);
+    const collector = collectorRef.current;
+    if (collector && !completedAnalyticsJobRef.current) {
+      const completedAt = new Date(startTimeRef.current + timeMs).toISOString();
+      collector.complete(timeMs, completedAt);
+      completedAnalyticsJobRef.current = collector.createCompletedJob(completedAt);
+    }
 
-    setState(prev => {
-      emitEvent('TRAINING_COMPLETE', {
-        type: 'SCHULTE',
-        timeMs,
-        score: scoreRef.current,
-        level: levelRef.current,
-        metadata: {
-          module: 'dispatcher',
-          triggers: triggersRef.current,
-          overflows: overflowsRef.current,
-          misses: missesRef.current,
-        },
-      });
-      return {
-        ...prev,
-        isActive: false,
-        isFinished: true,
-        timeMs,
-        score: scoreRef.current,
-        totalTriggers: triggersRef.current,
-        totalOverflows: overflowsRef.current,
-        totalMisses: missesRef.current,
-      };
+    emitEvent('TRAINING_COMPLETE', {
+      type: 'SCHULTE',
+      timeMs,
+      score: scoreRef.current,
+      level: levelRef.current,
+      metadata: {
+        module: 'dispatcher',
+        triggers: triggersRef.current,
+        overflows: overflowsRef.current,
+        misses: missesRef.current,
+      },
     });
+
+    setState(prev => ({
+      ...prev,
+      isActive: false,
+      isFinished: true,
+      timeMs,
+      score: scoreRef.current,
+      totalTriggers: triggersRef.current,
+      totalOverflows: overflowsRef.current,
+      totalMisses: missesRef.current,
+    }));
   }, []);
 
   const startGame = useCallback((level: number = 1) => {
@@ -125,6 +136,21 @@ export function useDispatcherEngine() {
     const streams = createStreams(streamCount, level);
     const sessionDurationMs = 45000;
     startTimeRef.current = Date.now();
+    completedAnalyticsJobRef.current = null;
+    const startedAt = new Date(startTimeRef.current).toISOString();
+    collectorRef.current = new CognitiveSessionEventCollector({
+      moduleId: 'dispatcher',
+      moduleVersion: '1',
+      category: 'cognitive',
+      sessionId: `dispatcher-${startTimeRef.current}-${level}`,
+      startedAt,
+    });
+    collectorRef.current.record({
+      kind: 'trial_started',
+      tMs: 0,
+      trialType: 'dispatcher:stream-session',
+      difficulty: `level-${level}`,
+    });
 
     setState({
       streams,
@@ -190,6 +216,12 @@ export function useDispatcherEngine() {
       if (!stream || !prev.isActive) return prev;
 
       const inZone = stream.progress >= stream.targetZoneMin && stream.progress <= stream.targetZoneMax;
+      collectorRef.current?.record({
+        kind: 'trial_answered',
+        tMs: Math.max(0, Date.now() - startTimeRef.current),
+        trialType: 'dispatcher:stream',
+        isCorrect: inZone,
+      });
 
       if (inZone) {
         scoreRef.current += 10;
@@ -214,5 +246,7 @@ export function useDispatcherEngine() {
     });
   }, []);
 
-  return { state, startGame, triggerStream };
+  const getCompletedAnalyticsJob = useCallback(() => completedAnalyticsJobRef.current, []);
+
+  return { state, startGame, triggerStream, getCompletedAnalyticsJob };
 }
