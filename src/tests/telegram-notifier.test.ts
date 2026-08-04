@@ -46,6 +46,7 @@ describe('telegram admin notifier', () => {
       organization: 'Synthetic Fund',
       contact: '@synthetic_investor',
       interest: 'materials',
+      message: 'Synthetic question about a call.',
     });
 
     expect(message).toContain('Kognitika: новый запрос инвестора');
@@ -53,6 +54,7 @@ describe('telegram admin notifier', () => {
     expect(message).toContain('Организация / фонд: Synthetic Fund');
     expect(message).toContain('Контакт: @synthetic_investor');
     expect(message).toContain('Интерес: Запросить материалы');
+    expect(message).toContain('Сообщение:\nSynthetic question about a call.');
   });
 
   it('treats missing Telegram env as disabled without calling fetch', async () => {

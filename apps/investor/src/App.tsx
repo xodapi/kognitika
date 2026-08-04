@@ -30,6 +30,7 @@ type InvestorLeadForm = {
   organization: string;
   contact: string;
   interest: InvestorInterest;
+  message: string;
   website: string;
 };
 
@@ -38,6 +39,7 @@ const initialInvestorLead: InvestorLeadForm = {
   organization: '',
   contact: '',
   interest: 'meeting',
+  message: '',
   website: '',
 };
 
@@ -155,6 +157,7 @@ function App() {
         <section className="contact-section" id="contact"><div className="contact-glow" /><div className="container contact-content"><p className="eyebrow">Следующий разговор</p><h2>Запросить материалы<br /><em>или назначить разговор</em></h2><p>Оставьте только удобный способ связи. Мы используем заявку, чтобы ответить по вашему запросу, и не добавляем контакты в публичные рассылки.</p><form className="investor-lead-form" onSubmit={submitLead} aria-describedby="lead-privacy-note">
             <div className="lead-form-grid"><label>Имя<input name="name" value={lead.name} onChange={(event) => setLead({ ...lead, name: event.target.value })} maxLength={120} autoComplete="name" required /></label><label>Организация / фонд <span>необязательно</span><input name="organization" value={lead.organization} onChange={(event) => setLead({ ...lead, organization: event.target.value })} maxLength={160} autoComplete="organization" /></label></div>
             <label>Telegram или email<input name="contact" value={lead.contact} onChange={(event) => setLead({ ...lead, contact: event.target.value })} maxLength={200} autoComplete="email" required /></label>
+            <label>Сообщение <span>необязательно</span><textarea name="message" value={lead.message} onChange={(event) => setLead({ ...lead, message: event.target.value })} maxLength={1200} rows={4} placeholder="Например, кратко опишите интерес или удобное время для разговора" /></label>
             <fieldset><legend>Что интересно</legend><div className="interest-options"><label><input type="radio" name="interest" checked={lead.interest === 'meeting'} onChange={() => setLead({ ...lead, interest: 'meeting' })} />Назначить разговор</label><label><input type="radio" name="interest" checked={lead.interest === 'materials'} onChange={() => setLead({ ...lead, interest: 'materials' })} />Получить материалы</label><label><input type="radio" name="interest" checked={lead.interest === 'pilot'} onChange={() => setLead({ ...lead, interest: 'pilot' })} />Обсудить пилот</label></div></fieldset>
             <label className="honeypot" aria-hidden="true">Сайт<input name="website" tabIndex={-1} autoComplete="off" value={lead.website} onChange={(event) => setLead({ ...lead, website: event.target.value })} /></label>
             <button className="button button-primary" type="submit" disabled={leadStatus === 'sending'}>{leadStatus === 'sending' ? 'Отправляем…' : 'Отправить запрос'} <ArrowRight size={17} aria-hidden="true" /></button>

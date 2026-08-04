@@ -30,6 +30,7 @@ export type InvestorLeadTelegramMessage = {
   organization?: string;
   contact: string;
   interest: 'meeting' | 'materials' | 'pilot';
+  message?: string;
 };
 
 function envValue(name: string) {
@@ -99,6 +100,9 @@ export function buildInvestorLeadTelegramMessage(input: InvestorLeadTelegramMess
     `Организация / фонд: ${safeField(input.organization)}`,
     `Контакт: ${safeLeadContact(input.contact)}`,
     `Интерес: ${investorInterestLabels[input.interest]}`,
+    '',
+    'Сообщение:',
+    safePreview(input.message),
   ].join('\n'));
 }
 
