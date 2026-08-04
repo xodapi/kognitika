@@ -1,5 +1,9 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { emitEvent } from './useEventBus';
+import {
+  CognitiveSessionEventCollector,
+  type CompletedSessionAnalyticsJob,
+} from '../core/cognitive-events';
 
 export type SpatialPhase = 'idle' | 'memorize' | 'recall' | 'result';
 
@@ -32,6 +36,9 @@ export function useSpatialEngine() {
   });
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const sessionStartedAtRef = useRef<string | null>(null);
+  const collectorRef = useRef<CognitiveSessionEventCollector | null>(null);
+  const completedAnalyticsJobRef = useRef<CompletedSessionAnalyticsJob | null>(null);
 
   const generateLevel = useCallback((level: number, seed?: number) => {
     const size = Math.min(6, 3 + Math.floor(level / 3));
@@ -90,6 +97,13 @@ export function useSpatialEngine() {
 
       cell.isRevealed = true;
       newGrid[id] = cell;
+      const tMs = Math.max(0, Date.now() - Date.parse(sessionStartedAtRef.current || new Date().toISOString()));
+      collectorRef.current?.record({
+        kind: 'trial_answered',
+        tMs,
+        trialType: 'spatial:recall',
+        isCorrect: cell.isActive,
+      });
 
       if (cell.isActive) {
         cell.isCorrect = true;
@@ -111,6 +125,13 @@ export function useSpatialEngine() {
           cellId: id
         });
 
+        const startedAt = sessionStartedAtRef.current;
+        const collector = collectorRef.current;
+        if (startedAt && collector && !completedAnalyticsJobRef.current) {
+          const completedAt = new Date(Date.parse(startedAt) + tMs).toISOString();
+          collector.complete(tMs, completedAt);
+          completedAnalyticsJobRef.current = collector.createCompletedJob(completedAt);
+        }
         emitEvent('TRAINING_COMPLETE', {
           type: 'SPATIAL',
           level: s.level,
@@ -125,6 +146,17 @@ export function useSpatialEngine() {
   }, [generateLevel]);
 
   const startTraining = useCallback(() => {
+    const startedAt = new Date().toISOString();
+    sessionStartedAtRef.current = startedAt;
+    completedAnalyticsJobRef.current = null;
+    collectorRef.current = new CognitiveSessionEventCollector({
+      sessionId: `spatial-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
+      moduleId: 'spatial',
+      moduleVersion: '1',
+      category: 'cognitive',
+      startedAt,
+    });
+    collectorRef.current.record({ kind: 'trial_started', tMs: 0, trialType: 'spatial:recall' });
     setState(s => ({ ...s, score: 0, errors: 0, level: 1 }));
     generateLevel(1);
   }, [generateLevel]);
@@ -135,5 +167,7 @@ export function useSpatialEngine() {
     };
   }, []);
 
-  return { state, startTraining, handleCellClick };
+  const getCompletedAnalyticsJob = useCallback(() => completedAnalyticsJobRef.current, []);
+
+  return { state, startTraining, handleCellClick, getCompletedAnalyticsJob };
 }
