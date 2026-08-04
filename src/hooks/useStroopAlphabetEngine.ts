@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { emitEvent } from './useEventBus';
 import {
+  CognitiveSessionEventCollector,
+  type CompletedSessionAnalyticsJob,
+} from '../core/cognitive-events';
+import {
   DEFAULT_STROOP_ALPHABET_COUNT,
   generateStroopAlphabetSet,
   type GeneratedStroopAlphabetSet,
@@ -46,6 +50,9 @@ export function useStroopAlphabetEngine() {
   const timerRef = useRef<number | null>(null);
   const startTimeRef = useRef(0);
   const promptStartTimeRef = useRef(0);
+  const sessionStartedAtRef = useRef<string | null>(null);
+  const collectorRef = useRef<CognitiveSessionEventCollector | null>(null);
+  const completedAnalyticsJobRef = useRef<CompletedSessionAnalyticsJob | null>(null);
   const completionEmittedRef = useRef(false);
 
   const commitState = useCallback((nextState: StroopAlphabetState) => {
@@ -67,6 +74,21 @@ export function useStroopAlphabetEngine() {
     completionEmittedRef.current = false;
     startTimeRef.current = startedAt;
     promptStartTimeRef.current = startedAt;
+    const sessionStartedAt = new Date().toISOString();
+    sessionStartedAtRef.current = sessionStartedAt;
+    completedAnalyticsJobRef.current = null;
+    collectorRef.current = new CognitiveSessionEventCollector({
+      sessionId: `stroop-alphabet-${Date.now()}-${set.items.length}`,
+      moduleId: 'stroop-alphabet',
+      moduleVersion: '1',
+      category: 'cognitive',
+      startedAt: sessionStartedAt,
+    });
+    collectorRef.current.record({
+      kind: 'trial_started',
+      tMs: 0,
+      trialType: 'stroop-alphabet:color-action',
+    });
     if (timerRef.current !== null) cancelAnimationFrame(timerRef.current);
 
     commitState({
@@ -116,6 +138,13 @@ export function useStroopAlphabetEngine() {
     const colorErrors = current.colorErrors + (colorId === item.wordColorId ? 0 : 1);
     const reactionTimeTotalMs = current.reactionTimeTotalMs + reactionTimeMs;
     const answerCount = current.currentIndex * 2 + 1;
+    collectorRef.current?.record({
+      kind: 'trial_answered',
+      tMs: Math.max(0, Math.floor(now - startTimeRef.current)),
+      trialType: 'stroop-alphabet:color-action',
+      isCorrect: colorId === item.wordColorId,
+      ...(reactionTimeMs > 0 ? { reactionTimeMs } : {}),
+    });
     commitState({
       ...current,
       phase: 'action',
@@ -140,6 +169,13 @@ export function useStroopAlphabetEngine() {
     const nextIndex = current.currentIndex + 1;
     const isCompleted = nextIndex >= current.items.length;
     if (isCompleted && timerRef.current !== null) cancelAnimationFrame(timerRef.current);
+    collectorRef.current?.record({
+      kind: 'trial_answered',
+      tMs: Math.max(0, Math.floor(now - startTimeRef.current)),
+      trialType: 'stroop-alphabet:color-action',
+      isCorrect: action === item.action,
+      ...(reactionTimeMs > 0 ? { reactionTimeMs } : {}),
+    });
 
     commitState({
       ...current,
@@ -164,6 +200,13 @@ export function useStroopAlphabetEngine() {
     const accuracy = totalQuestions > 0
       ? ((totalQuestions * 2 - totalErrors) / (totalQuestions * 2)) * 100
       : 0;
+    const collector = collectorRef.current;
+    const startedAt = sessionStartedAtRef.current;
+    if (collector && startedAt && !completedAnalyticsJobRef.current) {
+      const completedAt = new Date(Date.parse(startedAt) + state.timeMs).toISOString();
+      collector.complete(state.timeMs, completedAt);
+      completedAnalyticsJobRef.current = collector.createCompletedJob(completedAt);
+    }
 
     emitEvent('TRAINING_COMPLETE', {
       type: 'STROOP_ALPHABET',
@@ -195,5 +238,6 @@ export function useStroopAlphabetEngine() {
     resetGame,
     submitColor,
     submitAction,
+    getCompletedAnalyticsJob: () => completedAnalyticsJobRef.current,
   };
 }

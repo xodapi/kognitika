@@ -1,5 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
+  CognitiveSessionEventCollector,
+  type CompletedSessionAnalyticsJob,
+} from '../core/cognitive-events';
+import {
   DEFAULT_ALPHABET_QUESTION_COUNT,
   generateAlphabetTable,
   type AlphabetAction,
@@ -47,6 +51,9 @@ export function useAlphabetTableEngine() {
   const lastActionTimeRef = useRef(0);
   const displayedTimeRef = useRef(0);
   const activeRef = useRef(false);
+  const sessionStartedAtRef = useRef<string | null>(null);
+  const collectorRef = useRef<CognitiveSessionEventCollector | null>(null);
+  const completedAnalyticsJobRef = useRef<CompletedSessionAnalyticsJob | null>(null);
   const completionEmittedRef = useRef(false);
 
   useEffect(() => {
@@ -69,6 +76,22 @@ export function useAlphabetTableEngine() {
     startTimeRef.current = startedAt;
     lastActionTimeRef.current = startedAt;
     displayedTimeRef.current = 0;
+    const sessionStartedAt = new Date().toISOString();
+    sessionStartedAtRef.current = sessionStartedAt;
+    completedAnalyticsJobRef.current = null;
+    collectorRef.current = new CognitiveSessionEventCollector({
+      sessionId: `alphabet-table-${Date.now()}-${set.preset}-${set.items.length}`,
+      moduleId: 'alphabet-table',
+      moduleVersion: '1',
+      category: 'cognitive',
+      startedAt: sessionStartedAt,
+    });
+    collectorRef.current.record({
+      kind: 'trial_started',
+      tMs: 0,
+      trialType: 'alphabet-table:action-selection',
+      difficulty: set.preset,
+    });
 
     setState({
       ...DEFAULT_STATE,
@@ -131,6 +154,13 @@ export function useAlphabetTableEngine() {
       const averageReactionTimeMs = Math.round(reactionTimeTotalMs / currentIndex);
       const timeMs = Math.max(0, Math.floor(submittedAt - startTimeRef.current));
       const isCompleted = currentIndex >= previous.items.length;
+      collectorRef.current?.record({
+        kind: 'trial_answered',
+        tMs: timeMs,
+        trialType: 'alphabet-table:action-selection',
+        isCorrect,
+        ...(reactionTimeMs > 0 ? { reactionTimeMs } : {}),
+      });
 
       return {
         ...previous,
@@ -155,6 +185,13 @@ export function useAlphabetTableEngine() {
     if (timerRef.current !== null) cancelAnimationFrame(timerRef.current);
 
     const accuracy = (state.correctAnswers / Math.max(1, state.items.length)) * 100;
+    const collector = collectorRef.current;
+    const startedAt = sessionStartedAtRef.current;
+    if (collector && startedAt && !completedAnalyticsJobRef.current) {
+      const completedAt = new Date(Date.parse(startedAt) + state.timeMs).toISOString();
+      collector.complete(state.timeMs, completedAt);
+      completedAnalyticsJobRef.current = collector.createCompletedJob(completedAt);
+    }
     emitEvent('TRAINING_COMPLETE', {
       type: 'ALPHABET_TABLE',
       timeMs: state.timeMs,
@@ -178,5 +215,7 @@ export function useAlphabetTableEngine() {
     state.timeMs,
   ]);
 
-  return { state, startGame, stopGame, resetGame, submitAction };
+  const getCompletedAnalyticsJob = useCallback(() => completedAnalyticsJobRef.current, []);
+
+  return { state, startGame, stopGame, resetGame, submitAction, getCompletedAnalyticsJob };
 }
