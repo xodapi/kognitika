@@ -17,7 +17,7 @@ import {
 const logger = createSafeLogger('stroop-test');
 
 function ClassicStroopTest() {
-  const { state, startGame, answerQuestion, colors } = useStroopEngine();
+  const { state, startGame, answerQuestion, getCompletedAnalyticsJob, colors } = useStroopEngine();
   const { token } = useAuth();
   const navigate = useNavigate();
 
@@ -83,13 +83,14 @@ function ClassicStroopTest() {
             preSequence: preSequence || undefined,
             stressMode: useStress,
           },
+          analyticsJob: getCompletedAnalyticsJob() ?? undefined,
         })
         .then(data => {
           if (data?.session?.id) setSessionId(data.session.id);
         })
         .catch(err => logger.error('Session save failed', { error: safeError(err), gameType: 'STROOP' }));
      }
-  }, [state.isFinished, state.timeLeftMs, token, state.score, state.errors, state.averageReactionTime, preSequence, useStress, saveAttempt]);
+  }, [state.isFinished, state.timeLeftMs, token, state.score, state.errors, state.averageReactionTime, preSequence, useStress, saveAttempt, getCompletedAnalyticsJob]);
 
   if (showPreLuscher) {
     return (

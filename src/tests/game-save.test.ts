@@ -132,6 +132,65 @@ describe('game save idempotency service', () => {
     expect(transactionClient.analyticsOutboxEntry.create).toHaveBeenCalledOnce();
   });
 
+  it('binds a validated Stroop canonical job to a Stroop game session', async () => {
+    const { saveCompletedGame } = await import('../server/services/game-save.ts');
+    const analyticsJob = {
+      schemaVersion: 1,
+      jobId: 'analytics-job-synthetic-stroop',
+      analyzerVersion: 'analyze-session-v1',
+      receivedAt: '2026-08-04T00:00:02.000Z',
+      sessionId: 'browser-stroop-synthetic',
+      moduleId: 'stroop',
+      moduleVersion: '1',
+      category: 'cognitive',
+      startedAt: '2026-08-04T00:00:00.000Z',
+      completedAt: '2026-08-04T00:00:01.000Z',
+      events: [
+        { schemaVersion: 1, eventId: 'browser-stroop-synthetic:0', sessionId: 'browser-stroop-synthetic', moduleId: 'stroop', moduleVersion: '1', category: 'cognitive', sequence: 0, tMs: 0, kind: 'trial_started', trialType: 'stroop:congruent' },
+        { schemaVersion: 1, eventId: 'browser-stroop-synthetic:1', sessionId: 'browser-stroop-synthetic', moduleId: 'stroop', moduleVersion: '1', category: 'cognitive', sequence: 1, tMs: 1_000, kind: 'session_completed', completedAt: '2026-08-04T00:00:01.000Z' },
+      ],
+    };
+
+    await saveCompletedGame({
+      userId: 'user-a',
+      clientRunId: '11111111-1111-4111-8111-111111111111',
+      gameType: 'STROOP',
+      timeMs: 5_000,
+      analyticsJob,
+    });
+
+    expect(transactionClient.completedSessionAnalyticsJob.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ moduleId: 'stroop', jobId: analyticsJob.jobId }),
+    });
+  });
+
+  it('rejects a canonical job for a different game type before starting a transaction', async () => {
+    const { saveCompletedGame } = await import('../server/services/game-save.ts');
+    await expect(saveCompletedGame({
+      userId: 'user-a',
+      clientRunId: '11111111-1111-4111-8111-111111111111',
+      gameType: 'SCHULTE',
+      timeMs: 5000,
+      analyticsJob: {
+        schemaVersion: 1,
+        jobId: 'analytics-job-synthetic-mismatch',
+        analyzerVersion: 'analyze-session-v1',
+        receivedAt: '2026-08-04T00:00:02.000Z',
+        sessionId: 'browser-stroop-mismatch',
+        moduleId: 'stroop',
+        moduleVersion: '1',
+        category: 'cognitive',
+        startedAt: '2026-08-04T00:00:00.000Z',
+        completedAt: '2026-08-04T00:00:01.000Z',
+        events: [
+          { schemaVersion: 1, eventId: 'browser-stroop-mismatch:0', sessionId: 'browser-stroop-mismatch', moduleId: 'stroop', moduleVersion: '1', category: 'cognitive', sequence: 0, tMs: 0, kind: 'trial_started', trialType: 'stroop:congruent' },
+          { schemaVersion: 1, eventId: 'browser-stroop-mismatch:1', sessionId: 'browser-stroop-mismatch', moduleId: 'stroop', moduleVersion: '1', category: 'cognitive', sequence: 1, tMs: 1_000, kind: 'session_completed', completedAt: '2026-08-04T00:00:01.000Z' },
+        ],
+      },
+    })).rejects.toMatchObject({ code: 'ANALYTICS_GAME_TYPE_MISMATCH' });
+    expect(prismaMock.$transaction).not.toHaveBeenCalled();
+  });
+
   it('rejects a sensitive canonical job before starting a transaction', async () => {
     const { saveCompletedGame } = await import('../server/services/game-save.ts');
     await expect(saveCompletedGame({

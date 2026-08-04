@@ -16,6 +16,7 @@ const ANALYTICS_CONTRACT_VERSION = 'analytics-contract-v1';
 
 const ANALYTICS_MODULE_GAME_TYPES: Record<string, readonly string[]> = {
   schulte: ['SCHULTE', 'SCHULTE_GORBOV'],
+  stroop: ['STROOP'],
 };
 
 function validateAnalyticsJob(input: SaveGameInput): CompletedSessionAnalyticsJob | undefined {

@@ -12,6 +12,7 @@ import { createSafeLogger } from './src/lib/safe-logger.ts';
 import { createExpressCorsOptions, createSocketCorsOptions, resolveCorsConfig } from './src/server/config/cors.ts';
 import { validateJwtSecret } from './src/server/config/runtime-security.ts';
 import { resolveListenHost, resolveTrustProxy } from './src/server/config/proxy.ts';
+import { startAnalyticsOutboxWorker } from './src/server/services/analytics-outbox-worker.ts';
 
 const logger = createSafeLogger('server');
 
@@ -96,6 +97,7 @@ if (corsConfig.warning) {
 }
 
 async function startServer() {
+  const analyticsOutboxWorker = startAnalyticsOutboxWorker();
   const app = express();
   app.set('trust proxy', resolveTrustProxy(process.env));
   const httpServer = createServer(app);
@@ -266,6 +268,10 @@ async function startServer() {
   }
 
   const listenHost = resolveListenHost(process.env);
+  const shutdown = () => analyticsOutboxWorker?.stop();
+  httpServer.once('close', shutdown);
+  process.once('SIGTERM', shutdown);
+  process.once('SIGINT', shutdown);
   httpServer.listen(PORT, listenHost, () => {
     logger.info('Server running', { host: listenHost, port: PORT, buildId: BUILD_ID });
   });
