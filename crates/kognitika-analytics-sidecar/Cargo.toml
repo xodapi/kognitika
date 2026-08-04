@@ -3,6 +3,7 @@ name = "kognitika-analytics-sidecar"
 version = "0.1.0"
 edition = "2021"
 publish = false
+default-run = "kognitika-analytics-sidecar"
 
 [dependencies]
 axum = "0.8"

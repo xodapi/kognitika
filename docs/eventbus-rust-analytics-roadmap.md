@@ -72,7 +72,7 @@ Never include raw Brain ID, user ID in analytics payloads, email, tokens, creden
 - [x] Provide `kognitika-core` as a deterministic native and WASM computation boundary.
 - [x] Provide an internal-only Axum sidecar with no database configuration.
 - [x] Add a Node adapter with request timeout, contract-version mapping, strict response validation, and aggregate-only safe error telemetry. It remains disabled unless both the Node dispatcher and Rust-sidecar flags are enabled.
-- [x] Provide a live internal HTTP parity runner over the deterministic TypeScript corpus. It fails closed on any mismatch or sidecar error and requires an explicit internal sidecar URL.
+- [x] Provide a live internal HTTP parity runner over the deterministic TypeScript corpus. It fails closed on any mismatch or sidecar error and requires an explicit internal sidecar URL plus an acknowledgement flag. Local loopback verification passed 7/7 fixtures with zero mismatches and zero safe errors.
 - [x] Store only aggregate mismatch counts and safe error codes, not raw event payloads.
 
 ### Phase 4, canary and promotion

@@ -2,8 +2,10 @@ import { createGoldenV2Sessions, analyzeSession } from '../src/core/analyze-sess
 import { RustAnalyticsSidecarClient } from '../src/server/services/rust-analytics-sidecar.ts';
 
 const baseUrl = process.env.RUST_ANALYTICS_SIDECAR_URL;
-if (!baseUrl) {
-  console.error('RUST_ANALYTICS_SIDECAR_URL is required for live sidecar parity checks.');
+const explicitInternalParityRun = process.env.RUST_ANALYTICS_SIDECAR_PARITY_RUN === 'true';
+
+if (!baseUrl || !explicitInternalParityRun) {
+  console.error('Set RUST_ANALYTICS_SIDECAR_URL and RUST_ANALYTICS_SIDECAR_PARITY_RUN=true for an internal live sidecar parity check.');
   process.exitCode = 2;
 } else {
   const client = new RustAnalyticsSidecarClient({ baseUrl, timeoutMs: 1_000, rolloutPercent: 100 });
