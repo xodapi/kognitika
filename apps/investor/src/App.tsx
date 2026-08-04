@@ -120,8 +120,7 @@ function App() {
       <main id="main">
         <section className="hero container" aria-labelledby="hero-title"><div className="hero-copy">
           <p className="eyebrow hero-eyebrow"><span className="status-dot" /> Работающий продукт · pre-seed</p>
-          <h1 id="hero-title">От когнитивных упражнений<em>к регулярной персональной практике</em></h1>
-          <p className="hero-lead">Kognitika — регулярная практика внимания, памяти и решений с измеримым прогрессом.</p>
+          <h1 id="hero-title">Kognitika — регулярная практика внимания, памяти и решений с измеримым прогрессом.</h1>
           <p className="hero-context">В эпоху, когда AI берёт на себя всё больше рутинных операций, мы хотим, чтобы внимание, память и способность принимать решения оставались тренируемым навыком человека — а не тем, что незаметно теряется в фоне.</p>
           <p className="hero-context">Мы опираемся на проверенные практики когнитивных тренировок и объективные данные о прогрессе внутри платформы. Дополнительный контекст от совместимых устройств — направление, которое мы будем проверять только добровольно и только после того, как докажем пользу базовой практики.</p>
           <div className="hero-actions"><a className="button button-primary" href={PRODUCT_URL} target="_blank" rel="noreferrer">Открыть продукт <ExternalLink size={17} aria-hidden="true" /></a><a className="button button-ghost" href="#market">Посмотреть рынок <ArrowRight size={17} aria-hidden="true" /></a></div>
