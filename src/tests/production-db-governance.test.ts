@@ -134,7 +134,9 @@ describe('production database governance contracts', () => {
     expect(workflow).toContain('database-client-unavailable');
     expect(workflow).toContain('database-connection-failed');
     expect(workflow).toContain('kognitika-schema-query-failed');
+    expect(workflow).toContain("grep -E '^(kognitika-schema-ok|kognitika-schema-mismatch)$'");
     expect(workflow).toContain('ADMIN recovery dry-run status: $diagnostic_status');
+    expect(workflow).not.toContain('unexpected-diagnostic-state');
     expect(workflow).toContain('test ! -e "$recovery_file"');
     expect(workflow).not.toContain('DROP SCHEMA');
     expect(workflow).not.toContain('actions/upload-artifact');
