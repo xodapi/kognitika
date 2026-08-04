@@ -15,11 +15,12 @@ export const investorLeadSchema = z.object({
   contact: z.string().trim().min(3, 'Укажите Telegram или email').max(200)
     .refine((value) => contactPattern.test(value), 'Укажите Telegram username или email'),
   interest: z.enum(['meeting', 'materials', 'pilot']),
+  message: z.string().trim().max(1200).optional().default(''),
   website: z.string().trim().max(200).optional().default(''),
 }).strict();
 
 router.post('/', validateBody(investorLeadSchema), async (req, res) => {
-  const { name, organization, contact, interest, website } = req.validated!.body;
+  const { name, organization, contact, interest, message, website } = req.validated!.body;
 
   // A hidden honeypot lets common automated submissions finish without
   // revealing the anti-spam rule or sending user-provided content onward.
@@ -31,6 +32,7 @@ router.post('/', validateBody(investorLeadSchema), async (req, res) => {
       organization,
       contact,
       interest,
+      message,
     }));
 
     if (!delivery.delivered) {

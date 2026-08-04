@@ -56,6 +56,7 @@ const validLead = {
   organization: 'Synthetic Fund',
   contact: '@synthetic_investor',
   interest: 'materials',
+  message: 'Synthetic message for materials.',
   website: '',
 };
 
@@ -69,6 +70,7 @@ describe('investor leads route', () => {
       organization: 'Synthetic Fund',
       contact: '@synthetic_investor',
       interest: 'materials',
+      message: 'Synthetic message for materials.',
     });
     expect(notifierMock.sendTelegramAdminMessage).toHaveBeenCalledWith('Synthetic investor lead');
   });
