@@ -90,6 +90,23 @@ describe('Prisma analytics outbox store', () => {
     }));
   });
 
+  it('retries a persisted canonical job that fails revalidation', async () => {
+    prismaMock.$queryRaw.mockResolvedValue([{ ...baseRecord, state: 'processing', leaseOwner: 'node-worker-a', leaseExpiresAt: new Date(now.getTime() + 1_000) }]);
+    prismaMock.completedSessionAnalyticsJob.findUnique.mockResolvedValue({ payload: { schemaVersion: 999 } });
+    prismaMock.analyticsOutboxEntry.findFirst.mockResolvedValue({
+      ...baseRecord, state: 'processing', leaseOwner: 'node-worker-a', leaseExpiresAt: new Date(now.getTime() + 1_000),
+    });
+    prismaMock.analyticsOutboxEntry.updateMany.mockResolvedValue({ count: 1 });
+    const { PrismaAnalyticsOutboxStore } = await import('../server/services/analytics-outbox.ts');
+
+    await expect(new PrismaAnalyticsOutboxStore().dispatchNext({
+      workerId: 'node-worker-a', now, leaseMs: 1_000, maxAttempts: 2,
+    })).resolves.toEqual({ status: 'failed', errorCode: 'invalid_canonical_job' });
+    expect(prismaMock.analyticsOutboxEntry.updateMany).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({ state: 'retry' }),
+    }));
+  });
+
   it('dispatches a leased canonical job through Node and persists only its summary', async () => {
     const canonicalJob = {
       schemaVersion: 1,

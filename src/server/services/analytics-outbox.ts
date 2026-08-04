@@ -22,7 +22,7 @@ export type AnalyticsDispatchResult =
   | { status: 'idle' }
   | { status: 'skipped'; reason: 'canonical_job_not_found' }
   | { status: 'completed'; summary: SessionAnalyticsSummaryRecord }
-  | { status: 'failed'; errorCode: 'persistence_failed' };
+  | { status: 'failed'; errorCode: 'invalid_canonical_job' | 'persistence_failed' };
 
 function toEntry(record: {
   id: string;
@@ -166,9 +166,11 @@ export class PrismaAnalyticsOutboxStore {
       where: { gameSessionId: sourceSessionId },
       select: { payload: true },
     });
-    if (!record) return null;
+    if (!record) return { status: 'missing' as const };
     const parsed = parseCompletedSessionAnalyticsJob(record.payload);
-    return parsed.success ? parsed.data : null;
+    return parsed.success
+      ? { status: 'valid' as const, job: parsed.data }
+      : { status: 'invalid' as const };
   }
 
   async getSessionOwner(sourceSessionId: string) {
@@ -184,13 +186,18 @@ export class PrismaAnalyticsOutboxStore {
     const entry = await this.claimNext(options.workerId, now, options.leaseMs);
     if (!entry) return { status: 'idle' };
 
-    const job = await this.getCanonicalJob(entry.sourceSession);
-    if (!job) {
+    const canonicalJob = await this.getCanonicalJob(entry.sourceSession);
+    if (canonicalJob.status === 'missing') {
       await this.complete(entry.id, options.workerId, now);
       return { status: 'skipped', reason: 'canonical_job_not_found' };
     }
+    if (canonicalJob.status === 'invalid') {
+      await this.fail(entry.id, options.workerId, now, options.maxAttempts, 'invalid canonical job');
+      return { status: 'failed', errorCode: 'invalid_canonical_job' };
+    }
 
     try {
+      const job = canonicalJob.job;
       const ownerId = await this.getSessionOwner(entry.sourceSession);
       if (!ownerId) throw new Error('session owner not found');
       const canonicalSession = completedSessionJobToAnalyzeSessionInput(job);
