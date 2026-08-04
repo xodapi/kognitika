@@ -79,7 +79,7 @@ Never include raw Brain ID, user ID in analytics payloads, email, tokens, creden
 
 - [x] Enable shadow dispatch for a controlled, non-authoritative percentage through an explicit feature flag. Rollout is deterministic by durable server session ID and defaults to 0%.
 - [x] Define operational thresholds for outbox lag, dead letters, timeout rate, and parity mismatch rate. Promotion evaluation is aggregate-only and fails closed.
-- [ ] Run a time-bounded canary with TypeScript output remaining authoritative.
+- [~] Prepare a time-bounded canary with TypeScript output remaining authoritative. The internal Compose topology and an explicit runbook are ready; an actual production canary requires a deploy owner and recorded operational window.
 - [ ] Promote Rust only for `AnalyzeSession` after the thresholds are met and rollback is rehearsed.
 
 **Acceptance gate:** all required synthetic fixtures meet exact or documented-tolerance parity; invalid and sensitive inputs are rejected consistently; sidecar unavailability produces retryable shadow work only.
