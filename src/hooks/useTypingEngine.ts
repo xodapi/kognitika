@@ -1,5 +1,9 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { emitEvent } from './useEventBus';
+import {
+  CognitiveSessionEventCollector,
+  type CompletedSessionAnalyticsJob,
+} from '../core/cognitive-events';
 import { getTypingStats } from '../lib/cognitive-metrics';
 
 export interface TypingState {
@@ -21,6 +25,10 @@ function selectTextIndex(textCount: number, previousIndex: number | null) {
 
 export function useTypingEngine(texts: string[]) {
   const previousTextIndexRef = useRef<number | null>(null);
+  const collectorRef = useRef<CognitiveSessionEventCollector | null>(null);
+  const completedAnalyticsJobRef = useRef<CompletedSessionAnalyticsJob | null>(null);
+  const sessionStartedAtRef = useRef<string | null>(null);
+  const sessionSequenceRef = useRef(0);
   const [state, setState] = useState<TypingState>({
     text: '',
     userInput: '',
@@ -37,6 +45,23 @@ export function useTypingEngine(texts: string[]) {
     const selectedIndex = selectTextIndex(safeTexts.length, previousTextIndexRef.current);
     const selectedText = safeTexts[selectedIndex];
     previousTextIndexRef.current = selectedIndex;
+
+    completedAnalyticsJobRef.current = null;
+    const startedAt = new Date().toISOString();
+    sessionStartedAtRef.current = startedAt;
+    collectorRef.current = new CognitiveSessionEventCollector({
+      sessionId: `typing-${Date.now()}-${sessionSequenceRef.current++}`,
+      moduleId: 'typing',
+      moduleVersion: '1',
+      category: 'cognitive',
+      startedAt,
+    });
+    collectorRef.current.record({
+      kind: 'trial_started',
+      tMs: 0,
+      trialType: 'typing:text',
+      difficulty: `length-${selectedText.length}`,
+    });
 
     setState({
       text: selectedText,
@@ -78,8 +103,21 @@ export function useTypingEngine(texts: string[]) {
     }));
 
     if (isDone && startTime) {
-      const finalTime = Date.now() - startTime;
+      const finalTime = Math.max(0, Date.now() - startTime);
       const stats = await getTypingStats(text.length, finalTime, errors);
+      const collector = collectorRef.current;
+      const sessionStartedAt = sessionStartedAtRef.current;
+      if (collector && sessionStartedAt && !completedAnalyticsJobRef.current) {
+        collector.record({
+          kind: 'trial_answered',
+          tMs: finalTime,
+          trialType: 'typing:text',
+          isCorrect: errors === 0,
+        });
+        const completedAt = new Date(Date.parse(sessionStartedAt) + finalTime).toISOString();
+        collector.complete(finalTime, completedAt);
+        completedAnalyticsJobRef.current = collector.createCompletedJob(completedAt);
+      }
 
       emitEvent('TRAINING_COMPLETE', {
         type: 'TYPING',
@@ -96,5 +134,7 @@ export function useTypingEngine(texts: string[]) {
     }
   }, [state]);
 
-  return { state, startTest, handleInput };
+  const getCompletedAnalyticsJob = useCallback(() => completedAnalyticsJobRef.current, []);
+
+  return { state, startTest, handleInput, getCompletedAnalyticsJob };
 }
