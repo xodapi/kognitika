@@ -133,6 +133,10 @@ describe('production database governance contracts', () => {
     expect(workflow).toContain('Kognitika schema guard mismatch.');
     expect(workflow).toContain('database-client-unavailable');
     expect(workflow).toContain('database-connection-failed');
+    expect(workflow).toContain('schema-function-query-failed');
+    expect(workflow).toContain('information-schema-query-failed');
+    expect(workflow).toContain("to_regclass('public.\\\"User\\\"')");
+    expect(workflow).toContain('SELECT COUNT(*) FROM information_schema.columns');
     expect(workflow).toContain('kognitika-schema-query-failed');
     expect(workflow).toContain("grep -E '^(kognitika-schema-ok|kognitika-schema-mismatch)$'");
     expect(workflow).toContain('ADMIN recovery dry-run status: $diagnostic_status');

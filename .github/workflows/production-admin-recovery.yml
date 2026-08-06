@@ -107,14 +107,18 @@ jobs:
             docker run --rm --network host -e DATABASE_URL postgres:16 "$@"
           }
 
-          # Dry-run diagnostics intentionally expose only a fixed status code. They
+          # Dry-run diagnostics intentionally expose only fixed status codes. They
           # never print the DB URL, host, database name, credentials, or user rows.
           diagnostic_status='database-client-unavailable'
           if command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1 && client psql --version >/dev/null 2>&1; then
             diagnostic_status='database-connection-failed'
             if client psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --quiet --command 'SELECT 1;' >/dev/null 2>&1; then
-              diagnostic_status='kognitika-schema-query-failed'
-              if schema_status="$(client psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --tuples-only --no-align <<'SQL'
+              diagnostic_status='schema-function-query-failed'
+              if client psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --quiet --command "SELECT to_regclass('public.\"User\"');" >/dev/null 2>&1; then
+                diagnostic_status='information-schema-query-failed'
+                if client psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --quiet --command "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'User' AND column_name IN ('brainId', 'pseudonym', 'role');" >/dev/null 2>&1; then
+                  diagnostic_status='kognitika-schema-query-failed'
+                  if schema_status="$(client psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --tuples-only --no-align <<'SQL'
           SELECT CASE WHEN
             to_regclass('public."User"') IS NOT NULL
             AND EXISTS (
@@ -139,6 +143,8 @@ jobs:
                   kognitika-schema-ok|kognitika-schema-mismatch) diagnostic_status="$schema_status" ;;
                   *) diagnostic_status='kognitika-schema-query-failed' ;;
                 esac
+                  fi
+                fi
               fi
             fi
           fi
@@ -146,7 +152,7 @@ jobs:
           case "$diagnostic_status" in
             kognitika-schema-ok) echo 'Kognitika schema guard passed.' ;;
             kognitika-schema-mismatch) echo 'Kognitika schema guard mismatch.' >&2; exit 1 ;;
-            database-client-unavailable|database-connection-failed|kognitika-schema-query-failed)
+            database-client-unavailable|database-connection-failed|schema-function-query-failed|information-schema-query-failed|kognitika-schema-query-failed)
               echo "ADMIN recovery dry-run status: $diagnostic_status" >&2
               exit 1
               ;;
