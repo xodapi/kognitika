@@ -138,7 +138,8 @@ describe('production database governance contracts', () => {
     expect(workflow).toContain("to_regclass('public.\\\"User\\\"')");
     expect(workflow).toContain('SELECT COUNT(*) FROM information_schema.columns');
     expect(workflow).toContain('kognitika-schema-query-failed');
-    expect(workflow).toContain("grep -E '^(kognitika-schema-ok|kognitika-schema-mismatch)$'");
+    expect(workflow).toContain("sed -n -E 's/^[[:space:]]*");
+    expect(workflow).toContain('kognitika-schema-ok|kognitika-schema-mismatch');
     expect(workflow).toContain('ADMIN recovery dry-run status: $diagnostic_status');
     expect(workflow).not.toContain('unexpected-diagnostic-state');
     expect(workflow).toContain('test ! -e "$recovery_file"');
