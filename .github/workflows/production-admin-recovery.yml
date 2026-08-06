@@ -138,7 +138,7 @@ jobs:
               )"; then
                 # Docker/psql can produce non-sensitive operational noise on stdout.
                 # Accept only the two fixed SQL guard tokens, never echo raw output.
-                schema_status="$(printf '%s\n' "$schema_status" | grep -E '^(kognitika-schema-ok|kognitika-schema-mismatch)$' | tail -n 1 || true)"
+                schema_status="$(printf '%s\n' "$schema_status" | sed -n -E 's/^[[:space:]]*(kognitika-schema-ok|kognitika-schema-mismatch)[[:space:]]*$/\\1/p' | tail -n 1 || true)"
                 case "$schema_status" in
                   kognitika-schema-ok|kognitika-schema-mismatch) diagnostic_status="$schema_status" ;;
                   *) diagnostic_status='kognitika-schema-query-failed' ;;
