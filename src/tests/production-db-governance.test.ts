@@ -117,7 +117,7 @@ describe('production database governance contracts', () => {
 
   it('keeps ADMIN recovery dry-run by default and schema-guards the only supported write', () => {
     const workflow = read('.github/workflows/production-admin-recovery.yml');
-    const schemaGuard = workflow.indexOf("schema_status=");
+    const schemaGuard = workflow.indexOf("diagnostic_status='kognitika-schema-ok'");
     const credentialGeneration = workflow.indexOf('brain_id="$(cat /proc/sys/kernel/random/uuid)"');
     const write = workflow.indexOf('INSERT INTO "User"');
 
@@ -138,9 +138,10 @@ describe('production database governance contracts', () => {
     expect(workflow).toContain("to_regclass('public.\\\"User\\\"')");
     expect(workflow).toContain('SELECT COUNT(*) FROM information_schema.columns');
     expect(workflow).toContain('kognitika-schema-query-failed');
-    expect(workflow).toContain('--tuples-only --no-align --quiet');
-    expect(workflow).toContain("tr -d '[:space:]'");
-    expect(workflow).toContain('kognitika-schema-ok|kognitika-schema-mismatch');
+    expect(workflow).toContain('Do not parse Docker/psql stdout');
+    expect(workflow).toContain('RAISE EXCEPTION \'Kognitika schema mismatch\'');
+    expect(workflow).toContain("diagnostic_status='kognitika-schema-ok'");
+    expect(workflow).toContain("diagnostic_status='kognitika-schema-mismatch'");
     expect(workflow).toContain('ADMIN recovery dry-run status: $diagnostic_status');
     expect(workflow).not.toContain('unexpected-diagnostic-state');
     expect(workflow).toContain('test ! -e "$recovery_file"');
