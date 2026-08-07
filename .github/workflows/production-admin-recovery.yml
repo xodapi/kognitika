@@ -118,30 +118,36 @@ jobs:
                 diagnostic_status='information-schema-query-failed'
                 if client psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --quiet --command "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'User' AND column_name IN ('brainId', 'pseudonym', 'role');" >/dev/null 2>&1; then
                   diagnostic_status='kognitika-schema-query-failed'
-                  if schema_status="$(client psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --tuples-only --no-align --quiet <<'SQL'
-          SELECT CASE WHEN
-            to_regclass('public."User"') IS NOT NULL
-            AND EXISTS (
-              SELECT 1 FROM information_schema.columns
-              WHERE table_schema = 'public' AND table_name = 'User' AND column_name = 'brainId'
-            )
-            AND EXISTS (
-              SELECT 1 FROM information_schema.columns
-              WHERE table_schema = 'public' AND table_name = 'User' AND column_name = 'pseudonym'
-            )
-            AND EXISTS (
-              SELECT 1 FROM information_schema.columns
-              WHERE table_schema = 'public' AND table_name = 'User' AND column_name = 'role'
-            )
-          THEN 'kognitika-schema-ok' ELSE 'kognitika-schema-mismatch' END;
+                  # Do not parse Docker/psql stdout. The read-only block succeeds
+                  # only when the required schema exists and otherwise aborts.
+                  if client psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --quiet >/dev/null 2>&1 <<'SQL'
+          DO $schema_guard$
+          BEGIN
+            IF NOT (
+              to_regclass('public."User"') IS NOT NULL
+              AND EXISTS (
+                SELECT 1 FROM information_schema.columns
+                WHERE table_schema = 'public' AND table_name = 'User' AND column_name = 'brainId'
+              )
+              AND EXISTS (
+                SELECT 1 FROM information_schema.columns
+                WHERE table_schema = 'public' AND table_name = 'User' AND column_name = 'pseudonym'
+              )
+              AND EXISTS (
+                SELECT 1 FROM information_schema.columns
+                WHERE table_schema = 'public' AND table_name = 'User' AND column_name = 'role'
+              )
+            ) THEN
+              RAISE EXCEPTION 'Kognitika schema mismatch';
+            END IF;
+          END
+          $schema_guard$;
           SQL
-              )"; then
-                # Normalize only whitespace around the scalar fixed token.
-                schema_status="$(printf '%s' "$schema_status" | tr -d '[:space:]')"
-                case "$schema_status" in
-                  kognitika-schema-ok|kognitika-schema-mismatch) diagnostic_status="$schema_status" ;;
-                  *) diagnostic_status='kognitika-schema-query-failed' ;;
-                esac
+                  then
+                    diagnostic_status='kognitika-schema-ok'
+                  else
+                    diagnostic_status='kognitika-schema-mismatch'
+                  fi
                   fi
                 fi
               fi
