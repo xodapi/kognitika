@@ -118,7 +118,7 @@ jobs:
                 diagnostic_status='information-schema-query-failed'
                 if client psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --quiet --command "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'User' AND column_name IN ('brainId', 'pseudonym', 'role');" >/dev/null 2>&1; then
                   diagnostic_status='kognitika-schema-query-failed'
-                  if schema_status="$(client psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --tuples-only --no-align <<'SQL'
+                  if schema_status="$(client psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --tuples-only --no-align --quiet <<'SQL'
           SELECT CASE WHEN
             to_regclass('public."User"') IS NOT NULL
             AND EXISTS (
@@ -136,9 +136,7 @@ jobs:
           THEN 'kognitika-schema-ok' ELSE 'kognitika-schema-mismatch' END;
           SQL
               )"; then
-                # Docker/psql can produce non-sensitive operational noise on stdout.
-                # Accept only the two fixed SQL guard tokens, never echo raw output.
-                schema_status="$(printf '%s\n' "$schema_status" | sed -n -E 's/^[[:space:]]*(kognitika-schema-ok|kognitika-schema-mismatch)[[:space:]]*$/\\1/p' | tail -n 1 || true)"
+                # The scalar query is quiet and unaligned; accept only fixed tokens.
                 case "$schema_status" in
                   kognitika-schema-ok|kognitika-schema-mismatch) diagnostic_status="$schema_status" ;;
                   *) diagnostic_status='kognitika-schema-query-failed' ;;
