@@ -152,7 +152,6 @@ jobs:
                 fi
               fi
             fi
-          fi
 
           case "$diagnostic_status" in
             kognitika-schema-ok) echo 'Kognitika schema guard passed.' ;;
