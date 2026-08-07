@@ -139,6 +139,7 @@ describe('production database governance contracts', () => {
     expect(workflow).toContain('SELECT COUNT(*) FROM information_schema.columns');
     expect(workflow).toContain('kognitika-schema-query-failed');
     expect(workflow).toContain('--tuples-only --no-align --quiet');
+    expect(workflow).toContain("tr -d '[:space:]'");
     expect(workflow).toContain('kognitika-schema-ok|kognitika-schema-mismatch');
     expect(workflow).toContain('ADMIN recovery dry-run status: $diagnostic_status');
     expect(workflow).not.toContain('unexpected-diagnostic-state');

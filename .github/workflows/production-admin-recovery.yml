@@ -136,7 +136,8 @@ jobs:
           THEN 'kognitika-schema-ok' ELSE 'kognitika-schema-mismatch' END;
           SQL
               )"; then
-                # The scalar query is quiet and unaligned; accept only fixed tokens.
+                # Normalize only whitespace around the scalar fixed token.
+                schema_status="$(printf '%s' "$schema_status" | tr -d '[:space:]')"
                 case "$schema_status" in
                   kognitika-schema-ok|kognitika-schema-mismatch) diagnostic_status="$schema_status" ;;
                   *) diagnostic_status='kognitika-schema-query-failed' ;;
