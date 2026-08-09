@@ -28,6 +28,7 @@ const HIGH_CONTRAST_COLORS = [
 ];
 
 type TrainingLevel = 'classic' | 'level1' | 'level2' | 'level3' | 'level4' | 'adaptive';
+type ResultsView = 'stats' | 'curve' | 'attention';
 
 /**
  * The active-play layout has a real behavioral boundary at Tailwind's `lg`
@@ -110,6 +111,7 @@ export function SchulteGrid() {
 
   const { state, startGame, stopGame, resetGame, clickCell, setSettings, applyDifficultySuggestion, getCompletedAnalyticsJob } = useSchulteEngine(5, 'classic', distraction, isAIAdaptationEnabled);
   const isMobilePlayLayout = useMobilePlayLayout();
+  const [activeResultsView, setActiveResultsView] = useState<ResultsView>('stats');
   const [isHardcore, setIsHardcore] = useState(false);
   const [showBriefing, setShowBriefing] = useState(false);
   const [bonusAwarded, setBonusAwarded] = useState(0);
@@ -563,27 +565,107 @@ export function SchulteGrid() {
            animate={{ opacity: 1, y: 0 }}
            className="lg:col-start-2 lg:col-span-10 flex flex-col gap-8"
          >
-            <PostGameInsight 
-              gameType={isGorbov ? 'SCHULTE_GORBOV' : 'SCHULTE'}
-              score={finalScore}
-              timeMs={state.timeMs}
-              errors={state.errors}
-              onPlayAgain={resetGame}
-              onBackToMenu={() => navigate('/')}
-            />
-
-            <div data-testid="results-section" className="w-full bg-background/50 border border-border rounded-[2.5rem] p-8 overflow-hidden shadow-inner grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <div data-testid="result-stats">
-                   <SchulteStats 
-                     history={state.clickHistory} 
-                     size={state.size} 
-                     totalTimeMs={state.timeMs} 
-                     errors={state.errors} 
-                   />
+            {isMobilePlayLayout ? (
+              <section
+                data-testid="session-verdict"
+                className="rounded-3xl border border-border bg-card/50 p-4 shadow-sm"
+                aria-label="Итог тренировки"
+              >
+                <p className="text-xs font-black uppercase tracking-widest text-muted-foreground">Итог тренировки</p>
+                <div className="mt-3 grid grid-cols-3 gap-2 text-center">
+                  <div>
+                    <p className="text-sm uppercase text-muted-foreground">Счёт</p>
+                    <p className="text-xl font-mono font-black text-primary">{finalScore}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm uppercase text-muted-foreground">Время</p>
+                    <p className="text-xl font-mono font-black">{(state.timeMs / 1000).toFixed(1)}s</p>
+                  </div>
+                  <div>
+                    <p className="text-sm uppercase text-muted-foreground">Ошибки</p>
+                    <p className="text-xl font-mono font-black">{state.errors}</p>
+                  </div>
                 </div>
-                <div className="h-[300px] lg:h-full min-h-[250px]">
+                <div data-testid="session-primary-actions" className="mt-4 grid grid-cols-2 gap-3">
+                  <button
+                    onClick={() => {
+                      setActiveResultsView('stats');
+                      resetGame();
+                    }}
+                    className="min-h-11 rounded-xl bg-primary px-3 py-2 text-xs font-black uppercase tracking-wider text-primary-foreground"
+                  >
+                    Повторить
+                  </button>
+                  <button
+                    onClick={() => navigate('/')}
+                    className="min-h-11 rounded-xl border border-border px-3 py-2 text-xs font-black uppercase tracking-wider"
+                  >
+                    В меню
+                  </button>
+                </div>
+              </section>
+            ) : (
+              <PostGameInsight
+                gameType={isGorbov ? 'SCHULTE_GORBOV' : 'SCHULTE'}
+                score={finalScore}
+                timeMs={state.timeMs}
+                errors={state.errors}
+                onPlayAgain={resetGame}
+                onBackToMenu={() => navigate('/')}
+              />
+            )}
+
+            <div data-testid="results-section" className="w-full bg-background/50 border border-border rounded-[2.5rem] p-4 sm:p-8 overflow-hidden shadow-inner grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {isMobilePlayLayout && (
+                <div data-testid="results-view-tabs" role="tablist" aria-label="Подробности результата" className="col-span-full grid grid-cols-3 gap-2">
+                  {([
+                    ['stats', 'Статистика', 'Статистика'],
+                    ['curve', 'Кривая', 'Кривая концентрации'],
+                    ['attention', 'Внимание', 'Карта внимания'],
+                  ] as const).map(([view, label, accessibleLabel]) => (
+                    <button
+                      key={view}
+                      type="button"
+                      role="tab"
+                      aria-label={accessibleLabel}
+                      aria-selected={activeResultsView === view}
+                      aria-controls={`results-view-${view}`}
+                      onClick={() => setActiveResultsView(view)}
+                      className={`min-h-11 rounded-xl border px-1 py-2 text-sm font-black uppercase tracking-tight ${
+                        activeResultsView === view ? 'border-primary bg-primary/10 text-primary' : 'border-border text-muted-foreground'
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              )}
+              {(!isMobilePlayLayout || activeResultsView === 'stats') && (
+                <div id="results-view-stats" role={isMobilePlayLayout ? 'tabpanel' : undefined} data-testid="result-stats">
+                  {state.clickHistory.length > 0 ? (
+                    <SchulteStats
+                      history={state.clickHistory}
+                      size={state.size}
+                      totalTimeMs={state.timeMs}
+                      errors={state.errors}
+                    />
+                  ) : (
+                    <p className="py-8 text-center text-sm text-muted-foreground">
+                      Нет данных по нажатиям. Завершите несколько шагов, чтобы увидеть статистику.
+                    </p>
+                  )}
+                </div>
+              )}
+              {(!isMobilePlayLayout || activeResultsView === 'curve') && (
+                <div id="results-view-curve" role={isMobilePlayLayout ? 'tabpanel' : undefined} data-testid="result-curve" className="h-[300px] lg:h-full min-h-[250px]">
                    <ConcentrationCurve data={state.clickHistory} />
                 </div>
+              )}
+              {isMobilePlayLayout && activeResultsView === 'attention' && (
+                <div id="results-view-attention" role="tabpanel" data-testid="result-attention" className="flex justify-center">
+                  <AttentionMap clicks={state.clickHistory} />
+                </div>
+              )}
             </div>
          </motion.div>
       </div>
