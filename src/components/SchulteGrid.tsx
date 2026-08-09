@@ -29,6 +29,29 @@ const HIGH_CONTRAST_COLORS = [
 
 type TrainingLevel = 'classic' | 'level1' | 'level2' | 'level3' | 'level4' | 'adaptive';
 
+/**
+ * The active-play layout has a real behavioral boundary at Tailwind's `lg`
+ * breakpoint. CSS can hide a chart, but a hidden Recharts tree still mounts,
+ * reconciles and animates. This hook lets the render tree omit the mobile
+ * analytics column altogether while preserving the desktop three-column view.
+ */
+function useMobilePlayLayout() {
+  const query = '(max-width: 1023px)';
+  const [isMobile, setIsMobile] = useState(() =>
+    typeof window !== 'undefined' && window.matchMedia(query).matches,
+  );
+
+  useEffect(() => {
+    const media = window.matchMedia(query);
+    const update = () => setIsMobile(media.matches);
+    update();
+    media.addEventListener('change', update);
+    return () => media.removeEventListener('change', update);
+  }, []);
+
+  return isMobile;
+}
+
 function pseudoRandom(seed: number) {
   const x = Math.sin(seed) * 10000;
   return x - Math.floor(x);
@@ -86,6 +109,7 @@ export function SchulteGrid() {
   const isAIAdaptationEnabled = false; // AI Adaptation disabled as per user request
 
   const { state, startGame, stopGame, resetGame, clickCell, setSettings, applyDifficultySuggestion, getCompletedAnalyticsJob } = useSchulteEngine(5, 'classic', distraction, isAIAdaptationEnabled);
+  const isMobilePlayLayout = useMobilePlayLayout();
   const [isHardcore, setIsHardcore] = useState(false);
   const [showBriefing, setShowBriefing] = useState(false);
   const [bonusAwarded, setBonusAwarded] = useState(0);
@@ -701,7 +725,22 @@ export function SchulteGrid() {
          </div>
       </motion.div>
 
-      {/* HUD: Right Controls */}
+      {isMobilePlayLayout && (
+        <motion.button
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          whileTap={{ scale: 0.97 }}
+          onClick={stopGame}
+          data-testid="stop-button"
+          className="fixed inset-x-4 bottom-[max(6.25rem,calc(env(safe-area-inset-bottom)+5.75rem))] z-40 min-h-11 rounded-2xl border border-destructive/30 bg-card/95 px-4 py-3 text-sm font-black uppercase tracking-widest text-destructive shadow-xl backdrop-blur-md"
+        >
+          Завершить досрочно
+        </motion.button>
+      )}
+
+      {/* Analytics stay available during desktop play. On phones they must not
+          mount at all: hidden charts still reconcile and animate below fold. */}
+      {!isMobilePlayLayout && (
       <motion.div 
         initial={{ opacity: 0, x: 20 }}
         animate={{ opacity: 1, x: 0 }}
@@ -732,6 +771,7 @@ export function SchulteGrid() {
           </motion.button>
         </div>
       </motion.div>
+      )}
     </div>
   );
 }
