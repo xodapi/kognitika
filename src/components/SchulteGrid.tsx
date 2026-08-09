@@ -645,7 +645,7 @@ export function SchulteGrid() {
       <motion.div 
         animate={state.errors > 0 ? { x: [0, -10, 10, -10, 10, 0] } : {}}
         transition={{ duration: 0.4 }}
-        className={`lg:col-span-6 border border-border rounded-[2.5rem] p-4 sm:p-8 flex flex-col items-center justify-center relative min-h-[400px] overflow-hidden lg:h-full shadow-2xl ${state.modifications.bgTheme === 'dark-green' ? 'bg-[#064e3b]' : 'bg-card/30 backdrop-blur-sm'} min-w-0`}
+        className={`lg:col-span-6 border border-border rounded-none sm:rounded-[2.5rem] -mx-4 md:mx-0 p-1 sm:p-8 flex flex-col items-center justify-center relative min-h-[400px] overflow-hidden lg:h-full shadow-2xl ${state.modifications.bgTheme === 'dark-green' ? 'bg-[#064e3b]' : 'bg-card/30 backdrop-blur-sm'} min-w-0`}
         data-testid="grid-container"
       >
          <div className="absolute inset-0 pointer-events-none flex items-center justify-center opacity-[0.05]">
@@ -654,11 +654,16 @@ export function SchulteGrid() {
             <div className="w-12 h-12 border border-primary rounded-full"></div>
          </div>
 
+         {/* Scroll container: the grid keeps a 44px floor per column (the repo
+             touch standard), so on the narrowest phones a 7x7 board is wider
+             than the viewport. Absorbing that here keeps the overflow local
+             instead of letting it reach the document. */}
+         <div className="w-full max-w-[600px] overflow-x-auto overflow-y-hidden relative z-10" data-testid="grid-scroll">
          <motion.div 
            initial={{ opacity: 0 }}
            animate={{ opacity: 1 }}
-           className="grid gap-2 w-full max-w-[600px] relative z-10" 
-           style={{ gridTemplateColumns: `repeat(${state.size}, 1fr)` }}
+           className="grid gap-1 sm:gap-2 w-full min-w-fit" 
+           style={{ gridTemplateColumns: `repeat(${state.size}, minmax(44px, 1fr))` }}
          >
             {state.grid.map((cell, idx) => {
                const isRed = cell.color === 'red';
@@ -694,6 +699,7 @@ export function SchulteGrid() {
                )
             })}
          </motion.div>
+         </div>
 
          <div className="mt-8 flex gap-4 z-10 opacity-40">
             <span className="px-4 py-1.5 bg-background border border-border text-foreground text-sm font-black uppercase rounded-full tracking-widest">{distraction !== 'none' ? 'Jammer Active' : 'Clear Link'}</span>

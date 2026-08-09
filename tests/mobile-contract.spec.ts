@@ -8,6 +8,7 @@ import {
   beginSession,
   expectNoDocumentOverflow,
   expectRenderedGrid,
+  innerScrollPermitted,
   measureBelowFoldCharts,
   measureInnerOverflow,
   measureReachability,
@@ -16,6 +17,7 @@ import {
   openTrainer,
   preflight,
   requireMeasurement,
+  scrollOwner,
   setSchulteSize,
   settleLayout,
   startSession,
@@ -36,12 +38,19 @@ const TRAINERS: TrainerContract[] = [
     name: 'Schulte',
     route: '/schulte',
     playfield: '[data-testid="grid-container"]',
+    // The card clips with overflow-hidden so nothing reaches the document; the
+    // nested wrapper is what actually owns horizontal overflow.
+    scrollContainer: '[data-testid="grid-scroll"]',
     touchTargets: '[data-testid="grid-container"] button',
     targetIndicator: '[data-testid="target-indicator"]',
     abortControl: '[data-testid="stop-button"]',
     chartSurfaces: 'svg.recharts-surface, [data-testid="responsive-container"] svg',
     expectedCellCount: (size) => size * size,
     allowsInnerHorizontalScroll: false,
+    // 7*44 + 6*4 = 332px of grid plus minimal shell padding does not fit a
+    // 320px viewport, so below 340px the playfield may scroll instead of
+    // shrinking its cells. See issue #243 and tests/schulte-touch-floor.spec.ts.
+    innerScrollAllowedBelowPx: 340,
   },
 ];
 
@@ -160,16 +169,21 @@ for (const trainer of TRAINERS) {
         await expectRenderedGrid(page, trainer, MAX_SCHULTE_SIZE);
 
         const report = requireMeasurement(
-          await measureInnerOverflow(page, trainer.playfield),
+          await measureInnerOverflow(page, scrollOwner(trainer)),
           `${trainer.name} playfield overflow`,
         );
 
-        if (trainer.allowsInnerHorizontalScroll) {
-          expect(report.scrollable, 'declared inner scroll must remain user-scrollable').toBe(true);
+        if (innerScrollPermitted(trainer, viewport.width)) {
+          // Where the exception applies, scrolling is not merely tolerated: it
+          // has to be usable, otherwise the cells are large and unreachable.
+          expect(
+            report.scrollable,
+            `declared inner scroll at ${viewport.width}px must remain user-scrollable`,
+          ).toBe(true);
         } else {
           expect(
             report.horizontal,
-            `inner horizontal overflow of ${report.horizontal}px`,
+            `inner horizontal overflow of ${report.horizontal}px at ${viewport.width}px`,
           ).toBeLessThanOrEqual(1);
         }
       });
