@@ -608,7 +608,7 @@ export function SchulteGrid() {
             </div>
          </div>
 
-         <div className="bg-primary/10 backdrop-blur-md border border-primary/20 rounded-3xl p-8 flex flex-col items-center justify-center flex-1 shadow-sm shadow-primary/5 min-w-0">
+         <div data-testid="target-indicator" className="bg-primary/10 backdrop-blur-md border border-primary/20 rounded-3xl p-8 flex flex-col items-center justify-center flex-1 shadow-sm shadow-primary/5 min-w-0">
             <p className="text-sm text-primary uppercase mb-4 font-black tracking-[0.3em] whitespace-nowrap">
                {isGorbov ? 'АКТИВНАЯ ЦЕЛЬ' : 'ТЕКУЩЕЕ ЧИСЛО'}
             </p>
