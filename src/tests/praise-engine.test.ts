@@ -122,4 +122,31 @@ describe('praise engine', () => {
     const accHighlight = result.metricHighlights.find((h) => h.metric === 'accuracy');
     expect(accHighlight?.value).toBe(87);
   });
+
+  it('uses grammatical Russian when comparing against the personal baseline', () => {
+    const result = buildPraise({
+      ...baseInput,
+      currentAccuracy: 0.92,
+      historicalAvgAccuracy: 0.8,
+    });
+
+    const improvement = result.details.find((d) => d.includes('средним уровнем'));
+    expect(improvement).toBeDefined();
+    expect(improvement).toContain('с вашим средним уровнем');
+    expect(improvement).not.toContain('со вашим');
+  });
+
+  it('uses grammatical Russian in the fatigue headline', () => {
+    const result = buildPraise({
+      ...baseInput,
+      currentAccuracy: 0.5,
+      currentReactionMs: 400,
+      currentFatigueIndex: 0.5,
+      historicalAvgAccuracy: 0.85,
+      historicalAvgReactionMs: 250,
+    });
+
+    expect(result.headline).toContain('дала о себе знать');
+    expect(result.headline).not.toContain('далась знать');
+  });
 });
