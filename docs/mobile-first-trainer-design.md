@@ -149,6 +149,26 @@ than reversing it.
 Its contract is instead: cells meet the 44px floor, and inner scroll is
 discoverable. Any other trainer acquiring inner scroll is a defect.
 
+`SchulteGrid` (route `/schulte`) is permitted horizontal inner scroll **for 7
+columns on viewports narrower than 340 CSS px**, and nowhere else. Seven columns
+at the floor need `7 * 44 + 6 * 4 = 332px` of content box; adding the minimum
+8px of shell padding gives 340px, so no redistribution of padding fits a 7x7
+board into a 320px viewport. The alternative is sub-44px cells, which is the
+worse defect: `state.errors` feeds scoring and adaptive difficulty, so shrinking
+the cells converts attention lapses into finger-misses and corrupts the number
+the trainer exists to produce. Gorbov-Schulte forces 7x7, so the hardest mode is
+exactly the one that cannot opt out.
+
+Bounds of this exception, all asserted in `tests/schulte-touch-floor.spec.ts`:
+
+- 6x6 must never need it. `6 * 44 + 5 * 4 = 284px` fits 320px with room to spare.
+- At 375px and above, 7x7 must not scroll either.
+- The document must never scroll horizontally, at any size or width.
+
+The 340px threshold is declared once, as `innerScrollAllowedBelowPx` on the
+trainer contract, and a test asserts it agrees with the arithmetic above so the
+two cannot drift apart.
+
 ## 5. Test that must be rewritten, not deleted
 
 `tests/schulte-mobile.spec.ts` contains:
@@ -176,7 +196,7 @@ failing before and passing after.
 | Task | Scope | Depends on |
 | --- | --- | --- |
 | M-1 | Shared mobile contract harness in `tests/`: viewport matrix, touch-target probe, inner-overflow probe, single-glance probe. No product change. | — |
-| M-2 | Enforce the 44px touch floor on Schulte cells across sizes 3–7, including forced-7 Gorbov. | M-1 |
+| M-2 | Enforce the 44px touch floor on Schulte cells across sizes 3–7, including forced-7 Gorbov, under the 340px inner-scroll exception declared in §4. | M-1 |
 | M-3 | Compact sticky in-play HUD for `SchulteGrid`; restate the HUD-above-grid test per §5. | M-1 |
 | M-4 | Abort control reachable without scrolling; attention isolation during play. | M-3 |
 | M-5 | Results triage for `SchulteGrid`: verdict first screen, secondary analytics behind tabs. | M-1 |
