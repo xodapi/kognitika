@@ -74,6 +74,14 @@ export interface TrainerContract {
   route: string;
   /** Container that holds the interactive playfield. */
   playfield: string;
+  /**
+   * Element that owns horizontal overflow for the playfield, when the trainer
+   * separates the two. The outer playfield card usually clips with
+   * `overflow-hidden` so nothing reaches the document, which means measuring
+   * inner overflow on the card reports zero even while a nested wrapper
+   * scrolls. Defaults to `playfield` when omitted.
+   */
+  scrollContainer?: string;
   /** Interactive elements inside the playfield the user taps during play. */
   touchTargets: string;
   /** Element showing what the user must currently find or answer. */
@@ -89,10 +97,22 @@ export interface TrainerContract {
   expectedCellCount: ((size: number) => number) | null;
   /**
    * Whether this trainer is permitted horizontal scroll inside its own
-   * playfield container. Declared per trainer in the design contract; any
-   * trainer not listed there must be false.
+   * playfield container at every viewport. Declared per trainer in the design
+   * contract; any trainer not listed there must be false.
    */
   allowsInnerHorizontalScroll: boolean;
+  /**
+   * Viewport width, in CSS px, below which inner horizontal scroll is tolerated
+   * even though `allowsInnerHorizontalScroll` is false.
+   *
+   * This exists because the touch floor and the viewport can be arithmetically
+   * irreconcilable. A 7-column grid at the 44px floor needs 7*44 + 6*4 = 332px
+   * of content box, which no redistribution of padding fits into a 320px
+   * viewport. Scrolling is then the lesser defect: shrinking the cells instead
+   * would convert attention errors into finger-miss and corrupt the score the
+   * trainer exists to produce. Omit the field when no such width exists.
+   */
+  innerScrollAllowedBelowPx?: number;
 }
 
 export interface BoxMeasurement {
@@ -532,6 +552,63 @@ export async function setSchulteSize(page: Page, size: number): Promise<number> 
 }
 
 /**
+ * Selects a Schulte generation algorithm by its option value.
+ *
+ * This is a native `<select>`, so Playwright's own selectOption dispatches the
+ * change event React listens for; the prototype-setter workaround needed for
+ * the range input does not apply here.
+ *
+ * Returns the size the control reports afterwards, because choosing `gorbov`
+ * forces size 7 and disables the size slider.
+ */
+export async function setSchulteMode(page: Page, mode: string): Promise<number> {
+  const select = page.locator('select').filter({ has: page.locator('option[value="gorbov"]') }).first();
+  await select.selectOption(mode);
+  return Number(await page.locator('input[type="range"]').first().inputValue());
+}
+
+/**
+ * Measures how far the playfield cells deviate from square.
+ *
+ * The touch floor alone can be satisfied by stretching one axis, which would
+ * meet the number and break the instrument: a Schulte table is a spatial search
+ * task and non-square cells bias the scan path. Reported as the largest
+ * absolute width-minus-height across all cells.
+ */
+export async function measureSquareness(
+  page: Page,
+  selector: string,
+): Promise<Probe<{ measured: number; maxDelta: number; worst: { width: number; height: number } | null }>> {
+  const result = await page.evaluate((sel) => {
+    const elements = Array.from(document.querySelectorAll(sel));
+    let measured = 0;
+    let maxDelta = 0;
+    let worst: { width: number; height: number } | null = null;
+
+    elements.forEach((element) => {
+      const rect = element.getBoundingClientRect();
+      if (rect.width === 0 || rect.height === 0) return;
+      measured += 1;
+      const delta = Math.abs(rect.width - rect.height);
+      if (delta > maxDelta) {
+        maxDelta = delta;
+        worst = {
+          width: Math.round(rect.width * 10) / 10,
+          height: Math.round(rect.height * 10) / 10,
+        };
+      }
+    });
+
+    return { measured, maxDelta: Math.round(maxDelta * 10) / 10, worst };
+  }, selector);
+
+  if (result.measured === 0) {
+    return { status: 'unmeasurable', reason: `no cell with a layout box matched ${selector}` };
+  }
+  return { status: 'measured', value: result };
+}
+
+/**
  * Asserts the playfield actually rendered the expected number of cells.
  *
  * This is the guard against a vacuous touch-target pass: without it, a grid
@@ -554,6 +631,28 @@ export async function expectRenderedGrid(
     })
     .toBe(expected);
   return expected;
+}
+
+/**
+ * Selector that owns horizontal overflow for a trainer's playfield.
+ *
+ * Kept as a function rather than a required field so that a trainer which does
+ * not separate the two keeps a single selector and cannot fall out of sync.
+ */
+export function scrollOwner(contract: TrainerContract): string {
+  return contract.scrollContainer ?? contract.playfield;
+}
+
+/**
+ * Whether inner horizontal scroll is permitted for this trainer at this width.
+ *
+ * Keeping the rule here rather than in each spec means an exception is granted
+ * in one place and every spec reads the same answer.
+ */
+export function innerScrollPermitted(contract: TrainerContract, viewportWidth: number): boolean {
+  if (contract.allowsInnerHorizontalScroll) return true;
+  return contract.innerScrollAllowedBelowPx !== undefined
+    && viewportWidth < contract.innerScrollAllowedBelowPx;
 }
 
 /** Convenience locator for the cells of a Schulte-family grid. */
