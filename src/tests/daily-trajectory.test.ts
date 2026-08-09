@@ -54,18 +54,111 @@ describe('daily trajectory service', () => {
 
   it('marks items as completed if played today', async () => {
     const now = new Date();
+    // Every domain carries evidence so the weak area is decided by average score
+    // rather than by absence of data. Attention is the weakest, which puts
+    // schulte in the plan, and schulte was played today.
     prismaMock.gameSession.findMany.mockResolvedValue([
-      { gameType: 'SCHULTE', score: 600 },
-      { gameType: 'STROOP', score: 700 },
+      { gameType: 'SCHULTE', score: 100, createdAt: now },
+      { gameType: 'TOPOLOGY_MEMORY', score: 900, createdAt: now },
+      { gameType: 'NUMERICAL_ANALYSIS', score: 900, createdAt: now },
+      { gameType: 'ASYNC_DISPATCHER', score: 900, createdAt: now },
+      { gameType: 'COLLISION_DETECTOR', score: 900, createdAt: now },
     ]);
 
     const { generateDailyPlan } = await import('../server/services/daily-trajectory.ts');
     const items = await generateDailyPlan('user-1', now);
 
     const schulteItem = items.find((i) => i.moduleId === 'schulte');
-    if (schulteItem) {
-      expect(schulteItem.status).toBe('completed');
+    expect(schulteItem).toBeDefined();
+    expect(schulteItem!.status).toBe('completed');
+    expect(schulteItem!.completedAt).toBeDefined();
+  });
+
+  it('leaves items planned when the module was not played today', async () => {
+    const now = new Date();
+    const lastWeek = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    prismaMock.gameSession.findMany.mockResolvedValue([
+      { gameType: 'SCHULTE', score: 100, createdAt: lastWeek },
+      { gameType: 'TOPOLOGY_MEMORY', score: 900, createdAt: lastWeek },
+      { gameType: 'NUMERICAL_ANALYSIS', score: 900, createdAt: lastWeek },
+      { gameType: 'ASYNC_DISPATCHER', score: 900, createdAt: lastWeek },
+      { gameType: 'COLLISION_DETECTOR', score: 900, createdAt: lastWeek },
+    ]);
+
+    const { generateDailyPlan } = await import('../server/services/daily-trajectory.ts');
+    const items = await generateDailyPlan('user-1', now);
+
+    expect(items.length).toBeGreaterThan(0);
+    for (const item of items) {
+      expect(item.status).toBe('planned');
+      expect(item.completedAt).toBeUndefined();
     }
+  });
+
+  it('resolves multi-word game types to canonical module ids', async () => {
+    const now = new Date();
+    prismaMock.gameSession.findMany.mockResolvedValue([
+      { gameType: 'N_BACK', score: 400, createdAt: now },
+      { gameType: 'SPEED_TYPING', score: 420, createdAt: now },
+      { gameType: 'SPATIAL_CONCEALMENT', score: 430, createdAt: now },
+    ]);
+
+    const { generateDailyPlan } = await import('../server/services/daily-trajectory.ts');
+    const items = await generateDailyPlan('user-1', now);
+
+    // Naive `toLowerCase().replace(/_/g, '-')` normalization produced ids such as
+    // 'n-back' and 'speed-typing', which never matched a real module.
+    for (const item of items) {
+      expect(item.moduleId).not.toMatch(/^n-back$|^speed-typing$|^spatial-concealment$/);
+    }
+
+    const nbackItem = items.find((i) => i.moduleId === 'nback');
+    if (nbackItem) {
+      expect(nbackItem.status).toBe('completed');
+    }
+  });
+
+  it('advances variety from the last played module rather than falling back to schulte', async () => {
+    const now = new Date();
+    // NEXT_MODULE maps nback -> numerical. A broken normalization loses the
+    // mapping and silently degrades every plan to the schulte default.
+    prismaMock.gameSession.findMany.mockResolvedValue([
+      { gameType: 'N_BACK', score: 500, createdAt: now },
+    ]);
+
+    const { generateDailyPlan } = await import('../server/services/daily-trajectory.ts');
+    const items = await generateDailyPlan('user-1', now);
+
+    const varietyItem = items.find((i) => i.reason === 'variety');
+    expect(varietyItem).toBeDefined();
+    expect(varietyItem!.moduleId).toBe('numerical');
+  });
+
+  it('treats an untrained domain as the weakest area', async () => {
+    const now = new Date();
+    // Attention is heavily trained with strong scores; logic has no evidence at
+    // all and must therefore win the weak-area slot.
+    prismaMock.gameSession.findMany.mockResolvedValue(
+      Array.from({ length: 6 }, () => ({ gameType: 'SCHULTE', score: 900, createdAt: now })),
+    );
+
+    const { generateDailyPlan } = await import('../server/services/daily-trajectory.ts');
+    const items = await generateDailyPlan('user-1', now);
+
+    const weakItem = items.find((i) => i.reason === 'weak_area');
+    expect(weakItem).toBeDefined();
+    expect(weakItem!.moduleId).not.toBe('schulte');
+  });
+
+  it('generates a deterministic plan for a new user', async () => {
+    prismaMock.gameSession.findMany.mockResolvedValue([]);
+
+    const { generateDailyPlan } = await import('../server/services/daily-trajectory.ts');
+    const first = await generateDailyPlan('user-1');
+    const second = await generateDailyPlan('user-1');
+
+    expect(first.map((i) => i.moduleId)).toEqual(second.map((i) => i.moduleId));
+    expect(first.map((i) => i.reason)).toEqual(second.map((i) => i.reason));
   });
 
   it('returns existing plan from database', async () => {

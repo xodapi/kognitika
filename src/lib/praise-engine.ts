@@ -57,7 +57,7 @@ export function buildPraise(input: PraiseInput): PraiseOutput {
       isPositive: accDirection === 'up',
     });
     if (accDirection === 'up') {
-      details.push(`Точность выросла на ${Math.abs(accDeltaPct)}% по сравнению со вашим средним уровнем (${fmtPct(input.historicalAvgAccuracy)} → ${fmtPct(input.currentAccuracy)}).`);
+      details.push(`Точность выросла на ${Math.abs(accDeltaPct)}% по сравнению с вашим средним уровнем (${fmtPct(input.historicalAvgAccuracy)} → ${fmtPct(input.currentAccuracy)}).`);
     } else if (accDirection === 'down') {
       details.push(`Точность снизилась на ${Math.abs(accDeltaPct)}%. Это естественное колебание — мозг консолидирует навык.`);
     } else {
@@ -154,7 +154,7 @@ function generateHeadline(input: PraiseInput, highlights: PraiseMetricHighlight[
   }
 
   if (accuracy?.direction === 'down' && fatigue?.direction === 'up') {
-    return 'Когнитивная нагрузка далась знать. Отдых — часть тренировочного процесса.';
+    return 'Когнитивная нагрузка дала о себе знать. Отдых — часть тренировочного процесса.';
   }
 
   return 'Тренировка завершена. Каждая сессия приближает вас к цели.';

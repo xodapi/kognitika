@@ -4,76 +4,57 @@ import {
   type DailyPracticeItem,
   type DailyPracticeItemStatus,
   DAILY_PRACTICE_MODULE_TITLES,
-  CATEGORY_LABELS,
 } from '../../lib/daily-practice-types.ts';
+import { NEXT_MODULE, normalizePracticeModuleId } from '../../lib/practice-recommendations.ts';
 
 const logger = createSafeLogger('daily-trajectory');
 
-const COGNITIVE_MODULES = ['schulte', 'stroop', 'nback', 'numerical', 'logical', 'spatial', 'topology', 'collision', 'dispatcher', 'noise', 'typing'];
-const SOMATIC_MODULES = ['silence'];
-const SAFETY_MODULES = ['scanner', 'decryptor', 'reality', 'filter', 'hype', 'reframing', 'rejection'];
-
-const NEXT_MODULE: Record<string, string> = {
-  schulte: 'stroop',
-  stroop: 'nback',
-  nback: 'numerical',
-  numerical: 'logical',
-  logical: 'spatial',
-  spatial: 'topology',
-  topology: 'collision',
-  collision: 'dispatcher',
-  dispatcher: 'noise',
-  noise: 'scanner',
-  scanner: 'decryptor',
-  decryptor: 'reality',
-  reality: 'objective',
-  objective: 'profiling',
-  profiling: 'typing',
-  typing: 'schulte',
-};
-
 function toISOStringDate(d: Date): string {
   return d.toISOString().slice(0, 10);
-}
-
-function todayKey(): string {
-  return toISOStringDate(new Date());
 }
 
 function titleFor(moduleId: string): string {
   return DAILY_PRACTICE_MODULE_TITLES[moduleId] || moduleId;
 }
 
-function findWeakestModule(sessions: Array<{ gameType: string; score: number }>): string {
-  const domainMap: Record<string, { games: string[]; sum: number; count: number; defaultGame: string }> = {
-    attention: { games: ['SCHULTE', 'STROOP', 'SPEED_TYPING', 'N_BACK', 'NOISE_REDUCTION'], sum: 0, count: 0, defaultGame: 'schulte' },
-    memory: { games: ['N_BACK', 'SPATIAL_CONCEALMENT', 'TOPOLOGY_MEMORY'], sum: 0, count: 0, defaultGame: 'nback' },
-    logic: { games: ['NUMERICAL_ANALYSIS', 'LOGICAL_SEQUENCE', 'LANGUAGE_SCANNER', 'DECRYPTOR', 'REALITY_CHECK', 'OBJECTIVE_FILTER', 'PROFILING_RICE'], sum: 0, count: 0, defaultGame: 'logical' },
-    speed: { games: ['SPEED_TYPING', 'SCHULTE', 'COLLISION_DETECTOR'], sum: 0, count: 0, defaultGame: 'typing' },
-    resilience: { games: ['ASYNC_DISPATCHER', 'COLLISION_DETECTOR', 'NOISE_REDUCTION'], sum: 0, count: 0, defaultGame: 'dispatcher' },
-  };
+// Declaration order is the deterministic tie-break for untrained domains,
+// so a brand-new user always receives the same entry module.
+const SKILL_DOMAINS = [
+  { games: ['SCHULTE', 'STROOP', 'SPEED_TYPING', 'N_BACK', 'NOISE_REDUCTION'], defaultGame: 'schulte' },
+  { games: ['N_BACK', 'SPATIAL_CONCEALMENT', 'TOPOLOGY_MEMORY'], defaultGame: 'nback' },
+  { games: ['NUMERICAL_ANALYSIS', 'LOGICAL_SEQUENCE', 'LANGUAGE_SCANNER', 'DECRYPTOR', 'REALITY_CHECK', 'OBJECTIVE_FILTER', 'PROFILING_RICE'], defaultGame: 'logical' },
+  { games: ['SPEED_TYPING', 'SCHULTE', 'COLLISION_DETECTOR'], defaultGame: 'typing' },
+  { games: ['ASYNC_DISPATCHER', 'COLLISION_DETECTOR', 'NOISE_REDUCTION'], defaultGame: 'dispatcher' },
+] as const;
 
-  for (const s of sessions) {
-    for (const domain of Object.values(domainMap)) {
-      if (domain.games.includes(s.gameType)) {
-        domain.sum += s.score;
-        domain.count += 1;
+function findWeakestModule(sessions: Array<{ gameType: string; score: number }>): string {
+  const totals = SKILL_DOMAINS.map((domain) => {
+    let sum = 0;
+    let count = 0;
+    for (const session of sessions) {
+      if (domain.games.includes(session.gameType as never)) {
+        sum += session.score;
+        count += 1;
       }
     }
-  }
+    return { defaultGame: domain.defaultGame, sum, count };
+  });
 
-  let weakestDomain = 'memory';
+  // An untrained domain is weaker than any trained one: it has no evidence at all.
+  const untrained = totals.find((domain) => domain.count === 0);
+  if (untrained) return untrained.defaultGame;
+
+  let weakest = totals[0];
   let minAvg = Infinity;
-
-  for (const [key, domain] of Object.entries(domainMap)) {
-    const avg = domain.count > 0 ? domain.sum / domain.count : Infinity;
+  for (const domain of totals) {
+    const avg = domain.sum / domain.count;
     if (avg < minAvg) {
       minAvg = avg;
-      weakestDomain = key;
+      weakest = domain;
     }
   }
 
-  return domainMap[weakestDomain].defaultGame;
+  return weakest.defaultGame;
 }
 
 function findNextVarietyModule(lastModuleId: string): string {
@@ -100,7 +81,7 @@ export async function generateDailyPlan(userId: string, date?: Date): Promise<Da
   todayStart.setHours(0, 0, 0, 0);
   const todaySessions = sessions.filter((s) => new Date(s.createdAt) >= todayStart);
 
-  const playedToday = new Set(todaySessions.map((s) => s.gameType.toLowerCase().replace(/_/g, '-')));
+  const playedToday = new Set(todaySessions.map((s) => normalizePracticeModuleId(s.gameType)));
 
   const weakModule = findWeakestModule(sessions);
 
@@ -118,7 +99,7 @@ export async function generateDailyPlan(userId: string, date?: Date): Promise<Da
   });
 
   const lastModule = sessions.length > 0
-    ? sessions[0].gameType.toLowerCase().replace(/_/g, '-')
+    ? normalizePracticeModuleId(sessions[0].gameType)
     : 'schulte';
   const varietyModule = findNextVarietyModule(lastModule);
   if (varietyModule !== weakModule) {
