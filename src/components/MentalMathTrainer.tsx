@@ -311,6 +311,7 @@ export function MentalMathTrainer() {
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               onClick={handleStartWithBriefing}
+              data-testid="start-button"
               className="mt-auto w-full py-4 bg-primary text-primary-foreground text-xs uppercase tracking-[0.2em] rounded-2xl font-black shadow-lg shadow-primary/20 transition-all"
             >
               Начать тест

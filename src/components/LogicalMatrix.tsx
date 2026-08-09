@@ -77,7 +77,7 @@ export function LogicalMatrix() {
             <p className="text-sm leading-relaxed text-muted-foreground mb-6 sm:mb-8">
               Выявите скрытую закономерность и дополните матрицу 3х3 правильным элементом. Тест состоит из 3 матриц нарастающей сложности.
             </p>
-            <button onClick={handleStart} className="w-full max-w-sm min-h-12 px-4 py-3 bg-primary text-primary-foreground text-xs uppercase tracking-wider rounded-xl font-bold hover:bg-primary/90 transition-colors sm:max-w-[250px]">
+            <button onClick={handleStart} data-testid="start-button" className="w-full max-w-sm min-h-12 px-4 py-3 bg-primary text-primary-foreground text-xs uppercase tracking-wider rounded-xl font-bold hover:bg-primary/90 transition-colors sm:max-w-[250px]">
               Активировать матрицы
             </button>
         </div>

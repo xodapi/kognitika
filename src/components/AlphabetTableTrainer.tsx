@@ -279,6 +279,7 @@ export function AlphabetTableTrainer() {
           <button
             type="button"
             onClick={handleStart}
+            data-testid="start-button"
             className="mt-8 min-h-12 w-full rounded-2xl bg-primary px-6 py-4 text-xs font-black uppercase tracking-[0.2em] text-primary-foreground shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
           >
             Начать тренировку
