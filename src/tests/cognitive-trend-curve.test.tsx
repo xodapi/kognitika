@@ -47,4 +47,18 @@ describe('CognitiveTrendCurve', () => {
       expect(screen.getByText(/недостаточно данных/i)).toBeDefined();
     });
   });
+
+  it('treats a malformed successful response as unavailable data', async () => {
+    mockUseAuth.mockReturnValue({ token: 'synthetic-token' });
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({}),
+    }));
+
+    render(<CognitiveTrendCurve compact />);
+
+    await waitFor(() => {
+      expect(screen.getByText(/недостаточно данных/i)).toBeDefined();
+    });
+  });
 });
