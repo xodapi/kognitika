@@ -84,7 +84,7 @@ describe('Rust analytics sidecar adapter', () => {
   });
 
   it('maps rejection, malformed output, unavailable sidecar, and timeout to safe codes', async () => {
-    const cases: Array<[() => Promise<Response>, string]> = [
+    const cases: Array<[() => Promise<Response>, RustAnalyticsSidecarError['code']]> = [
       [() => Promise.resolve(jsonResponse({ error: 'invalid_payload' }, 400)), 'sidecar_rejected'],
       [() => Promise.resolve(jsonResponse({ unexpected: true })), 'sidecar_invalid_response'],
       [() => Promise.resolve(jsonResponse({ error: 'unavailable' }, 503)), 'sidecar_unavailable'],
@@ -94,7 +94,7 @@ describe('Rust analytics sidecar adapter', () => {
     for (const [request, code] of cases) {
       const fetchImpl = vi.fn().mockImplementation(request);
       const client = new RustAnalyticsSidecarClient({ baseUrl: 'http://sidecar.internal', timeoutMs: 100, fetchImpl });
-      await expect(client.analyze(input, typescriptOutput)).rejects.toMatchObject<RustAnalyticsSidecarError>({ code });
+      await expect(client.analyze(input, typescriptOutput)).rejects.toMatchObject({ code });
       expect(client.getMetrics().failures[code as keyof ReturnType<typeof client.getMetrics>['failures']]).toBe(1);
     }
   });
