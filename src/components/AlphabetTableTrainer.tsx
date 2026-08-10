@@ -231,7 +231,7 @@ export function AlphabetTableTrainer() {
             <div>
               <label
                 htmlFor="alphabet-table-preset"
-                className="mb-2 block text-[10px] font-black uppercase tracking-widest text-muted-foreground"
+                className="mb-2 block text-sm font-black uppercase tracking-widest text-muted-foreground"
               >
                 Режим
               </label>
@@ -253,7 +253,7 @@ export function AlphabetTableTrainer() {
               <div className="mb-2 flex items-center justify-between">
                 <label
                   htmlFor="alphabet-table-question-count"
-                  className="text-[10px] font-black uppercase tracking-widest text-muted-foreground"
+                  className="text-sm font-black uppercase tracking-widest text-muted-foreground"
                 >
                   Количество букв
                 </label>
@@ -280,7 +280,7 @@ export function AlphabetTableTrainer() {
             type="button"
             onClick={handleStart}
             data-testid="start-button"
-            className="mt-8 min-h-12 w-full rounded-2xl bg-primary px-6 py-4 text-xs font-black uppercase tracking-[0.2em] text-primary-foreground shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+            className="mt-8 min-h-12 w-full rounded-2xl bg-primary px-6 py-4 text-sm font-black uppercase tracking-[0.2em] text-primary-foreground shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
           >
             Начать тренировку
           </button>

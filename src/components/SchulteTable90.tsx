@@ -219,7 +219,7 @@ export function SchulteTable90() {
 
             <div className="space-y-4">
               <div>
-                <label className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider mb-2 block">
+                <label className="text-sm text-muted-foreground uppercase font-bold tracking-wider mb-2 block">
                   Режим
                 </label>
                 <select
@@ -227,7 +227,7 @@ export function SchulteTable90() {
                   onChange={(event) => {
                     if (isGorbovRuleId(event.target.value)) setSelectedRule(event.target.value);
                   }}
-                  className="w-full min-h-11 p-3 text-xs rounded-xl border bg-background/50 border-border outline-none text-foreground font-bold transition-all"
+                  className="w-full min-h-11 p-3 text-sm rounded-xl border bg-background/50 border-border outline-none text-foreground font-bold transition-all"
                 >
                   {GORBOV_RULES.map((rule) => (
                     <option key={rule.id} value={rule.id}>{rule.title}</option>
@@ -259,7 +259,7 @@ export function SchulteTable90() {
               whileTap={{ scale: 0.98 }}
               onClick={() => setShowBriefing(true)}
               data-testid="start-button"
-              className="mt-auto w-full py-4 bg-primary text-primary-foreground text-xs uppercase tracking-[0.2em] rounded-2xl font-black shadow-lg shadow-primary/20 transition-all"
+              className="mt-auto w-full py-4 bg-primary text-primary-foreground text-sm uppercase tracking-[0.2em] rounded-2xl font-black shadow-lg shadow-primary/20 transition-all"
             >
               Начать тест
             </motion.button>

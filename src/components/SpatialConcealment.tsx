@@ -134,7 +134,7 @@ export function SpatialConcealment() {
                 <button 
                   onClick={handleStart}
                   data-testid="start-button"
-                  className="min-h-11 px-8 py-4 bg-primary text-primary-foreground rounded-2xl font-black uppercase tracking-widest text-xs shadow-lg shadow-primary/20 hover:scale-105 transition-transform"
+                  className="min-h-11 px-8 py-4 bg-primary text-primary-foreground rounded-2xl font-black uppercase tracking-widest text-sm shadow-lg shadow-primary/20 hover:scale-105 transition-transform"
                 >
                   Начать тренировку
                 </button>

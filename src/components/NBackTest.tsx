@@ -141,7 +141,7 @@ export function NBackTest() {
               )}
             </div>
 
-            <button onClick={handleStartClick} data-testid="start-button" className="w-full max-w-sm min-h-12 px-4 py-3 bg-primary text-primary-foreground text-xs uppercase tracking-wider rounded-xl font-bold hover:bg-primary/90 transition-colors sm:max-w-[250px]">
+            <button onClick={handleStartClick} data-testid="start-button" className="w-full max-w-sm min-h-12 px-4 py-3 bg-primary text-primary-foreground text-sm uppercase tracking-wider rounded-xl font-bold hover:bg-primary/90 transition-colors sm:max-w-[250px]">
               Активировать
             </button>
         </div>

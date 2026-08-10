@@ -187,7 +187,7 @@ export function StroopAlphabetTrainer() {
             Игнорируйте значение цветного слова: сначала выберите фактический цвет текста,
             затем выполните команду П, Л или О.
           </p>
-          <label htmlFor="stroop-alphabet-count" className="mx-auto mt-7 block max-w-xs text-left text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+          <label htmlFor="stroop-alphabet-count" className="mx-auto mt-7 block max-w-xs text-left text-sm font-black uppercase tracking-widest text-muted-foreground">
             Количество стимулов: {questionCount}
           </label>
           <input
@@ -201,7 +201,7 @@ export function StroopAlphabetTrainer() {
             className="mt-3 h-2 w-full max-w-xs accent-primary"
           />
           <p className="mt-6 text-xs text-muted-foreground">Доступны touch-кнопки и клавиатура. Камера, микрофон и voice input не нужны.</p>
-          <button type="button" onClick={handleStart} data-testid="start-button" className="mt-8 min-h-12 w-full max-w-xs rounded-2xl bg-primary px-6 py-4 text-xs font-black uppercase tracking-[0.2em] text-primary-foreground">
+          <button type="button" onClick={handleStart} data-testid="start-button" className="mt-8 min-h-12 w-full max-w-xs rounded-2xl bg-primary px-6 py-4 text-sm font-black uppercase tracking-[0.2em] text-primary-foreground">
             Начать тренировку
           </button>
         </div>

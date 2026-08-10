@@ -125,6 +125,40 @@ for (const trainer of TRAINERS) {
         );
         expect(target.violations).toEqual([]);
       });
+
+      test('keeps document width clean and visible text at the mobile floor', async ({ page }) => {
+        test.skip(
+          !trainer.clauses.fontAndOverflow.applies,
+          skipReason(trainer.clauses.fontAndOverflow),
+        );
+        await page.goto(trainer.route, { waitUntil: 'networkidle' });
+
+        const report = await page.evaluate(() => {
+          const overflowing = document.documentElement.scrollWidth > window.innerWidth;
+          const belowFloor = Array.from(document.querySelectorAll<HTMLElement>(
+            'label, select, textarea, [data-testid="start-button"], [data-testid="stop-button"], [data-testid="hud-timer"], [data-testid="grid-container"]',
+          ))
+            .filter((element) => {
+              const style = getComputedStyle(element);
+              return style.visibility !== 'hidden'
+                && style.display !== 'none'
+                && element.getBoundingClientRect().width > 0
+                && Number.parseFloat(style.fontSize) < 14;
+            })
+            .map((element) => ({
+              tag: element.tagName,
+              text: (element.innerText || '').trim().slice(0, 32),
+              fontSize: getComputedStyle(element).fontSize,
+            }));
+          return { overflowing, belowFloor };
+        });
+
+        expect(report.overflowing, `${trainer.name} overflows at ${viewport.width}px`).toBe(false);
+        expect(
+          report.belowFloor,
+          `${trainer.name} has visible text below 14px at ${viewport.width}px`,
+        ).toEqual([]);
+      });
     });
   }
 }

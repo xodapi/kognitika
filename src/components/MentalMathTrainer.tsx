@@ -277,14 +277,14 @@ export function MentalMathTrainer() {
 
             <div className="space-y-4">
               <div>
-                <label htmlFor="mental-math-level" className="text-xs text-muted-foreground uppercase font-bold tracking-wider mb-2 block">
+                <label htmlFor="mental-math-level" className="text-sm text-muted-foreground uppercase font-bold tracking-wider mb-2 block">
                   Уровень сложности
                 </label>
                 <select
                   id="mental-math-level"
                   value={level}
                   onChange={(e) => setLevel(Number(e.target.value) as MathLevel)}
-                  className="w-full min-h-11 p-3 text-xs rounded-xl border bg-background/50 border-border focus:ring-2 focus:ring-primary/20 outline-none text-foreground font-bold transition-all"
+                  className="w-full min-h-11 p-3 text-sm rounded-xl border bg-background/50 border-border focus:ring-2 focus:ring-primary/20 outline-none text-foreground font-bold transition-all"
                 >
                   {MENTAL_MATH_PRESETS.map((preset) => (
                     <option key={preset.level} value={preset.level}>
@@ -296,7 +296,7 @@ export function MentalMathTrainer() {
 
               <div>
                 <div className="flex justify-between items-center mb-2">
-                  <label htmlFor="mental-math-question-count" className="text-xs text-muted-foreground uppercase font-bold tracking-wider">
+                  <label htmlFor="mental-math-question-count" className="text-sm text-muted-foreground uppercase font-bold tracking-wider">
                     Количество вопросов
                   </label>
                   <span className="text-xs font-mono font-bold text-primary">{questionCount}</span>
@@ -326,7 +326,7 @@ export function MentalMathTrainer() {
               whileTap={{ scale: 0.98 }}
               onClick={handleStartWithBriefing}
               data-testid="start-button"
-              className="mt-auto w-full py-4 bg-primary text-primary-foreground text-xs uppercase tracking-[0.2em] rounded-2xl font-black shadow-lg shadow-primary/20 transition-all"
+              className="mt-auto w-full py-4 bg-primary text-primary-foreground text-sm uppercase tracking-[0.2em] rounded-2xl font-black shadow-lg shadow-primary/20 transition-all"
             >
               Начать тест
             </motion.button>
