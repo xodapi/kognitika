@@ -49,10 +49,10 @@ const TRAINERS: TrainerContract[] = [
       briefing: { applies: false, reason: 'The trainer initializes its first statement automatically.' },
     },
   },
-  { name: 'Logical matrix', route: '/logical', clauses: NO_ABORT },
+  { name: 'Logical matrix', route: '/logical', clauses: NO_ABORT, playfield: '[data-testid="playfield"]' },
   { name: 'Mental math', route: '/mental-math', clauses: ALL_APPLY, playfield: '[data-testid="playfield"]' },
-  { name: 'N-back', route: '/nback', clauses: NO_ABORT },
-  { name: 'Numerical analysis', route: '/numerical', clauses: NO_ABORT },
+  { name: 'N-back', route: '/nback', clauses: NO_ABORT, playfield: '[data-testid="playfield"]' },
+  { name: 'Numerical analysis', route: '/numerical', clauses: NO_ABORT, playfield: '[data-testid="playfield"]' },
   { name: 'Schulte', route: '/schulte', clauses: ALL_APPLY },
   {
     name: 'Schulte 90',
@@ -63,7 +63,7 @@ const TRAINERS: TrainerContract[] = [
     },
     playfield: '[data-testid="playfield"]',
   },
-  { name: 'Situational judgment', route: '/situational', clauses: NO_ABORT },
+  { name: 'Situational judgment', route: '/situational', clauses: NO_ABORT, playfield: '[data-testid="playfield"]' },
   { name: 'Spatial concealment', route: '/spatial', clauses: NO_ABORT },
   { name: 'Speed typing', route: '/typing', clauses: NO_ABORT },
   { name: 'Stroop alphabet', route: '/stroop?mode=combined', clauses: ALL_APPLY, playfield: '[data-testid="playfield"]' },
@@ -134,6 +134,10 @@ for (const trainer of TRAINERS) {
           'This trainer needs an explicit playfield hook before touch-floor measurement.',
         );
         await page.goto(trainer.route, { waitUntil: 'networkidle' });
+        const optionalPreTest = page.getByRole('checkbox');
+        if (await optionalPreTest.isVisible().catch(() => false) && await optionalPreTest.isChecked()) {
+          await optionalPreTest.uncheck();
+        }
         await page.getByTestId('start-button').click();
         const initialise = page.getByRole('button', { name: /Инициализировать тест/i });
         if (await initialise.isVisible().catch(() => false)) await initialise.click();

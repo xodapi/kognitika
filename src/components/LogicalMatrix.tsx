@@ -133,7 +133,7 @@ export function LogicalMatrix() {
       </div>
 
       {/* Right Options Sidebar */}
-      <div className="lg:col-span-3 flex flex-col gap-4 lg:h-full">
+      <div data-testid="playfield" className="lg:col-span-3 flex flex-col gap-4 lg:h-full">
          <div className="bg-card/40 border border-border rounded-2xl p-4 flex flex-col h-full">
             <p className="text-[10px] text-muted-foreground uppercase tracking-widest text-center mb-4">Возможные элементы</p>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-1 gap-2 flex-1">

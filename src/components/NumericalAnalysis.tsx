@@ -125,7 +125,7 @@ export function NumericalAnalysis() {
       </div>
 
       {/* Center Question Block */}
-      <div className="lg:col-span-9 bg-card/20 border border-border rounded-3xl p-4 sm:p-6 flex flex-col items-center justify-center relative min-h-[400px] lg:h-full">
+      <div data-testid="playfield" className="lg:col-span-9 bg-card/20 border border-border rounded-3xl p-4 sm:p-6 flex flex-col items-center justify-center relative min-h-[400px] lg:h-full">
          <div className="w-full flex-1 flex flex-col justify-center items-center gap-6 sm:gap-8 max-w-3xl">
            
            <div className="text-center space-y-3">
