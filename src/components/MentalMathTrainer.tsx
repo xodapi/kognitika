@@ -570,6 +570,7 @@ export function MentalMathTrainer() {
       {/* Center: Question + Input */}
       <motion.div
         animate={state.errors > 0 ? { x: [0, -10, 10, -10, 10, 0] } : {}}
+        data-testid="playfield"
         transition={{ duration: 0.4 }}
         className="lg:col-span-6 border border-border rounded-[2.5rem] p-8 flex flex-col items-center justify-center relative min-h-[400px] overflow-hidden lg:h-full shadow-2xl bg-card/30 backdrop-blur-sm"
       >

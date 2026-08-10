@@ -230,7 +230,7 @@ export function StroopAlphabetTrainer() {
         </button>
       </aside>
 
-      <div className="rounded-[2.5rem] border border-border bg-card/30 p-6 text-center shadow-xl sm:p-10 lg:col-span-9">
+      <div data-testid="playfield" className="rounded-[2.5rem] border border-border bg-card/30 p-6 text-center shadow-xl sm:p-10 lg:col-span-9">
         <p
           aria-live="polite"
           className="text-xs font-black uppercase tracking-[0.2em] text-primary"

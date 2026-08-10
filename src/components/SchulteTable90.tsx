@@ -501,6 +501,7 @@ export function SchulteTable90() {
       {/* Center: Grid */}
       <motion.div
         animate={state.errors > 0 ? { x: [0, -10, 10, -10, 10, 0] } : {}}
+        data-testid="playfield"
         transition={{ duration: 0.4 }}
         className="lg:col-span-6 border border-border rounded-[2.5rem] p-4 sm:p-6 flex flex-col items-start sm:items-center justify-center relative min-h-[400px] overflow-x-auto overflow-y-hidden lg:h-full shadow-2xl bg-card/30 backdrop-blur-sm"
       >

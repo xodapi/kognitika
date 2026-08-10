@@ -355,6 +355,7 @@ export function AlphabetTableTrainer() {
 
       <motion.div
         key={state.currentIndex}
+        data-testid="playfield"
         initial={{ opacity: 0, scale: 0.96 }}
         animate={{ opacity: 1, scale: 1 }}
         className="flex flex-col items-center justify-center rounded-[2.5rem] border border-border bg-card/30 p-8 text-center shadow-xl lg:col-span-9 sm:p-12"

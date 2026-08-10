@@ -15,6 +15,7 @@ interface TrainerContract {
   name: string;
   route: string;
   clauses: Record<Clause, ClauseStatus>;
+  playfield?: string;
 }
 
 function skipReason(status: ClauseStatus): string | undefined {
@@ -39,7 +40,7 @@ const NO_ABORT: Record<Clause, ClauseStatus> = {
 // reference implementation. Every clause must be represented; any later
 // inapplicable clause needs a reason instead of silently dropping coverage.
 const TRAINERS: TrainerContract[] = [
-  { name: 'Alphabet table', route: '/alphabet-table', clauses: ALL_APPLY },
+  { name: 'Alphabet table', route: '/alphabet-table', clauses: ALL_APPLY, playfield: '[data-testid="playfield"]' },
   {
     name: 'Cognitive trash filter',
     route: '/filter',
@@ -49,7 +50,7 @@ const TRAINERS: TrainerContract[] = [
     },
   },
   { name: 'Logical matrix', route: '/logical', clauses: NO_ABORT },
-  { name: 'Mental math', route: '/mental-math', clauses: ALL_APPLY },
+  { name: 'Mental math', route: '/mental-math', clauses: ALL_APPLY, playfield: '[data-testid="playfield"]' },
   { name: 'N-back', route: '/nback', clauses: NO_ABORT },
   { name: 'Numerical analysis', route: '/numerical', clauses: NO_ABORT },
   { name: 'Schulte', route: '/schulte', clauses: ALL_APPLY },
@@ -60,11 +61,12 @@ const TRAINERS: TrainerContract[] = [
       ...ALL_APPLY,
       innerScroll: { applies: false, reason: 'Declared 90-cell grid inner-scroll exception.' },
     },
+    playfield: '[data-testid="playfield"]',
   },
   { name: 'Situational judgment', route: '/situational', clauses: NO_ABORT },
   { name: 'Spatial concealment', route: '/spatial', clauses: NO_ABORT },
   { name: 'Speed typing', route: '/typing', clauses: NO_ABORT },
-  { name: 'Stroop alphabet', route: '/stroop?mode=combined', clauses: ALL_APPLY },
+  { name: 'Stroop alphabet', route: '/stroop?mode=combined', clauses: ALL_APPLY, playfield: '[data-testid="playfield"]' },
   { name: 'Stroop', route: '/stroop', clauses: NO_ABORT },
 ];
 
@@ -124,6 +126,25 @@ for (const trainer of TRAINERS) {
           `${trainer.name} abort touch target at ${viewport.width}px`,
         );
         expect(target.violations).toEqual([]);
+      });
+
+      test('keeps declared playfield actions at the 44px touch floor', async ({ page }) => {
+        test.skip(
+          !trainer.playfield,
+          'This trainer needs an explicit playfield hook before touch-floor measurement.',
+        );
+        await page.goto(trainer.route, { waitUntil: 'networkidle' });
+        await page.getByTestId('start-button').click();
+        const initialise = page.getByRole('button', { name: /Инициализировать тест/i });
+        if (await initialise.isVisible().catch(() => false)) await initialise.click();
+        await expect(page.locator(trainer.playfield!)).toBeVisible();
+
+        const report = requireMeasurement(
+          await measureTouchTargets(page, `${trainer.playfield!} button`, TOUCH_FLOOR_PX),
+          `${trainer.name} playfield actions at ${viewport.width}px`,
+        );
+        expect(report.measured).toBeGreaterThan(0);
+        expect(report.violations).toEqual([]);
       });
 
       test('keeps document width clean and visible text at the mobile floor', async ({ page }) => {
