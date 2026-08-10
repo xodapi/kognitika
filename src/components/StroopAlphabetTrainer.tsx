@@ -225,7 +225,7 @@ export function StroopAlphabetTrainer() {
           <ResultMetric label="Ошибки цвета" value={String(state.colorErrors)} />
           <ResultMetric label="Ошибки П/Л/О" value={String(state.actionErrors)} />
         </div>
-        <button type="button" onClick={stopGame} className="mt-8 min-h-12 w-full rounded-2xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-xs font-black uppercase tracking-widest text-destructive">
+        <button type="button" onClick={stopGame} data-testid="stop-button" className="mt-8 min-h-12 w-full rounded-2xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-xs font-black uppercase tracking-widest text-destructive">
           Завершить досрочно
         </button>
       </aside>

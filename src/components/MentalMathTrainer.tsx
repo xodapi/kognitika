@@ -18,10 +18,24 @@ import { useGameAttempt } from '../lib/game-attempt-client';
 
 const logger = createSafeLogger('mental-math');
 
+function useMobilePlayLayout() {
+  const query = '(max-width: 1023px)';
+  const [isMobile, setIsMobile] = useState(() => window.matchMedia(query).matches);
+  useEffect(() => {
+    const media = window.matchMedia(query);
+    const update = () => setIsMobile(media.matches);
+    update();
+    media.addEventListener('change', update);
+    return () => media.removeEventListener('change', update);
+  }, []);
+  return isMobile;
+}
+
 export function MentalMathTrainer() {
   const { state, startGame, stopGame, resetGame, submitAnswer, getCompletedAnalyticsJob } = useMentalMathEngine();
   const { token, refreshUser } = useAuth();
   const navigate = useNavigate();
+  const isMobilePlayLayout = useMobilePlayLayout();
   const inputRef = useRef<HTMLInputElement>(null);
   const [inputValue, setInputValue] = useState('');
   const [level, setLevel] = useState<MathLevel>(1);
@@ -608,6 +622,17 @@ export function MentalMathTrainer() {
         </div>
       </motion.div>
 
+      {isMobilePlayLayout && (
+        <motion.button
+          whileTap={{ scale: 0.97 }}
+          onClick={stopGame}
+          data-testid="stop-button"
+          className="fixed inset-x-4 bottom-[max(6.25rem,calc(env(safe-area-inset-bottom)+5.75rem))] z-40 min-h-11 rounded-2xl border border-destructive/30 bg-card/95 px-4 py-3 text-sm font-black uppercase tracking-widest text-destructive shadow-xl backdrop-blur-md"
+        >
+          Завершить досрочно
+        </motion.button>
+      )}
+
       {/* Right: Controls */}
       <motion.div
         initial={{ opacity: 0, x: 20 }}
@@ -649,7 +674,8 @@ export function MentalMathTrainer() {
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={stopGame}
-            className="w-full py-4 bg-destructive/10 border border-destructive/20 text-destructive text-xs uppercase font-black tracking-widest rounded-2xl hover:bg-destructive hover:text-white transition-all shadow-lg shadow-destructive/5"
+            data-testid="desktop-stop-button"
+            className="hidden w-full py-4 bg-destructive/10 border border-destructive/20 text-destructive text-xs uppercase font-black tracking-widest rounded-2xl hover:bg-destructive hover:text-white transition-all shadow-lg shadow-destructive/5 lg:block"
           >
             Завершить досрочно
           </motion.button>

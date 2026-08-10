@@ -346,6 +346,7 @@ export function AlphabetTableTrainer() {
         <button
           type="button"
           onClick={stopGame}
+          data-testid="stop-button"
           className="mt-8 min-h-12 w-full rounded-2xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-xs font-black uppercase tracking-widest text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive"
         >
           Завершить досрочно
