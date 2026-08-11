@@ -1,36 +1,20 @@
 import prisma from '../../lib/prisma.ts';
 import { createSafeLogger, safeError } from '../../lib/safe-logger.ts';
-import {
-  SessionAnalyticsSummaryRecordSchema,
-  type SessionAnalyticsSummaryRecord,
-} from '../../core/analyze-session/index.ts';
+import type { SessionAnalyticsSummaryRecord } from '../../core/analyze-session/index.ts';
 import type { CognitiveTrend, TrendPoint } from '../../lib/cognitive-trend-types.ts';
-import { z } from 'zod';
+import { assertSafeAnalyticsSummary } from './analytics-summary-policy.ts';
 
 const logger = createSafeLogger('analytics-persistence');
-
-const SENSITIVE_FIELD_PATTERN = /(authorization|auth|bearer|brainid|cookie|email|jwt|localstorage|password|rawstorage|refresh|screenshot|secret|token|user)/i;
-
-function containsSensitiveData(record: Record<string, unknown>): boolean {
-  const json = JSON.stringify(record);
-  return SENSITIVE_FIELD_PATTERN.test(json);
-}
 
 export async function persistSessionAnalyticsSummary(
   userId: string,
   record: SessionAnalyticsSummaryRecord,
 ): Promise<void> {
-  if (containsSensitiveData(record as Record<string, unknown>)) {
-    logger.warn('Summary record contains sensitive material, rejecting', {
-      jobId: record.jobId,
-    });
-    throw new Error('Summary record contains sensitive material');
-  }
-
-  const validation = SessionAnalyticsSummaryRecordSchema.safeParse(record);
-  if (!validation.success) {
-    logger.warn('Invalid summary record rejected', { error: validation.error.format() });
-    throw new Error('Invalid SessionAnalyticsSummaryRecord');
+  try {
+    assertSafeAnalyticsSummary(record);
+  } catch (error) {
+    logger.warn('Analytics summary rejected', { error: safeError(error), jobId: record.jobId });
+    throw error;
   }
 
   try {

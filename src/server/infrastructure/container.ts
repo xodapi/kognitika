@@ -88,7 +88,7 @@ export function getAnalyticsServices(): AnalyticsServices {
       comparison: new ComparisonService(repos.sessions),
       profile: new ProfileService(repos.sessions),
       export: new ExportService(repos.sessions),
-      summaryPersistence: new SummaryPersistenceService(),
+      summaryPersistence: new SummaryPersistenceService(repos.summaries),
       summaryQuery: new SummaryQueryService(repos.summaries),
       cognitiveTrend: new CognitiveTrendService(repos.summaries),
     };
