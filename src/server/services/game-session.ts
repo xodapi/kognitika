@@ -1,4 +1,5 @@
 import type { GameSessionRepository } from '../repositories/game-session-repository.ts';
+import { DomainError } from '../errors/domain-error.ts';
 
 /**
  * Application service for managing game session metadata.
@@ -30,16 +31,22 @@ export class GameSessionService {
   }
 }
 
-export class SessionNotFoundError extends Error {
+export class SessionNotFoundError extends DomainError {
+  readonly category = 'notFound' as const;
+  readonly code = 'SESSION_NOT_FOUND';
+  readonly status = 404;
+
   constructor(message: string) {
     super(message);
-    this.name = 'SessionNotFoundError';
   }
 }
 
-export class SessionForbiddenError extends Error {
+export class SessionForbiddenError extends DomainError {
+  readonly category = 'forbidden' as const;
+  readonly code = 'SESSION_FORBIDDEN';
+  readonly status = 403;
+
   constructor(message: string) {
     super(message);
-    this.name = 'SessionForbiddenError';
   }
 }

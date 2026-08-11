@@ -2,18 +2,26 @@ import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 import type { GameAttempt, GameType } from '@prisma/client';
 import { getGameRepositories } from '../infrastructure/container.ts';
 import { GameAttemptConflictError } from '../repositories/game-attempt-repository.ts';
+import { DomainError } from '../errors/domain-error.ts';
 
 const DEFAULT_TTL_SECONDS = 15 * 60;
 const DEFAULT_NOT_BEFORE_MS = 0;
 
-export class GameAttemptError extends Error {
+export class GameAttemptError extends DomainError {
+  get category() {
+    return this.status === 409
+      ? 'conflict' as const
+      : this.status === 403
+        ? 'forbidden' as const
+        : 'validation' as const;
+  }
+
   constructor(
     message: string,
     public readonly status: 400 | 403 | 409,
     public readonly code: string,
   ) {
     super(message);
-    this.name = 'GameAttemptError';
   }
 }
 

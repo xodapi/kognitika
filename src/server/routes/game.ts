@@ -3,10 +3,10 @@ import { z } from 'zod';
 import { validateBody, validateParams } from '../middleware/validate.ts';
 import { authenticate } from '../middleware/auth.ts';
 import { saveGameSchema, startGameAttemptSchema, updateMetadataSchema } from '../schemas/game.ts';
-import { GameAttemptError, startGameAttempt } from '../services/game-attempt.ts';
+import { startGameAttempt } from '../services/game-attempt.ts';
 import { createSafeLogger, safeError } from '../../lib/safe-logger.ts';
 import { getGameServices } from '../infrastructure/container.ts';
-import { SessionNotFoundError, SessionForbiddenError } from '../services/game-session.ts';
+import { sendDomainError } from '../errors/domain-error.ts';
 
 const router = Router();
 const logger = createSafeLogger('game-route');
@@ -26,9 +26,7 @@ router.post('/attempts', authenticate, validateBody(startGameAttemptSchema), asy
     const attempt = await startGameAttempt({ userId: req.user.id, ...req.validated.body });
     res.status(201).json(attempt);
   } catch (error) {
-    if (error instanceof GameAttemptError) {
-      return res.status(error.status).json({ error: error.message, code: error.code });
-    }
+    if (sendDomainError(res, error)) return;
     logger.error('Game attempt creation failed', { error: safeError(error) });
     res.status(500).json({ error: 'Failed to create game attempt' });
   }
@@ -62,9 +60,7 @@ router.post('/save', authenticate, validateBody(saveGameSchema), async (req: any
     
     res.json(result);
   } catch (error) {
-    if (error instanceof GameAttemptError) {
-      return res.status(error.status).json({ error: error.message, code: error.code });
-    }
+    if (sendDomainError(res, error)) return;
     logger.error('Game save failed', { error: safeError(error) });
     res.status(500).json({ error: 'Failed to save session' });
   }
@@ -86,12 +82,7 @@ router.post(
       const updatedSession = await services.session.updateMetadata(id, req.user.id, metadata);
       res.json({ success: true, session: updatedSession });
     } catch (error) {
-      if (error instanceof SessionNotFoundError) {
-        return res.status(404).json({ error: error.message });
-      }
-      if (error instanceof SessionForbiddenError) {
-        return res.status(403).json({ error: error.message });
-      }
+      if (sendDomainError(res, error)) return;
       logger.error('Session metadata update failed', {
         error: safeError(error),
         sessionLabel: `Session ${String(id).slice(0, 8)}`,
