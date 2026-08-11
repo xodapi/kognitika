@@ -4,31 +4,14 @@ import {
   type CompletedSessionAnalyticsJob,
 } from '../../../core/cognitive-events/index.ts';
 import type { SaveGameInput } from './attempt-validator.ts';
-
-const ANALYTICS_MODULE_GAME_TYPES: Record<string, readonly string[]> = {
-  schulte: ['SCHULTE', 'SCHULTE_GORBOV'],
-  stroop: ['STROOP'],
-  nback: ['N_BACK'],
-  numerical: ['NUMERICAL_ANALYSIS'],
-  'logical-sequence': ['LOGICAL_SEQUENCE'],
-  'mental-math': ['MENTAL_MATH'],
-  situational: ['SITUATIONAL_JUDGMENT'],
-  spatial: ['SPATIAL_CONCEALMENT'],
-  'stroop-alphabet': ['STROOP_ALPHABET'],
-  'schulte-90': ['SCHULTE_90'],
-  'alphabet-table': ['ALPHABET_TABLE'],
-  collision: ['COLLISION_DETECTOR'],
-  dispatcher: ['ASYNC_DISPATCHER'],
-  topology: ['TOPOLOGY_MEMORY'],
-  typing: ['SPEED_TYPING'],
-};
+import { getAnalyticsModuleRegistry } from './analytics-registry-factory.ts';
 
 /**
  * Validates and writes analytics jobs for completed game sessions.
  * 
  * Enforces:
  * - Job schema validity
- * - Module ID and game type consistency
+ * - Module ID and game type consistency via registry lookup
  */
 export class AnalyticsJobValidator {
   /**
@@ -46,7 +29,10 @@ export class AnalyticsJobValidator {
       throw new GameAttemptError('Invalid canonical analytics job', 400, 'INVALID_ANALYTICS_JOB');
     }
 
-    if (!ANALYTICS_MODULE_GAME_TYPES[parsed.data.moduleId]?.includes(input.gameType)) {
+    const registry = getAnalyticsModuleRegistry();
+    const module = registry.findByModuleId(parsed.data.moduleId);
+    
+    if (!module || !module.supports(input.gameType)) {
       throw new GameAttemptError(
         'Analytics job does not match game type',
         400,
