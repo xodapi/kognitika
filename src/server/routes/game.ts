@@ -8,16 +8,15 @@ import { eventBus } from '../events/event-bus.ts';
 import { GameAttemptError, startGameAttempt } from '../services/game-attempt.ts';
 import { saveCompletedGame } from '../services/game-save.ts';
 import { createSafeLogger, safeError } from '../../lib/safe-logger.ts';
+import { getGameRepositories } from '../infrastructure/container.ts';
 
 const router = Router();
 const logger = createSafeLogger('game-route');
 
 router.get('/progress', authenticate, async (req: any, res) => {
   try {
-    const sessions = await prisma.gameSession.findMany({
-      where: { userId: req.user.id, isCompleted: true },
-      orderBy: { createdAt: 'asc' }
-    });
+    const repos = getGameRepositories();
+    const sessions = await repos.gameSessions.findCompletedByUser(req.user.id);
     res.json(sessions);
   } catch {
     res.status(500).json({ error: 'Failed to fetch progress' });
@@ -98,18 +97,14 @@ router.post(
     const { id } = req.validated.params;
 
     try {
-      const session = await prisma.gameSession.findUnique({ where: { id } });
+      const repos = getGameRepositories();
+      const session = await repos.gameSessions.findById(id);
       if (!session) return res.status(404).json({ error: 'Session not found' });
       if (session.userId !== req.user.id) return res.status(403).json({ error: 'Forbidden' });
 
-      const updatedSession = await prisma.gameSession.update({
-        where: { id },
-        data: {
-          metadata: {
-            ...(session.metadata as Record<string, any>),
-            ...metadata,
-          },
-        },
+      const updatedSession = await repos.gameSessions.replaceMetadata(id, {
+        ...(session.metadata as Record<string, any>),
+        ...metadata,
       });
 
       res.json({ success: true, session: updatedSession });
@@ -125,20 +120,8 @@ router.post(
 
 router.get('/leaderboard', async (req, res) => {
   try {
-    const topUsers = await prisma.user.findMany({
-      take: 50,
-      orderBy: { experience: 'desc' },
-      select: {
-        name: true,
-        pseudonym: true,
-        experience: true,
-        level: true,
-        rating: true,
-        _count: {
-          select: { sessions: true }
-        }
-      }
-    });
+    const repos = getGameRepositories();
+    const topUsers = await repos.users.findTopByExperience(50);
 
     const sanitizedUsers = topUsers.map(user => ({
       ...user,
