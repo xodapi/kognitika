@@ -2,14 +2,17 @@ import prisma from '../../lib/prisma.ts';
 import { PrismaGameAttemptRepository } from './prisma/prisma-game-attempt-repository.ts';
 import { PrismaGameSessionRepository } from './prisma/prisma-game-session-repository.ts';
 import { PrismaUserRepository } from './prisma/prisma-user-repository.ts';
+import { PrismaCompletedGameRepository } from './prisma/prisma-completed-game-repository.ts';
 import type { GameAttemptRepository } from '../repositories/game-attempt-repository.ts';
 import type { GameSessionRepository } from '../repositories/game-session-repository.ts';
 import type { UserRepository } from '../repositories/user-repository.ts';
+import type { CompletedGameRepository } from '../services/game-save/completed-game-repository.ts';
 
 export type GameRepositories = {
   gameAttempts: GameAttemptRepository;
   gameSessions: GameSessionRepository;
   users: UserRepository;
+  completedGames: CompletedGameRepository;
 };
 
 // Singleton-per-process: the Prisma client is already a singleton.
@@ -21,6 +24,7 @@ export function getGameRepositories(): GameRepositories {
       gameAttempts: new PrismaGameAttemptRepository(prisma),
       gameSessions: new PrismaGameSessionRepository(prisma),
       users: new PrismaUserRepository(prisma),
+      completedGames: new PrismaCompletedGameRepository(prisma),
     };
   }
   return _repos;
