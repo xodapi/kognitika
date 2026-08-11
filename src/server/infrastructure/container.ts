@@ -7,6 +7,10 @@ import type { GameAttemptRepository } from '../repositories/game-attempt-reposit
 import type { GameSessionRepository } from '../repositories/game-session-repository.ts';
 import type { UserRepository } from '../repositories/user-repository.ts';
 import type { CompletedGameRepository } from '../services/game-save/completed-game-repository.ts';
+import { GameProgressService } from '../services/game-progress.ts';
+import { GameCompletionService } from '../services/game-completion.ts';
+import { GameSessionService } from '../services/game-session.ts';
+import { LeaderboardService } from '../services/leaderboard.ts';
 
 export type GameRepositories = {
   gameAttempts: GameAttemptRepository;
@@ -15,8 +19,16 @@ export type GameRepositories = {
   completedGames: CompletedGameRepository;
 };
 
+export type GameServices = {
+  progress: GameProgressService;
+  completion: GameCompletionService;
+  session: GameSessionService;
+  leaderboard: LeaderboardService;
+};
+
 // Singleton-per-process: the Prisma client is already a singleton.
 let _repos: GameRepositories | null = null;
+let _services: GameServices | null = null;
 
 export function getGameRepositories(): GameRepositories {
   if (!_repos) {
@@ -30,12 +42,27 @@ export function getGameRepositories(): GameRepositories {
   return _repos;
 }
 
+export function getGameServices(): GameServices {
+  if (!_services) {
+    const repos = getGameRepositories();
+    _services = {
+      progress: new GameProgressService(repos.gameSessions),
+      completion: new GameCompletionService(),
+      session: new GameSessionService(repos.gameSessions),
+      leaderboard: new LeaderboardService(repos.users),
+    };
+  }
+  return _services;
+}
+
 /** Override the singleton – used in tests to inject in-memory repositories. */
 export function setGameRepositories(repos: GameRepositories): void {
   _repos = repos;
+  _services = null; // Reset services when repos change
 }
 
 /** Reset to Prisma-backed defaults (used in test teardown). */
 export function resetGameRepositories(): void {
   _repos = null;
+  _services = null;
 }

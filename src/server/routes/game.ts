@@ -1,22 +1,20 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import prisma from '../../lib/prisma.ts';
 import { validateBody, validateParams } from '../middleware/validate.ts';
 import { authenticate } from '../middleware/auth.ts';
 import { saveGameSchema, startGameAttemptSchema, updateMetadataSchema } from '../schemas/game.ts';
-import { eventBus } from '../events/event-bus.ts';
 import { GameAttemptError, startGameAttempt } from '../services/game-attempt.ts';
-import { saveCompletedGame } from '../services/game-save.ts';
 import { createSafeLogger, safeError } from '../../lib/safe-logger.ts';
-import { getGameRepositories } from '../infrastructure/container.ts';
+import { getGameServices } from '../infrastructure/container.ts';
+import { SessionNotFoundError, SessionForbiddenError } from '../services/game-session.ts';
 
 const router = Router();
 const logger = createSafeLogger('game-route');
 
 router.get('/progress', authenticate, async (req: any, res) => {
   try {
-    const repos = getGameRepositories();
-    const sessions = await repos.gameSessions.findCompletedByUser(req.user.id);
+    const services = getGameServices();
+    const sessions = await services.progress.getUserProgress(req.user.id);
     res.json(sessions);
   } catch {
     res.status(500).json({ error: 'Failed to fetch progress' });
@@ -50,7 +48,8 @@ router.post('/save', authenticate, validateBody(saveGameSchema), async (req: any
   }
 
   try {
-    const saveResult = await saveCompletedGame({
+    const services = getGameServices();
+    const result = await services.completion.complete({
       userId: req.user.id,
       clientRunId,
       attemptId,
@@ -60,22 +59,8 @@ router.post('/save', authenticate, validateBody(saveGameSchema), async (req: any
       metadata,
       ...(analyticsJob === undefined ? {} : { analyticsJob }),
     });
-    const currentLevel = Math.floor(saveResult.user.experience / 500) + 1;
-    if (!saveResult.isReplay) {
-      const EventBusClass: any = eventBus.constructor;
-      eventBus.emit(EventBusClass.EVENTS.GAME_COMPLETED, {
-        userId: req.user.id,
-        sessionId: saveResult.session.id,
-        score: saveResult.session.score,
-        gameType,
-        metadata,
-      });
-    }
-    res.json({
-      session: saveResult.session,
-      newLevel: currentLevel,
-      streakDays: saveResult.user.streakDays,
-    });
+    
+    res.json(result);
   } catch (error) {
     if (error instanceof GameAttemptError) {
       return res.status(error.status).json({ error: error.message, code: error.code });
@@ -97,18 +82,16 @@ router.post(
     const { id } = req.validated.params;
 
     try {
-      const repos = getGameRepositories();
-      const session = await repos.gameSessions.findById(id);
-      if (!session) return res.status(404).json({ error: 'Session not found' });
-      if (session.userId !== req.user.id) return res.status(403).json({ error: 'Forbidden' });
-
-      const updatedSession = await repos.gameSessions.replaceMetadata(id, {
-        ...(session.metadata as Record<string, any>),
-        ...metadata,
-      });
-
+      const services = getGameServices();
+      const updatedSession = await services.session.updateMetadata(id, req.user.id, metadata);
       res.json({ success: true, session: updatedSession });
     } catch (error) {
+      if (error instanceof SessionNotFoundError) {
+        return res.status(404).json({ error: error.message });
+      }
+      if (error instanceof SessionForbiddenError) {
+        return res.status(403).json({ error: error.message });
+      }
       logger.error('Session metadata update failed', {
         error: safeError(error),
         sessionLabel: `Session ${String(id).slice(0, 8)}`,
@@ -120,14 +103,8 @@ router.post(
 
 router.get('/leaderboard', async (req, res) => {
   try {
-    const repos = getGameRepositories();
-    const topUsers = await repos.users.findTopByExperience(50);
-
-    const sanitizedUsers = topUsers.map(user => ({
-      ...user,
-      name: user.name === user.pseudonym ? user.name : '[ANONYMOUS]'
-    }));
-
+    const services = getGameServices();
+    const sanitizedUsers = await services.leaderboard.getTopUsers(50);
     res.json(sanitizedUsers);
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch leaderboard' });
