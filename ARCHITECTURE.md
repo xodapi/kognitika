@@ -10,6 +10,10 @@ Kognitika is a React/Vite cognitive-training product with Express, Socket.io, Pr
 
 TypeScript remains the runtime authority for cognitive analytics. The repository also contains `crates/kognitika-core`, a deterministic Rust implementation of the versioned `AnalyzeSession` contract. It is a compute-only shadow/canary candidate, not a replacement for the web client, Express, Prisma, PostgreSQL, authentication, or Socket.io.
 
+The bounded-context vocabulary and aggregate consistency decisions are documented in
+[`docs/domain-language.md`](docs/domain-language.md) and
+[`docs/aggregate-boundaries.md`](docs/aggregate-boundaries.md).
+
 ---
 
 ## Module map

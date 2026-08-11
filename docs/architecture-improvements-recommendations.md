@@ -155,6 +155,11 @@ export class GameProgressService {
 **Estimation:** 1-2 hours
 **Priority:** P3 (cosmetic) — не влияет на correctness
 
+**Phase 7 decision:** Do not inline `GameProgressService` or add speculative aggregation.
+Its repository boundary is useful for dependency direction and future progress policies.
+Keep it intentionally thin until a concrete progress rule or projection is introduced;
+then enrich the semantic service rather than adding route-level branching.
+
 ---
 
 ## 4. Test Characterization for Legacy Code
