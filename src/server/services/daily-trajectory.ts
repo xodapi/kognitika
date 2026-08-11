@@ -1,5 +1,5 @@
-import prisma from '../../lib/prisma.ts';
 import { createSafeLogger, safeError } from '../../lib/safe-logger.ts';
+import { getDailyTrajectoryRepository } from '../infrastructure/container.ts';
 import {
   type DailyPracticeItem,
   type DailyPracticeItemStatus,
@@ -90,11 +90,7 @@ export async function generateDailyPlan(userId: string, date?: Date): Promise<Da
   const targetDate = date || new Date();
   const dateStr = toISOStringDate(targetDate);
 
-  const sessions = await prisma.gameSession.findMany({
-    where: { userId, isCompleted: true },
-    orderBy: { createdAt: 'desc' },
-    take: 50,
-  });
+  const sessions = await getDailyTrajectoryRepository().findRecentCompletedSessions(userId, 50);
 
   const todayStart = new Date(targetDate);
   todayStart.setHours(0, 0, 0, 0);
@@ -167,13 +163,11 @@ export async function getDailyPlan(userId: string, date?: Date): Promise<DailyPr
   const targetDate = date || new Date();
   const dateStr = toISOStringDate(targetDate);
 
-  const plan = await prisma.dailyPracticePlan.findUnique({
-    where: { userId_date: { userId, date: new Date(dateStr) } },
-  });
+  const plan = await getDailyTrajectoryRepository().findPlan(userId, new Date(dateStr));
 
   if (!plan) return null;
 
-  return plan.items as unknown as DailyPracticeItem[];
+  return plan.items;
 }
 
 export async function getOrCreateDailyPlan(userId: string, date?: Date): Promise<DailyPracticeItem[]> {
@@ -185,13 +179,7 @@ export async function getOrCreateDailyPlan(userId: string, date?: Date): Promise
   const dateStr = toISOStringDate(targetDate);
 
   try {
-    await prisma.dailyPracticePlan.create({
-      data: {
-        userId,
-        date: new Date(dateStr),
-        items: items as unknown as object,
-      },
-    });
+    await getDailyTrajectoryRepository().createPlan(userId, new Date(dateStr), items);
   } catch (err) {
     logger.error('Failed to persist daily plan', { error: safeError(err), userId });
   }
@@ -208,13 +196,11 @@ export async function updateItemStatus(
   const targetDate = date || new Date();
   const dateStr = toISOStringDate(targetDate);
 
-  const plan = await prisma.dailyPracticePlan.findUnique({
-    where: { userId_date: { userId, date: new Date(dateStr) } },
-  });
+  const plan = await getDailyTrajectoryRepository().findPlan(userId, new Date(dateStr));
 
   if (!plan) return null;
 
-  const items = plan.items as unknown as DailyPracticeItem[];
+  const items = plan.items;
   const updated = items.map((item) => {
     if (item.id !== itemId) return item;
     return {
@@ -225,10 +211,7 @@ export async function updateItemStatus(
   });
 
   try {
-    await prisma.dailyPracticePlan.update({
-      where: { id: plan.id },
-      data: { items: updated as unknown as object },
-    });
+    await getDailyTrajectoryRepository().replacePlanItems(plan.id, updated);
   } catch (err) {
     logger.error('Failed to update item status', { error: safeError(err), userId, itemId });
   }

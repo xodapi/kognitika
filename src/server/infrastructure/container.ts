@@ -5,11 +5,13 @@ import { PrismaUserRepository } from './prisma/prisma-user-repository.ts';
 import { PrismaCompletedGameRepository } from './prisma/prisma-completed-game-repository.ts';
 import { PrismaAnalyticsSessionRepository } from './prisma/prisma-analytics-session-repository.ts';
 import { PrismaAnalyticsSummaryRepository } from './prisma/prisma-analytics-summary-repository.ts';
+import { PrismaDailyTrajectoryRepository } from './prisma/prisma-daily-trajectory-repository.ts';
 import type { GameAttemptRepository } from '../repositories/game-attempt-repository.ts';
 import type { GameSessionRepository } from '../repositories/game-session-repository.ts';
 import type { UserRepository } from '../repositories/user-repository.ts';
 import type { AnalyticsSessionRepository } from '../repositories/analytics-session-repository.ts';
 import type { AnalyticsSummaryRepository } from '../repositories/analytics-summary-repository.ts';
+import type { DailyTrajectoryRepository } from '../repositories/daily-trajectory-repository.ts';
 import type { CompletedGameRepository } from '../services/game-save/completed-game-repository.ts';
 import { GameProgressService } from '../services/game-progress.ts';
 import { GameCompletionService } from '../services/game-completion.ts';
@@ -55,6 +57,7 @@ let _repos: GameRepositories | null = null;
 let _services: GameServices | null = null;
 let _analyticsServices: AnalyticsServices | null = null;
 let _analyticsRepositories: AnalyticsRepositories | null = null;
+let _dailyTrajectoryRepository: DailyTrajectoryRepository | null = null;
 
 export function getGameRepositories(): GameRepositories {
   if (!_repos) {
@@ -106,6 +109,13 @@ export function getAnalyticsRepositories(): AnalyticsRepositories {
   return _analyticsRepositories;
 }
 
+export function getDailyTrajectoryRepository(): DailyTrajectoryRepository {
+  if (!_dailyTrajectoryRepository) {
+    _dailyTrajectoryRepository = new PrismaDailyTrajectoryRepository(prisma);
+  }
+  return _dailyTrajectoryRepository;
+}
+
 /** Override the singleton – used in tests to inject in-memory repositories. */
 export function setGameRepositories(repos: GameRepositories): void {
   _repos = repos;
@@ -124,4 +134,5 @@ export function resetGameRepositories(): void {
   _services = null;
   _analyticsServices = null;
   _analyticsRepositories = null;
+  _dailyTrajectoryRepository = null;
 }
