@@ -17,6 +17,7 @@ Eliminate direct `import prisma from '../../lib/prisma.ts'` from routes and serv
 - **`GameSessionRepository`** — completed game sessions (findCompletedByUser, createCompleted, replaceMetadata)
 - **`UserRepository`** — user progress, experience, leaderboard (findById, recordProgress, findTopByExperience)
 - **`GameAttemptRepository`** — challenge-based attempt lifecycle (create, reserve, attachSession)
+- **`AnalyticsSessionRepository`** — privacy-safe completed-session projections for analytics
 
 ### Prisma Implementations
 
@@ -25,6 +26,7 @@ Located in `src/server/infrastructure/prisma/`:
 - `PrismaGameSessionRepository`
 - `PrismaUserRepository`
 - `PrismaGameAttemptRepository`
+- `PrismaAnalyticsSessionRepository`
 
 ### Dependency Injection
 
@@ -83,18 +85,19 @@ Current state: 273-line transaction script with 9 responsibilities. Needs:
 
 See issue #256 for acceptance criteria.
 
-### 🔄 Phase 3 — Analytics Domain (Planned)
+### ✅ Phase 3 — Analytics Domain (Completed)
 
-**Targets:**
-- `src/server/routes/analytics.ts`
-- `src/server/services/analytics-persistence.ts`
+**Migrated:**
+- `src/server/services/analytics/comparison.ts`
+- `src/server/services/analytics/profile.ts`
+- `src/server/services/analytics/export.ts`
 
-Create:
-- `AnalyticsJobRepository`
-- `AnalyticsOutboxRepository`
-- `CognitiveAnalyticsRepository`
+The analytics services now depend on `AnalyticsSessionRepository`; Prisma access is isolated in
+`PrismaAnalyticsSessionRepository`. The repository exposes bounded, aggregate-friendly queries
+instead of database rows or Prisma types.
 
-See issue #259 for acceptance criteria.
+Summary persistence and trend queries remain behind their existing persistence service boundary
+and are not part of this session projection repository.
 
 ### 🔄 Phase 4 — Leaderboard Sync (Planned)
 

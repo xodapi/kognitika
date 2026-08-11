@@ -1,4 +1,4 @@
-import prisma from '../../../lib/prisma.ts';
+import type { AnalyticsSessionRepository } from '../../repositories/analytics-session-repository.ts';
 
 export type ProfileResult = {
   completedSessions: number;
@@ -10,11 +10,10 @@ export type ProfileResult = {
 const PROFILE_READY_SESSION_THRESHOLD = 5;
 
 export class ProfileService {
+  constructor(private readonly sessions: AnalyticsSessionRepository) {}
+
   async getUserProfile(userId: string): Promise<ProfileResult> {
-    const sessions = await prisma.gameSession.findMany({
-      where: { userId, isCompleted: true },
-      select: { gameType: true, timeMs: true },
-    });
+    const sessions = await this.sessions.findCompletedByUser(userId);
 
     const completedSessions = sessions.length;
     const uniqueGamesPlayed = new Set(sessions.map(s => s.gameType)).size;

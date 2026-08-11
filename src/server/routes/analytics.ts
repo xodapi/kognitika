@@ -6,6 +6,7 @@ import jwt from 'jsonwebtoken';
 import { createSafeLogger, safeError } from '../../lib/safe-logger.ts';
 import { getAnalyticsServices } from '../infrastructure/container.ts';
 import prisma from '../../lib/prisma.ts';
+import { parseSessionAnalyticsJob } from '../../core/analyze-session/index.ts';
 
 const router = Router();
 const logger = createSafeLogger('analytics-route');
@@ -124,9 +125,17 @@ router.get('/export', authenticate, async (req: any, res) => {
  */
 router.post('/summaries', authenticate, async (req: any, res) => {
   try {
+    const parsed = parseSessionAnalyticsJob(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({
+        error: 'Invalid session analytics job',
+        details: String(parsed.error),
+      });
+    }
+
     const gameSession = await prisma.gameSession.findFirst({
       where: {
-        id: req.body.session?.sessionId,
+        id: parsed.data.session.sessionId,
         userId: req.user.id,
       },
       select: { id: true },
@@ -138,7 +147,7 @@ router.post('/summaries', authenticate, async (req: any, res) => {
     const services = getAnalyticsServices();
     await services.summaryPersistence.persistSummary({
       userId: req.user.id,
-      sessionId: req.body.session?.sessionId,
+      sessionId: parsed.data.session.sessionId,
       job: req.body,
     });
 

@@ -19,7 +19,7 @@
 
 ### Текущее состояние
 
-Analytics services напрямую импортируют `prisma` вместо использования repository abstractions:
+Analytics services ранее напрямую импортировали `prisma`; Phase 6 устранила эту зависимость:
 
 ```typescript
 // src/server/services/analytics/comparison.ts
@@ -34,10 +34,7 @@ export class ComparisonService {
 }
 ```
 
-**Найденные файлы с прямым Prisma импортом:**
-- `analytics/comparison.ts`
-- `analytics/profile.ts`
-- `analytics/export.ts`
+Прямые Prisma-зависимости удалены из `comparison.ts`, `profile.ts` и `export.ts`.
 
 ### Нарушенные принципы
 
@@ -47,20 +44,20 @@ export class ComparisonService {
 **A Philosophy of Software Design (Information Hiding):**
 > "Hide volatile decisions, internal representations, storage shape, protocols, file formats, performance hacks, bookkeeping, normalization, and messy edge handling inside the module that owns the knowledge."
 
-### Рекомендация: [P2] Analytics Repository Layer
+### ✅ Реализовано: [P2] Analytics Repository Layer
 
-**Решение:**
-1. Создать `AnalyticsRepository` интерфейс
-2. Добавить `PrismaAnalyticsRepository` реализацию
-3. Инжектировать через DI container в analytics services
+**Реализация:**
+1. Создан `AnalyticsSessionRepository` интерфейс
+2. Добавлен `PrismaAnalyticsSessionRepository`
+3. Репозиторий подключён через DI container к analytics services
+4. Добавлены focused tests с in-memory implementation
 
 **Benefit:**
 - Тестируемость: analytics services можно тестировать с in-memory репозиториями
 - Независимость от Prisma: замена ORM не затронет business logic
 - Consistency: унификация с Game repositories pattern
 
-**Estimation:** 2-3 hours
-**Priority:** P2 (medium)
+**Статус:** завершено и проверено в Phase 6.
 
 ---
 

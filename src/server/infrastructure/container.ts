@@ -3,9 +3,11 @@ import { PrismaGameAttemptRepository } from './prisma/prisma-game-attempt-reposi
 import { PrismaGameSessionRepository } from './prisma/prisma-game-session-repository.ts';
 import { PrismaUserRepository } from './prisma/prisma-user-repository.ts';
 import { PrismaCompletedGameRepository } from './prisma/prisma-completed-game-repository.ts';
+import { PrismaAnalyticsSessionRepository } from './prisma/prisma-analytics-session-repository.ts';
 import type { GameAttemptRepository } from '../repositories/game-attempt-repository.ts';
 import type { GameSessionRepository } from '../repositories/game-session-repository.ts';
 import type { UserRepository } from '../repositories/user-repository.ts';
+import type { AnalyticsSessionRepository } from '../repositories/analytics-session-repository.ts';
 import type { CompletedGameRepository } from '../services/game-save/completed-game-repository.ts';
 import { GameProgressService } from '../services/game-progress.ts';
 import { GameCompletionService } from '../services/game-completion.ts';
@@ -41,10 +43,15 @@ export type AnalyticsServices = {
   cognitiveTrend: CognitiveTrendService;
 };
 
+export type AnalyticsRepositories = {
+  sessions: AnalyticsSessionRepository;
+};
+
 // Singleton-per-process: the Prisma client is already a singleton.
 let _repos: GameRepositories | null = null;
 let _services: GameServices | null = null;
 let _analyticsServices: AnalyticsServices | null = null;
+let _analyticsRepositories: AnalyticsRepositories | null = null;
 
 export function getGameRepositories(): GameRepositories {
   if (!_repos) {
@@ -73,10 +80,11 @@ export function getGameServices(): GameServices {
 
 export function getAnalyticsServices(): AnalyticsServices {
   if (!_analyticsServices) {
+    const repos = getAnalyticsRepositories();
     _analyticsServices = {
-      comparison: new ComparisonService(),
-      profile: new ProfileService(),
-      export: new ExportService(),
+      comparison: new ComparisonService(repos.sessions),
+      profile: new ProfileService(repos.sessions),
+      export: new ExportService(repos.sessions),
       summaryPersistence: new SummaryPersistenceService(),
       summaryQuery: new SummaryQueryService(),
       cognitiveTrend: new CognitiveTrendService(),
@@ -85,10 +93,24 @@ export function getAnalyticsServices(): AnalyticsServices {
   return _analyticsServices;
 }
 
+export function getAnalyticsRepositories(): AnalyticsRepositories {
+  if (!_analyticsRepositories) {
+    _analyticsRepositories = {
+      sessions: new PrismaAnalyticsSessionRepository(prisma),
+    };
+  }
+  return _analyticsRepositories;
+}
+
 /** Override the singleton – used in tests to inject in-memory repositories. */
 export function setGameRepositories(repos: GameRepositories): void {
   _repos = repos;
   _services = null; // Reset services when repos change
+}
+
+/** Override analytics persistence dependencies for focused service tests. */
+export function setAnalyticsRepositories(repos: AnalyticsRepositories): void {
+  _analyticsRepositories = repos;
   _analyticsServices = null;
 }
 
@@ -97,4 +119,5 @@ export function resetGameRepositories(): void {
   _repos = null;
   _services = null;
   _analyticsServices = null;
+  _analyticsRepositories = null;
 }

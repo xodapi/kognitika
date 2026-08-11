@@ -1,4 +1,4 @@
-import prisma from '../../../lib/prisma.ts';
+import type { AnalyticsSessionRepository } from '../../repositories/analytics-session-repository.ts';
 import {
   KNOWLEDGE_ARTICLE_BY_ID,
   TRAINING_KNOWLEDGE_ROUTE_IDS,
@@ -50,12 +50,10 @@ type ExportFormat = {
 };
 
 export class ExportService {
+  constructor(private readonly sessions: AnalyticsSessionRepository) {}
+
   async exportUserData(userId: string): Promise<ExportFormat> {
-    const allSessions = await prisma.gameSession.findMany({
-      where: { userId, isCompleted: true },
-      orderBy: { createdAt: 'desc' },
-      select: { gameType: true, score: true, timeMs: true, createdAt: true },
-    });
+    const allSessions = await this.sessions.findCompletedByUser(userId, MAX_EXPORT_SESSIONS + 1);
 
     const historyTruncated = allSessions.length > MAX_EXPORT_SESSIONS;
     const sessions = historyTruncated ? allSessions.slice(0, MAX_EXPORT_SESSIONS) : allSessions;

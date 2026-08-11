@@ -1,4 +1,4 @@
-import prisma from '../../../lib/prisma.ts';
+import type { AnalyticsSessionRepository } from '../../repositories/analytics-session-repository.ts';
 
 export type ComparisonInput = {
   gameType: string;
@@ -18,16 +18,18 @@ export type ComparisonResult = {
 };
 
 export class ComparisonService {
+  constructor(private readonly sessions: AnalyticsSessionRepository) {}
+
   async compare(input: ComparisonInput): Promise<ComparisonResult> {
     let deltaPercentage = 0;
     let trend: 'up' | 'down' | 'stable' = 'stable';
 
     if (input.userId) {
-      const history = await prisma.gameSession.findMany({
-        where: { userId: input.userId, gameType: input.gameType as any, isCompleted: true },
-        orderBy: { createdAt: 'desc' },
-        take: 10,
-      });
+      const history = await this.sessions.findRecentCompletedByUserAndGameType(
+        input.userId,
+        input.gameType,
+        10,
+      );
 
       if (history.length > 0) {
         const avgScore = history.reduce((sum, s) => sum + s.score, 0) / history.length;
@@ -43,12 +45,11 @@ export class ComparisonService {
       }
     }
 
-    const totalSessionsCount = await prisma.gameSession.count({
-      where: { gameType: input.gameType as any, isCompleted: true },
-    });
-    const lowerSessionsCount = await prisma.gameSession.count({
-      where: { gameType: input.gameType as any, isCompleted: true, score: { lt: input.score } },
-    });
+    const totalSessionsCount = await this.sessions.countCompletedByGameType(input.gameType);
+    const lowerSessionsCount = await this.sessions.countCompletedWithScoreBelow(
+      input.gameType,
+      input.score,
+    );
 
     let percentile = totalSessionsCount > 0 ? Math.round((lowerSessionsCount / totalSessionsCount) * 100) : 75;
 
