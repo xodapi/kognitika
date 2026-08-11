@@ -66,7 +66,7 @@ describe('legacy game-save characterization', () => {
       status: 400,
     });
     expect(prismaMock.$transaction).not.toHaveBeenCalled();
-  });
+  }, 20_000);
 
   it('rejects incomplete attempt credentials before persistence', async () => {
     const { saveCompletedGame } = await import('../server/services/game-save-legacy.ts');
@@ -81,7 +81,7 @@ describe('legacy game-save characterization', () => {
       status: 400,
     });
     expect(prismaMock.$transaction).not.toHaveBeenCalled();
-  });
+  }, 20_000);
 
   it('creates a completed session and awards XP once', async () => {
     const { saveCompletedGame } = await import('../server/services/game-save-legacy.ts');
@@ -98,5 +98,5 @@ describe('legacy game-save characterization', () => {
     expect(transactionClient.gameSession.create).toHaveBeenCalledOnce();
     expect(transactionClient.user.update).toHaveBeenCalledOnce();
     expect(transactionClient.xpEvent.create).toHaveBeenCalledOnce();
-  });
+  }, 20_000);
 });

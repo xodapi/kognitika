@@ -39,10 +39,13 @@ type ResultsView = 'stats' | 'curve' | 'attention';
 function useMobilePlayLayout() {
   const query = '(max-width: 1023px)';
   const [isMobile, setIsMobile] = useState(() =>
-    typeof window !== 'undefined' && window.matchMedia(query).matches,
+    typeof window !== 'undefined'
+      && typeof window.matchMedia === 'function'
+      && window.matchMedia(query).matches,
   );
 
   useEffect(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return;
     const media = window.matchMedia(query);
     const update = () => setIsMobile(media.matches);
     update();

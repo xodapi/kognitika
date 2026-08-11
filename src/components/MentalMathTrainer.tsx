@@ -20,8 +20,13 @@ const logger = createSafeLogger('mental-math');
 
 function useMobilePlayLayout() {
   const query = '(max-width: 1023px)';
-  const [isMobile, setIsMobile] = useState(() => window.matchMedia(query).matches);
+  const [isMobile, setIsMobile] = useState(() => (
+    typeof window !== 'undefined'
+    && typeof window.matchMedia === 'function'
+    && window.matchMedia(query).matches
+  ));
   useEffect(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return;
     const media = window.matchMedia(query);
     const update = () => setIsMobile(media.matches);
     update();
