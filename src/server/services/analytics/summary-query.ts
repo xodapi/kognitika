@@ -1,8 +1,7 @@
 import {
-  getSessionAnalyticsSummaries,
-  getModuleTrendData,
-  getAggregateTrendData,
-} from '../analytics-persistence.ts';
+  type AnalyticsSummaryRepository,
+} from '../../repositories/analytics-summary-repository.ts';
+import { aggregateAnalyticsTrend } from './trend-aggregation.ts';
 
 export type SummariesQueryInput = {
   userId: string;
@@ -20,8 +19,10 @@ export type TrendQueryInput = {
 };
 
 export class SummaryQueryService {
+  constructor(private readonly summaries: AnalyticsSummaryRepository) {}
+
   async getSummaries(input: SummariesQueryInput) {
-    return getSessionAnalyticsSummaries({
+    return this.summaries.findSummaries({
       userId: input.userId,
       moduleId: input.moduleId,
       category: input.category,
@@ -32,10 +33,9 @@ export class SummaryQueryService {
   }
 
   async getTrend(input: TrendQueryInput) {
-    if (input.moduleId) {
-      return getModuleTrendData(input.userId, input.moduleId, input.days);
-    } else {
-      return getAggregateTrendData(input.userId, input.days);
-    }
+    const from = new Date();
+    from.setDate(from.getDate() - input.days);
+    const rows = await this.summaries.findTrendRows(input.userId, input.moduleId ?? null, from);
+    return aggregateAnalyticsTrend(rows);
   }
 }

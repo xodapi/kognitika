@@ -4,10 +4,12 @@ import { PrismaGameSessionRepository } from './prisma/prisma-game-session-reposi
 import { PrismaUserRepository } from './prisma/prisma-user-repository.ts';
 import { PrismaCompletedGameRepository } from './prisma/prisma-completed-game-repository.ts';
 import { PrismaAnalyticsSessionRepository } from './prisma/prisma-analytics-session-repository.ts';
+import { PrismaAnalyticsSummaryRepository } from './prisma/prisma-analytics-summary-repository.ts';
 import type { GameAttemptRepository } from '../repositories/game-attempt-repository.ts';
 import type { GameSessionRepository } from '../repositories/game-session-repository.ts';
 import type { UserRepository } from '../repositories/user-repository.ts';
 import type { AnalyticsSessionRepository } from '../repositories/analytics-session-repository.ts';
+import type { AnalyticsSummaryRepository } from '../repositories/analytics-summary-repository.ts';
 import type { CompletedGameRepository } from '../services/game-save/completed-game-repository.ts';
 import { GameProgressService } from '../services/game-progress.ts';
 import { GameCompletionService } from '../services/game-completion.ts';
@@ -45,6 +47,7 @@ export type AnalyticsServices = {
 
 export type AnalyticsRepositories = {
   sessions: AnalyticsSessionRepository;
+  summaries: AnalyticsSummaryRepository;
 };
 
 // Singleton-per-process: the Prisma client is already a singleton.
@@ -86,8 +89,8 @@ export function getAnalyticsServices(): AnalyticsServices {
       profile: new ProfileService(repos.sessions),
       export: new ExportService(repos.sessions),
       summaryPersistence: new SummaryPersistenceService(),
-      summaryQuery: new SummaryQueryService(),
-      cognitiveTrend: new CognitiveTrendService(),
+      summaryQuery: new SummaryQueryService(repos.summaries),
+      cognitiveTrend: new CognitiveTrendService(repos.summaries),
     };
   }
   return _analyticsServices;
@@ -97,6 +100,7 @@ export function getAnalyticsRepositories(): AnalyticsRepositories {
   if (!_analyticsRepositories) {
     _analyticsRepositories = {
       sessions: new PrismaAnalyticsSessionRepository(prisma),
+      summaries: new PrismaAnalyticsSummaryRepository(prisma),
     };
   }
   return _analyticsRepositories;
