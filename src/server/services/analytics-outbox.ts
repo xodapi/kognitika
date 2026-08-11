@@ -13,8 +13,10 @@ import {
   createSessionAnalyticsSummary,
   type SessionAnalyticsSummaryRecord,
 } from '../../core/analyze-session/batch-analytics.ts';
-import { persistSessionAnalyticsSummary } from './analytics-persistence.ts';
+import { PrismaAnalyticsSummaryRepository } from '../infrastructure/prisma/prisma-analytics-summary-repository.ts';
+import type { AnalyticsSummaryRepository } from '../repositories/analytics-summary-repository.ts';
 import type { RustAnalyticsSidecarClient } from './rust-analytics-sidecar.ts';
+import { assertSafeAnalyticsSummary } from './analytics-summary-policy.ts';
 
 const CLAIMABLE_STATES: AnalyticsOutboxState[] = ['pending', 'retry'];
 const CLAIMABLE_STATE_SQL = Prisma.join(CLAIMABLE_STATES.map(state => Prisma.sql`${state}`));
@@ -64,7 +66,10 @@ function toEntry(record: {
  * through a Node-mediated boundary and has no database credentials.
  */
 export class PrismaAnalyticsOutboxStore {
-  constructor(private readonly rustSidecar: RustAnalyticsSidecarClient | null = null) {}
+  constructor(
+    private readonly rustSidecar: RustAnalyticsSidecarClient | null = null,
+    private readonly summaries: AnalyticsSummaryRepository = new PrismaAnalyticsSummaryRepository(prisma),
+  ) {}
 
   async claimNext(workerId: string, now: Date, leaseMs: number): Promise<AnalyticsOutboxEntry | null> {
     const leaseExpiresAt = new Date(now.getTime() + leaseMs);
@@ -211,7 +216,8 @@ export class PrismaAnalyticsOutboxStore {
         receivedAt: job.receivedAt,
         session: { ...canonicalSession, sessionId: entry.sourceSession },
       });
-      await persistSessionAnalyticsSummary(ownerId, summary);
+      assertSafeAnalyticsSummary(summary);
+      await this.summaries.upsert(ownerId, summary);
       if (this.rustSidecar?.shouldAnalyze(entry.sourceSession)) {
         try {
           await this.rustSidecar.analyze(canonicalSession, {

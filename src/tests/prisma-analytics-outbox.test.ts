@@ -12,8 +12,8 @@ const prismaMock = vi.hoisted(() => ({
 }));
 
 vi.mock('../lib/prisma.ts', () => ({ default: prismaMock }));
-vi.mock('../server/services/analytics-persistence.ts', () => ({
-  persistSessionAnalyticsSummary: vi.fn(),
+const summaryRepository = vi.hoisted(() => ({
+  upsert: vi.fn(),
 }));
 
 const now = new Date('2026-08-03T02:20:00.000Z');
@@ -129,15 +129,14 @@ describe('Prisma analytics outbox store', () => {
     prismaMock.completedSessionAnalyticsJob.findUnique.mockResolvedValue({ payload: canonicalJob });
     prismaMock.gameSession.findUnique.mockResolvedValue({ userId: 'user-synthetic' });
     prismaMock.analyticsOutboxEntry.updateMany.mockResolvedValue({ count: 1 });
-    const { persistSessionAnalyticsSummary } = await import('../server/services/analytics-persistence.ts');
     const { PrismaAnalyticsOutboxStore } = await import('../server/services/analytics-outbox.ts');
 
-    const result = await new PrismaAnalyticsOutboxStore().dispatchNext({
+    const result = await new PrismaAnalyticsOutboxStore(null, summaryRepository).dispatchNext({
       workerId: 'node-worker-a', now, leaseMs: 1_000, maxAttempts: 2,
     });
 
     expect(result).toMatchObject({ status: 'completed', summary: { jobId: canonicalJob.jobId, sourceSessionId: baseRecord.sourceSessionId } });
-    expect(persistSessionAnalyticsSummary).toHaveBeenCalledWith('user-synthetic', expect.objectContaining({ jobId: canonicalJob.jobId }));
+    expect(summaryRepository.upsert).toHaveBeenCalledWith('user-synthetic', expect.objectContaining({ jobId: canonicalJob.jobId }));
     expect(JSON.stringify(prismaMock.completedSessionAnalyticsJob.findUnique.mock.calls[0][0])).not.toMatch(/brainid|jwt|email|token|metadata/i);
   });
 
