@@ -226,7 +226,7 @@ export function CognitiveTrashFilter() {
       </div>
 
       {/* Main card interface */}
-      <div className="lg:col-span-9 bg-card/20 border border-border rounded-3xl p-6 flex flex-col items-center justify-between relative min-h-[450px] lg:h-full overflow-hidden">
+      <div data-testid="playfield" className="lg:col-span-9 bg-card/20 border border-border rounded-3xl p-6 flex flex-col items-center justify-between relative min-h-[450px] lg:h-full overflow-hidden">
         
         {/* Title */}
         <div className="text-center">

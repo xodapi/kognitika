@@ -203,7 +203,7 @@ function ClassicStroopTest() {
       </div>
 
       {/* Center Word Display */}
-      <div className="lg:col-span-9 bg-card/20 border border-border rounded-3xl overflow-hidden relative min-h-[400px] lg:h-full">
+      <div data-testid="playfield" className="lg:col-span-9 bg-card/20 border border-border rounded-3xl overflow-hidden relative min-h-[400px] lg:h-full">
          <StressOverlay isActive={state.isActive} intensity={useStress ? (state.errors > 3 ? 'high' : state.errors > 1 ? 'medium' : 'low') : 'none'}>
            {state.question ? (
               <div className="w-full h-full p-4 sm:p-6 flex flex-col items-center justify-center">

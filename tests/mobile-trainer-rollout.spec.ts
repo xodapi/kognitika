@@ -16,6 +16,7 @@ interface TrainerContract {
   route: string;
   clauses: Record<Clause, ClauseStatus>;
   playfield?: string;
+  autoStart?: boolean;
 }
 
 function skipReason(status: ClauseStatus): string | undefined {
@@ -48,6 +49,8 @@ const TRAINERS: TrainerContract[] = [
       ...NO_ABORT,
       briefing: { applies: false, reason: 'The trainer initializes its first statement automatically.' },
     },
+    playfield: '[data-testid="playfield"]',
+    autoStart: true,
   },
   { name: 'Logical matrix', route: '/logical', clauses: NO_ABORT, playfield: '[data-testid="playfield"]' },
   { name: 'Mental math', route: '/mental-math', clauses: ALL_APPLY, playfield: '[data-testid="playfield"]' },
@@ -64,10 +67,10 @@ const TRAINERS: TrainerContract[] = [
     playfield: '[data-testid="playfield"]',
   },
   { name: 'Situational judgment', route: '/situational', clauses: NO_ABORT, playfield: '[data-testid="playfield"]' },
-  { name: 'Spatial concealment', route: '/spatial', clauses: NO_ABORT },
-  { name: 'Speed typing', route: '/typing', clauses: NO_ABORT },
+  { name: 'Spatial concealment', route: '/spatial', clauses: NO_ABORT, playfield: '[data-testid="playfield"]' },
+  { name: 'Speed typing', route: '/typing', clauses: NO_ABORT, playfield: '[data-testid="playfield"]' },
   { name: 'Stroop alphabet', route: '/stroop?mode=combined', clauses: ALL_APPLY, playfield: '[data-testid="playfield"]' },
-  { name: 'Stroop', route: '/stroop', clauses: NO_ABORT },
+  { name: 'Stroop', route: '/stroop', clauses: NO_ABORT, playfield: '[data-testid="playfield"]' },
 ];
 
 test('every rollout row declares every mobile clause and explains skips', () => {
@@ -134,17 +137,20 @@ for (const trainer of TRAINERS) {
           'This trainer needs an explicit playfield hook before touch-floor measurement.',
         );
         await page.goto(trainer.route, { waitUntil: 'networkidle' });
-        const optionalPreTest = page.getByRole('checkbox');
-        if (await optionalPreTest.isVisible().catch(() => false) && await optionalPreTest.isChecked()) {
-          await optionalPreTest.uncheck();
+        const optionalPreTests = page.getByRole('checkbox');
+        for (let i = 0; i < await optionalPreTests.count(); i += 1) {
+          const optionalPreTest = optionalPreTests.nth(i);
+          if (await optionalPreTest.isVisible().catch(() => false) && await optionalPreTest.isChecked()) {
+            await optionalPreTest.uncheck();
+          }
         }
-        await page.getByTestId('start-button').click();
+        if (!trainer.autoStart) await page.getByTestId('start-button').click();
         const initialise = page.getByRole('button', { name: /Инициализировать тест/i });
         if (await initialise.isVisible().catch(() => false)) await initialise.click();
         await expect(page.locator(trainer.playfield!)).toBeVisible();
 
         const report = requireMeasurement(
-          await measureTouchTargets(page, `${trainer.playfield!} button`, TOUCH_FLOOR_PX),
+          await measureTouchTargets(page, `${trainer.playfield!} button, ${trainer.playfield!} textarea`, TOUCH_FLOOR_PX),
           `${trainer.name} playfield actions at ${viewport.width}px`,
         );
         expect(report.measured).toBeGreaterThan(0);
