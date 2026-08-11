@@ -1,5 +1,5 @@
 import { createSafeLogger } from '../../lib/safe-logger.ts';
-import { PrismaAnalyticsOutboxStore } from './analytics-outbox.ts';
+import { PrismaAnalyticsOutboxStore } from '../infrastructure/prisma/prisma-analytics-outbox-store.ts';
 import { createRustAnalyticsSidecarClient } from './rust-analytics-sidecar.ts';
 
 const logger = createSafeLogger('analytics-outbox-worker');

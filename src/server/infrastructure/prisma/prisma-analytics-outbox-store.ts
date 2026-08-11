@@ -1,22 +1,22 @@
 import { Prisma } from '@prisma/client';
-import prisma from '../../lib/prisma.ts';
+import prisma from '../../../lib/prisma.ts';
 import {
   type AnalyticsOutboxEntry,
   type AnalyticsOutboxState,
   buildAnalyticsOutboxMetrics,
-} from '../../core/analytics-outbox/index.ts';
+} from '../../../core/analytics-outbox/index.ts';
 import {
   completedSessionJobToAnalyzeSessionInput,
   parseCompletedSessionAnalyticsJob,
-} from '../../core/cognitive-events/index.ts';
+} from '../../../core/cognitive-events/index.ts';
 import {
   createSessionAnalyticsSummary,
   type SessionAnalyticsSummaryRecord,
-} from '../../core/analyze-session/batch-analytics.ts';
-import { PrismaAnalyticsSummaryRepository } from '../infrastructure/prisma/prisma-analytics-summary-repository.ts';
-import type { AnalyticsSummaryRepository } from '../repositories/analytics-summary-repository.ts';
-import type { RustAnalyticsSidecarClient } from './rust-analytics-sidecar.ts';
-import { assertSafeAnalyticsSummary } from './analytics-summary-policy.ts';
+} from '../../../core/analyze-session/batch-analytics.ts';
+import { PrismaAnalyticsSummaryRepository } from './prisma-analytics-summary-repository.ts';
+import type { AnalyticsSummaryRepository } from '../../repositories/analytics-summary-repository.ts';
+import type { RustAnalyticsSidecarClient } from '../../services/rust-analytics-sidecar.ts';
+import { assertSafeAnalyticsSummary } from '../../services/analytics-summary-policy.ts';
 
 const CLAIMABLE_STATES: AnalyticsOutboxState[] = ['pending', 'retry'];
 const CLAIMABLE_STATE_SQL = Prisma.join(CLAIMABLE_STATES.map(state => Prisma.sql`${state}`));
