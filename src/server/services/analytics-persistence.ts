@@ -1,8 +1,8 @@
-import prisma from '../../lib/prisma.ts';
 import { createSafeLogger, safeError } from '../../lib/safe-logger.ts';
 import type { SessionAnalyticsSummaryRecord } from '../../core/analyze-session/index.ts';
 import type { CognitiveTrend, TrendPoint } from '../../lib/cognitive-trend-types.ts';
 import { assertSafeAnalyticsSummary } from './analytics-summary-policy.ts';
+import { getAnalyticsRepositories } from '../infrastructure/container.ts';
 
 const logger = createSafeLogger('analytics-persistence');
 
@@ -18,37 +18,7 @@ export async function persistSessionAnalyticsSummary(
   }
 
   try {
-    const persisted = await prisma.sessionAnalyticsSummary.upsert({
-      where: { jobId: record.jobId },
-      create: {
-        jobId: record.jobId,
-        userId,
-        sourceSessionId: record.sourceSessionId,
-        moduleId: record.moduleId,
-        category: record.category,
-        completed: record.completed,
-        eventCount: record.eventCount,
-        clickCount: record.clickCount,
-        durationMs: record.durationMs,
-        p50ReactionMs: record.p50ReactionMs,
-        p95ReactionMs: record.p95ReactionMs,
-        speedSlope: record.speedSlope,
-        accuracy: record.accuracy,
-        fatigueIndex: record.fatigueIndex,
-        engagementIndex: record.engagementIndex,
-        suspiciousPatternScore: record.suspiciousPatternScore,
-        recommendationSignals: record.recommendationSignals,
-      },
-      update: {},
-      select: {
-        userId: true,
-        sourceSessionId: true,
-      },
-    });
-
-    if (persisted.userId !== userId || persisted.sourceSessionId !== record.sourceSessionId) {
-      throw new Error('Analytics summary idempotency conflict');
-    }
+    await getAnalyticsRepositories().summaries.upsert(userId, record);
   } catch (err) {
     logger.error('Failed to persist analytics summary', { error: safeError(err), jobId: record.jobId });
     throw err;
@@ -69,22 +39,13 @@ export async function getSessionAnalyticsSummaries(
 ) {
   const { userId, moduleId, category, from, to, limit = 100 } = params;
 
-  return prisma.sessionAnalyticsSummary.findMany({
-    where: {
-      userId,
-      ...(moduleId ? { moduleId } : {}),
-      ...(category ? { category } : {}),
-      ...(from || to
-        ? {
-            createdAt: {
-              ...(from ? { gte: from } : {}),
-              ...(to ? { lte: to } : {}),
-            },
-          }
-        : {}),
-    },
-    orderBy: { createdAt: 'desc' },
-    take: Math.min(limit, 500),
+  return getAnalyticsRepositories().summaries.findSummaries({
+    userId,
+    moduleId,
+    category,
+    from,
+    to,
+    limit,
   });
 }
 
@@ -96,14 +57,7 @@ export async function getModuleTrendData(
   const from = new Date();
   from.setDate(from.getDate() - days);
 
-  const summaries = await prisma.sessionAnalyticsSummary.findMany({
-    where: {
-      userId,
-      moduleId,
-      createdAt: { gte: from },
-    },
-    orderBy: { createdAt: 'asc' },
-  });
+  const summaries = await getAnalyticsRepositories().summaries.findTrendRows(userId, moduleId, from);
 
   return aggregateByDay(summaries);
 }
@@ -115,13 +69,7 @@ export async function getAggregateTrendData(
   const from = new Date();
   from.setDate(from.getDate() - days);
 
-  const summaries = await prisma.sessionAnalyticsSummary.findMany({
-    where: {
-      userId,
-      createdAt: { gte: from },
-    },
-    orderBy: { createdAt: 'asc' },
-  });
+  const summaries = await getAnalyticsRepositories().summaries.findTrendRows(userId, null, from);
 
   return aggregateByDay(summaries);
 }
@@ -179,16 +127,7 @@ export async function computeCognitiveTrend(
   const from = new Date();
   from.setDate(from.getDate() - days);
 
-  const where = {
-    userId,
-    ...(moduleId ? { moduleId } : {}),
-    createdAt: { gte: from },
-  };
-
-  const summaries = await prisma.sessionAnalyticsSummary.findMany({
-    where,
-    orderBy: { createdAt: 'asc' },
-  });
+  const summaries = await getAnalyticsRepositories().summaries.findTrendRows(userId, moduleId, from);
 
   const points = aggregateByDay(summaries);
 
