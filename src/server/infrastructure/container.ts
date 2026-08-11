@@ -11,6 +11,12 @@ import { GameProgressService } from '../services/game-progress.ts';
 import { GameCompletionService } from '../services/game-completion.ts';
 import { GameSessionService } from '../services/game-session.ts';
 import { LeaderboardService } from '../services/leaderboard.ts';
+import { ComparisonService } from '../services/analytics/comparison.ts';
+import { ProfileService } from '../services/analytics/profile.ts';
+import { ExportService } from '../services/analytics/export.ts';
+import { SummaryPersistenceService } from '../services/analytics/summary-persistence.ts';
+import { SummaryQueryService } from '../services/analytics/summary-query.ts';
+import { CognitiveTrendService } from '../services/analytics/cognitive-trend.ts';
 
 export type GameRepositories = {
   gameAttempts: GameAttemptRepository;
@@ -26,9 +32,19 @@ export type GameServices = {
   leaderboard: LeaderboardService;
 };
 
+export type AnalyticsServices = {
+  comparison: ComparisonService;
+  profile: ProfileService;
+  export: ExportService;
+  summaryPersistence: SummaryPersistenceService;
+  summaryQuery: SummaryQueryService;
+  cognitiveTrend: CognitiveTrendService;
+};
+
 // Singleton-per-process: the Prisma client is already a singleton.
 let _repos: GameRepositories | null = null;
 let _services: GameServices | null = null;
+let _analyticsServices: AnalyticsServices | null = null;
 
 export function getGameRepositories(): GameRepositories {
   if (!_repos) {
@@ -55,14 +71,30 @@ export function getGameServices(): GameServices {
   return _services;
 }
 
+export function getAnalyticsServices(): AnalyticsServices {
+  if (!_analyticsServices) {
+    _analyticsServices = {
+      comparison: new ComparisonService(),
+      profile: new ProfileService(),
+      export: new ExportService(),
+      summaryPersistence: new SummaryPersistenceService(),
+      summaryQuery: new SummaryQueryService(),
+      cognitiveTrend: new CognitiveTrendService(),
+    };
+  }
+  return _analyticsServices;
+}
+
 /** Override the singleton – used in tests to inject in-memory repositories. */
 export function setGameRepositories(repos: GameRepositories): void {
   _repos = repos;
   _services = null; // Reset services when repos change
+  _analyticsServices = null;
 }
 
 /** Reset to Prisma-backed defaults (used in test teardown). */
 export function resetGameRepositories(): void {
   _repos = null;
   _services = null;
+  _analyticsServices = null;
 }
