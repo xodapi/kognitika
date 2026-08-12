@@ -1,4 +1,13 @@
-import type { User } from '@prisma/client';
+export type UserRecord = {
+  id: string;
+  name: string | null;
+  pseudonym: string | null;
+  experience: number;
+  level: number;
+  rating: number;
+  streakDays: number;
+  lastPlayedAt: Date | null;
+};
 
 export type LeaderboardEntry = {
   name: string | null;
@@ -18,9 +27,9 @@ export type RecordProgressInput = {
 };
 
 export interface UserRepository {
-  findById(userId: string): Promise<User | null>;
-  requireById(userId: string): Promise<User>;
+  findById(userId: string): Promise<UserRecord | null>;
+  requireById(userId: string): Promise<UserRecord>;
   findTopByExperience(limit: number): Promise<LeaderboardEntry[]>;
-  recordProgress(input: RecordProgressInput): Promise<User>;
-  setLevel(userId: string, level: number): Promise<User>;
+  recordProgress(input: RecordProgressInput): Promise<UserRecord>;
+  setLevel(userId: string, level: number): Promise<UserRecord>;
 }
