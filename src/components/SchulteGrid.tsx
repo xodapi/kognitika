@@ -766,7 +766,7 @@ export function SchulteGrid() {
          <motion.div 
            initial={{ opacity: 0 }}
            animate={{ opacity: 1 }}
-           className="grid gap-0 sm:gap-2 w-full min-w-0 max-w-[600px] relative z-10"
+           className="grid gap-2 !gap-0 sm:!gap-2 w-full min-w-0 max-w-[600px] relative z-10"
            style={{ gridTemplateColumns: `repeat(${state.size}, 1fr)` }}
          >
             {state.grid.map((cell, idx) => {

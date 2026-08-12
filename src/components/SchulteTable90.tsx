@@ -508,13 +508,12 @@ export function SchulteTable90() {
         animate={state.errors > 0 ? { x: [0, -10, 10, -10, 10, 0] } : {}}
         data-testid="playfield"
         transition={{ duration: 0.4 }}
-        className="lg:col-span-6 border border-border rounded-[2.5rem] p-4 sm:p-6 flex flex-col items-start sm:items-center justify-center relative min-h-[400px] overflow-x-auto overflow-y-hidden lg:h-full shadow-2xl bg-card/30 backdrop-blur-sm"
+        className="lg:col-span-6 border border-border rounded-[2.5rem] p-0 sm:p-6 flex flex-col items-center justify-center relative min-h-[400px] overflow-hidden lg:h-full shadow-2xl bg-card/30 backdrop-blur-sm"
       >
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="grid gap-1.5 w-full min-w-[494px] max-w-[700px] relative z-10"
-          style={{ gridTemplateColumns: `repeat(${SCHULTE_90_COLS}, 1fr)` }}
+          className="grid grid-cols-6 gap-1.5 w-full min-w-0 max-w-[700px] relative z-10 sm:grid-cols-10"
         >
           {state.grid.map((cell, idx) => {
             const isConsumed = cell.num <= state.expectedIndex;
