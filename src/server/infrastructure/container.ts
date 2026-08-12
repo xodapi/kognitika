@@ -7,6 +7,7 @@ import { PrismaAnalyticsSessionRepository } from './prisma/prisma-analytics-sess
 import { PrismaAnalyticsSummaryRepository } from './prisma/prisma-analytics-summary-repository.ts';
 import { PrismaDailyTrajectoryRepository } from './prisma/prisma-daily-trajectory-repository.ts';
 import { PrismaFeedbackRepository } from './prisma/prisma-feedback-repository.ts';
+import { PrismaIdeaRepository } from './prisma/prisma-idea-repository.ts';
 import type { GameAttemptRepository } from '../repositories/game-attempt-repository.ts';
 import type { GameSessionRepository } from '../repositories/game-session-repository.ts';
 import type { UserRepository } from '../repositories/user-repository.ts';
@@ -14,6 +15,7 @@ import type { AnalyticsSessionRepository } from '../repositories/analytics-sessi
 import type { AnalyticsSummaryRepository } from '../repositories/analytics-summary-repository.ts';
 import type { DailyTrajectoryRepository } from '../repositories/daily-trajectory-repository.ts';
 import type { FeedbackRepository } from '../repositories/feedback-repository.ts';
+import type { IdeaRepository } from '../repositories/idea-repository.ts';
 import type { CompletedGameRepository } from '../services/game-save/completed-game-repository.ts';
 import { GameProgressService } from '../services/game-progress.ts';
 import { GameCompletionService } from '../services/game-completion.ts';
@@ -61,6 +63,7 @@ let _analyticsServices: AnalyticsServices | null = null;
 let _analyticsRepositories: AnalyticsRepositories | null = null;
 let _dailyTrajectoryRepository: DailyTrajectoryRepository | null = null;
 let _feedbackRepository: FeedbackRepository | null = null;
+let _ideaRepository: IdeaRepository | null = null;
 
 export function getGameRepositories(): GameRepositories {
   if (!_repos) {
@@ -126,6 +129,13 @@ export function getFeedbackRepository(): FeedbackRepository {
   return _feedbackRepository;
 }
 
+export function getIdeaRepository(): IdeaRepository {
+  if (!_ideaRepository) {
+    _ideaRepository = new PrismaIdeaRepository(prisma);
+  }
+  return _ideaRepository;
+}
+
 /** Override the singleton – used in tests to inject in-memory repositories. */
 export function setGameRepositories(repos: GameRepositories): void {
   _repos = repos;
@@ -143,6 +153,11 @@ export function setFeedbackRepository(repository: FeedbackRepository): void {
   _feedbackRepository = repository;
 }
 
+/** Override idea persistence for focused route tests. */
+export function setIdeaRepository(repository: IdeaRepository): void {
+  _ideaRepository = repository;
+}
+
 /** Reset to Prisma-backed defaults (used in test teardown). */
 export function resetGameRepositories(): void {
   _repos = null;
@@ -151,4 +166,5 @@ export function resetGameRepositories(): void {
   _analyticsRepositories = null;
   _dailyTrajectoryRepository = null;
   _feedbackRepository = null;
+  _ideaRepository = null;
 }

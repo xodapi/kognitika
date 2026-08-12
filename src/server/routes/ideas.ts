@@ -1,13 +1,13 @@
 import { Router } from 'express';
 import jwt from 'jsonwebtoken';
 import { z } from 'zod';
-import prisma from '../../lib/prisma.ts';
 import { authenticate } from '../middleware/auth.ts';
 import { validateBody, validateParams } from '../middleware/validate.ts';
 import { sanitizePublicUserIdentity } from '../utils/privacy.ts';
 import { createSafeLogger, safeError } from '../../lib/safe-logger.ts';
 import { eventBus } from '../events/event-bus.ts';
 import { normalizeIdeaStatus } from '../utils/idea-status.ts';
+import { getIdeaRepository } from '../infrastructure/container.ts';
 
 const router = Router();
 const JWT_SECRET = process.env.JWT_SECRET!;
@@ -33,26 +33,7 @@ function optionalUserId(req: any) {
 router.get('/', async (req: any, res) => {
   try {
     const userId = optionalUserId(req);
-    const ideas = await prisma.idea.findMany({
-      orderBy: { createdAt: 'desc' },
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            pseudonym: true,
-            brainId: true,
-          },
-        },
-        votes: userId ? {
-          where: { userId },
-          select: { id: true },
-        } : false,
-        _count: {
-          select: { votes: true },
-        },
-      },
-    });
+    const ideas = await getIdeaRepository().findAll(userId);
 
     res.json(ideas.map((idea) => ({
       id: idea.id,
@@ -72,26 +53,10 @@ router.get('/', async (req: any, res) => {
 
 router.post('/', authenticate, validateBody(ideaSchema), async (req: any, res) => {
   try {
-    const idea = await prisma.idea.create({
-      data: {
-        userId: req.user.id,
-        title: req.validated.body.title,
-        description: req.validated.body.description,
-        status: 'PENDING',
-      },
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            pseudonym: true,
-            brainId: true,
-          },
-        },
-        _count: {
-          select: { votes: true },
-        },
-      },
+    const idea = await getIdeaRepository().create({
+      userId: req.user.id,
+      title: req.validated.body.title,
+      description: req.validated.body.description,
     });
 
     eventBus.emit('idea:submitted', {
@@ -122,22 +87,9 @@ const ideaParamsSchema = z.object({ id: z.string().trim().min(1) }).strict();
 router.post('/:id/vote', authenticate, validateParams(ideaParamsSchema), async (req: any, res) => {
   const { id } = req.validated.params;
   try {
-    const idea = await prisma.idea.findUnique({ where: { id }, select: { id: true } });
-    if (!idea) return res.status(404).json({ error: 'Idea not found' });
+    if (!await getIdeaRepository().exists(id)) return res.status(404).json({ error: 'Idea not found' });
 
-    await prisma.ideaVote.upsert({
-      where: {
-        ideaId_userId: {
-          ideaId: id,
-          userId: req.user.id,
-        },
-      },
-      create: {
-        ideaId: id,
-        userId: req.user.id,
-      },
-      update: {},
-    });
+    await getIdeaRepository().upsertVote(id, req.user.id);
 
     res.json({ success: true });
   } catch (error) {

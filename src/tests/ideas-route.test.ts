@@ -6,26 +6,16 @@ import { createServer, type Server as HttpServer } from 'http';
 import type { AddressInfo } from 'net';
 import jwt from 'jsonwebtoken';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+  resetGameRepositories,
+  setIdeaRepository,
+} from '../server/infrastructure/container.ts';
+import type { IdeaRepository } from '../server/repositories/idea-repository.ts';
 
 const JWT_SECRET = 'synthetic-ideas-route-secret';
 
-const prismaMock = vi.hoisted(() => ({
-  idea: {
-    create: vi.fn(),
-    findMany: vi.fn(),
-    findUnique: vi.fn(),
-  },
-  ideaVote: {
-    upsert: vi.fn(),
-  },
-}));
-
 const eventBusMock = vi.hoisted(() => ({
   emit: vi.fn(),
-}));
-
-vi.mock('../lib/prisma.ts', () => ({
-  default: prismaMock,
 }));
 
 vi.mock('../server/events/event-bus.ts', () => ({
@@ -43,15 +33,27 @@ beforeAll(async () => {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  setIdeaRepository({
+    findAll: ideaFindAllMock,
+    create: ideaCreateMock,
+    exists: ideaExistsMock,
+    upsertVote: ideaUpsertVoteMock,
+  });
 });
 
 afterEach(async () => {
+  resetGameRepositories();
   await Promise.all(servers.splice(0).map((server) => (
     new Promise<void>((resolve, reject) => {
       server.close((error) => (error ? reject(error) : resolve()));
     })
   )));
 });
+
+const ideaFindAllMock = vi.fn<IdeaRepository['findAll']>();
+const ideaCreateMock = vi.fn<IdeaRepository['create']>();
+const ideaExistsMock = vi.fn<IdeaRepository['exists']>();
+const ideaUpsertVoteMock = vi.fn<IdeaRepository['upsertVote']>();
 
 async function createIdeasHarness() {
   const app = express();
@@ -102,11 +104,11 @@ describe('ideas route notification contract', () => {
 
     expect(response.status).toBe(400);
     expect(response.body).toMatchObject({ code: 'VALIDATION_ERROR' });
-    expect(prismaMock.idea.findUnique).not.toHaveBeenCalled();
+    expect(ideaExistsMock).not.toHaveBeenCalled();
   });
 
   it('normalizes legacy statuses in list responses', async () => {
-    prismaMock.idea.findMany.mockResolvedValue([
+    ideaFindAllMock.mockResolvedValue([
       {
         id: 'idea_synthetic_legacy',
         title: 'Synthetic legacy idea',
@@ -138,7 +140,7 @@ describe('ideas route notification contract', () => {
   });
 
   it('persists an idea before emitting admin notification events', async () => {
-    prismaMock.idea.create.mockResolvedValue({
+    ideaCreateMock.mockResolvedValue({
       id: 'idea_synthetic_1',
       title: 'Synthetic idea title',
       description: 'Synthetic idea description without personal data.',
@@ -164,26 +166,10 @@ describe('ideas route notification contract', () => {
     });
 
     expect(response.status).toBe(201);
-    expect(prismaMock.idea.create).toHaveBeenCalledWith({
-      data: {
-        userId: 'user_synthetic_idea',
-        title: 'Synthetic idea title',
-        description: 'Synthetic idea description without personal data.',
-        status: 'PENDING',
-      },
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            pseudonym: true,
-            brainId: true,
-          },
-        },
-        _count: {
-          select: { votes: true },
-        },
-      },
+    expect(ideaCreateMock).toHaveBeenCalledWith({
+      userId: 'user_synthetic_idea',
+      title: 'Synthetic idea title',
+      description: 'Synthetic idea description without personal data.',
     });
     expect(eventBusMock.emit).toHaveBeenCalledWith('idea:submitted', {
       userId: 'user_synthetic_idea',
@@ -192,5 +178,27 @@ describe('ideas route notification contract', () => {
       description: 'Synthetic idea description without personal data.',
     });
     expect(JSON.stringify(response.body)).not.toContain('BR-SYNTHETIC-IDEA-SECRET');
+  });
+
+  it('returns 404 without voting when the idea does not exist', async () => {
+    ideaExistsMock.mockResolvedValue(false);
+
+    const baseUrl = await createIdeasHarness();
+    const response = await postJson(baseUrl, '/api/ideas/missing-idea/vote', userToken({ id: 'user_synthetic_idea' }), {});
+
+    expect(response.status).toBe(404);
+    expect(ideaUpsertVoteMock).not.toHaveBeenCalled();
+  });
+
+  it('delegates an authenticated vote to the repository after existence checks', async () => {
+    ideaExistsMock.mockResolvedValue(true);
+    ideaUpsertVoteMock.mockResolvedValue();
+
+    const baseUrl = await createIdeasHarness();
+    const response = await postJson(baseUrl, '/api/ideas/idea_synthetic_1/vote', userToken({ id: 'user_synthetic_idea' }), {});
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({ success: true });
+    expect(ideaUpsertVoteMock).toHaveBeenCalledWith('idea_synthetic_1', 'user_synthetic_idea');
   });
 });
