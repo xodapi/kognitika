@@ -70,6 +70,8 @@ Express route/middleware
 `src/server/events/event-bus.ts` is a separate Node-only in-process EventBus. It is not connected to the browser EventBus and is not a durable queue. Its subscribers run after an event is emitted and must tolerate failure, restart, duplicate attempts, and unavailable dependencies.
 
 Socket.io is a separate real-time transport for Cognitive Flow and duels. It is not a replacement for the analytics outbox.
+Like HTTP routes and middleware, Socket.io transports use application repository ports
+for persistence and do not import the Prisma client directly.
 
 Application repository ports live in `src/server/repositories`. Prisma implementations
 live in `src/server/infrastructure/prisma`, and `src/server/infrastructure/container.ts`
