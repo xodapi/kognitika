@@ -64,6 +64,7 @@ import { privacyGuard } from './src/server/middleware/privacy.ts';
 
 import { Server } from 'socket.io';
 import { registerDuelHandlers } from './src/server/realtime/duels.ts';
+import { getDuelRepository } from './src/server/infrastructure/container.ts';
 
 const PORT = Number(process.env.PORT) || 3006;
 
@@ -107,7 +108,7 @@ async function startServer() {
     perMessageDeflate: false,
   });
 
-  registerDuelHandlers(io, { prisma, jwtSecret: JWT_SECRET });
+  registerDuelHandlers(io, { repository: getDuelRepository(), jwtSecret: JWT_SECRET });
 
   app.use(helmet({
     contentSecurityPolicy: process.env.NODE_ENV !== 'production' 

@@ -8,6 +8,7 @@ import { Server as SocketServer } from 'socket.io';
 import { io as createClient, type Socket as ClientSocket } from 'socket.io-client';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createDuelState, registerDuelHandlers } from '../server/realtime/duels.ts';
+import type { DuelRepository } from '../server/repositories/duel-repository.ts';
 
 const JWT_SECRET = 'synthetic-test-secret';
 
@@ -66,6 +67,30 @@ function createPrismaMock(users = syntheticUsers()) {
   };
 }
 
+function createDuelRepository(prisma: ReturnType<typeof createPrismaMock>): DuelRepository {
+  return {
+    findParticipant: async (userId) => prisma.user.findUnique({ where: { id: userId } }),
+    async recordOutcome({ winnerId, loserId, winnerRating, loserRating }) {
+      await prisma.$transaction([
+        prisma.user.update({
+          where: { id: winnerId },
+          data: { rating: winnerRating, experience: { increment: 25 } },
+        }),
+        prisma.user.update({
+          where: { id: loserId },
+          data: { rating: loserRating, experience: { increment: 5 } },
+        }),
+        prisma.xpEvent.create({
+          data: { userId: winnerId, amount: 25, reason: 'duel:win' },
+        }),
+        prisma.xpEvent.create({
+          data: { userId: loserId, amount: 5, reason: 'duel:loss' },
+        }),
+      ]);
+    },
+  };
+}
+
 async function createHarness(limits?: Parameters<typeof registerDuelHandlers>[1]['limits']): Promise<Harness> {
   const httpServer = createServer();
   const io = new SocketServer(httpServer, {
@@ -76,7 +101,7 @@ async function createHarness(limits?: Parameters<typeof registerDuelHandlers>[1]
 
   registerDuelHandlers(io, {
     jwtSecret: JWT_SECRET,
-    prisma,
+    repository: createDuelRepository(prisma),
     logger: { debug: vi.fn() },
     now: () => nowMs,
     limits,
