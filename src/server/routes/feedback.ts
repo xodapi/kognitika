@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { Router } from 'express';
-import prisma from '../../lib/prisma.ts';
 import { createSafeLogger, safeError } from '../../lib/safe-logger.ts';
+import { getFeedbackRepository } from '../infrastructure/container.ts';
 import { eventBus } from '../events/event-bus.ts';
 import { authenticate } from '../middleware/auth.ts';
 import { validateBody } from '../middleware/validate.ts';
@@ -31,16 +31,11 @@ router.post('/', authenticate, validateBody(feedbackSubmitSchema), async (req: a
       const trackingNum = generateTrackingNum();
 
       try {
-        createdFeedback = await prisma.feedback.create({
-          data: {
-            userId: req.user.id,
-            type,
-            content,
-            trackingNum,
-          },
-          select: {
-            trackingNum: true,
-          },
+        createdFeedback = await getFeedbackRepository().create({
+          userId: req.user.id,
+          type,
+          content,
+          trackingNum,
         });
         break;
       } catch (error) {
