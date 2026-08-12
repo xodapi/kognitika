@@ -1,7 +1,9 @@
 import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
-import type { GameAttempt, GameType } from '@prisma/client';
 import { getGameRepositories } from '../infrastructure/container.ts';
-import { GameAttemptConflictError } from '../repositories/game-attempt-repository.ts';
+import {
+  GameAttemptConflictError,
+  type GameAttemptRecord,
+} from '../repositories/game-attempt-repository.ts';
 import { DomainError } from '../errors/domain-error.ts';
 
 const DEFAULT_TTL_SECONDS = 15 * 60;
@@ -53,7 +55,7 @@ export function challengeMatches(challenge: string, digest: string) {
 
 export type StartGameAttemptInput = {
   userId: string;
-  gameType: GameType;
+  gameType: string;
   clientRunId: string;
 };
 
@@ -71,7 +73,7 @@ export async function startGameAttempt(input: StartGameAttemptInput): Promise<St
   const timing = gameAttemptTiming();
 
   const repos = getGameRepositories();
-  let attempt: GameAttempt;
+  let attempt: GameAttemptRecord;
   try {
     attempt = await repos.gameAttempts.create({
       userId: input.userId,

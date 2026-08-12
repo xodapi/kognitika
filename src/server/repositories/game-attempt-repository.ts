@@ -1,8 +1,13 @@
-import type { GameAttempt, GameType } from '@prisma/client';
+export type GameAttemptRecord = {
+  id: string;
+  issuedAt: Date;
+  notBefore: Date;
+  expiresAt: Date;
+};
 
 export type CreateGameAttemptInput = {
   userId: string;
-  gameType: GameType;
+  gameType: string;
   clientRunId: string;
   challengeDigest: string;
   issuedAt: Date;
@@ -19,8 +24,8 @@ export class GameAttemptConflictError extends Error {
 
 export interface GameAttemptRepository {
   /** Throws {@link GameAttemptConflictError} when the (userId, clientRunId) pair is taken. */
-  create(input: CreateGameAttemptInput): Promise<GameAttempt>;
-  findById(attemptId: string): Promise<GameAttempt | null>;
+  create(input: CreateGameAttemptInput): Promise<GameAttemptRecord>;
+  findById(attemptId: string): Promise<GameAttemptRecord | null>;
   /** Marks an unconsumed, in-window attempt as consumed. Returns false when another writer won the race. */
   reserve(attemptId: string, userId: string, now: Date): Promise<boolean>;
   attachSession(attemptId: string, gameSessionId: string): Promise<void>;

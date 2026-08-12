@@ -1,23 +1,26 @@
-import type { GameAttempt, PrismaClient } from '@prisma/client';
+import type { GameType, PrismaClient } from '@prisma/client';
 import {
   GameAttemptConflictError,
   type CreateGameAttemptInput,
+  type GameAttemptRecord,
   type GameAttemptRepository,
 } from '../../repositories/game-attempt-repository.ts';
 
 export class PrismaGameAttemptRepository implements GameAttemptRepository {
   constructor(private readonly prisma: PrismaClient) {}
 
-  async create(input: CreateGameAttemptInput): Promise<GameAttempt> {
+  async create(input: CreateGameAttemptInput): Promise<GameAttemptRecord> {
     try {
-      return await this.prisma.gameAttempt.create({ data: input });
+      return await this.prisma.gameAttempt.create({
+        data: { ...input, gameType: input.gameType as GameType },
+      });
     } catch (error: any) {
       if (error?.code === 'P2002') throw new GameAttemptConflictError();
       throw error;
     }
   }
 
-  async findById(attemptId: string): Promise<GameAttempt | null> {
+  async findById(attemptId: string): Promise<GameAttemptRecord | null> {
     return this.prisma.gameAttempt.findUnique({ where: { id: attemptId } });
   }
 
