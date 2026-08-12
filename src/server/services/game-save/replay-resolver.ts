@@ -1,12 +1,13 @@
-import type { GameSession, User } from '@prisma/client';
 import { GameAttemptError } from '../game-attempt.ts';
 import type { SaveGameInput } from './attempt-validator.ts';
 
-export interface SaveGameResult {
-  session: GameSession;
-  user: User;
-  isReplay: boolean;
-}
+export type ReplaySession = {
+  userId: string;
+  clientRunId: string | null;
+  gameType: string;
+  timeMs: number;
+  score: number;
+};
 
 /**
  * Resolves idempotent replay scenarios when a game with the same
@@ -21,7 +22,7 @@ export class ReplayResolver {
    * 
    * @throws {GameAttemptError} ATTEMPT_REPLAY_CONFLICT if any field differs
    */
-  assertReplayMatches(session: GameSession, input: SaveGameInput, score: number): void {
+  assertReplayMatches(session: ReplaySession, input: SaveGameInput, score: number): void {
     if (
       session.userId !== input.userId
       || session.clientRunId !== input.clientRunId
