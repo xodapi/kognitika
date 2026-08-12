@@ -513,7 +513,7 @@ export function SchulteTable90() {
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="grid grid-cols-6 gap-1.5 w-full min-w-0 max-w-[700px] relative z-10 sm:grid-cols-10"
+          className="grid grid-cols-6 gap-0 w-full min-w-0 max-w-[700px] relative z-10 sm:grid-cols-10 sm:gap-1.5"
         >
           {state.grid.map((cell, idx) => {
             const isConsumed = cell.num <= state.expectedIndex;
