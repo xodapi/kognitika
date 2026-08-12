@@ -5,7 +5,7 @@ import { validateQuery } from '../middleware/validate.ts';
 import jwt from 'jsonwebtoken';
 import { createSafeLogger, safeError } from '../../lib/safe-logger.ts';
 import { getAnalyticsServices } from '../infrastructure/container.ts';
-import prisma from '../../lib/prisma.ts';
+import { getAnalyticsSessionOwnershipRepository } from '../infrastructure/container.ts';
 import { parseSessionAnalyticsJob } from '../../core/analyze-session/index.ts';
 
 const router = Router();
@@ -133,14 +133,10 @@ router.post('/summaries', authenticate, async (req: any, res) => {
       });
     }
 
-    const gameSession = await prisma.gameSession.findFirst({
-      where: {
-        id: parsed.data.session.sessionId,
-        userId: req.user.id,
-      },
-      select: { id: true },
-    });
-    if (!gameSession) {
+    if (!await getAnalyticsSessionOwnershipRepository().isOwnedBy(
+      parsed.data.session.sessionId,
+      req.user.id,
+    )) {
       return res.status(403).json({ error: 'Session does not belong to authenticated user' });
     }
 

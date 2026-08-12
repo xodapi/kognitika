@@ -7,6 +7,11 @@ import type { AddressInfo } from 'net';
 import jwt from 'jsonwebtoken';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createFatigueCurveSession, type SessionAnalyticsJob } from '../core/analyze-session/index.ts';
+import {
+  resetGameRepositories,
+  setAnalyticsSessionOwnershipRepository,
+} from '../server/infrastructure/container.ts';
+import type { AnalyticsSessionOwnershipRepository } from '../server/repositories/analytics-session-ownership-repository.ts';
 
 const JWT_SECRET = 'synthetic-analytics-ownership-secret';
 const prismaMock = vi.hoisted(() => ({
@@ -31,6 +36,9 @@ beforeAll(async () => {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  setAnalyticsSessionOwnershipRepository({
+    isOwnedBy: ownershipCheck,
+  });
   prismaMock.sessionAnalyticsSummary.upsert.mockImplementation(({ create }) => Promise.resolve({
     userId: create.userId,
     sourceSessionId: create.sourceSessionId,
@@ -39,10 +47,13 @@ beforeEach(() => {
 });
 
 afterEach(async () => {
+  resetGameRepositories();
   await Promise.all(servers.splice(0).map((server) => new Promise<void>((resolve, reject) => {
     server.close((error) => (error ? reject(error) : resolve()));
   })));
 });
+
+const ownershipCheck = vi.fn<AnalyticsSessionOwnershipRepository['isOwnedBy']>();
 
 async function createHarness() {
   const app = express();
@@ -83,7 +94,7 @@ describe('analytics summary ownership routes', () => {
   });
 
   it('rejects a session not owned by the authenticated user', async () => {
-    prismaMock.gameSession.findFirst.mockResolvedValue(null);
+    ownershipCheck.mockResolvedValue(false);
     const baseUrl = await createHarness();
     const response = await fetch(`${baseUrl}/api/analytics/summaries`, {
       method: 'POST',
@@ -95,15 +106,12 @@ describe('analytics summary ownership routes', () => {
     });
 
     expect(response.status).toBe(403);
-    expect(prismaMock.gameSession.findFirst).toHaveBeenCalledWith({
-      where: { id: analyticsJob().session.sessionId, userId: 'user-a' },
-      select: { id: true },
-    });
+    expect(ownershipCheck).toHaveBeenCalledWith(analyticsJob().session.sessionId, 'user-a');
     expect(prismaMock.sessionAnalyticsSummary.upsert).not.toHaveBeenCalled();
   });
 
   it('persists an owned session with authoritative user ownership', async () => {
-    prismaMock.gameSession.findFirst.mockResolvedValue({ id: analyticsJob().session.sessionId });
+    ownershipCheck.mockResolvedValue(true);
     const baseUrl = await createHarness();
     const response = await fetch(`${baseUrl}/api/analytics/summaries`, {
       method: 'POST',
@@ -136,7 +144,7 @@ describe('analytics summary ownership routes', () => {
     expect(queryResponse.status).toBe(400);
     expect(trendResponse.status).toBe(400);
     expect(compareResponse.status).toBe(400);
-    expect(prismaMock.gameSession.findFirst).not.toHaveBeenCalled();
+    expect(ownershipCheck).not.toHaveBeenCalled();
     expect(prismaMock.sessionAnalyticsSummary.findMany).not.toHaveBeenCalled();
   });
 
