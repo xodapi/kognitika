@@ -10,6 +10,7 @@ import { PrismaFeedbackRepository } from './prisma/prisma-feedback-repository.ts
 import { PrismaIdeaRepository } from './prisma/prisma-idea-repository.ts';
 import { PrismaLeaderboardQueryRepository } from './prisma/prisma-leaderboard-query-repository.ts';
 import { PrismaDashboardRepository } from './prisma/prisma-dashboard-repository.ts';
+import { PrismaNeurotrainerHistoryRepository } from './prisma/prisma-neurotrainer-history-repository.ts';
 import type { GameAttemptRepository } from '../repositories/game-attempt-repository.ts';
 import type { GameSessionRepository } from '../repositories/game-session-repository.ts';
 import type { UserRepository } from '../repositories/user-repository.ts';
@@ -20,6 +21,7 @@ import type { FeedbackRepository } from '../repositories/feedback-repository.ts'
 import type { IdeaRepository } from '../repositories/idea-repository.ts';
 import type { LeaderboardQueryRepository } from '../repositories/leaderboard-query-repository.ts';
 import type { DashboardRepository } from '../repositories/dashboard-repository.ts';
+import type { NeurotrainerHistoryRepository } from '../repositories/neurotrainer-history-repository.ts';
 import type { CompletedGameRepository } from '../services/game-save/completed-game-repository.ts';
 import { GameProgressService } from '../services/game-progress.ts';
 import { GameCompletionService } from '../services/game-completion.ts';
@@ -70,6 +72,7 @@ let _feedbackRepository: FeedbackRepository | null = null;
 let _ideaRepository: IdeaRepository | null = null;
 let _leaderboardQueryRepository: LeaderboardQueryRepository | null = null;
 let _dashboardRepository: DashboardRepository | null = null;
+let _neurotrainerHistoryRepository: NeurotrainerHistoryRepository | null = null;
 
 export function getGameRepositories(): GameRepositories {
   if (!_repos) {
@@ -156,6 +159,13 @@ export function getDashboardRepository(): DashboardRepository {
   return _dashboardRepository;
 }
 
+export function getNeurotrainerHistoryRepository(): NeurotrainerHistoryRepository {
+  if (!_neurotrainerHistoryRepository) {
+    _neurotrainerHistoryRepository = new PrismaNeurotrainerHistoryRepository(prisma);
+  }
+  return _neurotrainerHistoryRepository;
+}
+
 /** Override the singleton – used in tests to inject in-memory repositories. */
 export function setGameRepositories(repos: GameRepositories): void {
   _repos = repos;
@@ -188,6 +198,11 @@ export function setDashboardRepository(repository: DashboardRepository): void {
   _dashboardRepository = repository;
 }
 
+/** Override neurotrainer history persistence for focused route tests. */
+export function setNeurotrainerHistoryRepository(repository: NeurotrainerHistoryRepository): void {
+  _neurotrainerHistoryRepository = repository;
+}
+
 /** Reset to Prisma-backed defaults (used in test teardown). */
 export function resetGameRepositories(): void {
   _repos = null;
@@ -199,4 +214,5 @@ export function resetGameRepositories(): void {
   _ideaRepository = null;
   _leaderboardQueryRepository = null;
   _dashboardRepository = null;
+  _neurotrainerHistoryRepository = null;
 }
