@@ -1,4 +1,7 @@
-import type { User } from '@prisma/client';
+export type StreakState = {
+  lastPlayedAt: Date | null;
+  streakDays: number;
+};
 
 /**
  * Calculates the user's daily streak based on their last play date.
@@ -17,7 +20,7 @@ export class StreakPolicy {
    * @param now Current timestamp
    * @returns The new streak value
    */
-  nextStreak(user: User, now: Date): number {
+  nextStreak(user: StreakState, now: Date): number {
     if (!user.lastPlayedAt) return 1;
 
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
