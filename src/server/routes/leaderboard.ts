@@ -1,9 +1,9 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import prisma from '../../lib/prisma.ts';
 import { createSafeLogger, safeError } from '../../lib/safe-logger.ts';
 import { authenticate, isAdmin } from '../middleware/auth.ts';
 import { validateQuery } from '../middleware/validate.ts';
+import { getLeaderboardQueryRepository } from '../infrastructure/container.ts';
 
 const router = Router();
 const leaderboardQuerySchema = z.object({
@@ -24,77 +24,17 @@ router.get('/', validateQuery(leaderboardQuerySchema), async (req, res) => {
       const sevenDaysAgo = new Date();
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
-      // Sum XP from XpEvent for each user in the last 7 days
-      const weeklyTop = await prisma.xpEvent.groupBy({
-        by: ['userId'],
-        where: {
-          createdAt: { gte: sevenDaysAgo },
-          user: { pseudonym: { not: null } }
-        },
-        _sum: {
-          amount: true
-        },
-        orderBy: {
-          _sum: {
-            amount: 'desc'
-          }
-        },
-        take: 50
-      });
-
-      // Fetch user details for these top users
-      const userDetails = await prisma.user.findMany({
-        where: {
-          id: { in: weeklyTop.map(item => item.userId) }
-        },
-        select: {
-          id: true,
-          pseudonym: true,
-          level: true,
-          rating: true,
-          _count: {
-            select: { sessions: true }
-          }
-        }
-      });
-
-      // Merge and format
-      const result = weeklyTop.map(item => {
-        const user = userDetails.find(u => u.id === item.userId);
-        return {
-          id: item.userId,
-          name: user?.pseudonym || 'Аноним',
-          pseudonym: user?.pseudonym,
-          experience: item._sum.amount || 0,
-          level: user?.level || 1,
-          rating: user?.rating || 1000,
-          _count: user?._count
-        };
-      });
+      const weeklyTop = await getLeaderboardQueryRepository().findWeekly(sevenDaysAgo, 50);
+      const result = weeklyTop.map((user) => ({
+        ...user,
+        name: user.pseudonym || 'Аноним',
+      }));
 
       return res.json(result);
     }
 
     // Default: Global All-time Leaderboard
-    const topUsers = await prisma.user.findMany({
-      where: {
-        pseudonym: { not: null }
-      },
-      orderBy: {
-        experience: 'desc'
-      },
-      take: 50,
-      select: {
-        id: true,
-        pseudonym: true,
-        experience: true,
-        level: true,
-        rating: true,
-        _count: {
-          select: { sessions: true }
-        }
-      }
-    });
+    const topUsers = await getLeaderboardQueryRepository().findGlobal(50);
 
     const result = topUsers.map(u => ({
       ...u,
