@@ -1,6 +1,6 @@
-import type { GameSession, User } from '@prisma/client';
 import type { SaveGameInput } from './attempt-validator.ts';
 import type { CompletedSessionAnalyticsJob } from '../../../core/cognitive-events/index.ts';
+import type { GameSessionRecord } from '../../repositories/game-session-repository.ts';
 
 export interface CompleteGameCommand {
   input: SaveGameInput;
@@ -8,9 +8,15 @@ export interface CompleteGameCommand {
   analyticsJob?: CompletedSessionAnalyticsJob;
 }
 
+export type GameSaveUser = {
+  id: string;
+  experience: number;
+  streakDays: number;
+};
+
 export interface SaveGameResult {
-  session: GameSession;
-  user: User;
+  session: GameSessionRecord;
+  user: GameSaveUser;
   isReplay: boolean;
 }
 

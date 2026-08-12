@@ -1,17 +1,13 @@
-import type { GameSession, User } from '@prisma/client';
 import { computeServerScore } from './game-score.ts';
 import { AttemptValidator, type SaveGameInput } from './game-save/attempt-validator.ts';
 import { AnalyticsJobValidator } from './game-save/analytics-job-validator.ts';
 import { getGameRepositories } from '../infrastructure/container.ts';
 import { GameAttemptError } from './game-attempt.ts';
+import type { SaveGameResult as CompletedGameSaveResult } from './game-save/completed-game-repository.ts';
 
 export type { SaveGameInput } from './game-save/attempt-validator.ts';
 
-export type SaveGameResult = {
-  session: GameSession;
-  user: User;
-  isReplay: boolean;
-};
+export type SaveGameResult = CompletedGameSaveResult;
 
 // Validators and policies
 const attemptValidator = new AttemptValidator();

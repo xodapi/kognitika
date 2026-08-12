@@ -1,9 +1,10 @@
-import { Prisma, type PrismaClient } from '@prisma/client';
+import { Prisma, type GameSession, type PrismaClient, type User } from '@prisma/client';
 import type {
   CompleteGameCommand,
   CompletedGameRepository,
   SaveGameResult,
 } from '../../services/game-save/completed-game-repository.ts';
+import type { GameSessionRecord } from '../../repositories/game-session-repository.ts';
 import { ReplayResolver } from '../../services/game-save/replay-resolver.ts';
 import { StreakPolicy } from '../../services/game-save/streak-policy.ts';
 import {
@@ -14,6 +15,18 @@ import { GameAttemptError } from '../../services/game-attempt.ts';
 
 const SHADOW_ANALYZER_VERSION = 'rust-shadow-v1';
 const ANALYTICS_CONTRACT_VERSION = 'analytics-contract-v1';
+
+function toSessionRecord(session: GameSession): GameSessionRecord {
+  return session as unknown as GameSessionRecord;
+}
+
+function toSaveUser(user: User) {
+  return {
+    id: user.id,
+    experience: user.experience,
+    streakDays: user.streakDays,
+  };
+}
 
 /**
  * Prisma-backed implementation of CompletedGameRepository.
@@ -102,7 +115,7 @@ export class PrismaCompletedGameRepository implements CompletedGameRepository {
             }
             this.replayResolver.assertReplayMatches(session, input, score);
             const user = await tx.user.findUniqueOrThrow({ where: { id: input.userId } });
-            return { session, user, isReplay: true };
+            return { session: toSessionRecord(session), user: toSaveUser(user), isReplay: true };
           }
 
           // Reserve attempt atomically
@@ -126,7 +139,7 @@ export class PrismaCompletedGameRepository implements CompletedGameRepository {
               if (session) {
                 this.replayResolver.assertReplayMatches(session, input, score);
                 const user = await tx.user.findUniqueOrThrow({ where: { id: input.userId } });
-                return { session, user, isReplay: true };
+                return { session: toSessionRecord(session), user: toSaveUser(user), isReplay: true };
               }
             }
             throw new GameAttemptError('Game attempt was already consumed', 409, 'ATTEMPT_ALREADY_CONSUMED');
@@ -139,7 +152,7 @@ export class PrismaCompletedGameRepository implements CompletedGameRepository {
           if (existingSession) {
             this.replayResolver.assertReplayMatches(existingSession, input, score);
             const user = await tx.user.findUniqueOrThrow({ where: { id: input.userId } });
-            return { session: existingSession, user, isReplay: true };
+            return { session: toSessionRecord(existingSession), user: toSaveUser(user), isReplay: true };
           }
         }
 
@@ -229,7 +242,7 @@ export class PrismaCompletedGameRepository implements CompletedGameRepository {
           },
         });
 
-        return { session, user, isReplay: false };
+        return { session: toSessionRecord(session), user: toSaveUser(user), isReplay: false };
       });
     } catch (error) {
       // Handle unique constraint violation on clientRunId (race condition)
@@ -241,7 +254,7 @@ export class PrismaCompletedGameRepository implements CompletedGameRepository {
           this.replayResolver.assertReplayMatches(session, input, score);
           const user = await this.prisma.user.findUnique({ where: { id: input.userId } });
           if (user) {
-            return { session, user, isReplay: true };
+            return { session: toSessionRecord(session), user: toSaveUser(user), isReplay: true };
           }
         }
       }
