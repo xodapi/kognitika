@@ -1,6 +1,5 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import prisma from '../../lib/prisma.ts';
 import { authenticate, isAdmin } from '../middleware/auth.ts';
 import { validateBody, validateParams } from '../middleware/validate.ts';
 import { sanitizeAdminUserIdentity, sanitizePublicUserIdentity } from '../utils/privacy.ts';
@@ -9,6 +8,7 @@ import { handleValidationError } from '../utils/validation.ts';
 import { feedbackResponseSchema } from '../schemas/feedback.ts';
 import { normalizeIdeaStatus, parseIdeaStatus } from '../utils/idea-status.ts';
 import { getPracticeFlowSummary } from '../services/practice-flow-store.ts';
+import { getAdminRepository } from '../infrastructure/container.ts';
 
 const router = Router();
 const logger = createSafeLogger('admin-route');
@@ -31,32 +31,7 @@ function serializeFeedback(item: any) {
 }
 
 router.get('/users', async (req, res) => {
-  const users = await prisma.user.findMany({
-    select: {
-      id: true,
-      name: true,
-      brainId: true,
-      pseudonym: true,
-      level: true,
-      experience: true,
-      rating: true,
-      streakDays: true,
-      role: true,
-      createdAt: true,
-      sessions: {
-        orderBy: { createdAt: 'desc' },
-        take: 5,
-        select: {
-          id: true,
-          gameType: true,
-          score: true,
-          timeMs: true,
-          isCompleted: true,
-          createdAt: true,
-        }
-      }
-    }
-  });
+  const users = await getAdminRepository().findUsers();
 
   res.json(users.map((user) => {
     return {
@@ -73,12 +48,7 @@ router.get('/users', async (req, res) => {
 });
 
 router.get('/stats', async (req, res) => {
-  const userCount = await prisma.user.count();
-  const sessionCount = await prisma.gameSession.count();
-  const averageScore = await prisma.gameSession.aggregate({
-    _avg: { score: true }
-  });
-  res.json({ userCount, sessionCount, averageScore: averageScore._avg.score });
+  res.json(await getAdminRepository().getStats());
 });
 
 router.get('/practice-flow', (_req, res) => {
@@ -87,19 +57,7 @@ router.get('/practice-flow', (_req, res) => {
 
 router.get('/feedback', async (req, res) => {
   try {
-    const feedback = await prisma.feedback.findMany({
-      orderBy: { createdAt: 'desc' },
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            pseudonym: true,
-            brainId: true,
-          },
-        },
-      },
-    });
+    const feedback = await getAdminRepository().findFeedback();
 
     res.json(feedback.map(serializeFeedback));
   } catch (error) {
@@ -116,20 +74,10 @@ async function saveFeedbackResponse(req: any, res: any) {
   }
 
   try {
-    const feedback = await prisma.feedback.update({
-      where: { id: req.validated!.params.id },
-      data: { adminResponse: parsed.data.response, status: 'replied' },
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            pseudonym: true,
-            brainId: true,
-          },
-        },
-      },
-    });
+    const feedback = await getAdminRepository().respondToFeedback(
+      req.validated!.params.id,
+      parsed.data.response,
+    );
     res.json({ success: true, feedback: serializeFeedback(feedback) });
   } catch (error) {
     logger.error('Admin feedback response failed', { error: safeError(error) });
@@ -147,7 +95,7 @@ router.post('/ideas/:id/status', validateParams(resourceIdSchema), validateBody(
   }
 
   try {
-    const idea = await prisma.idea.update({ where: { id: req.validated!.params.id }, data: { status } });
+    const idea = await getAdminRepository().updateIdeaStatus(req.validated!.params.id, status);
     res.json({ ...idea, status: normalizeIdeaStatus(idea.status) });
   } catch {
     res.status(500).json({ error: 'Failed to update status' });

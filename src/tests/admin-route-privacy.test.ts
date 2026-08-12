@@ -10,6 +10,8 @@ import {
   clearPracticeFlowEventsForTests,
   recordPracticeFlowEvent,
 } from '../server/services/practice-flow-store';
+import { resetGameRepositories, setAdminRepository } from '../server/infrastructure/container.ts';
+import type { AdminRepository } from '../server/repositories/admin-repository.ts';
 
 const JWT_SECRET = 'synthetic-admin-route-secret';
 
@@ -42,16 +44,30 @@ beforeAll(async () => {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  setAdminRepository({
+    findUsers,
+    getStats,
+    findFeedback,
+    respondToFeedback,
+    updateIdeaStatus,
+  });
   clearPracticeFlowEventsForTests();
 });
 
 afterEach(async () => {
+  resetGameRepositories();
   await Promise.all(servers.splice(0).map((server) => (
     new Promise<void>((resolve, reject) => {
       server.close((error) => (error ? reject(error) : resolve()));
     })
   )));
 });
+
+const findUsers = vi.fn<AdminRepository['findUsers']>();
+const getStats = vi.fn<AdminRepository['getStats']>();
+const findFeedback = vi.fn<AdminRepository['findFeedback']>();
+const respondToFeedback = vi.fn<AdminRepository['respondToFeedback']>();
+const updateIdeaStatus = vi.fn<AdminRepository['updateIdeaStatus']>();
 
 async function createAdminHarness() {
   const app = express();
@@ -111,12 +127,12 @@ describe('admin route privacy and authorization contract', () => {
       where: { id: 'user_synthetic_regular' },
       select: { role: true },
     });
-    expect(prismaMock.user.findMany).not.toHaveBeenCalled();
+    expect(findUsers).not.toHaveBeenCalled();
   });
 
   it('filters sensitive identity fields from /api/admin/users responses', async () => {
     prismaMock.user.findUnique.mockResolvedValue({ role: 'ADMIN' });
-    prismaMock.user.findMany.mockResolvedValue([
+    findUsers.mockResolvedValue([
       {
         id: 'user_synthetic_admin_view',
         name: 'Legacy Admin Visible',
@@ -158,7 +174,7 @@ describe('admin route privacy and authorization contract', () => {
 
   it('filters sensitive identity fields from /api/admin/feedback responses', async () => {
     prismaMock.user.findUnique.mockResolvedValue({ role: 'ADMIN' });
-    prismaMock.feedback.findMany.mockResolvedValue([
+    findFeedback.mockResolvedValue([
       {
         id: 'feedback_synthetic_1',
         type: 'idea',
@@ -244,7 +260,7 @@ describe('admin route privacy and authorization contract', () => {
 
   it('validates and sanitizes /api/admin/feedback/:id/response', async () => {
     prismaMock.user.findUnique.mockResolvedValue({ role: 'ADMIN' });
-    prismaMock.feedback.update.mockResolvedValue({
+    respondToFeedback.mockResolvedValue({
       id: 'feedback_synthetic_1',
       type: 'bug',
       content: 'Synthetic feedback only.',
@@ -270,7 +286,7 @@ describe('admin route privacy and authorization contract', () => {
       response: '',
     });
     expect(invalid.status).toBe(400);
-    expect(prismaMock.feedback.update).not.toHaveBeenCalled();
+    expect(respondToFeedback).not.toHaveBeenCalled();
 
     const response = await postJson(baseUrl, '/api/admin/feedback/feedback_synthetic_1/response', token, {
       response: '  Synthetic admin response.  ',
@@ -278,20 +294,10 @@ describe('admin route privacy and authorization contract', () => {
     const serialized = JSON.stringify(response.body);
 
     expect(response.status).toBe(200);
-    expect(prismaMock.feedback.update).toHaveBeenCalledWith({
-      where: { id: 'feedback_synthetic_1' },
-      data: { adminResponse: 'Synthetic admin response.', status: 'replied' },
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            pseudonym: true,
-            brainId: true,
-          },
-        },
-      },
-    });
+    expect(respondToFeedback).toHaveBeenCalledWith(
+      'feedback_synthetic_1',
+      'Synthetic admin response.',
+    );
     expect(response.body.feedback).toMatchObject({
       id: 'feedback_synthetic_1',
       text: 'Synthetic feedback only.',
@@ -312,7 +318,7 @@ describe('admin route privacy and authorization contract', () => {
 
   it('validates and normalizes /api/admin/ideas/:id/status', async () => {
     prismaMock.user.findUnique.mockResolvedValue({ role: 'ADMIN' });
-    prismaMock.idea.update.mockResolvedValue({
+    updateIdeaStatus.mockResolvedValue({
       id: 'idea_synthetic_status',
       title: 'Synthetic idea',
       description: 'Synthetic idea description.',
@@ -327,17 +333,14 @@ describe('admin route privacy and authorization contract', () => {
     });
     expect(invalid.status).toBe(400);
     expect(invalid.body).toEqual({ error: 'Invalid idea status' });
-    expect(prismaMock.idea.update).not.toHaveBeenCalled();
+    expect(updateIdeaStatus).not.toHaveBeenCalled();
 
     const response = await postJson(baseUrl, '/api/admin/ideas/idea_synthetic_status/status', token, {
       status: 'in progress',
     });
 
     expect(response.status).toBe(200);
-    expect(prismaMock.idea.update).toHaveBeenCalledWith({
-      where: { id: 'idea_synthetic_status' },
-      data: { status: 'IN_PROGRESS' },
-    });
+    expect(updateIdeaStatus).toHaveBeenCalledWith('idea_synthetic_status', 'IN_PROGRESS');
     expect(response.body).toMatchObject({
       id: 'idea_synthetic_status',
       status: 'IN_PROGRESS',
