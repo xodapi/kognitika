@@ -754,7 +754,7 @@ export function SchulteGrid() {
       <motion.div 
         animate={state.errors > 0 ? { x: [0, -10, 10, -10, 10, 0] } : {}}
         transition={{ duration: 0.4 }}
-        className={`lg:col-span-6 border border-border rounded-[2.5rem] p-4 sm:p-8 flex flex-col items-center justify-center relative min-h-[400px] overflow-hidden lg:h-full shadow-2xl ${state.modifications.bgTheme === 'dark-green' ? 'bg-[#064e3b]' : 'bg-card/30 backdrop-blur-sm'} min-w-0`}
+        className={`lg:col-span-6 -mx-4 w-[calc(100%+2rem)] sm:mx-0 sm:w-auto border border-border rounded-[2.5rem] p-0 sm:p-8 flex flex-col items-center justify-center relative min-h-[400px] overflow-hidden lg:h-full shadow-2xl ${state.modifications.bgTheme === 'dark-green' ? 'bg-[#064e3b]' : 'bg-card/30 backdrop-blur-sm'} min-w-0`}
         data-testid="grid-container"
       >
          <div className="absolute inset-0 pointer-events-none flex items-center justify-center opacity-[0.05]">
@@ -766,7 +766,7 @@ export function SchulteGrid() {
          <motion.div 
            initial={{ opacity: 0 }}
            animate={{ opacity: 1 }}
-           className="grid gap-2 w-full max-w-[600px] relative z-10" 
+           className="grid gap-0 sm:gap-2 w-full min-w-0 max-w-[600px] relative z-10"
            style={{ gridTemplateColumns: `repeat(${state.size}, 1fr)` }}
          >
             {state.grid.map((cell, idx) => {
