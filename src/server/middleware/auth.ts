@@ -1,7 +1,7 @@
 import jwt from 'jsonwebtoken';
 import { applyPrivacyRedaction } from './privacy.ts';
-import prisma from '../../lib/prisma.ts';
 import { createSafeLogger, safeError } from '../../lib/safe-logger.ts';
+import { getAdminAuthorizationRepository } from '../infrastructure/container.ts';
 
 const JWT_SECRET = process.env.JWT_SECRET!;
 const logger = createSafeLogger('auth-middleware');
@@ -26,16 +26,13 @@ export const isAdmin = async (req: any, res: any, next: any) => {
   }
 
   try {
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { role: true },
-    });
+    const role = await getAdminAuthorizationRepository().findRole(userId);
 
-    if (user?.role !== 'ADMIN') {
+    if (role !== 'ADMIN') {
       return res.status(403).json({ error: 'Access denied' });
     }
 
-    req.user = { ...req.user, role: user.role };
+    req.user = { ...req.user, role };
     next();
   } catch (error) {
     logger.error('Admin role check failed', { error: safeError(error) });

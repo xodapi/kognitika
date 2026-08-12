@@ -10,28 +10,15 @@ import {
   clearPracticeFlowEventsForTests,
   recordPracticeFlowEvent,
 } from '../server/services/practice-flow-store';
-import { resetGameRepositories, setAdminRepository } from '../server/infrastructure/container.ts';
+import {
+  resetGameRepositories,
+  setAdminAuthorizationRepository,
+  setAdminRepository,
+} from '../server/infrastructure/container.ts';
 import type { AdminRepository } from '../server/repositories/admin-repository.ts';
+import type { AdminAuthorizationRepository } from '../server/repositories/admin-authorization-repository.ts';
 
 const JWT_SECRET = 'synthetic-admin-route-secret';
-
-const prismaMock = vi.hoisted(() => ({
-  user: {
-    findUnique: vi.fn(),
-    findMany: vi.fn(),
-  },
-  feedback: {
-    findMany: vi.fn(),
-    update: vi.fn(),
-  },
-  idea: {
-    update: vi.fn(),
-  },
-}));
-
-vi.mock('../lib/prisma.ts', () => ({
-  default: prismaMock,
-}));
 
 let adminRoutes: Router;
 const servers: HttpServer[] = [];
@@ -51,6 +38,7 @@ beforeEach(() => {
     respondToFeedback,
     updateIdeaStatus,
   });
+  setAdminAuthorizationRepository({ findRole });
   clearPracticeFlowEventsForTests();
 });
 
@@ -68,6 +56,7 @@ const getStats = vi.fn<AdminRepository['getStats']>();
 const findFeedback = vi.fn<AdminRepository['findFeedback']>();
 const respondToFeedback = vi.fn<AdminRepository['respondToFeedback']>();
 const updateIdeaStatus = vi.fn<AdminRepository['updateIdeaStatus']>();
+const findRole = vi.fn<AdminAuthorizationRepository['findRole']>();
 
 async function createAdminHarness() {
   const app = express();
@@ -115,7 +104,7 @@ async function postJson(baseUrl: string, path: string, token: string, body: unkn
 
 describe('admin route privacy and authorization contract', () => {
   it('does not trust stale or forged ADMIN role from a signed JWT', async () => {
-    prismaMock.user.findUnique.mockResolvedValue({ role: 'USER' });
+    findRole.mockResolvedValue('USER');
     const baseUrl = await createAdminHarness();
     const token = adminToken({ id: 'user_synthetic_regular', role: 'ADMIN' });
 
@@ -123,15 +112,12 @@ describe('admin route privacy and authorization contract', () => {
 
     expect(response.status).toBe(403);
     expect(response.body).toEqual({ error: 'Access denied' });
-    expect(prismaMock.user.findUnique).toHaveBeenCalledWith({
-      where: { id: 'user_synthetic_regular' },
-      select: { role: true },
-    });
+    expect(findRole).toHaveBeenCalledWith('user_synthetic_regular');
     expect(findUsers).not.toHaveBeenCalled();
   });
 
   it('filters sensitive identity fields from /api/admin/users responses', async () => {
-    prismaMock.user.findUnique.mockResolvedValue({ role: 'ADMIN' });
+    findRole.mockResolvedValue('ADMIN');
     findUsers.mockResolvedValue([
       {
         id: 'user_synthetic_admin_view',
@@ -173,7 +159,7 @@ describe('admin route privacy and authorization contract', () => {
   });
 
   it('filters sensitive identity fields from /api/admin/feedback responses', async () => {
-    prismaMock.user.findUnique.mockResolvedValue({ role: 'ADMIN' });
+    findRole.mockResolvedValue('ADMIN');
     findFeedback.mockResolvedValue([
       {
         id: 'feedback_synthetic_1',
@@ -214,7 +200,7 @@ describe('admin route privacy and authorization contract', () => {
   });
 
   it('exposes privacy-safe practice flow summary to admins', async () => {
-    prismaMock.user.findUnique.mockResolvedValue({ role: 'ADMIN' });
+    findRole.mockResolvedValue('ADMIN');
     recordPracticeFlowEvent({
       event: 'PracticeStarted',
       category: 'cognitive',
@@ -259,7 +245,7 @@ describe('admin route privacy and authorization contract', () => {
   });
 
   it('validates and sanitizes /api/admin/feedback/:id/response', async () => {
-    prismaMock.user.findUnique.mockResolvedValue({ role: 'ADMIN' });
+    findRole.mockResolvedValue('ADMIN');
     respondToFeedback.mockResolvedValue({
       id: 'feedback_synthetic_1',
       type: 'bug',
@@ -317,7 +303,7 @@ describe('admin route privacy and authorization contract', () => {
   });
 
   it('validates and normalizes /api/admin/ideas/:id/status', async () => {
-    prismaMock.user.findUnique.mockResolvedValue({ role: 'ADMIN' });
+    findRole.mockResolvedValue('ADMIN');
     updateIdeaStatus.mockResolvedValue({
       id: 'idea_synthetic_status',
       title: 'Synthetic idea',

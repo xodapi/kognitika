@@ -15,6 +15,7 @@ import { PrismaChatRepository } from './prisma/prisma-chat-repository.ts';
 import { PrismaAuthRepository } from './prisma/prisma-auth-repository.ts';
 import { PrismaAnalyticsSessionOwnershipRepository } from './prisma/prisma-analytics-session-ownership-repository.ts';
 import { PrismaAdminRepository } from './prisma/prisma-admin-repository.ts';
+import { PrismaAdminAuthorizationRepository } from './prisma/prisma-admin-authorization-repository.ts';
 import type { GameAttemptRepository } from '../repositories/game-attempt-repository.ts';
 import type { GameSessionRepository } from '../repositories/game-session-repository.ts';
 import type { UserRepository } from '../repositories/user-repository.ts';
@@ -30,6 +31,7 @@ import type { ChatRepository } from '../repositories/chat-repository.ts';
 import type { AuthRepository } from '../repositories/auth-repository.ts';
 import type { AnalyticsSessionOwnershipRepository } from '../repositories/analytics-session-ownership-repository.ts';
 import type { AdminRepository } from '../repositories/admin-repository.ts';
+import type { AdminAuthorizationRepository } from '../repositories/admin-authorization-repository.ts';
 import type { CompletedGameRepository } from '../services/game-save/completed-game-repository.ts';
 import { GameProgressService } from '../services/game-progress.ts';
 import { GameCompletionService } from '../services/game-completion.ts';
@@ -85,6 +87,7 @@ let _chatRepository: ChatRepository | null = null;
 let _authRepository: AuthRepository | null = null;
 let _analyticsSessionOwnershipRepository: AnalyticsSessionOwnershipRepository | null = null;
 let _adminRepository: AdminRepository | null = null;
+let _adminAuthorizationRepository: AdminAuthorizationRepository | null = null;
 
 export function getGameRepositories(): GameRepositories {
   if (!_repos) {
@@ -206,6 +209,13 @@ export function getAdminRepository(): AdminRepository {
   return _adminRepository;
 }
 
+export function getAdminAuthorizationRepository(): AdminAuthorizationRepository {
+  if (!_adminAuthorizationRepository) {
+    _adminAuthorizationRepository = new PrismaAdminAuthorizationRepository(prisma);
+  }
+  return _adminAuthorizationRepository;
+}
+
 /** Override the singleton – used in tests to inject in-memory repositories. */
 export function setGameRepositories(repos: GameRepositories): void {
   _repos = repos;
@@ -263,6 +273,11 @@ export function setAdminRepository(repository: AdminRepository): void {
   _adminRepository = repository;
 }
 
+/** Override server-side admin-role checks for focused middleware tests. */
+export function setAdminAuthorizationRepository(repository: AdminAuthorizationRepository): void {
+  _adminAuthorizationRepository = repository;
+}
+
 /** Reset to Prisma-backed defaults (used in test teardown). */
 export function resetGameRepositories(): void {
   _repos = null;
@@ -279,4 +294,5 @@ export function resetGameRepositories(): void {
   _authRepository = null;
   _analyticsSessionOwnershipRepository = null;
   _adminRepository = null;
+  _adminAuthorizationRepository = null;
 }
