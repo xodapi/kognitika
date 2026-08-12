@@ -1,18 +1,30 @@
-import type { GameSession, GameType, Prisma } from '@prisma/client';
+export type JsonValue = null | boolean | number | string | JsonValue[] | { [key: string]: JsonValue };
+
+export type GameSessionRecord = {
+  id: string;
+  userId: string;
+  clientRunId: string | null;
+  gameType: string;
+  score: number;
+  timeMs: number;
+  isCompleted: boolean;
+  metadata: JsonValue;
+  createdAt: Date;
+};
 
 export type CreateGameSessionInput = {
   userId: string;
   clientRunId?: string;
-  gameType: GameType;
+  gameType: string;
   score: number;
   timeMs: number;
-  metadata: Prisma.InputJsonValue;
+  metadata: JsonValue;
 };
 
 export interface GameSessionRepository {
-  findCompletedByUser(userId: string): Promise<GameSession[]>;
-  findById(sessionId: string): Promise<GameSession | null>;
-  findByClientRun(userId: string, clientRunId: string): Promise<GameSession | null>;
-  createCompleted(input: CreateGameSessionInput): Promise<GameSession>;
-  replaceMetadata(sessionId: string, metadata: Prisma.InputJsonValue): Promise<GameSession>;
+  findCompletedByUser(userId: string): Promise<GameSessionRecord[]>;
+  findById(sessionId: string): Promise<GameSessionRecord | null>;
+  findByClientRun(userId: string, clientRunId: string): Promise<GameSessionRecord | null>;
+  createCompleted(input: CreateGameSessionInput): Promise<GameSessionRecord>;
+  replaceMetadata(sessionId: string, metadata: JsonValue): Promise<GameSessionRecord>;
 }
