@@ -12,6 +12,7 @@ import { PrismaLeaderboardQueryRepository } from './prisma/prisma-leaderboard-qu
 import { PrismaDashboardRepository } from './prisma/prisma-dashboard-repository.ts';
 import { PrismaNeurotrainerHistoryRepository } from './prisma/prisma-neurotrainer-history-repository.ts';
 import { PrismaChatRepository } from './prisma/prisma-chat-repository.ts';
+import { PrismaAuthRepository } from './prisma/prisma-auth-repository.ts';
 import type { GameAttemptRepository } from '../repositories/game-attempt-repository.ts';
 import type { GameSessionRepository } from '../repositories/game-session-repository.ts';
 import type { UserRepository } from '../repositories/user-repository.ts';
@@ -24,6 +25,7 @@ import type { LeaderboardQueryRepository } from '../repositories/leaderboard-que
 import type { DashboardRepository } from '../repositories/dashboard-repository.ts';
 import type { NeurotrainerHistoryRepository } from '../repositories/neurotrainer-history-repository.ts';
 import type { ChatRepository } from '../repositories/chat-repository.ts';
+import type { AuthRepository } from '../repositories/auth-repository.ts';
 import type { CompletedGameRepository } from '../services/game-save/completed-game-repository.ts';
 import { GameProgressService } from '../services/game-progress.ts';
 import { GameCompletionService } from '../services/game-completion.ts';
@@ -76,6 +78,7 @@ let _leaderboardQueryRepository: LeaderboardQueryRepository | null = null;
 let _dashboardRepository: DashboardRepository | null = null;
 let _neurotrainerHistoryRepository: NeurotrainerHistoryRepository | null = null;
 let _chatRepository: ChatRepository | null = null;
+let _authRepository: AuthRepository | null = null;
 
 export function getGameRepositories(): GameRepositories {
   if (!_repos) {
@@ -176,6 +179,13 @@ export function getChatRepository(): ChatRepository {
   return _chatRepository;
 }
 
+export function getAuthRepository(): AuthRepository {
+  if (!_authRepository) {
+    _authRepository = new PrismaAuthRepository(prisma);
+  }
+  return _authRepository;
+}
+
 /** Override the singleton – used in tests to inject in-memory repositories. */
 export function setGameRepositories(repos: GameRepositories): void {
   _repos = repos;
@@ -218,6 +228,11 @@ export function setChatRepository(repository: ChatRepository): void {
   _chatRepository = repository;
 }
 
+/** Override auth persistence for focused route tests. */
+export function setAuthRepository(repository: AuthRepository): void {
+  _authRepository = repository;
+}
+
 /** Reset to Prisma-backed defaults (used in test teardown). */
 export function resetGameRepositories(): void {
   _repos = null;
@@ -231,4 +246,5 @@ export function resetGameRepositories(): void {
   _dashboardRepository = null;
   _neurotrainerHistoryRepository = null;
   _chatRepository = null;
+  _authRepository = null;
 }

@@ -1,17 +1,17 @@
 import { Router } from 'express';
 import jwt from 'jsonwebtoken';
-import type { User } from '@prisma/client';
-import prisma from '../../lib/prisma.ts';
 import { validateBody } from '../middleware/validate.ts';
 import { generateBrainId, generatePseudonym } from '../utils/brain-id.ts';
 import { resumeSchema } from '../schemas/auth.ts';
 import { createSafeLogger, safeError } from '../../lib/safe-logger.ts';
+import type { BrainIdentityUser } from '../repositories/auth-repository.ts';
+import { getAuthRepository } from '../infrastructure/container.ts';
 
 const router = Router();
 const JWT_SECRET = process.env.JWT_SECRET!;
 const logger = createSafeLogger('auth-route');
 
-function signBrainToken(user: User) {
+function signBrainToken(user: BrainIdentityUser) {
   return jwt.sign(
     {
       id: user.id,
@@ -24,7 +24,7 @@ function signBrainToken(user: User) {
   );
 }
 
-function serializeBrainUser(user: User) {
+function serializeBrainUser(user: BrainIdentityUser) {
   const displayName = user.pseudonym || user.name || `Brain ${user.id.slice(0, 8)}`;
 
   return {
@@ -46,21 +46,7 @@ router.post('/brain', async (req, res) => {
     const brainId = generateBrainId();
     const pseudonym = generatePseudonym(brainId);
     
-    const user = await prisma.user.create({
-      data: {
-        brainId,
-        pseudonym,
-        name: pseudonym,
-        experience: 100, // Начальный бонус XP
-        role: 'USER',
-        xpEvents: {
-          create: {
-            amount: 100,
-            reason: 'Welcome Bonus'
-          }
-        }
-      }
-    });
+    const user = await getAuthRepository().createBrainUser(brainId, pseudonym);
 
     const token = signBrainToken(user); 
     res.json({ 
@@ -78,7 +64,7 @@ router.post('/brain', async (req, res) => {
 router.post('/restore', validateBody(resumeSchema), async (req: any, res) => {
   try {
     const { brainId } = req.validated.body;
-    const user = await prisma.user.findUnique({ where: { brainId } });
+    const user = await getAuthRepository().findByBrainId(brainId);
     
     if (!user) {
       return res.status(404).json({ error: 'Session not found. Please check your Brain ID.' });
