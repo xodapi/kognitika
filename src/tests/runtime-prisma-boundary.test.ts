@@ -6,11 +6,11 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 const SERVER_ROOT = join(process.cwd(), 'src', 'server');
-const RUNTIME_BOUNDARIES = ['routes', 'middleware'];
+const RUNTIME_BOUNDARIES = ['routes', 'middleware', 'realtime'];
 const PRISMA_IMPORT = /from\s+['"][^'"]*lib\/prisma(?:\.ts)?['"]/;
 
 describe('runtime Prisma boundary', () => {
-  it('keeps direct Prisma imports out of routes and middleware', async () => {
+  it('keeps direct Prisma imports out of HTTP and realtime transports', async () => {
     const violations: string[] = [];
 
     for (const directory of RUNTIME_BOUNDARIES) {
