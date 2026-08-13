@@ -72,6 +72,8 @@ Express route/middleware
 Socket.io is a separate real-time transport for Cognitive Flow and duels. It is not a replacement for the analytics outbox.
 Like HTTP routes and middleware, Socket.io transports use application repository ports
 for persistence and do not import the Prisma client directly.
+Best-effort server subscribers follow the same rule for persistence reads needed to
+produce notifications or other side effects.
 
 Application repository ports live in `src/server/repositories`. Prisma implementations
 live in `src/server/infrastructure/prisma`, and `src/server/infrastructure/container.ts`
