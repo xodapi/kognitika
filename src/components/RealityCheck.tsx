@@ -1,12 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Target, Shield, AlertTriangle, CheckCircle2, ChevronRight, Brain, Zap, Info } from 'lucide-react';
 import { useRealityCheckEngine } from '../hooks/useRealityCheckEngine';
 import { useAuth } from '../hooks/useAuth';
 import { CompletionRecommendation } from './CompletionRecommendation';
+import { useGameAttempt } from '../lib/game-attempt-client';
 
 export function RealityCheck({ onFinish }: { onFinish: (results: any) => void }) {
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   const userSeed = user?.id
     ? Array.from(user.id).reduce((acc, char) => acc + char.charCodeAt(0), 0)
     : 0;
@@ -18,12 +19,33 @@ export function RealityCheck({ onFinish }: { onFinish: (results: any) => void })
     startSession, 
     submitAnswer,
     score,
-    pairsRemaining
+    pairsRemaining,
+    getCompletedAnalyticsJob,
   } = useRealityCheckEngine(userSeed, user?.level || 1);
+  const { beginAttempt, saveAttempt } = useGameAttempt(token);
+  const beginSession = useCallback(async () => {
+    try {
+      await beginAttempt('REALITY_CHECK');
+      startSession();
+    } catch {
+      // Fail closed when an authenticated attempt cannot be issued.
+    }
+  }, [beginAttempt, startSession]);
 
   useEffect(() => {
-    startSession();
-  }, [startSession]);
+    void beginSession();
+  }, [beginSession]);
+
+  useEffect(() => {
+    const analyticsJob = getCompletedAnalyticsJob();
+    if (isFinished && token && analyticsJob) {
+      saveAttempt({
+        timeMs: Math.max(0, Date.parse(analyticsJob.completedAt) - Date.parse(analyticsJob.startedAt)),
+        metadata: { score, level: user?.level || 1 },
+        analyticsJob,
+      }).catch(() => {});
+    }
+  }, [isFinished, token, score, user?.level, saveAttempt, getCompletedAnalyticsJob]);
 
   if (isFinished) {
     return (
@@ -49,7 +71,7 @@ export function RealityCheck({ onFinish }: { onFinish: (results: any) => void })
           <CompletionRecommendation
             sourceModuleId="reality"
             score={score}
-            onRepeat={startSession}
+            onRepeat={() => { void beginSession(); }}
             onMenu={() => onFinish(score)}
             menuLabel="Вернуться в штаб"
             className="max-w-3xl"

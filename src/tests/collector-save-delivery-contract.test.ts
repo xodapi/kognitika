@@ -16,6 +16,7 @@ describe('collector save delivery contract', () => {
   it.each([
     ['NoiseReduction', 'NOISE_REDUCTION'],
     ['Decryptor', 'DECRYPTOR'],
+    ['RealityCheck', 'REALITY_CHECK'],
   ])('%s saves completed canonical analytics jobs through game attempts', (component, gameType) => {
     const source = readComponent(component);
 
