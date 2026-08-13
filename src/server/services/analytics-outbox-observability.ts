@@ -8,6 +8,8 @@ export type AnalyticsOutboxCanaryDecision =
   | RustAnalyticsCanaryDecision
   | { eligible: false; reason: 'sidecar_metrics_unavailable' };
 
+export const ANALYTICS_OUTBOX_SNAPSHOT_MAX_AGE_MS = 30_000;
+
 export interface AnalyticsOutboxOperationalSnapshot {
   updatedAt: string;
   worker: {
@@ -27,6 +29,11 @@ export interface AnalyticsOutboxOperationalSnapshot {
   canary: AnalyticsOutboxCanaryDecision;
 }
 
+export interface AnalyticsOutboxSnapshotFreshness {
+  ageMs: number;
+  status: 'fresh' | 'stale';
+}
+
 let snapshot: AnalyticsOutboxOperationalSnapshot | null = null;
 
 export function recordAnalyticsOutboxOperationalSnapshot(value: Omit<AnalyticsOutboxOperationalSnapshot, 'canary'>) {
@@ -38,8 +45,14 @@ export function recordAnalyticsOutboxOperationalSnapshot(value: Omit<AnalyticsOu
   });
 }
 
-export function getAnalyticsOutboxOperationalSnapshot() {
-  return snapshot ? structuredClone(snapshot) : null;
+export function getAnalyticsOutboxOperationalSnapshot(now = new Date()) {
+  if (!snapshot) return null;
+  const ageMs = Math.max(0, now.getTime() - Date.parse(snapshot.updatedAt));
+  const freshness: AnalyticsOutboxSnapshotFreshness = {
+    ageMs,
+    status: ageMs <= ANALYTICS_OUTBOX_SNAPSHOT_MAX_AGE_MS ? 'fresh' : 'stale',
+  };
+  return { ...structuredClone(snapshot), freshness };
 }
 
 export function clearAnalyticsOutboxOperationalSnapshotForTests() {

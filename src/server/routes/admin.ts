@@ -57,7 +57,7 @@ router.get('/practice-flow', (_req, res) => {
 });
 
 router.get('/analytics-outbox', (_req, res) => {
-  res.json(getAnalyticsOutboxOperationalSnapshot() ?? {
+  res.json(getAnalyticsOutboxOperationalSnapshot(new Date()) ?? {
     status: 'unavailable',
   });
 });

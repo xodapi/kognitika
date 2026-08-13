@@ -5,6 +5,7 @@ import {
   isAnalyticsOutboxDispatcherEnabled,
 } from '../server/services/analytics-outbox-worker.ts';
 import {
+  ANALYTICS_OUTBOX_SNAPSHOT_MAX_AGE_MS,
   clearAnalyticsOutboxOperationalSnapshotForTests,
   getAnalyticsOutboxOperationalSnapshot,
 } from '../server/services/analytics-outbox-observability.ts';
@@ -168,5 +169,31 @@ describe('analytics outbox worker', () => {
     await worker.runOnce();
 
     expect(getAnalyticsOutboxOperationalSnapshot()?.canary).toEqual({ eligible: true });
+  });
+
+  it('marks an operational snapshot stale after the freshness window', async () => {
+    const dispatcher = {
+      recoverExpiredLeases: vi.fn().mockResolvedValue(0),
+      dispatchNext: vi.fn().mockResolvedValue({ status: 'idle' }),
+      metrics: vi.fn().mockResolvedValue({
+        pending: 0,
+        processing: 0,
+        retry: 0,
+        completed: 0,
+        dead: 0,
+        oldestLagMs: 0,
+        failures: 0,
+      }),
+    };
+    const worker = new AnalyticsOutboxWorker(dispatcher, options);
+    const updatedAt = new Date('2026-08-04T12:00:00.000Z');
+    await worker.runOnce(updatedAt);
+
+    expect(getAnalyticsOutboxOperationalSnapshot(new Date(
+      updatedAt.getTime() + ANALYTICS_OUTBOX_SNAPSHOT_MAX_AGE_MS + 1,
+    ))?.freshness).toEqual({
+      ageMs: ANALYTICS_OUTBOX_SNAPSHOT_MAX_AGE_MS + 1,
+      status: 'stale',
+    });
   });
 });
