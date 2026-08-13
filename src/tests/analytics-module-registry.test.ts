@@ -135,11 +135,11 @@ describe('getAnalyticsModuleRegistry', () => {
     expect(registry1).toBe(registry2);
   });
 
-  it('registers all 15 core modules on first call', () => {
+  it('registers all 18 collector-backed modules on first call', () => {
     const registry = getAnalyticsModuleRegistry();
     const moduleIds = registry.getModuleIds();
     
-    expect(moduleIds).toHaveLength(15);
+    expect(moduleIds).toHaveLength(18);
     expect(moduleIds).toContain('schulte');
     expect(moduleIds).toContain('stroop');
     expect(moduleIds).toContain('nback');
@@ -155,6 +155,9 @@ describe('getAnalyticsModuleRegistry', () => {
     expect(moduleIds).toContain('dispatcher');
     expect(moduleIds).toContain('topology');
     expect(moduleIds).toContain('typing');
+    expect(moduleIds).toContain('noise-reduction');
+    expect(moduleIds).toContain('decryptor');
+    expect(moduleIds).toContain('reality-check');
   });
 
   it('supports lookup by all registered game types', () => {
@@ -176,6 +179,9 @@ describe('getAnalyticsModuleRegistry', () => {
     expect(registry.findByGameType('ASYNC_DISPATCHER')).toBeDefined();
     expect(registry.findByGameType('TOPOLOGY_MEMORY')).toBeDefined();
     expect(registry.findByGameType('SPEED_TYPING')).toBeDefined();
+    expect(registry.findByGameType('NOISE_REDUCTION')).toBeDefined();
+    expect(registry.findByGameType('DECRYPTOR')).toBeDefined();
+    expect(registry.findByGameType('REALITY_CHECK')).toBeDefined();
   });
 
   it('resets the singleton when resetAnalyticsModuleRegistry is called', () => {

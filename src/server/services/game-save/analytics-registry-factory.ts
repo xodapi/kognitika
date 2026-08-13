@@ -15,13 +15,16 @@ import {
   DispatcherAnalyticsModule,
   TopologyAnalyticsModule,
   TypingAnalyticsModule,
+  NoiseReductionAnalyticsModule,
+  DecryptorAnalyticsModule,
+  RealityCheckAnalyticsModule,
 } from './analytics-modules.ts';
 
 let _registry: AnalyticsModuleRegistry | null = null;
 
 /**
  * Returns the global analytics module registry, creating it on first call.
- * All 15 core trainers are registered by default.
+ * All collector-backed trainers are registered by default.
  */
 export function getAnalyticsModuleRegistry(): AnalyticsModuleRegistry {
   if (!_registry) {
@@ -43,6 +46,9 @@ export function getAnalyticsModuleRegistry(): AnalyticsModuleRegistry {
     _registry.register(new DispatcherAnalyticsModule());
     _registry.register(new TopologyAnalyticsModule());
     _registry.register(new TypingAnalyticsModule());
+    _registry.register(new NoiseReductionAnalyticsModule());
+    _registry.register(new DecryptorAnalyticsModule());
+    _registry.register(new RealityCheckAnalyticsModule());
   }
   
   return _registry;

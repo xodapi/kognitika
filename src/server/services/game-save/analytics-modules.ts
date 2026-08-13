@@ -119,3 +119,27 @@ export class TypingAnalyticsModule implements AnalyticsModuleDefinition {
     return gameType === 'SPEED_TYPING';
   }
 }
+
+/** Inhibitory control under distracting stimuli */
+export class NoiseReductionAnalyticsModule implements AnalyticsModuleDefinition {
+  readonly moduleId = 'noise-reduction';
+  supports(gameType: string): boolean {
+    return gameType === 'NOISE_REDUCTION';
+  }
+}
+
+/** Fact selection under semantic distortion */
+export class DecryptorAnalyticsModule implements AnalyticsModuleDefinition {
+  readonly moduleId = 'decryptor';
+  supports(gameType: string): boolean {
+    return gameType === 'DECRYPTOR';
+  }
+}
+
+/** Semantic hallucination classification */
+export class RealityCheckAnalyticsModule implements AnalyticsModuleDefinition {
+  readonly moduleId = 'reality-check';
+  supports(gameType: string): boolean {
+    return gameType === 'REALITY_CHECK';
+  }
+}
