@@ -176,6 +176,12 @@ describe('Prisma analytics outbox store', () => {
       }),
     }));
     expect(JSON.stringify(prismaMock.analyticsOutboxEntry.findMany.mock.calls[0][0])).not.toMatch(/brainid|jwt|email|token|metadata/i);
+    expect(prismaMock.analyticsOutboxEntry.findMany.mock.calls[1][0]).toEqual({
+      select: {
+        occurredAt: true,
+        state: true,
+      },
+    });
   });
 
   it('purges only completed rows older than the retention cutoff', async () => {

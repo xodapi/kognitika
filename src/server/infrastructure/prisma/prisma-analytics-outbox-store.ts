@@ -266,22 +266,13 @@ export class PrismaAnalyticsOutboxStore {
   async metrics(now: Date) {
     const entries = await prisma.analyticsOutboxEntry.findMany({
       select: {
-        id: true,
-        sourceSessionId: true,
-        analyzerVersion: true,
-        contractVersion: true,
-        idempotencyKey: true,
         occurredAt: true,
         state: true,
-        attemptCount: true,
-        leaseOwner: true,
-        leaseExpiresAt: true,
-        completedAt: true,
-        lastErrorCode: true,
-        authority: true,
-        shadowCandidate: true,
       },
     });
-    return buildAnalyticsOutboxMetrics(entries.map(toEntry), now);
+    return buildAnalyticsOutboxMetrics(entries.map(entry => ({
+      occurredAt: entry.occurredAt,
+      state: entry.state as AnalyticsOutboxState,
+    })), now);
   }
 }

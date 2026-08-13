@@ -170,7 +170,12 @@ export function isAnalyticsOutboxEnabled(environment: Record<string, string | un
   return environment[ANALYTICS_OUTBOX_FEATURE_FLAG] === 'true';
 }
 
-export function buildAnalyticsOutboxMetrics(entries: AnalyticsOutboxEntry[], now: Date) {
+export interface AnalyticsOutboxMetricsEntry {
+  occurredAt: Date;
+  state: AnalyticsOutboxState;
+}
+
+export function buildAnalyticsOutboxMetrics(entries: readonly AnalyticsOutboxMetricsEntry[], now: Date) {
   const metrics = { pending: 0, processing: 0, retry: 0, completed: 0, dead: 0, oldestLagMs: 0, failures: 0 };
   for (const entry of entries) {
     metrics[entry.state] += 1;
