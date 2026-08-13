@@ -123,3 +123,5 @@ export function useRealityCheckEngine(userId: number, level: number) {
     getCompletedAnalyticsJob: () => completedAnalyticsJobRef.current,
   };
 }
+
+export type RealityCheckEngine = ReturnType<typeof useRealityCheckEngine>;
