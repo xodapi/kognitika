@@ -22,7 +22,9 @@ vi.mock('../hooks/useRealityCheckEngine', () => ({
     startSession: vi.fn(),
     submitAnswer: vi.fn(),
     score: 0,
-    pairsRemaining: 10
+    pairsRemaining: 10,
+    getCompletedAnalyticsJob: vi.fn(() => undefined),
+    isFinished: false,
   })
 }));
 
