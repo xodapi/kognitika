@@ -1,11 +1,21 @@
 import { createSafeLogger } from '../../lib/safe-logger.ts';
 import { PrismaAnalyticsOutboxStore } from '../infrastructure/prisma/prisma-analytics-outbox-store.ts';
-import { createRustAnalyticsSidecarClient } from './rust-analytics-sidecar.ts';
+import { createRustAnalyticsSidecarClient, type RustAnalyticsSidecarClient } from './rust-analytics-sidecar.ts';
+import { recordAnalyticsOutboxOperationalSnapshot } from './analytics-outbox-observability.ts';
 
 const logger = createSafeLogger('analytics-outbox-worker');
 
 export interface AnalyticsOutboxDispatcher {
   recoverExpiredLeases(now: Date, maxAttempts: number): Promise<number>;
+  metrics?(now: Date): Promise<{
+    pending: number;
+    processing: number;
+    retry: number;
+    completed: number;
+    dead: number;
+    oldestLagMs: number;
+    failures: number;
+  }>;
   dispatchNext(options: {
     workerId: string;
     now: Date;
@@ -40,6 +50,7 @@ export class AnalyticsOutboxWorker {
   constructor(
     private readonly dispatcher: AnalyticsOutboxDispatcher,
     private readonly options: AnalyticsOutboxWorkerOptions,
+    private readonly rustSidecar: RustAnalyticsSidecarClient | null = null,
   ) {}
 
   async runOnce(now = new Date()): Promise<{ recovered: number; dispatched: number }> {
@@ -63,13 +74,30 @@ export class AnalyticsOutboxWorker {
           break;
         }
       }
-      return { recovered, dispatched };
+      const result = { recovered, dispatched };
+      try {
+        await this.recordOperationalSnapshot(result, now);
+      } catch (error) {
+        logger.warn('Analytics outbox metrics snapshot failed', { error });
+      }
+      return result;
     } catch (error) {
       logger.error('Analytics outbox recovery failed', { error });
       return { recovered: 0, dispatched: 0 };
     } finally {
       this.running = false;
     }
+  }
+
+  private async recordOperationalSnapshot(result: { recovered: number; dispatched: number }, now: Date) {
+    if (!this.dispatcher.metrics) return;
+    const outbox = await this.dispatcher.metrics(now);
+    recordAnalyticsOutboxOperationalSnapshot({
+      updatedAt: now.toISOString(),
+      worker: result,
+      outbox,
+      sidecar: this.rustSidecar?.getMetrics() ?? null,
+    });
   }
 
   start() {
@@ -94,12 +122,14 @@ export class AnalyticsOutboxWorker {
 
 export function startAnalyticsOutboxWorker(environment: Record<string, string | undefined> = process.env) {
   if (!isAnalyticsOutboxDispatcherEnabled(environment)) return null;
+  const rustSidecar = createRustAnalyticsSidecarClient(environment);
   const worker = new AnalyticsOutboxWorker(
-    new PrismaAnalyticsOutboxStore(createRustAnalyticsSidecarClient(environment)),
+    new PrismaAnalyticsOutboxStore(rustSidecar),
     {
       ...DEFAULT_ANALYTICS_OUTBOX_WORKER_OPTIONS,
       workerId: `node-${process.pid}`,
     },
+    rustSidecar,
   );
   worker.start();
   return worker;

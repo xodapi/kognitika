@@ -17,6 +17,10 @@ import {
 } from '../server/infrastructure/container.ts';
 import type { AdminRepository } from '../server/repositories/admin-repository.ts';
 import type { AdminAuthorizationRepository } from '../server/repositories/admin-authorization-repository.ts';
+import {
+  clearAnalyticsOutboxOperationalSnapshotForTests,
+  recordAnalyticsOutboxOperationalSnapshot,
+} from '../server/services/analytics-outbox-observability.ts';
 
 const JWT_SECRET = 'synthetic-admin-route-secret';
 
@@ -40,6 +44,7 @@ beforeEach(() => {
   });
   setAdminAuthorizationRepository({ findRole });
   clearPracticeFlowEventsForTests();
+  clearAnalyticsOutboxOperationalSnapshotForTests();
 });
 
 afterEach(async () => {
@@ -242,6 +247,47 @@ describe('admin route privacy and authorization contract', () => {
     expect(serialized).not.toContain('synthetic@example.test');
     expect(serialized).not.toContain('BR-SYNTHETIC');
     expect(serialized).not.toContain('synthetic-token');
+  });
+
+  it('exposes aggregate-only analytics outbox metrics to admins', async () => {
+    findRole.mockResolvedValue('ADMIN');
+    recordAnalyticsOutboxOperationalSnapshot({
+      updatedAt: '2026-08-13T04:00:00.000Z',
+      worker: { recovered: 2, dispatched: 3 },
+      outbox: {
+        pending: 1,
+        processing: 0,
+        retry: 1,
+        completed: 12,
+        dead: 0,
+        oldestLagMs: 250,
+        failures: 0,
+      },
+      sidecar: {
+        requests: 5,
+        matched: 5,
+        mismatched: 0,
+        failures: {
+          sidecar_timeout: 0,
+          sidecar_unavailable: 0,
+          sidecar_rejected: 0,
+          sidecar_invalid_response: 0,
+        },
+      },
+    });
+    const baseUrl = await createAdminHarness();
+    const token = adminToken({ id: 'user_synthetic_admin', role: 'ADMIN' });
+
+    const response = await getJson(baseUrl, '/api/admin/analytics-outbox', token);
+    const serialized = JSON.stringify(response.body);
+
+    expect(response.status).toBe(200);
+    expect(response.body).toMatchObject({
+      worker: { recovered: 2, dispatched: 3 },
+      outbox: { pending: 1, dead: 0, oldestLagMs: 250 },
+      sidecar: { requests: 5, matched: 5 },
+    });
+    expect(serialized).not.toMatch(/session|job|brainid|email|token|payload/i);
   });
 
   it('validates and sanitizes /api/admin/feedback/:id/response', async () => {
