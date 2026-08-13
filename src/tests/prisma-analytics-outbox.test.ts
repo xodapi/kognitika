@@ -161,6 +161,19 @@ describe('Prisma analytics outbox store', () => {
       oldestLagMs: 0,
       failures: 1,
     });
+    expect(prismaMock.analyticsOutboxEntry.updateMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: expect.objectContaining({
+        id: baseRecord.id,
+        state: 'processing',
+        attemptCount: 0,
+        leaseExpiresAt: { lte: now },
+      }),
+      data: expect.objectContaining({
+        state: 'retry',
+        attemptCount: 1,
+        lastErrorCode: 'lease_expired',
+      }),
+    }));
     expect(JSON.stringify(prismaMock.analyticsOutboxEntry.findMany.mock.calls[0][0])).not.toMatch(/brainid|jwt|email|token|metadata/i);
   });
 });
