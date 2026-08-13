@@ -35,15 +35,19 @@ export interface AnalyticsOutboxWorkerOptions {
   metricsTimeoutMs?: number;
 }
 
+export const DEFAULT_ANALYTICS_OUTBOX_COMPLETED_RETENTION_MS = 30 * 24 * 60 * 60 * 1_000;
+export const DEFAULT_ANALYTICS_OUTBOX_METRICS_TIMEOUT_MS = 1_000;
+const MIN_ANALYTICS_OUTBOX_METRICS_TIMEOUT_MS = 100;
+const MAX_ANALYTICS_OUTBOX_METRICS_TIMEOUT_MS = 5_000;
+const MAX_ANALYTICS_OUTBOX_COMPLETED_RETENTION_DAYS = 365;
+
 export const DEFAULT_ANALYTICS_OUTBOX_WORKER_OPTIONS: Omit<AnalyticsOutboxWorkerOptions, 'workerId'> = {
   intervalMs: 5_000,
   batchSize: 10,
   leaseMs: 30_000,
   maxAttempts: 3,
-  metricsTimeoutMs: 1_000,
+  metricsTimeoutMs: DEFAULT_ANALYTICS_OUTBOX_METRICS_TIMEOUT_MS,
 };
-
-export const DEFAULT_ANALYTICS_OUTBOX_COMPLETED_RETENTION_MS = 30 * 24 * 60 * 60 * 1_000;
 
 export function isAnalyticsOutboxDispatcherEnabled(environment: Record<string, string | undefined> = process.env): boolean {
   return environment.ANALYTICS_OUTBOX_DISPATCH_ENABLED === 'true';
@@ -51,9 +55,27 @@ export function isAnalyticsOutboxDispatcherEnabled(environment: Record<string, s
 
 export function getAnalyticsOutboxCompletedRetentionMs(environment: Record<string, string | undefined> = process.env): number | null {
   if (environment.ANALYTICS_OUTBOX_RETENTION_ENABLED !== 'true') return null;
+  if (environment.ANALYTICS_OUTBOX_COMPLETED_RETENTION_DAYS === undefined) {
+    return DEFAULT_ANALYTICS_OUTBOX_COMPLETED_RETENTION_MS;
+  }
   const configuredDays = Number(environment.ANALYTICS_OUTBOX_COMPLETED_RETENTION_DAYS);
-  const retentionDays = Number.isInteger(configuredDays) && configuredDays > 0 ? configuredDays : 30;
-  return retentionDays * 24 * 60 * 60 * 1_000;
+  return Number.isInteger(configuredDays)
+    && configuredDays > 0
+    && configuredDays <= MAX_ANALYTICS_OUTBOX_COMPLETED_RETENTION_DAYS
+    ? configuredDays * 24 * 60 * 60 * 1_000
+    : null;
+}
+
+export function getAnalyticsOutboxMetricsTimeoutMs(environment: Record<string, string | undefined> = process.env): number {
+  if (environment.ANALYTICS_OUTBOX_METRICS_TIMEOUT_MS === undefined) {
+    return DEFAULT_ANALYTICS_OUTBOX_METRICS_TIMEOUT_MS;
+  }
+  const timeoutMs = Number(environment.ANALYTICS_OUTBOX_METRICS_TIMEOUT_MS);
+  return Number.isInteger(timeoutMs)
+    && timeoutMs >= MIN_ANALYTICS_OUTBOX_METRICS_TIMEOUT_MS
+    && timeoutMs <= MAX_ANALYTICS_OUTBOX_METRICS_TIMEOUT_MS
+    ? timeoutMs
+    : DEFAULT_ANALYTICS_OUTBOX_METRICS_TIMEOUT_MS;
 }
 
 export class AnalyticsOutboxWorker {
@@ -115,7 +137,7 @@ export class AnalyticsOutboxWorker {
 
   private async recordOperationalSnapshot(result: { recovered: number; dispatched: number; purged: number }, now: Date) {
     if (!this.dispatcher.metrics) return;
-    const timeoutMs = this.options.metricsTimeoutMs ?? DEFAULT_ANALYTICS_OUTBOX_WORKER_OPTIONS.metricsTimeoutMs;
+    const timeoutMs = this.options.metricsTimeoutMs ?? DEFAULT_ANALYTICS_OUTBOX_METRICS_TIMEOUT_MS;
     let timeout: ReturnType<typeof setTimeout> | undefined;
     try {
       const outbox = await Promise.race([
@@ -159,11 +181,13 @@ export function startAnalyticsOutboxWorker(environment: Record<string, string | 
   if (!isAnalyticsOutboxDispatcherEnabled(environment)) return null;
   const rustSidecar = createRustAnalyticsSidecarClient(environment);
   const completedRetentionMs = getAnalyticsOutboxCompletedRetentionMs(environment);
+  const metricsTimeoutMs = getAnalyticsOutboxMetricsTimeoutMs(environment);
   const worker = new AnalyticsOutboxWorker(
     new PrismaAnalyticsOutboxStore(rustSidecar),
     {
       ...DEFAULT_ANALYTICS_OUTBOX_WORKER_OPTIONS,
       workerId: `node-${process.pid}`,
+      metricsTimeoutMs,
       ...(completedRetentionMs !== null
         ? { completedRetentionMs }
         : {}),

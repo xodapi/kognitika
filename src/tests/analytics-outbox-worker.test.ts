@@ -3,7 +3,9 @@ import {
   AnalyticsOutboxWorker,
   DEFAULT_ANALYTICS_OUTBOX_WORKER_OPTIONS,
   DEFAULT_ANALYTICS_OUTBOX_COMPLETED_RETENTION_MS,
+  DEFAULT_ANALYTICS_OUTBOX_METRICS_TIMEOUT_MS,
   getAnalyticsOutboxCompletedRetentionMs,
+  getAnalyticsOutboxMetricsTimeoutMs,
   isAnalyticsOutboxDispatcherEnabled,
 } from '../server/services/analytics-outbox-worker.ts';
 import {
@@ -35,6 +37,24 @@ describe('analytics outbox worker', () => {
       ANALYTICS_OUTBOX_RETENTION_ENABLED: 'true',
       ANALYTICS_OUTBOX_COMPLETED_RETENTION_DAYS: '7',
     })).toBe(7 * 24 * 60 * 60 * 1_000);
+    expect(getAnalyticsOutboxCompletedRetentionMs({
+      ANALYTICS_OUTBOX_RETENTION_ENABLED: 'true',
+      ANALYTICS_OUTBOX_COMPLETED_RETENTION_DAYS: 'invalid',
+    })).toBeNull();
+    expect(getAnalyticsOutboxCompletedRetentionMs({
+      ANALYTICS_OUTBOX_RETENTION_ENABLED: 'true',
+      ANALYTICS_OUTBOX_COMPLETED_RETENTION_DAYS: '366',
+    })).toBeNull();
+    expect(getAnalyticsOutboxMetricsTimeoutMs({})).toBe(DEFAULT_ANALYTICS_OUTBOX_METRICS_TIMEOUT_MS);
+    expect(getAnalyticsOutboxMetricsTimeoutMs({
+      ANALYTICS_OUTBOX_METRICS_TIMEOUT_MS: '2500',
+    })).toBe(2500);
+    expect(getAnalyticsOutboxMetricsTimeoutMs({
+      ANALYTICS_OUTBOX_METRICS_TIMEOUT_MS: '0',
+    })).toBe(DEFAULT_ANALYTICS_OUTBOX_METRICS_TIMEOUT_MS);
+    expect(getAnalyticsOutboxMetricsTimeoutMs({
+      ANALYTICS_OUTBOX_METRICS_TIMEOUT_MS: '5001',
+    })).toBe(DEFAULT_ANALYTICS_OUTBOX_METRICS_TIMEOUT_MS);
   });
 
   it('recovers expired leases and drains a bounded batch', async () => {

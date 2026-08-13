@@ -73,6 +73,11 @@ repeatable-read transaction has a 500 ms acquisition budget and one-second
 execution limit. A missing snapshot is an observability gap, never a reason
 to delay or fail canonical dispatch.
 
+Completed-row cleanup is disabled when its opt-in retention value is not a
+positive integer from 1 to 365 days. Snapshot timeout configuration accepts
+only integer values from 100 to 5000 milliseconds; invalid values use the
+safe one-second default.
+
 ## Validation
 
 - `src/tests/analytics-outbox.test.ts` covers the portable lifecycle contract.
