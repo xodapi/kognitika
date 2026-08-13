@@ -64,6 +64,12 @@ worker cycle. It deletes only rows with `state=completed` and
 dead-letter rows are never removed. Retention failures are fail-open and do
 not block dispatch.
 
+Metrics collection is also fail-open and bounded: the worker abandons an
+in-process observation after one second, while the underlying Prisma
+repeatable-read transaction has a 500 ms acquisition budget and one-second
+execution limit. A missing snapshot is an observability gap, never a reason
+to delay or fail canonical dispatch.
+
 ## Validation
 
 - `src/tests/analytics-outbox.test.ts` covers the portable lifecycle contract.

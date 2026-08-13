@@ -184,6 +184,8 @@ describe('Prisma analytics outbox store', () => {
     }));
     expect(prismaMock.$transaction).toHaveBeenCalledWith(expect.any(Function), {
       isolationLevel: 'RepeatableRead',
+      maxWait: 500,
+      timeout: 1_000,
     });
     expect(prismaMock.analyticsOutboxEntry.groupBy).toHaveBeenNthCalledWith(1, {
       by: ['state'],

@@ -293,6 +293,10 @@ export class PrismaAnalyticsOutboxStore {
         metrics.oldestLagMs = Math.max(metrics.oldestLagMs, now.getTime() - group._min.occurredAt.getTime());
       }
       return metrics;
-    }, { isolationLevel: 'RepeatableRead' });
+    }, {
+      isolationLevel: 'RepeatableRead',
+      maxWait: 500,
+      timeout: 1_000,
+    });
   }
 }

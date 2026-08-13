@@ -125,6 +125,21 @@ describe('analytics outbox worker', () => {
     expect(getAnalyticsOutboxOperationalSnapshot()).toBeNull();
   });
 
+  it('does not delay dispatch completion when metrics collection times out', async () => {
+    const dispatcher = {
+      recoverExpiredLeases: vi.fn().mockResolvedValue(1),
+      dispatchNext: vi.fn().mockResolvedValue({ status: 'idle' }),
+      metrics: vi.fn().mockReturnValue(new Promise(() => undefined)),
+    };
+    const worker = new AnalyticsOutboxWorker(dispatcher, {
+      ...options,
+      metricsTimeoutMs: 1,
+    });
+
+    await expect(worker.runOnce()).resolves.toEqual({ recovered: 1, dispatched: 0, purged: 0 });
+    expect(getAnalyticsOutboxOperationalSnapshot()).toBeNull();
+  });
+
   it('purges only completed rows after explicit retention opt-in', async () => {
     const dispatcher = {
       recoverExpiredLeases: vi.fn().mockResolvedValue(0),

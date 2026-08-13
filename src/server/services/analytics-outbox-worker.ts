@@ -32,6 +32,7 @@ export interface AnalyticsOutboxWorkerOptions {
   leaseMs: number;
   maxAttempts: number;
   completedRetentionMs?: number;
+  metricsTimeoutMs?: number;
 }
 
 export const DEFAULT_ANALYTICS_OUTBOX_WORKER_OPTIONS: Omit<AnalyticsOutboxWorkerOptions, 'workerId'> = {
@@ -39,6 +40,7 @@ export const DEFAULT_ANALYTICS_OUTBOX_WORKER_OPTIONS: Omit<AnalyticsOutboxWorker
   batchSize: 10,
   leaseMs: 30_000,
   maxAttempts: 3,
+  metricsTimeoutMs: 1_000,
 };
 
 export const DEFAULT_ANALYTICS_OUTBOX_COMPLETED_RETENTION_MS = 30 * 24 * 60 * 60 * 1_000;
@@ -113,13 +115,24 @@ export class AnalyticsOutboxWorker {
 
   private async recordOperationalSnapshot(result: { recovered: number; dispatched: number; purged: number }, now: Date) {
     if (!this.dispatcher.metrics) return;
-    const outbox = await this.dispatcher.metrics(now);
-    recordAnalyticsOutboxOperationalSnapshot({
-      updatedAt: now.toISOString(),
-      worker: result,
-      outbox,
-      sidecar: this.rustSidecar?.getMetrics() ?? null,
-    });
+    const timeoutMs = this.options.metricsTimeoutMs ?? DEFAULT_ANALYTICS_OUTBOX_WORKER_OPTIONS.metricsTimeoutMs;
+    let timeout: ReturnType<typeof setTimeout> | undefined;
+    try {
+      const outbox = await Promise.race([
+        this.dispatcher.metrics(now),
+        new Promise<never>((_, reject) => {
+          timeout = setTimeout(() => reject(new Error('analytics outbox metrics timed out')), timeoutMs);
+        }),
+      ]);
+      recordAnalyticsOutboxOperationalSnapshot({
+        updatedAt: now.toISOString(),
+        worker: result,
+        outbox,
+        sidecar: this.rustSidecar?.getMetrics() ?? null,
+      });
+    } finally {
+      if (timeout) clearTimeout(timeout);
+    }
   }
 
   start() {
