@@ -77,6 +77,12 @@ Do not consider a larger shadow percentage until all of the following are true f
 
 Metrics must remain aggregate-only. Safe error codes are acceptable operational data; raw session payloads are not.
 
+The protected admin outbox snapshot is the operational view for these gates.
+Require a `fresh` snapshot before evaluating promotion. A `stale` snapshot is
+only retained briefly for diagnosis, and an `unavailable` snapshot means the
+worker has not reported within the in-memory five-minute expiry window or the
+process restarted. Do not infer readiness from an old snapshot.
+
 ## Rollback
 
 Immediately set:

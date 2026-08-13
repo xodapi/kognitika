@@ -33,6 +33,33 @@ processing lease expiry -> retry or dead (bounded retry budget)
 
 Claims use a single PostgreSQL `FOR UPDATE SKIP LOCKED` statement, so competing Node workers lease distinct oldest available rows without blocking one another. Completion, failure, and recovery require an active unexpired lease. Metrics are aggregate-only: state counts, oldest pending/retry lag, and dead-letter failures.
 
+## Operational snapshot
+
+The protected `GET /api/admin/analytics-outbox` endpoint exposes one
+aggregate-only in-process snapshot for operations. It contains state counts,
+worker counters (including completed-row cleanup count), sidecar counters,
+canary eligibility, and derived freshness. It never exposes session IDs, job
+IDs, Brain IDs, payloads, identities, tokens, or raw telemetry.
+
+The snapshot is intentionally not durable and has no historical retention
+store:
+
+- `fresh` means the last worker sample is at most 30 seconds old;
+- `stale` means it is older than 30 seconds but still retained for up to five
+  minutes;
+- after five minutes, an absent or expired snapshot returns
+  `{ "status": "unavailable" }`.
+
+Treat `stale` and `unavailable` as a monitoring gap, not as evidence that the
+outbox is healthy or eligible for canary promotion. The snapshot is cleared
+when the process restarts and is never a source of rollout authority.
+
+When explicitly enabled, completed-row retention runs as part of the same
+worker cycle. It deletes only rows with `state=completed` and
+`completedAt` before the configured cutoff. Pending, retry, processing, and
+dead-letter rows are never removed. Retention failures are fail-open and do
+not block dispatch.
+
 ## Validation
 
 - `src/tests/analytics-outbox.test.ts` covers the portable lifecycle contract.

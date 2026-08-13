@@ -8,6 +8,7 @@ import {
 } from '../server/services/analytics-outbox-worker.ts';
 import {
   ANALYTICS_OUTBOX_SNAPSHOT_MAX_AGE_MS,
+  ANALYTICS_OUTBOX_SNAPSHOT_RETENTION_MS,
   clearAnalyticsOutboxOperationalSnapshotForTests,
   getAnalyticsOutboxOperationalSnapshot,
 } from '../server/services/analytics-outbox-observability.ts';
@@ -102,13 +103,14 @@ describe('analytics outbox worker', () => {
 
     await expect(worker.runOnce(new Date('2026-08-04T12:00:00.000Z'))).resolves.toEqual({ recovered: 1, dispatched: 0, purged: 0 });
 
-    expect(getAnalyticsOutboxOperationalSnapshot()).toMatchObject({
-      worker: { recovered: 1, dispatched: 0 },
+    const snapshotNow = new Date('2026-08-04T12:00:00.000Z');
+    expect(getAnalyticsOutboxOperationalSnapshot(snapshotNow)).toMatchObject({
+      worker: { recovered: 1, dispatched: 0, purged: 0 },
       outbox: { pending: 2, dead: 0, oldestLagMs: 500 },
       sidecar: { requests: 10, mismatched: 1 },
       canary: { eligible: false, reason: 'insufficient_samples' },
     });
-    expect(JSON.stringify(getAnalyticsOutboxOperationalSnapshot())).not.toMatch(/session|job|brainid|email|token|payload/i);
+    expect(JSON.stringify(getAnalyticsOutboxOperationalSnapshot(snapshotNow))).not.toMatch(/session|job|brainid|email|token|payload/i);
   });
 
   it('does not fail a dispatch cycle when metrics collection is unavailable', async () => {
@@ -237,5 +239,28 @@ describe('analytics outbox worker', () => {
       ageMs: ANALYTICS_OUTBOX_SNAPSHOT_MAX_AGE_MS + 1,
       status: 'stale',
     });
+  });
+
+  it('expires an operational snapshot after the in-memory retention window', async () => {
+    const dispatcher = {
+      recoverExpiredLeases: vi.fn().mockResolvedValue(0),
+      dispatchNext: vi.fn().mockResolvedValue({ status: 'idle' }),
+      metrics: vi.fn().mockResolvedValue({
+        pending: 0,
+        processing: 0,
+        retry: 0,
+        completed: 0,
+        dead: 0,
+        oldestLagMs: 0,
+        failures: 0,
+      }),
+    };
+    const worker = new AnalyticsOutboxWorker(dispatcher, options);
+    const updatedAt = new Date('2026-08-04T12:00:00.000Z');
+    await worker.runOnce(updatedAt);
+
+    expect(getAnalyticsOutboxOperationalSnapshot(new Date(
+      updatedAt.getTime() + ANALYTICS_OUTBOX_SNAPSHOT_RETENTION_MS + 1,
+    ))).toBeNull();
   });
 });

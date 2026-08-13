@@ -252,8 +252,8 @@ describe('admin route privacy and authorization contract', () => {
   it('exposes aggregate-only analytics outbox metrics to admins', async () => {
     findRole.mockResolvedValue('ADMIN');
     recordAnalyticsOutboxOperationalSnapshot({
-      updatedAt: '2026-08-13T04:00:00.000Z',
-      worker: { recovered: 2, dispatched: 3 },
+      updatedAt: new Date(Date.now() - 30_001).toISOString(),
+      worker: { recovered: 2, dispatched: 3, purged: 0 },
       outbox: {
         pending: 1,
         processing: 0,
@@ -283,13 +283,38 @@ describe('admin route privacy and authorization contract', () => {
 
     expect(response.status).toBe(200);
     expect(response.body).toMatchObject({
-      worker: { recovered: 2, dispatched: 3 },
+      worker: { recovered: 2, dispatched: 3, purged: 0 },
       outbox: { pending: 1, dead: 0, oldestLagMs: 250 },
       sidecar: { requests: 5, matched: 5 },
       canary: { eligible: false, reason: 'insufficient_samples' },
       freshness: { status: 'stale' },
     });
     expect(serialized).not.toMatch(/session|job|brainid|email|token|payload/i);
+  });
+
+  it('reports an expired analytics outbox snapshot as unavailable', async () => {
+    findRole.mockResolvedValue('ADMIN');
+    recordAnalyticsOutboxOperationalSnapshot({
+      updatedAt: new Date(Date.now() - (5 * 60_000) - 1).toISOString(),
+      worker: { recovered: 0, dispatched: 0, purged: 0 },
+      outbox: {
+        pending: 0,
+        processing: 0,
+        retry: 0,
+        completed: 0,
+        dead: 0,
+        oldestLagMs: 0,
+        failures: 0,
+      },
+      sidecar: null,
+    });
+    const baseUrl = await createAdminHarness();
+    const token = adminToken({ id: 'user_synthetic_admin', role: 'ADMIN' });
+
+    const response = await getJson(baseUrl, '/api/admin/analytics-outbox', token);
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({ status: 'unavailable' });
   });
 
   it('validates and sanitizes /api/admin/feedback/:id/response', async () => {
