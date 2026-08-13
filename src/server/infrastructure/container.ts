@@ -34,6 +34,8 @@ import type { AdminRepository } from '../repositories/admin-repository.ts';
 import type { AdminAuthorizationRepository } from '../repositories/admin-authorization-repository.ts';
 import { PrismaDuelRepository } from './prisma/prisma-duel-repository.ts';
 import type { DuelRepository } from '../repositories/duel-repository.ts';
+import { PrismaNotificationRecipientRepository } from './prisma/prisma-notification-recipient-repository.ts';
+import type { NotificationRecipientRepository } from '../repositories/notification-recipient-repository.ts';
 import type { CompletedGameRepository } from '../services/game-save/completed-game-repository.ts';
 import { GameProgressService } from '../services/game-progress.ts';
 import { GameCompletionService } from '../services/game-completion.ts';
@@ -91,6 +93,7 @@ let _analyticsSessionOwnershipRepository: AnalyticsSessionOwnershipRepository | 
 let _adminRepository: AdminRepository | null = null;
 let _adminAuthorizationRepository: AdminAuthorizationRepository | null = null;
 let _duelRepository: DuelRepository | null = null;
+let _notificationRecipientRepository: NotificationRecipientRepository | null = null;
 
 export function getGameRepositories(): GameRepositories {
   if (!_repos) {
@@ -222,6 +225,13 @@ export function getAdminAuthorizationRepository(): AdminAuthorizationRepository 
 export function getDuelRepository(): DuelRepository {
   if (!_duelRepository) _duelRepository = new PrismaDuelRepository(prisma);
   return _duelRepository;
+}
+
+export function getNotificationRecipientRepository(): NotificationRecipientRepository {
+  if (!_notificationRecipientRepository) {
+    _notificationRecipientRepository = new PrismaNotificationRecipientRepository(prisma);
+  }
+  return _notificationRecipientRepository;
 }
 
 /** Override the singleton – used in tests to inject in-memory repositories. */

@@ -1,6 +1,6 @@
 import { eventBus } from '../server/events/event-bus.ts';
-import prisma from './prisma.ts';
 import { createSafeLogger, safeError } from './safe-logger.ts';
+import { getNotificationRecipientRepository } from '../server/infrastructure/container.ts';
 import {
   buildFeedbackTelegramMessage,
   buildIdeaTelegramMessage,
@@ -43,13 +43,7 @@ async function deliverTelegramAdminNotification(text: string, eventLabel: string
 eventBus.on('feedback:submitted', async (data) => {
   try {
     const { userId, trackingNum, type, content } = data;
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: {
-        name: true,
-        pseudonym: true,
-      },
-    });
+    const user = await getNotificationRecipientRepository().findByUserId(userId);
     if (!user) return;
 
     await deliverTelegramAdminNotification(buildFeedbackTelegramMessage({
@@ -72,13 +66,7 @@ eventBus.on('feedback:submitted', async (data) => {
 eventBus.on('idea:submitted', async (data) => {
   try {
     const { userId, ideaId, title, description } = data;
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: {
-        name: true,
-        pseudonym: true,
-      },
-    });
+    const user = await getNotificationRecipientRepository().findByUserId(userId);
     if (!user) return;
 
     await deliverTelegramAdminNotification(buildIdeaTelegramMessage({
