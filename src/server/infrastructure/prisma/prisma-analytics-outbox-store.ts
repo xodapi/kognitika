@@ -176,6 +176,16 @@ export class PrismaAnalyticsOutboxStore {
     return recovered;
   }
 
+  async purgeCompletedBefore(cutoff: Date): Promise<number> {
+    const result = await prisma.analyticsOutboxEntry.deleteMany({
+      where: {
+        state: 'completed',
+        completedAt: { lt: cutoff },
+      },
+    });
+    return result.count;
+  }
+
   async getCanonicalJob(sourceSessionId: string) {
     const record = await prisma.completedSessionAnalyticsJob.findUnique({
       where: { gameSessionId: sourceSessionId },

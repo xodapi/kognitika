@@ -6,6 +6,7 @@ const prismaMock = vi.hoisted(() => ({
     findFirst: vi.fn(),
     updateMany: vi.fn(),
     findMany: vi.fn(),
+    deleteMany: vi.fn(),
   },
   completedSessionAnalyticsJob: { findUnique: vi.fn() },
   gameSession: { findUnique: vi.fn() },
@@ -175,5 +176,19 @@ describe('Prisma analytics outbox store', () => {
       }),
     }));
     expect(JSON.stringify(prismaMock.analyticsOutboxEntry.findMany.mock.calls[0][0])).not.toMatch(/brainid|jwt|email|token|metadata/i);
+  });
+
+  it('purges only completed rows older than the retention cutoff', async () => {
+    prismaMock.analyticsOutboxEntry.deleteMany.mockResolvedValue({ count: 2 });
+    const { PrismaAnalyticsOutboxStore } = await import('../server/infrastructure/prisma/prisma-analytics-outbox-store.ts');
+    const cutoff = new Date('2026-07-01T00:00:00.000Z');
+
+    await expect(new PrismaAnalyticsOutboxStore().purgeCompletedBefore(cutoff)).resolves.toBe(2);
+    expect(prismaMock.analyticsOutboxEntry.deleteMany).toHaveBeenCalledWith({
+      where: {
+        state: 'completed',
+        completedAt: { lt: cutoff },
+      },
+    });
   });
 });

@@ -8,7 +8,11 @@ import { PrismaAnalyticsOutboxStore } from '../server/infrastructure/prisma/pris
 const hasDatabase = Boolean(process.env.DATABASE_URL);
 const testIds: string[] = [];
 
-async function createOutboxEntry(state: 'pending' | 'processing', leaseExpiresAt: Date | null = null) {
+async function createOutboxEntry(
+  state: 'pending' | 'processing' | 'completed',
+  leaseExpiresAt: Date | null = null,
+  completedAt: Date | null = null,
+) {
   const suffix = crypto.randomUUID();
   const user = await prisma.user.create({
     data: { name: `outbox-integration-${suffix}` },
@@ -35,6 +39,7 @@ async function createOutboxEntry(state: 'pending' | 'processing', leaseExpiresAt
       attemptCount: 0,
       leaseOwner: state === 'processing' ? 'expired-worker' : null,
       leaseExpiresAt,
+      completedAt,
     },
   });
 }
@@ -82,5 +87,23 @@ describe.runIf(hasDatabase)('Prisma analytics outbox PostgreSQL integration', ()
       leaseExpiresAt: null,
       lastErrorCode: 'lease_expired',
     });
+  });
+
+  it('purges only completed rows before the retention cutoff', async () => {
+    const oldCompleted = await createOutboxEntry(
+      'completed',
+      null,
+      new Date('2026-06-01T00:00:00.000Z'),
+    );
+    const pending = await createOutboxEntry('pending');
+    const store = new PrismaAnalyticsOutboxStore();
+
+    await expect(store.purgeCompletedBefore(new Date('2026-07-01T00:00:00.000Z'))).resolves.toBe(1);
+    await expect(prisma.analyticsOutboxEntry.findUnique({
+      where: { id: oldCompleted.id },
+    })).resolves.toBeNull();
+    await expect(prisma.analyticsOutboxEntry.findUnique({
+      where: { id: pending.id },
+    })).resolves.toMatchObject({ state: 'pending' });
   });
 });

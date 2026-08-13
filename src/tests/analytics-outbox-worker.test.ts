@@ -2,6 +2,8 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   AnalyticsOutboxWorker,
   DEFAULT_ANALYTICS_OUTBOX_WORKER_OPTIONS,
+  DEFAULT_ANALYTICS_OUTBOX_COMPLETED_RETENTION_MS,
+  getAnalyticsOutboxCompletedRetentionMs,
   isAnalyticsOutboxDispatcherEnabled,
 } from '../server/services/analytics-outbox-worker.ts';
 import {
@@ -24,6 +26,14 @@ describe('analytics outbox worker', () => {
     expect(isAnalyticsOutboxDispatcherEnabled({})).toBe(false);
     expect(isAnalyticsOutboxDispatcherEnabled({ ANALYTICS_OUTBOX_DISPATCH_ENABLED: 'false' })).toBe(false);
     expect(isAnalyticsOutboxDispatcherEnabled({ ANALYTICS_OUTBOX_DISPATCH_ENABLED: 'true' })).toBe(true);
+    expect(getAnalyticsOutboxCompletedRetentionMs({})).toBeNull();
+    expect(getAnalyticsOutboxCompletedRetentionMs({
+      ANALYTICS_OUTBOX_RETENTION_ENABLED: 'true',
+    })).toBe(DEFAULT_ANALYTICS_OUTBOX_COMPLETED_RETENTION_MS);
+    expect(getAnalyticsOutboxCompletedRetentionMs({
+      ANALYTICS_OUTBOX_RETENTION_ENABLED: 'true',
+      ANALYTICS_OUTBOX_COMPLETED_RETENTION_DAYS: '7',
+    })).toBe(7 * 24 * 60 * 60 * 1_000);
   });
 
   it('recovers expired leases and drains a bounded batch', async () => {
@@ -36,7 +46,7 @@ describe('analytics outbox worker', () => {
     };
     const worker = new AnalyticsOutboxWorker(dispatcher, { ...options, batchSize: 5 });
 
-    await expect(worker.runOnce(new Date('2026-08-04T12:00:00.000Z'))).resolves.toEqual({ recovered: 2, dispatched: 2 });
+    await expect(worker.runOnce(new Date('2026-08-04T12:00:00.000Z'))).resolves.toEqual({ recovered: 2, dispatched: 2, purged: 0 });
     expect(dispatcher.recoverExpiredLeases).toHaveBeenCalledWith(expect.any(Date), options.maxAttempts);
     expect(dispatcher.dispatchNext).toHaveBeenCalledTimes(3);
     expect(dispatcher.dispatchNext).toHaveBeenCalledWith(expect.objectContaining({
@@ -55,9 +65,9 @@ describe('analytics outbox worker', () => {
     const worker = new AnalyticsOutboxWorker(dispatcher, options);
 
     const first = worker.runOnce();
-    await expect(worker.runOnce()).resolves.toEqual({ recovered: 0, dispatched: 0 });
+    await expect(worker.runOnce()).resolves.toEqual({ recovered: 0, dispatched: 0, purged: 0 });
     resolveRecovery(0);
-    await expect(first).resolves.toEqual({ recovered: 0, dispatched: 0 });
+    await expect(first).resolves.toEqual({ recovered: 0, dispatched: 0, purged: 0 });
     expect(dispatcher.recoverExpiredLeases).toHaveBeenCalledOnce();
   });
 
@@ -90,7 +100,7 @@ describe('analytics outbox worker', () => {
     };
     const worker = new AnalyticsOutboxWorker(dispatcher, options, sidecar as any);
 
-    await expect(worker.runOnce(new Date('2026-08-04T12:00:00.000Z'))).resolves.toEqual({ recovered: 1, dispatched: 0 });
+    await expect(worker.runOnce(new Date('2026-08-04T12:00:00.000Z'))).resolves.toEqual({ recovered: 1, dispatched: 0, purged: 0 });
 
     expect(getAnalyticsOutboxOperationalSnapshot()).toMatchObject({
       worker: { recovered: 1, dispatched: 0 },
@@ -109,8 +119,40 @@ describe('analytics outbox worker', () => {
     };
     const worker = new AnalyticsOutboxWorker(dispatcher, options);
 
-    await expect(worker.runOnce()).resolves.toEqual({ recovered: 1, dispatched: 0 });
+    await expect(worker.runOnce()).resolves.toEqual({ recovered: 1, dispatched: 0, purged: 0 });
     expect(getAnalyticsOutboxOperationalSnapshot()).toBeNull();
+  });
+
+  it('purges only completed rows after explicit retention opt-in', async () => {
+    const dispatcher = {
+      recoverExpiredLeases: vi.fn().mockResolvedValue(0),
+      dispatchNext: vi.fn().mockResolvedValue({ status: 'idle' }),
+      purgeCompletedBefore: vi.fn().mockResolvedValue(3),
+    };
+    const worker = new AnalyticsOutboxWorker(dispatcher, {
+      ...options,
+      completedRetentionMs: 7 * 24 * 60 * 60 * 1_000,
+    });
+    const now = new Date('2026-08-04T12:00:00.000Z');
+
+    await expect(worker.runOnce(now)).resolves.toEqual({ recovered: 0, dispatched: 0, purged: 3 });
+    expect(dispatcher.purgeCompletedBefore).toHaveBeenCalledWith(
+      new Date('2026-07-28T12:00:00.000Z'),
+    );
+  });
+
+  it('does not fail dispatch when retention cleanup is unavailable', async () => {
+    const dispatcher = {
+      recoverExpiredLeases: vi.fn().mockResolvedValue(1),
+      dispatchNext: vi.fn().mockResolvedValue({ status: 'idle' }),
+      purgeCompletedBefore: vi.fn().mockRejectedValue(new Error('retention unavailable')),
+    };
+    const worker = new AnalyticsOutboxWorker(dispatcher, {
+      ...options,
+      completedRetentionMs: DEFAULT_ANALYTICS_OUTBOX_COMPLETED_RETENTION_MS,
+    });
+
+    await expect(worker.runOnce()).resolves.toEqual({ recovered: 1, dispatched: 0, purged: 0 });
   });
 
   it('marks canary readiness unavailable when shadow metrics are disabled', async () => {

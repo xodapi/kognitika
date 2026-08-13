@@ -7,6 +7,7 @@ const logger = createSafeLogger('analytics-outbox-worker');
 
 export interface AnalyticsOutboxDispatcher {
   recoverExpiredLeases(now: Date, maxAttempts: number): Promise<number>;
+  purgeCompletedBefore?(cutoff: Date): Promise<number>;
   metrics?(now: Date): Promise<{
     pending: number;
     processing: number;
@@ -30,6 +31,7 @@ export interface AnalyticsOutboxWorkerOptions {
   batchSize: number;
   leaseMs: number;
   maxAttempts: number;
+  completedRetentionMs?: number;
 }
 
 export const DEFAULT_ANALYTICS_OUTBOX_WORKER_OPTIONS: Omit<AnalyticsOutboxWorkerOptions, 'workerId'> = {
@@ -39,8 +41,17 @@ export const DEFAULT_ANALYTICS_OUTBOX_WORKER_OPTIONS: Omit<AnalyticsOutboxWorker
   maxAttempts: 3,
 };
 
+export const DEFAULT_ANALYTICS_OUTBOX_COMPLETED_RETENTION_MS = 30 * 24 * 60 * 60 * 1_000;
+
 export function isAnalyticsOutboxDispatcherEnabled(environment: Record<string, string | undefined> = process.env): boolean {
   return environment.ANALYTICS_OUTBOX_DISPATCH_ENABLED === 'true';
+}
+
+export function getAnalyticsOutboxCompletedRetentionMs(environment: Record<string, string | undefined> = process.env): number | null {
+  if (environment.ANALYTICS_OUTBOX_RETENTION_ENABLED !== 'true') return null;
+  const configuredDays = Number(environment.ANALYTICS_OUTBOX_COMPLETED_RETENTION_DAYS);
+  const retentionDays = Number.isInteger(configuredDays) && configuredDays > 0 ? configuredDays : 30;
+  return retentionDays * 24 * 60 * 60 * 1_000;
 }
 
 export class AnalyticsOutboxWorker {
@@ -53,8 +64,8 @@ export class AnalyticsOutboxWorker {
     private readonly rustSidecar: RustAnalyticsSidecarClient | null = null,
   ) {}
 
-  async runOnce(now = new Date()): Promise<{ recovered: number; dispatched: number }> {
-    if (this.running) return { recovered: 0, dispatched: 0 };
+  async runOnce(now = new Date()): Promise<{ recovered: number; dispatched: number; purged: number }> {
+    if (this.running) return { recovered: 0, dispatched: 0, purged: 0 };
     this.running = true;
     try {
       const recovered = await this.dispatcher.recoverExpiredLeases(now, this.options.maxAttempts);
@@ -74,7 +85,13 @@ export class AnalyticsOutboxWorker {
           break;
         }
       }
-      const result = { recovered, dispatched };
+      let purged = 0;
+      try {
+        purged = await this.purgeCompleted(now);
+      } catch (error) {
+        logger.warn('Analytics outbox retention cleanup failed', { error });
+      }
+      const result = { recovered, dispatched, purged };
       try {
         await this.recordOperationalSnapshot(result, now);
       } catch (error) {
@@ -83,13 +100,18 @@ export class AnalyticsOutboxWorker {
       return result;
     } catch (error) {
       logger.error('Analytics outbox recovery failed', { error });
-      return { recovered: 0, dispatched: 0 };
+      return { recovered: 0, dispatched: 0, purged: 0 };
     } finally {
       this.running = false;
     }
   }
 
-  private async recordOperationalSnapshot(result: { recovered: number; dispatched: number }, now: Date) {
+  private async purgeCompleted(now: Date): Promise<number> {
+    if (!this.dispatcher.purgeCompletedBefore || !this.options.completedRetentionMs) return 0;
+    return this.dispatcher.purgeCompletedBefore(new Date(now.getTime() - this.options.completedRetentionMs));
+  }
+
+  private async recordOperationalSnapshot(result: { recovered: number; dispatched: number; purged: number }, now: Date) {
     if (!this.dispatcher.metrics) return;
     const outbox = await this.dispatcher.metrics(now);
     recordAnalyticsOutboxOperationalSnapshot({
@@ -123,11 +145,15 @@ export class AnalyticsOutboxWorker {
 export function startAnalyticsOutboxWorker(environment: Record<string, string | undefined> = process.env) {
   if (!isAnalyticsOutboxDispatcherEnabled(environment)) return null;
   const rustSidecar = createRustAnalyticsSidecarClient(environment);
+  const completedRetentionMs = getAnalyticsOutboxCompletedRetentionMs(environment);
   const worker = new AnalyticsOutboxWorker(
     new PrismaAnalyticsOutboxStore(rustSidecar),
     {
       ...DEFAULT_ANALYTICS_OUTBOX_WORKER_OPTIONS,
       workerId: `node-${process.pid}`,
+      ...(completedRetentionMs !== null
+        ? { completedRetentionMs }
+        : {}),
     },
     rustSidecar,
   );
