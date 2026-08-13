@@ -106,4 +106,31 @@ describe.runIf(hasDatabase)('Prisma analytics outbox PostgreSQL integration', ()
       where: { id: pending.id },
     })).resolves.toMatchObject({ state: 'pending' });
   });
+
+  it('returns a coherent metrics snapshot while purge and dispatch run concurrently', async () => {
+    await createOutboxEntry(
+      'completed',
+      null,
+      new Date('2026-06-01T00:00:00.000Z'),
+    );
+    await createOutboxEntry('pending');
+    const store = new PrismaAnalyticsOutboxStore();
+    const now = new Date('2026-08-03T02:20:01.000Z');
+
+    const [metrics] = await Promise.all([
+      store.metrics(now),
+      store.purgeCompletedBefore(new Date('2026-07-01T00:00:00.000Z')),
+      store.dispatchNext({
+        workerId: 'integration-worker-metrics',
+        now,
+        leaseMs: 1_000,
+        maxAttempts: 2,
+      }),
+    ]);
+
+    expect(metrics.pending === 1 ? metrics.oldestLagMs : 0).toBe(
+      metrics.pending === 1 ? 1_000 : 0,
+    );
+    expect(metrics.pending + metrics.processing + metrics.completed).toBeGreaterThanOrEqual(1);
+  });
 });

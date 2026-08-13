@@ -264,35 +264,35 @@ export class PrismaAnalyticsOutboxStore {
   }
 
   async metrics(now: Date) {
-    const [stateGroups, lagGroups] = await Promise.all([
-      prisma.analyticsOutboxEntry.groupBy({
+    return prisma.$transaction(async transaction => {
+      const stateGroups = await transaction.analyticsOutboxEntry.groupBy({
         by: ['state'],
         _count: { _all: true },
-      }),
-      prisma.analyticsOutboxEntry.groupBy({
+      });
+      const lagGroups = await transaction.analyticsOutboxEntry.groupBy({
         by: ['state'],
         where: { state: { in: CLAIMABLE_STATES } },
         _min: { occurredAt: true },
-      }),
-    ]);
-    const metrics = {
-      pending: 0,
-      processing: 0,
-      retry: 0,
-      completed: 0,
-      dead: 0,
-      oldestLagMs: 0,
-      failures: 0,
-    };
-    for (const group of stateGroups) {
-      const state = group.state as AnalyticsOutboxState;
-      metrics[state] = group._count._all;
-      if (state === 'dead') metrics.failures = group._count._all;
-    }
-    for (const group of lagGroups) {
-      if (!group._min.occurredAt) continue;
-      metrics.oldestLagMs = Math.max(metrics.oldestLagMs, now.getTime() - group._min.occurredAt.getTime());
-    }
-    return metrics;
+      });
+      const metrics = {
+        pending: 0,
+        processing: 0,
+        retry: 0,
+        completed: 0,
+        dead: 0,
+        oldestLagMs: 0,
+        failures: 0,
+      };
+      for (const group of stateGroups) {
+        const state = group.state as AnalyticsOutboxState;
+        metrics[state] = group._count._all;
+        if (state === 'dead') metrics.failures = group._count._all;
+      }
+      for (const group of lagGroups) {
+        if (!group._min.occurredAt) continue;
+        metrics.oldestLagMs = Math.max(metrics.oldestLagMs, now.getTime() - group._min.occurredAt.getTime());
+      }
+      return metrics;
+    }, { isolationLevel: 'RepeatableRead' });
   }
 }

@@ -41,7 +41,9 @@ worker counters (including completed-row cleanup count), sidecar counters,
 canary eligibility, and derived freshness. It never exposes session IDs, job
 IDs, Brain IDs, payloads, identities, tokens, or raw telemetry.
 The worker metrics query reads only lifecycle state and occurrence time, the
-two fields required for aggregate state counts and lag.
+two fields required for aggregate state counts and lag. Counts and lag are
+read inside one PostgreSQL repeatable-read transaction, so a concurrent
+dispatch or completed-row purge cannot create a mixed-time snapshot.
 
 The snapshot is intentionally not durable and has no historical retention
 store:

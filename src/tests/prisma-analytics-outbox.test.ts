@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const prismaMock = vi.hoisted(() => ({
   $queryRaw: vi.fn(),
+  $transaction: vi.fn(),
   analyticsOutboxEntry: {
     findFirst: vi.fn(),
     updateMany: vi.fn(),
@@ -154,6 +155,7 @@ describe('Prisma analytics outbox store', () => {
         { state: 'pending', _min: { occurredAt: now } },
       ]);
     prismaMock.analyticsOutboxEntry.updateMany.mockResolvedValue({ count: 1 });
+    prismaMock.$transaction.mockImplementation((work: (transaction: typeof prismaMock) => unknown) => work(prismaMock));
     const { PrismaAnalyticsOutboxStore } = await import('../server/infrastructure/prisma/prisma-analytics-outbox-store.ts');
     const store = new PrismaAnalyticsOutboxStore();
 
@@ -180,6 +182,9 @@ describe('Prisma analytics outbox store', () => {
         lastErrorCode: 'lease_expired',
       }),
     }));
+    expect(prismaMock.$transaction).toHaveBeenCalledWith(expect.any(Function), {
+      isolationLevel: 'RepeatableRead',
+    });
     expect(prismaMock.analyticsOutboxEntry.groupBy).toHaveBeenNthCalledWith(1, {
       by: ['state'],
       _count: { _all: true },
