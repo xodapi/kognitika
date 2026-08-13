@@ -103,7 +103,7 @@ describe('Prisma analytics outbox store', () => {
       workerId: 'node-worker-a', now, leaseMs: 1_000, maxAttempts: 2,
     })).resolves.toEqual({ status: 'failed', errorCode: 'invalid_canonical_job' });
     expect(prismaMock.analyticsOutboxEntry.updateMany).toHaveBeenCalledWith(expect.objectContaining({
-      data: expect.objectContaining({ state: 'retry' }),
+      data: expect.objectContaining({ state: 'retry', lastErrorCode: 'invalid_canonical_job' }),
     }));
   });
 

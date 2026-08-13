@@ -21,6 +21,12 @@ import { assertSafeAnalyticsSummary } from '../../services/analytics-summary-pol
 const CLAIMABLE_STATES: AnalyticsOutboxState[] = ['pending', 'retry'];
 const CLAIMABLE_STATE_SQL = Prisma.join(CLAIMABLE_STATES.map(state => Prisma.sql`${state}`));
 
+function toFailureCode(errorCode: string): NonNullable<AnalyticsOutboxEntry['lastErrorCode']> {
+  if (errorCode === 'analyzer unavailable') return 'analyzer_unavailable';
+  if (errorCode === 'invalid canonical job') return 'invalid_canonical_job';
+  return 'unknown';
+}
+
 export type AnalyticsDispatchResult =
   | { status: 'idle' }
   | { status: 'skipped'; reason: 'canonical_job_not_found' }
@@ -124,6 +130,7 @@ export class PrismaAnalyticsOutboxStore {
 
     const attemptCount = entry.attemptCount + 1;
     const state: AnalyticsOutboxState = attemptCount >= maxAttempts ? 'dead' : 'retry';
+    const lastErrorCode = toFailureCode(errorCode);
     const result = await prisma.analyticsOutboxEntry.updateMany({
       where: {
         id,
@@ -137,11 +144,11 @@ export class PrismaAnalyticsOutboxStore {
         attemptCount,
         leaseOwner: null,
         leaseExpiresAt: null,
-        lastErrorCode: errorCode === 'analyzer unavailable' ? 'analyzer_unavailable' : 'unknown',
+        lastErrorCode,
       },
     });
     return result.count === 1
-      ? toEntry({ ...entry, state, attemptCount, leaseOwner: null, leaseExpiresAt: null, lastErrorCode: errorCode === 'analyzer unavailable' ? 'analyzer_unavailable' : 'unknown' })
+      ? toEntry({ ...entry, state, attemptCount, leaseOwner: null, leaseExpiresAt: null, lastErrorCode })
       : null;
   }
 

@@ -16,7 +16,7 @@ export interface AnalyticsOutboxEntry {
   leaseOwner: string | null;
   leaseExpiresAt: Date | null;
   completedAt?: Date;
-  lastErrorCode?: 'analyzer_unavailable' | 'lease_expired' | 'unknown';
+  lastErrorCode?: 'analyzer_unavailable' | 'invalid_canonical_job' | 'lease_expired' | 'unknown';
   authority: AnalyticsOutboxAuthority;
   shadowCandidate: AnalyticsOutboxShadowCandidate;
 }
@@ -105,7 +105,11 @@ export class AnalyticsOutboxStateMachine {
       state: (attemptCount >= this.options.maxAttempts ? 'dead' : 'retry') as 'dead' | 'retry',
       leaseOwner: null,
       leaseExpiresAt: null,
-      lastErrorCode: errorCode === 'analyzer unavailable' ? 'analyzer_unavailable' as const : 'unknown' as const,
+      lastErrorCode: errorCode === 'analyzer unavailable'
+        ? 'analyzer_unavailable' as const
+        : errorCode === 'invalid canonical job'
+          ? 'invalid_canonical_job' as const
+          : 'unknown' as const,
     };
     this.store.update(failed);
     return failed;
