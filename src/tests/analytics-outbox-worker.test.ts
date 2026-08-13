@@ -95,6 +95,7 @@ describe('analytics outbox worker', () => {
       worker: { recovered: 1, dispatched: 0 },
       outbox: { pending: 2, dead: 0, oldestLagMs: 500 },
       sidecar: { requests: 10, mismatched: 1 },
+      canary: { eligible: false, reason: 'insufficient_samples' },
     });
     expect(JSON.stringify(getAnalyticsOutboxOperationalSnapshot())).not.toMatch(/session|job|brainid|email|token|payload/i);
   });
@@ -109,5 +110,63 @@ describe('analytics outbox worker', () => {
 
     await expect(worker.runOnce()).resolves.toEqual({ recovered: 1, dispatched: 0 });
     expect(getAnalyticsOutboxOperationalSnapshot()).toBeNull();
+  });
+
+  it('marks canary readiness unavailable when shadow metrics are disabled', async () => {
+    const dispatcher = {
+      recoverExpiredLeases: vi.fn().mockResolvedValue(0),
+      dispatchNext: vi.fn().mockResolvedValue({ status: 'idle' }),
+      metrics: vi.fn().mockResolvedValue({
+        pending: 0,
+        processing: 0,
+        retry: 0,
+        completed: 0,
+        dead: 0,
+        oldestLagMs: 0,
+        failures: 0,
+      }),
+    };
+    const worker = new AnalyticsOutboxWorker(dispatcher, options);
+
+    await worker.runOnce();
+
+    expect(getAnalyticsOutboxOperationalSnapshot()?.canary).toEqual({
+      eligible: false,
+      reason: 'sidecar_metrics_unavailable',
+    });
+  });
+
+  it('marks canary eligible only after aggregate thresholds are met', async () => {
+    const dispatcher = {
+      recoverExpiredLeases: vi.fn().mockResolvedValue(0),
+      dispatchNext: vi.fn().mockResolvedValue({ status: 'idle' }),
+      metrics: vi.fn().mockResolvedValue({
+        pending: 0,
+        processing: 0,
+        retry: 0,
+        completed: 100,
+        dead: 0,
+        oldestLagMs: 0,
+        failures: 0,
+      }),
+    };
+    const sidecar = {
+      getMetrics: vi.fn().mockReturnValue({
+        requests: 100,
+        matched: 100,
+        mismatched: 0,
+        failures: {
+          sidecar_timeout: 0,
+          sidecar_unavailable: 0,
+          sidecar_rejected: 0,
+          sidecar_invalid_response: 0,
+        },
+      }),
+    };
+    const worker = new AnalyticsOutboxWorker(dispatcher, options, sidecar as any);
+
+    await worker.runOnce();
+
+    expect(getAnalyticsOutboxOperationalSnapshot()?.canary).toEqual({ eligible: true });
   });
 });

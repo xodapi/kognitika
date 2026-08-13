@@ -286,6 +286,7 @@ describe('admin route privacy and authorization contract', () => {
       worker: { recovered: 2, dispatched: 3 },
       outbox: { pending: 1, dead: 0, oldestLagMs: 250 },
       sidecar: { requests: 5, matched: 5 },
+      canary: { eligible: false, reason: 'insufficient_samples' },
     });
     expect(serialized).not.toMatch(/session|job|brainid|email|token|payload/i);
   });

@@ -1,4 +1,12 @@
-import type { RustAnalyticsSidecarMetrics } from './rust-analytics-sidecar.ts';
+import {
+  evaluateRustAnalyticsCanary,
+  type RustAnalyticsCanaryDecision,
+  type RustAnalyticsSidecarMetrics,
+} from './rust-analytics-sidecar.ts';
+
+export type AnalyticsOutboxCanaryDecision =
+  | RustAnalyticsCanaryDecision
+  | { eligible: false; reason: 'sidecar_metrics_unavailable' };
 
 export interface AnalyticsOutboxOperationalSnapshot {
   updatedAt: string;
@@ -16,12 +24,18 @@ export interface AnalyticsOutboxOperationalSnapshot {
     failures: number;
   };
   sidecar: RustAnalyticsSidecarMetrics | null;
+  canary: AnalyticsOutboxCanaryDecision;
 }
 
 let snapshot: AnalyticsOutboxOperationalSnapshot | null = null;
 
-export function recordAnalyticsOutboxOperationalSnapshot(value: AnalyticsOutboxOperationalSnapshot) {
-  snapshot = structuredClone(value);
+export function recordAnalyticsOutboxOperationalSnapshot(value: Omit<AnalyticsOutboxOperationalSnapshot, 'canary'>) {
+  snapshot = structuredClone({
+    ...value,
+    canary: value.sidecar
+      ? evaluateRustAnalyticsCanary(value.sidecar, value.outbox)
+      : { eligible: false, reason: 'sidecar_metrics_unavailable' },
+  });
 }
 
 export function getAnalyticsOutboxOperationalSnapshot() {
