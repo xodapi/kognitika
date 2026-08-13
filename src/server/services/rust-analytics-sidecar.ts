@@ -6,6 +6,7 @@ import {
 } from '../../core/analyze-session/index.ts';
 
 export const RUST_ANALYTICS_SIDECAR_CONTRACT_VERSION = 'analyze-session-v1' as const;
+export const RUST_ANALYTICS_SIDECAR_MAX_COUNTER = Number.MAX_SAFE_INTEGER;
 
 export type RustAnalyticsShadowErrorCode =
   | 'sidecar_timeout'
@@ -67,6 +68,12 @@ function freshMetrics(): RustAnalyticsSidecarMetrics {
   };
 }
 
+function incrementCounter(value: number): number {
+  return value >= RUST_ANALYTICS_SIDECAR_MAX_COUNTER
+    ? RUST_ANALYTICS_SIDECAR_MAX_COUNTER
+    : value + 1;
+}
+
 function normalizedOutput(value: AnalyzeSessionOutput) {
   return JSON.stringify({
     ...value,
@@ -121,7 +128,7 @@ export class RustAnalyticsSidecarClient {
       throw new RustAnalyticsSidecarError('sidecar_rejected');
     }
 
-    this.metrics.requests += 1;
+    this.metrics.requests = incrementCounter(this.metrics.requests);
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), this.options.timeoutMs);
     try {
@@ -140,9 +147,9 @@ export class RustAnalyticsSidecarClient {
       const parsed = AnalyzeSessionOutputSchema.safeParse(await response.json());
       if (!parsed.success) throw new RustAnalyticsSidecarError('sidecar_invalid_response');
       if (normalizedOutput(parsed.data) === normalizedOutput(typescriptOutput)) {
-        this.metrics.matched += 1;
+        this.metrics.matched = incrementCounter(this.metrics.matched);
       } else {
-        this.metrics.mismatched += 1;
+        this.metrics.mismatched = incrementCounter(this.metrics.mismatched);
       }
       return parsed.data;
     } catch (error) {
@@ -153,7 +160,7 @@ export class RustAnalyticsSidecarClient {
             ? 'sidecar_timeout'
             : 'sidecar_unavailable',
         );
-      this.metrics.failures[sidecarError.code] += 1;
+      this.metrics.failures[sidecarError.code] = incrementCounter(this.metrics.failures[sidecarError.code]);
       throw sidecarError;
     } finally {
       clearTimeout(timeout);
