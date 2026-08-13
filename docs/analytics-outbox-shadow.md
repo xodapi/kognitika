@@ -37,6 +37,7 @@ Claims use a single PostgreSQL `FOR UPDATE SKIP LOCKED` statement, so competing 
 
 - `src/tests/analytics-outbox.test.ts` covers the portable lifecycle contract.
 - `src/tests/prisma-analytics-outbox.test.ts` covers Prisma claim ownership, lease-safe transitions, recovery, and aggregate-only metrics.
+- `src/tests/prisma-analytics-outbox-postgresql.test.ts` exercises PostgreSQL locking and lease recovery against the disposable migrated CI database.
 - `src/tests/game-save.test.ts` proves opt-in outbox insertion occurs in the same transaction as the authoritative game save and does not receive input metadata.
 
 No production database operation is performed outside the protected Prisma migration workflow.
