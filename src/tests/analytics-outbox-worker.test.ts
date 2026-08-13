@@ -14,6 +14,8 @@ import {
   clearAnalyticsOutboxOperationalSnapshotForTests,
   getAnalyticsOutboxOperationalSnapshot,
 } from '../server/services/analytics-outbox-observability.ts';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 
 describe('analytics outbox worker', () => {
   const options = {
@@ -55,6 +57,12 @@ describe('analytics outbox worker', () => {
     expect(getAnalyticsOutboxMetricsTimeoutMs({
       ANALYTICS_OUTBOX_METRICS_TIMEOUT_MS: '5001',
     })).toBe(DEFAULT_ANALYTICS_OUTBOX_METRICS_TIMEOUT_MS);
+  });
+
+  it('never passes raw dispatch errors to worker logs', () => {
+    const source = readFileSync(resolve(process.cwd(), 'src/server/services/analytics-outbox-worker.ts'), 'utf8');
+
+    expect(source).not.toMatch(/Analytics outbox .+ failed', \{ error \}/);
   });
 
   it('recovers expired leases and drains a bounded batch', async () => {

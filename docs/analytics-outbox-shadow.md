@@ -78,6 +78,10 @@ positive integer from 1 to 365 days. Snapshot timeout configuration accepts
 only integer values from 100 to 5000 milliseconds; invalid values use the
 safe one-second default.
 
+Outbox worker failure logs use fixed operational messages only. They do not
+attach raw upstream errors, preventing session or payload fragments from being
+introduced through exception text.
+
 ## Validation
 
 - `src/tests/analytics-outbox.test.ts` covers the portable lifecycle contract.

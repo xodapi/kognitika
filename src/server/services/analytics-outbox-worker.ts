@@ -104,26 +104,26 @@ export class AnalyticsOutboxWorker {
           });
           if (result.status === 'idle') break;
           dispatched += 1;
-        } catch (error) {
-          logger.error('Analytics outbox dispatch cycle failed', { error });
+        } catch {
+          logger.error('Analytics outbox dispatch cycle failed');
           break;
         }
       }
       let purged = 0;
       try {
         purged = await this.purgeCompleted(now);
-      } catch (error) {
-        logger.warn('Analytics outbox retention cleanup failed', { error });
+      } catch {
+        logger.warn('Analytics outbox retention cleanup failed');
       }
       const result = { recovered, dispatched, purged };
       try {
         await this.recordOperationalSnapshot(result, now);
-      } catch (error) {
-        logger.warn('Analytics outbox metrics snapshot failed', { error });
+      } catch {
+        logger.warn('Analytics outbox metrics snapshot failed');
       }
       return result;
-    } catch (error) {
-      logger.error('Analytics outbox recovery failed', { error });
+    } catch {
+      logger.error('Analytics outbox recovery failed');
       return { recovered: 0, dispatched: 0, purged: 0 };
     } finally {
       this.running = false;
