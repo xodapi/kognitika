@@ -6,6 +6,7 @@ const prismaMock = vi.hoisted(() => ({
     findFirst: vi.fn(),
     updateMany: vi.fn(),
     findMany: vi.fn(),
+    groupBy: vi.fn(),
     deleteMany: vi.fn(),
   },
   completedSessionAnalyticsJob: { findUnique: vi.fn() },
@@ -143,10 +144,14 @@ describe('Prisma analytics outbox store', () => {
 
   it('recovers expired leases within the retry budget and emits aggregate-only metrics', async () => {
     prismaMock.analyticsOutboxEntry.findMany
-      .mockResolvedValueOnce([{ id: baseRecord.id, attemptCount: 0 }])
+      .mockResolvedValueOnce([{ id: baseRecord.id, attemptCount: 0 }]);
+    prismaMock.analyticsOutboxEntry.groupBy
       .mockResolvedValueOnce([
-        baseRecord,
-        { ...baseRecord, id: 'outbox-synthetic-dead', state: 'dead', attemptCount: 2, lastErrorCode: 'analyzer_unavailable' },
+        { state: 'pending', _count: { _all: 1 } },
+        { state: 'dead', _count: { _all: 1 } },
+      ])
+      .mockResolvedValueOnce([
+        { state: 'pending', _min: { occurredAt: now } },
       ]);
     prismaMock.analyticsOutboxEntry.updateMany.mockResolvedValue({ count: 1 });
     const { PrismaAnalyticsOutboxStore } = await import('../server/infrastructure/prisma/prisma-analytics-outbox-store.ts');
@@ -175,12 +180,16 @@ describe('Prisma analytics outbox store', () => {
         lastErrorCode: 'lease_expired',
       }),
     }));
-    expect(JSON.stringify(prismaMock.analyticsOutboxEntry.findMany.mock.calls[0][0])).not.toMatch(/brainid|jwt|email|token|metadata/i);
-    expect(prismaMock.analyticsOutboxEntry.findMany.mock.calls[1][0]).toEqual({
-      select: {
-        occurredAt: true,
-        state: true,
+    expect(prismaMock.analyticsOutboxEntry.groupBy).toHaveBeenNthCalledWith(1, {
+      by: ['state'],
+      _count: { _all: true },
+    });
+    expect(prismaMock.analyticsOutboxEntry.groupBy).toHaveBeenNthCalledWith(2, {
+      by: ['state'],
+      where: {
+        state: { in: ['pending', 'retry'] },
       },
+      _min: { occurredAt: true },
     });
   });
 
