@@ -44,19 +44,26 @@ describe.runIf(hasDatabase)('Prisma analytics outbox PostgreSQL integration', ()
     await prisma.user.deleteMany({ where: { id: { in: testIds.splice(0) } } });
   });
 
-  it('claims one pending row once through PostgreSQL locking', async () => {
+  it('claims distinct pending rows through PostgreSQL locking', async () => {
+    await createOutboxEntry('pending');
     await createOutboxEntry('pending');
     const store = new PrismaAnalyticsOutboxStore();
     const now = new Date('2026-08-03T02:20:01.000Z');
 
-    const first = await store.claimNext('integration-worker-a', now, 1_000);
-    const second = await store.claimNext('integration-worker-b', now, 1_000);
+    const [first, second] = await Promise.all([
+      store.claimNext('integration-worker-a', now, 1_000),
+      store.claimNext('integration-worker-b', now, 1_000),
+    ]);
 
     expect(first).toMatchObject({
       state: 'processing',
       leaseOwner: 'integration-worker-a',
     });
-    expect(second).toBeNull();
+    expect(second).toMatchObject({
+      state: 'processing',
+      leaseOwner: 'integration-worker-b',
+    });
+    expect(first?.sourceSession).not.toBe(second?.sourceSession);
   });
 
   it('recovers an expired lease through its compare-and-set update', async () => {
