@@ -80,7 +80,7 @@ export function getAnalyticsOutboxMetricsTimeoutMs(environment: Record<string, s
 
 export class AnalyticsOutboxWorker {
   private timer: ReturnType<typeof setInterval> | null = null;
-  private running = false;
+  private activeRun: Promise<{ recovered: number; dispatched: number; purged: number }> | null = null;
 
   constructor(
     private readonly dispatcher: AnalyticsOutboxDispatcher,
@@ -89,8 +89,17 @@ export class AnalyticsOutboxWorker {
   ) {}
 
   async runOnce(now = new Date()): Promise<{ recovered: number; dispatched: number; purged: number }> {
-    if (this.running) return { recovered: 0, dispatched: 0, purged: 0 };
-    this.running = true;
+    if (this.activeRun) return { recovered: 0, dispatched: 0, purged: 0 };
+    const run = this.runCycle(now);
+    this.activeRun = run;
+    try {
+      return await run;
+    } finally {
+      if (this.activeRun === run) this.activeRun = null;
+    }
+  }
+
+  private async runCycle(now: Date): Promise<{ recovered: number; dispatched: number; purged: number }> {
     try {
       const recovered = await this.dispatcher.recoverExpiredLeases(now, this.options.maxAttempts);
       let dispatched = 0;
@@ -125,8 +134,6 @@ export class AnalyticsOutboxWorker {
     } catch {
       logger.error('Analytics outbox recovery failed');
       return { recovered: 0, dispatched: 0, purged: 0 };
-    } finally {
-      this.running = false;
     }
   }
 
@@ -170,10 +177,12 @@ export class AnalyticsOutboxWorker {
     });
   }
 
-  stop() {
-    if (!this.timer) return;
-    clearInterval(this.timer);
-    this.timer = null;
+  async stop(): Promise<void> {
+    if (this.timer) {
+      clearInterval(this.timer);
+      this.timer = null;
+    }
+    await this.activeRun;
   }
 }
 

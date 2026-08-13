@@ -100,6 +100,30 @@ describe('analytics outbox worker', () => {
     expect(dispatcher.recoverExpiredLeases).toHaveBeenCalledOnce();
   });
 
+  it('stops scheduling and waits for an active cycle to finish', async () => {
+    let resolveRecovery!: (value: number) => void;
+    const dispatcher = {
+      recoverExpiredLeases: vi.fn(() => new Promise<number>(resolve => { resolveRecovery = resolve; })),
+      dispatchNext: vi.fn().mockResolvedValue({ status: 'idle' }),
+    };
+    const worker = new AnalyticsOutboxWorker(dispatcher, {
+      ...options,
+      intervalMs: 1,
+    });
+    worker.start();
+    const stopped = worker.stop();
+    let finished = false;
+    void stopped.then(() => { finished = true; });
+
+    await Promise.resolve();
+    expect(finished).toBe(false);
+    resolveRecovery(0);
+    await stopped;
+    expect(finished).toBe(true);
+    await worker.stop();
+    expect(dispatcher.recoverExpiredLeases).toHaveBeenCalledOnce();
+  });
+
   it('records aggregate-only outbox and sidecar metrics without affecting dispatch', async () => {
     const dispatcher = {
       recoverExpiredLeases: vi.fn().mockResolvedValue(1),

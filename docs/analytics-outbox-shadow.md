@@ -82,6 +82,10 @@ Outbox worker failure logs use fixed operational messages only. They do not
 attach raw upstream errors, preventing session or payload fragments from being
 introduced through exception text.
 
+Worker shutdown is graceful and idempotent: `stop()` clears the interval and
+waits for the active dispatch/retention/metrics cycle before resolving.
+Repeated `start()` or `stop()` calls do not create duplicate timers or throw.
+
 ## Validation
 
 - `src/tests/analytics-outbox.test.ts` covers the portable lifecycle contract.
