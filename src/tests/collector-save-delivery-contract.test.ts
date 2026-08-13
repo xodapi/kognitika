@@ -1,7 +1,7 @@
 /**
  * @vitest-environment node
  */
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
 function readComponent(name: string) {
@@ -13,6 +13,20 @@ function readHook(name: string) {
 }
 
 describe('collector save delivery contract', () => {
+  it('requires every collector-backed component to use durable game attempts', () => {
+    const componentsDirectory = new URL('../components/', import.meta.url);
+    const collectorComponents = readdirSync(componentsDirectory)
+      .filter((name) => name.endsWith('.tsx'))
+      .filter((name) => readFileSync(new URL(name, componentsDirectory), 'utf8').includes('getCompletedAnalyticsJob'));
+
+    expect(collectorComponents).not.toHaveLength(0);
+    for (const component of collectorComponents) {
+      const source = readFileSync(new URL(component, componentsDirectory), 'utf8');
+      expect(source, `${component} should use protected game attempts`).toContain('useGameAttempt');
+      expect(source, `${component} should save collector jobs`).toContain('saveAttempt');
+    }
+  });
+
   it.each([
     ['NoiseReduction', 'NOISE_REDUCTION'],
     ['Decryptor', 'DECRYPTOR'],
