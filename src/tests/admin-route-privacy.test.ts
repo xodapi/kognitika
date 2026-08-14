@@ -22,6 +22,9 @@ import {
   recordAnalyticsOutboxOperationalSnapshot,
 } from '../server/services/analytics-outbox-observability.ts';
 
+const preflightRustAnalyticsCanary = vi.hoisted(() => vi.fn());
+vi.mock('../server/config/rust-analytics-canary.ts', () => ({ preflightRustAnalyticsCanary }));
+
 const JWT_SECRET = 'synthetic-admin-route-secret';
 
 let adminRoutes: Router;
@@ -35,6 +38,7 @@ beforeAll(async () => {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  preflightRustAnalyticsCanary.mockReturnValue({ ready: false, reason: 'outbox_disabled' });
   setAdminRepository({
     findUsers,
     getStats,
@@ -288,6 +292,7 @@ describe('admin route privacy and authorization contract', () => {
       sidecar: { requests: 5, matched: 5 },
       canary: { eligible: false, reason: 'insufficient_samples' },
       freshness: { status: 'stale' },
+      rolloutConfiguration: { ready: false, reason: 'outbox_disabled' },
     });
     expect(serialized).not.toMatch(/session|job|brainid|email|token|payload/i);
   });
@@ -314,7 +319,10 @@ describe('admin route privacy and authorization contract', () => {
     const response = await getJson(baseUrl, '/api/admin/analytics-outbox', token);
 
     expect(response.status).toBe(200);
-    expect(response.body).toEqual({ status: 'unavailable' });
+    expect(response.body).toEqual({
+      status: 'unavailable',
+      rolloutConfiguration: { ready: false, reason: 'outbox_disabled' },
+    });
   });
 
   it('validates and sanitizes /api/admin/feedback/:id/response', async () => {

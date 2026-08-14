@@ -24,4 +24,10 @@ describe('Rust analytics canary preflight', () => {
       expect(preflightRustAnalyticsCanary({ ...readyEnvironment, RUST_ANALYTICS_SIDECAR_ROLLOUT_PERCENT: rollout })).toEqual({ ready: false, reason: 'invalid_rollout' });
     }
   });
+
+  it('returns only allowlisted readiness state without configuration values', () => {
+    const serialized = JSON.stringify(preflightRustAnalyticsCanary(readyEnvironment));
+
+    expect(serialized).not.toMatch(/url|host|token|secret|brainid|email/i);
+  });
 });

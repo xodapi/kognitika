@@ -82,6 +82,9 @@ Require a `fresh` snapshot before evaluating promotion. A `stale` snapshot is
 only retained briefly for diagnosis, and an `unavailable` snapshot means the
 worker has not reported within the in-memory five-minute expiry window or the
 process restarted. Do not infer readiness from an old snapshot.
+Its `rolloutConfiguration` field reports only the preflight allowlist result
+(`ready` plus bounded rollout percentage, or one blocking reason). It never
+returns URLs, credentials, or raw environment values.
 
 ## Rollback
 

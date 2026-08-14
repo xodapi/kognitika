@@ -10,6 +10,7 @@ import { normalizeIdeaStatus, parseIdeaStatus } from '../utils/idea-status.ts';
 import { getPracticeFlowSummary } from '../services/practice-flow-store.ts';
 import { getAdminRepository } from '../infrastructure/container.ts';
 import { getAnalyticsOutboxOperationalSnapshot } from '../services/analytics-outbox-observability.ts';
+import { preflightRustAnalyticsCanary } from '../config/rust-analytics-canary.ts';
 
 const router = Router();
 const logger = createSafeLogger('admin-route');
@@ -57,8 +58,12 @@ router.get('/practice-flow', (_req, res) => {
 });
 
 router.get('/analytics-outbox', (_req, res) => {
-  res.json(getAnalyticsOutboxOperationalSnapshot(new Date()) ?? {
-    status: 'unavailable',
+  const rolloutConfiguration = preflightRustAnalyticsCanary();
+  res.json({
+    ...(getAnalyticsOutboxOperationalSnapshot(new Date()) ?? {
+      status: 'unavailable',
+    }),
+    rolloutConfiguration,
   });
 });
 
