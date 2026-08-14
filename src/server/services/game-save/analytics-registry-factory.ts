@@ -20,6 +20,27 @@ import {
   RealityCheckAnalyticsModule,
 } from './analytics-modules.ts';
 
+export const CANONICAL_ANALYTICS_MODULE_IDS = [
+  'schulte',
+  'stroop',
+  'nback',
+  'numerical',
+  'logical-sequence',
+  'mental-math',
+  'situational',
+  'spatial',
+  'stroop-alphabet',
+  'schulte-90',
+  'alphabet-table',
+  'collision',
+  'dispatcher',
+  'topology',
+  'typing',
+  'noise-reduction',
+  'decryptor',
+  'reality-check',
+] as const;
+
 let _registry: AnalyticsModuleRegistry | null = null;
 
 /**

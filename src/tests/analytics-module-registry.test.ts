@@ -5,7 +5,11 @@ import {
   StroopAnalyticsModule,
   NBackAnalyticsModule,
 } from '../server/services/game-save/analytics-modules.ts';
-import { getAnalyticsModuleRegistry, resetAnalyticsModuleRegistry } from '../server/services/game-save/analytics-registry-factory.ts';
+import {
+  CANONICAL_ANALYTICS_MODULE_IDS,
+  getAnalyticsModuleRegistry,
+  resetAnalyticsModuleRegistry,
+} from '../server/services/game-save/analytics-registry-factory.ts';
 
 describe('AnalyticsModuleRegistry', () => {
   let registry: AnalyticsModuleRegistry;
@@ -135,29 +139,11 @@ describe('getAnalyticsModuleRegistry', () => {
     expect(registry1).toBe(registry2);
   });
 
-  it('registers all 18 collector-backed modules on first call', () => {
+  it('registers every declared canonical analytics module on first call', () => {
     const registry = getAnalyticsModuleRegistry();
     const moduleIds = registry.getModuleIds();
-    
-    expect(moduleIds).toHaveLength(18);
-    expect(moduleIds).toContain('schulte');
-    expect(moduleIds).toContain('stroop');
-    expect(moduleIds).toContain('nback');
-    expect(moduleIds).toContain('numerical');
-    expect(moduleIds).toContain('logical-sequence');
-    expect(moduleIds).toContain('mental-math');
-    expect(moduleIds).toContain('situational');
-    expect(moduleIds).toContain('spatial');
-    expect(moduleIds).toContain('stroop-alphabet');
-    expect(moduleIds).toContain('schulte-90');
-    expect(moduleIds).toContain('alphabet-table');
-    expect(moduleIds).toContain('collision');
-    expect(moduleIds).toContain('dispatcher');
-    expect(moduleIds).toContain('topology');
-    expect(moduleIds).toContain('typing');
-    expect(moduleIds).toContain('noise-reduction');
-    expect(moduleIds).toContain('decryptor');
-    expect(moduleIds).toContain('reality-check');
+
+    expect(moduleIds.sort()).toEqual([...CANONICAL_ANALYTICS_MODULE_IDS].sort());
   });
 
   it('supports lookup by all registered game types', () => {
