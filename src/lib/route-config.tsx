@@ -76,6 +76,8 @@ export interface RouteEntry {
   navGroup: 'cognitive' | 'system' | 'wiki';
   /** Route uses special rendering logic in App.tsx rather than a simple component */
   customRender?: true;
+  /** Route is reachable by a direct link but omitted from training navigation */
+  navVisible?: false;
 }
 
 export const ROUTE_DEFINITIONS: RouteEntry[] = [
@@ -110,6 +112,7 @@ export const ROUTE_DEFINITIONS: RouteEntry[] = [
   { path: '/dialogue', title: 'Архитектура диалога', icon: MessageSquare, navGroup: 'cognitive', customRender: true },
   { path: '/ideas', title: 'Предложения', icon: Lightbulb, navGroup: 'system' },
   { path: '/admin', title: 'Админ-панель', icon: Lock, navGroup: 'system', customRender: true },
+  { path: '/privacy', title: 'Приватность', icon: Shield, navGroup: 'system', navVisible: false },
   { path: '/wiki', title: 'База знаний', icon: Shield, navGroup: 'wiki', customRender: true },
   { path: '/cognitive-map', title: 'Когнитивная карта', icon: Network, navGroup: 'cognitive' },
   { path: '/mental-math', title: 'Быстрые вычисления', icon: Hash, navGroup: 'cognitive' },
@@ -135,7 +138,7 @@ export function getRouteIcon(path: string): LucideIcon | undefined {
 }
 
 export const NAV_ITEMS = ROUTE_DEFINITIONS
-  .filter((r) => r.path !== '/' && r.path !== '/dashboard')
+  .filter((r) => r.path !== '/' && r.path !== '/dashboard' && r.navVisible !== false)
   .map((r) => ({
     id: r.path.replace('/', ''),
     icon: r.icon,

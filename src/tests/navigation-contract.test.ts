@@ -4,7 +4,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { APP_ROUTE_PATHS, RECOMMENDED_GAME_ROUTES, isAppRoute, routeForRecommendedGame } from '../lib/routes';
-import { ROUTE_DEFINITIONS, CUSTOM_RENDER_ROUTES, HEADER_NAV_ITEMS } from '../lib/route-config';
+import { ROUTE_DEFINITIONS, CUSTOM_RENDER_ROUTES, HEADER_NAV_ITEMS, NAV_ITEMS } from '../lib/route-config';
 
 function readRepoFile(relativePath: string) {
   return readFileSync(new URL(`../../${relativePath}`, import.meta.url), 'utf8');
@@ -111,12 +111,22 @@ describe('navigation contract', () => {
     }
   });
 
+  it('keeps the privacy notice routable but outside training navigation', () => {
+    const privacyRoute = ROUTE_DEFINITIONS.find((route) => route.path === '/privacy');
+
+    expect(isAppRoute('/privacy')).toBe(true);
+    expect(privacyRoute).toMatchObject({ navGroup: 'system', navVisible: false });
+    expect(NAV_ITEMS.some((item) => item.id === 'privacy')).toBe(false);
+  });
+
   it('exposes the deployed build id for manual QA', () => {
     const appSource = readRepoFile('src/App.tsx');
 
     expect(appSource).toContain('import.meta.env.VITE_BUILD_ID');
     expect(appSource).toContain('aria-label="Версия сборки"');
     expect(appSource).toContain('build {appBuildId}');
+    expect(appSource).toContain('aria-label="Приватность"');
+    expect(appSource).toContain('href="/privacy"');
   });
 
   it('keeps the full header navigation behind a wide breakpoint', () => {

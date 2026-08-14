@@ -13,6 +13,7 @@ const NON_TRAINING_ROUTES = new Set([
   '/leaderboard',
   '/admin',
   '/ideas',
+  '/privacy',
   '/wiki',
   '/cognitive-map',
 ]);
