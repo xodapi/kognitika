@@ -271,15 +271,20 @@ async function startServer() {
 
   const listenHost = resolveListenHost(process.env);
   let shutdownPromise: Promise<void> | null = null;
+  let resolveHttpServerDrain: () => void;
+  const httpServerDrain = new Promise<void>((resolve) => {
+    resolveHttpServerDrain = resolve;
+  });
   const shutdown = () => {
     if (shutdownPromise) return shutdownPromise;
     shutdownPromise = (async () => {
       logger.info('Server shutdown started');
       io.close();
-      const cleanup = Promise.allSettled([
-        analyticsOutboxWorker?.stop(),
+      const workerStop = analyticsOutboxWorker?.stop();
+      const cleanup = httpServerDrain.then(() => Promise.allSettled([
+        workerStop,
         prisma.$disconnect(),
-      ]);
+      ]));
       let graceTimer: ReturnType<typeof setTimeout> | undefined;
       try {
         const completed = await Promise.race([
@@ -298,14 +303,17 @@ async function startServer() {
     })();
     return shutdownPromise;
   };
-  httpServer.once('close', () => void shutdown());
+  httpServer.once('close', () => {
+    resolveHttpServerDrain();
+    void shutdown();
+  });
   process.once('SIGTERM', () => {
     if (httpServer.listening) httpServer.close();
-    void shutdown();
+    else void shutdown();
   });
   process.once('SIGINT', () => {
     if (httpServer.listening) httpServer.close();
-    void shutdown();
+    else void shutdown();
   });
   httpServer.listen(PORT, listenHost, () => {
     logger.info('Server running', { host: listenHost, port: PORT, buildId: BUILD_ID });

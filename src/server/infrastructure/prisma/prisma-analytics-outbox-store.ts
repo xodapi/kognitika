@@ -176,9 +176,20 @@ export class PrismaAnalyticsOutboxStore {
     return recovered;
   }
 
-  async purgeCompletedBefore(cutoff: Date): Promise<number> {
+  async purgeCompletedBefore(cutoff: Date, limit: number): Promise<number> {
+    const entries = await prisma.analyticsOutboxEntry.findMany({
+      where: {
+        state: 'completed',
+        completedAt: { lt: cutoff },
+      },
+      orderBy: { completedAt: 'asc' },
+      take: limit,
+      select: { id: true },
+    });
+    if (entries.length === 0) return 0;
     const result = await prisma.analyticsOutboxEntry.deleteMany({
       where: {
+        id: { in: entries.map(({ id }) => id) },
         state: 'completed',
         completedAt: { lt: cutoff },
       },

@@ -7,7 +7,7 @@ const logger = createSafeLogger('analytics-outbox-worker');
 
 export interface AnalyticsOutboxDispatcher {
   recoverExpiredLeases(now: Date, maxAttempts: number): Promise<number>;
-  purgeCompletedBefore?(cutoff: Date): Promise<number>;
+  purgeCompletedBefore?(cutoff: Date, limit: number): Promise<number>;
   metrics?(now: Date): Promise<{
     pending: number;
     processing: number;
@@ -40,6 +40,7 @@ export const DEFAULT_ANALYTICS_OUTBOX_METRICS_TIMEOUT_MS = 1_000;
 const MIN_ANALYTICS_OUTBOX_METRICS_TIMEOUT_MS = 100;
 const MAX_ANALYTICS_OUTBOX_METRICS_TIMEOUT_MS = 5_000;
 const MAX_ANALYTICS_OUTBOX_COMPLETED_RETENTION_DAYS = 365;
+export const ANALYTICS_OUTBOX_COMPLETED_PURGE_BATCH_SIZE = 100;
 
 export const DEFAULT_ANALYTICS_OUTBOX_WORKER_OPTIONS: Omit<AnalyticsOutboxWorkerOptions, 'workerId'> = {
   intervalMs: 5_000,
@@ -139,7 +140,10 @@ export class AnalyticsOutboxWorker {
 
   private async purgeCompleted(now: Date): Promise<number> {
     if (!this.dispatcher.purgeCompletedBefore || !this.options.completedRetentionMs) return 0;
-    return this.dispatcher.purgeCompletedBefore(new Date(now.getTime() - this.options.completedRetentionMs));
+    return this.dispatcher.purgeCompletedBefore(
+      new Date(now.getTime() - this.options.completedRetentionMs),
+      ANALYTICS_OUTBOX_COMPLETED_PURGE_BATCH_SIZE,
+    );
   }
 
   private async recordOperationalSnapshot(result: { recovered: number; dispatched: number; purged: number }, now: Date) {

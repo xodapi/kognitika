@@ -201,13 +201,24 @@ describe('Prisma analytics outbox store', () => {
   });
 
   it('purges only completed rows older than the retention cutoff', async () => {
-    prismaMock.analyticsOutboxEntry.deleteMany.mockResolvedValue({ count: 2 });
+    prismaMock.analyticsOutboxEntry.findMany.mockResolvedValue([{ id: 'outbox-completed-synthetic' }]);
+    prismaMock.analyticsOutboxEntry.deleteMany.mockResolvedValue({ count: 1 });
     const { PrismaAnalyticsOutboxStore } = await import('../server/infrastructure/prisma/prisma-analytics-outbox-store.ts');
     const cutoff = new Date('2026-07-01T00:00:00.000Z');
 
-    await expect(new PrismaAnalyticsOutboxStore().purgeCompletedBefore(cutoff)).resolves.toBe(2);
+    await expect(new PrismaAnalyticsOutboxStore().purgeCompletedBefore(cutoff, 100)).resolves.toBe(1);
+    expect(prismaMock.analyticsOutboxEntry.findMany).toHaveBeenCalledWith({
+      where: {
+        state: 'completed',
+        completedAt: { lt: cutoff },
+      },
+      orderBy: { completedAt: 'asc' },
+      take: 100,
+      select: { id: true },
+    });
     expect(prismaMock.analyticsOutboxEntry.deleteMany).toHaveBeenCalledWith({
       where: {
+        id: { in: ['outbox-completed-synthetic'] },
         state: 'completed',
         completedAt: { lt: cutoff },
       },

@@ -98,7 +98,7 @@ describe.runIf(hasDatabase)('Prisma analytics outbox PostgreSQL integration', ()
     const pending = await createOutboxEntry('pending');
     const store = new PrismaAnalyticsOutboxStore();
 
-    await expect(store.purgeCompletedBefore(new Date('2026-07-01T00:00:00.000Z'))).resolves.toBe(1);
+    await expect(store.purgeCompletedBefore(new Date('2026-07-01T00:00:00.000Z'), 100)).resolves.toBe(1);
     await expect(prisma.analyticsOutboxEntry.findUnique({
       where: { id: oldCompleted.id },
     })).resolves.toBeNull();
@@ -119,7 +119,7 @@ describe.runIf(hasDatabase)('Prisma analytics outbox PostgreSQL integration', ()
 
     const [metrics] = await Promise.all([
       store.metrics(now),
-      store.purgeCompletedBefore(new Date('2026-07-01T00:00:00.000Z')),
+      store.purgeCompletedBefore(new Date('2026-07-01T00:00:00.000Z'), 100),
       store.dispatchNext({
         workerId: 'integration-worker-metrics',
         now,

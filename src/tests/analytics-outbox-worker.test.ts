@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
+  ANALYTICS_OUTBOX_COMPLETED_PURGE_BATCH_SIZE,
   AnalyticsOutboxWorker,
   DEFAULT_ANALYTICS_OUTBOX_WORKER_OPTIONS,
   DEFAULT_ANALYTICS_OUTBOX_COMPLETED_RETENTION_MS,
@@ -207,6 +208,7 @@ describe('analytics outbox worker', () => {
     await expect(worker.runOnce(now)).resolves.toEqual({ recovered: 0, dispatched: 0, purged: 3 });
     expect(dispatcher.purgeCompletedBefore).toHaveBeenCalledWith(
       new Date('2026-07-28T12:00:00.000Z'),
+      ANALYTICS_OUTBOX_COMPLETED_PURGE_BATCH_SIZE,
     );
   });
 
