@@ -13,5 +13,9 @@ describe('server analytics outbox shutdown contract', () => {
     expect(source).toContain('if (httpServer.listening) httpServer.close();');
     expect(source).toContain('analyticsOutboxWorker?.stop()');
     expect(source).toContain('prisma.$disconnect()');
+    expect(source).toContain('const SERVER_SHUTDOWN_GRACE_MS = 10_000;');
+    expect(source).toContain('Promise.allSettled([');
+    expect(source).toContain('graceTimer.unref?.();');
+    expect(source).toContain("'Server shutdown grace window elapsed'");
   });
 });

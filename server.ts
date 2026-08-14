@@ -67,6 +67,7 @@ import { registerDuelHandlers } from './src/server/realtime/duels.ts';
 import { getDuelRepository } from './src/server/infrastructure/container.ts';
 
 const PORT = Number(process.env.PORT) || 3006;
+const SERVER_SHUTDOWN_GRACE_MS = 10_000;
 
 function resolveBuildId() {
   if (process.env.BUILD_HASH) return process.env.BUILD_HASH;
@@ -275,11 +276,25 @@ async function startServer() {
     shutdownPromise = (async () => {
       logger.info('Server shutdown started');
       io.close();
-      await Promise.all([
+      const cleanup = Promise.allSettled([
         analyticsOutboxWorker?.stop(),
         prisma.$disconnect(),
       ]);
-      logger.info('Server shutdown complete');
+      let graceTimer: ReturnType<typeof setTimeout> | undefined;
+      try {
+        const completed = await Promise.race([
+          cleanup.then(() => true),
+          new Promise<boolean>(resolve => {
+            graceTimer = setTimeout(() => resolve(false), SERVER_SHUTDOWN_GRACE_MS);
+            graceTimer.unref?.();
+          }),
+        ]);
+        logger[completed ? 'info' : 'warn'](
+          completed ? 'Server shutdown complete' : 'Server shutdown grace window elapsed',
+        );
+      } finally {
+        if (graceTimer) clearTimeout(graceTimer);
+      }
     })();
     return shutdownPromise;
   };

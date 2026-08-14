@@ -88,6 +88,9 @@ Repeated `start()` or `stop()` calls do not create duplicate timers or throw.
 Server close, `SIGTERM`, and `SIGINT` share one shutdown path that stops the
 worker, closes Socket.io/HTTP intake, and disconnects Prisma without logging
 raw errors.
+The combined worker and Prisma cleanup has a ten-second grace window. An
+expired window records a fixed warning and returns control without forcing
+process exit or exposing dependency error text.
 
 ## Validation
 
