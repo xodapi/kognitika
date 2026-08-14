@@ -287,6 +287,7 @@ describe('admin route privacy and authorization contract', () => {
 
     expect(response.status).toBe(200);
     expect(response.body).toMatchObject({
+      schemaVersion: 1,
       worker: { recovered: 2, dispatched: 3, purged: 0 },
       outbox: { pending: 1, dead: 0, oldestLagMs: 250 },
       sidecar: { requests: 5, matched: 5 },
@@ -320,6 +321,7 @@ describe('admin route privacy and authorization contract', () => {
 
     expect(response.status).toBe(200);
     expect(response.body).toEqual({
+      schemaVersion: 1,
       status: 'unavailable',
       rolloutConfiguration: { ready: false, reason: 'outbox_disabled' },
     });

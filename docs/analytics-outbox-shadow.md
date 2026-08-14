@@ -40,6 +40,10 @@ aggregate-only in-process snapshot for operations. It contains state counts,
 worker counters (including completed-row cleanup count), sidecar counters,
 canary eligibility, and derived freshness. It never exposes session IDs, job
 IDs, Brain IDs, payloads, identities, tokens, or raw telemetry.
+Every response includes additive `schemaVersion: 1`, including the
+`status: "unavailable"` response. Existing fields remain stable within this
+version; clients must ignore unknown additive fields and treat an unknown
+schema version as unsupported rather than guessing field semantics.
 The worker metrics query reads only lifecycle state and occurrence time, the
 two fields required for aggregate state counts and lag. Counts and lag are
 read inside one PostgreSQL repeatable-read transaction, so a concurrent

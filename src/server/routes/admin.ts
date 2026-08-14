@@ -14,6 +14,7 @@ import { preflightRustAnalyticsCanary } from '../config/rust-analytics-canary.ts
 
 const router = Router();
 const logger = createSafeLogger('admin-route');
+export const ANALYTICS_OUTBOX_ADMIN_SCHEMA_VERSION = 1;
 const resourceIdSchema = z.object({ id: z.string().trim().min(1).max(120) }).strict();
 const ideaStatusSchema = z.object({ status: z.string().trim().min(1).max(32) }).strict();
 
@@ -60,6 +61,7 @@ router.get('/practice-flow', (_req, res) => {
 router.get('/analytics-outbox', (_req, res) => {
   const rolloutConfiguration = preflightRustAnalyticsCanary();
   res.json({
+    schemaVersion: ANALYTICS_OUTBOX_ADMIN_SCHEMA_VERSION,
     ...(getAnalyticsOutboxOperationalSnapshot(new Date()) ?? {
       status: 'unavailable',
     }),
