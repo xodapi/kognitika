@@ -85,6 +85,9 @@ introduced through exception text.
 Worker shutdown is graceful and idempotent: `stop()` clears the interval and
 waits for the active dispatch/retention/metrics cycle before resolving.
 Repeated `start()` or `stop()` calls do not create duplicate timers or throw.
+Server close, `SIGTERM`, and `SIGINT` share one shutdown path that stops the
+worker, closes Socket.io/HTTP intake, and disconnects Prisma without logging
+raw errors.
 
 ## Validation
 

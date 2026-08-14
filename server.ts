@@ -269,10 +269,29 @@ async function startServer() {
   }
 
   const listenHost = resolveListenHost(process.env);
-  const shutdown = () => analyticsOutboxWorker?.stop();
-  httpServer.once('close', shutdown);
-  process.once('SIGTERM', shutdown);
-  process.once('SIGINT', shutdown);
+  let shutdownPromise: Promise<void> | null = null;
+  const shutdown = () => {
+    if (shutdownPromise) return shutdownPromise;
+    shutdownPromise = (async () => {
+      logger.info('Server shutdown started');
+      io.close();
+      await Promise.all([
+        analyticsOutboxWorker?.stop(),
+        prisma.$disconnect(),
+      ]);
+      logger.info('Server shutdown complete');
+    })();
+    return shutdownPromise;
+  };
+  httpServer.once('close', () => void shutdown());
+  process.once('SIGTERM', () => {
+    if (httpServer.listening) httpServer.close();
+    void shutdown();
+  });
+  process.once('SIGINT', () => {
+    if (httpServer.listening) httpServer.close();
+    void shutdown();
+  });
   httpServer.listen(PORT, listenHost, () => {
     logger.info('Server running', { host: listenHost, port: PORT, buildId: BUILD_ID });
   });
