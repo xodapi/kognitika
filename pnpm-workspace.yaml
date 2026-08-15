@@ -14,7 +14,7 @@ onlyBuiltDependencies:
 
 overrides:
   fast-uri: 3.1.5
-  hono: 4.12.25
+  hono: 4.12.34
   ip-address: 10.5.0
   js-yaml: 4.3.1
   socket.io-parser: 4.2.7
