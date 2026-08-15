@@ -10,6 +10,10 @@ Kognitika is a React/Vite cognitive-training product with Express, Socket.io, Pr
 
 TypeScript remains the runtime authority for cognitive analytics. The repository also contains `crates/kognitika-core`, a deterministic Rust implementation of the versioned `AnalyzeSession` contract. It is a compute-only shadow/canary candidate, not a replacement for the web client, Express, Prisma, PostgreSQL, authentication, or Socket.io.
 
+The bounded-context vocabulary and aggregate consistency decisions are documented in
+[`docs/domain-language.md`](docs/domain-language.md) and
+[`docs/aggregate-boundaries.md`](docs/aggregate-boundaries.md).
+
 ---
 
 ## Module map
@@ -53,8 +57,10 @@ Components should not duplicate trainer rules. A frontend change is normally iso
 ### Server domain layer
 
 ```text
-Express route/service
-  -> Prisma/PostgreSQL authoritative transaction
+Express route/middleware
+  -> application repository port
+  -> infrastructure Prisma adapter
+  -> PostgreSQL authoritative transaction
   -> server EventBus
   -> best-effort subscribers
       -> session-summary persistence
@@ -64,6 +70,16 @@ Express route/service
 `src/server/events/event-bus.ts` is a separate Node-only in-process EventBus. It is not connected to the browser EventBus and is not a durable queue. Its subscribers run after an event is emitted and must tolerate failure, restart, duplicate attempts, and unavailable dependencies.
 
 Socket.io is a separate real-time transport for Cognitive Flow and duels. It is not a replacement for the analytics outbox.
+Like HTTP routes and middleware, Socket.io transports use application repository ports
+for persistence and do not import the Prisma client directly.
+Best-effort server subscribers follow the same rule for persistence reads needed to
+produce notifications or other side effects.
+
+Application repository ports live in `src/server/repositories`. Prisma implementations
+live in `src/server/infrastructure/prisma`, and `src/server/infrastructure/container.ts`
+is the composition root. Runtime HTTP routes and middleware must not import the Prisma
+client directly. This preserves route-level validation, authorization, privacy
+serialization, and response contracts while making persistence independently testable.
 
 ### Durable analytics boundary
 

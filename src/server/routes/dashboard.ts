@@ -1,7 +1,7 @@
 import { Router } from 'express';
-import prisma from '../../lib/prisma.ts';
 import { authenticate } from '../middleware/auth.ts';
 import { createSafeLogger, safeError } from '../../lib/safe-logger.ts';
+import { getDashboardRepository } from '../infrastructure/container.ts';
 
 const router = Router();
 const logger = createSafeLogger('dashboard-route');
@@ -80,9 +80,8 @@ function generateTasksForWeakZone(sessions: any[], todaySessions: any[], weakZon
 
 router.get('/status', authenticate, async (req: any, res) => {
   try {
-    const user = await prisma.user.findUnique({
-      where: { id: req.user.id }
-    });
+    const repository = getDashboardRepository();
+    const user = await repository.findUser(req.user.id);
 
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
@@ -117,11 +116,7 @@ router.get('/status', authenticate, async (req: any, res) => {
     else if (streakDays >= 3) streakMultiplier = 1.5;
 
     // Вычисляем слабую зону пользователя по последним 50 сессиям
-    const sessions = await prisma.gameSession.findMany({
-      where: { userId: user.id, isCompleted: true },
-      orderBy: { createdAt: 'desc' },
-      take: 50
-    });
+    const sessions = await repository.findRecentCompletedSessions(user.id, 50);
 
     // Фильтруем сессии, пройденные сегодня
     const startOfToday = new Date(today.getTime());

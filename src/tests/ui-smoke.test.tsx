@@ -3,6 +3,7 @@ import { render, screen, act } from '@testing-library/react';
 import { LanguageScanner } from '../components/LanguageScanner';
 import { RealityCheck } from '../components/RealityCheck';
 import React from 'react';
+import type { RealityCheckEngine } from '../hooks/useRealityCheckEngine';
 
 // Mock engines to avoid complex logic
 vi.mock('../hooks/useLanguageScannerEngine', () => ({
@@ -15,14 +16,16 @@ vi.mock('../hooks/useLanguageScannerEngine', () => ({
 }));
 
 vi.mock('../hooks/useRealityCheckEngine', () => ({
-  useRealityCheckEngine: () => ({
+  useRealityCheckEngine: (): RealityCheckEngine => ({
     currentPair: { fact: 'Test', statement: 'Test' },
     progress: 0,
     isActive: true,
     startSession: vi.fn(),
     submitAnswer: vi.fn(),
     score: 0,
-    pairsRemaining: 10
+    pairsRemaining: 10,
+    getCompletedAnalyticsJob: vi.fn(() => undefined),
+    isFinished: false,
   })
 }));
 

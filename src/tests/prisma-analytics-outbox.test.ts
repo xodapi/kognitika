@@ -2,18 +2,21 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const prismaMock = vi.hoisted(() => ({
   $queryRaw: vi.fn(),
+  $transaction: vi.fn(),
   analyticsOutboxEntry: {
     findFirst: vi.fn(),
     updateMany: vi.fn(),
     findMany: vi.fn(),
+    groupBy: vi.fn(),
+    deleteMany: vi.fn(),
   },
   completedSessionAnalyticsJob: { findUnique: vi.fn() },
   gameSession: { findUnique: vi.fn() },
 }));
 
 vi.mock('../lib/prisma.ts', () => ({ default: prismaMock }));
-vi.mock('../server/services/analytics-persistence.ts', () => ({
-  persistSessionAnalyticsSummary: vi.fn(),
+const summaryRepository = vi.hoisted(() => ({
+  upsert: vi.fn(),
 }));
 
 const now = new Date('2026-08-03T02:20:00.000Z');
@@ -41,7 +44,7 @@ describe('Prisma analytics outbox store', () => {
 
   it('claims the oldest pending job through Prisma and assigns a lease', async () => {
     prismaMock.$queryRaw.mockResolvedValue([{ ...baseRecord, state: 'processing', leaseOwner: 'node-worker-a', leaseExpiresAt: new Date(now.getTime() + 1_000) }]);
-    const { PrismaAnalyticsOutboxStore } = await import('../server/services/analytics-outbox.ts');
+    const { PrismaAnalyticsOutboxStore } = await import('../server/infrastructure/prisma/prisma-analytics-outbox-store.ts');
 
     const entry = await new PrismaAnalyticsOutboxStore().claimNext('node-worker-a', now, 1_000);
 
@@ -51,7 +54,7 @@ describe('Prisma analytics outbox store', () => {
 
   it('does not return a job when a competing worker already changed its state', async () => {
     prismaMock.$queryRaw.mockResolvedValue([]);
-    const { PrismaAnalyticsOutboxStore } = await import('../server/services/analytics-outbox.ts');
+    const { PrismaAnalyticsOutboxStore } = await import('../server/infrastructure/prisma/prisma-analytics-outbox-store.ts');
 
     await expect(new PrismaAnalyticsOutboxStore().claimNext('node-worker-a', now, 1_000)).resolves.toBeNull();
   });
@@ -64,7 +67,7 @@ describe('Prisma analytics outbox store', () => {
       leaseOwner: 'node-worker-a',
       leaseExpiresAt: new Date(now.getTime() + 1_000),
     });
-    const { PrismaAnalyticsOutboxStore } = await import('../server/services/analytics-outbox.ts');
+    const { PrismaAnalyticsOutboxStore } = await import('../server/infrastructure/prisma/prisma-analytics-outbox-store.ts');
     const store = new PrismaAnalyticsOutboxStore();
 
     await expect(store.complete(baseRecord.id, 'node-worker-a', now)).resolves.toBe(true);
@@ -79,7 +82,7 @@ describe('Prisma analytics outbox store', () => {
     prismaMock.$queryRaw.mockResolvedValue([{ ...baseRecord, state: 'processing', leaseOwner: 'node-worker-a', leaseExpiresAt: new Date(now.getTime() + 1_000) }]);
     prismaMock.completedSessionAnalyticsJob.findUnique.mockResolvedValue(null);
     prismaMock.analyticsOutboxEntry.updateMany.mockResolvedValue({ count: 1 });
-    const { PrismaAnalyticsOutboxStore } = await import('../server/services/analytics-outbox.ts');
+    const { PrismaAnalyticsOutboxStore } = await import('../server/infrastructure/prisma/prisma-analytics-outbox-store.ts');
 
     await expect(new PrismaAnalyticsOutboxStore().dispatchNext({
       workerId: 'node-worker-a', now, leaseMs: 1_000, maxAttempts: 2,
@@ -97,13 +100,13 @@ describe('Prisma analytics outbox store', () => {
       ...baseRecord, state: 'processing', leaseOwner: 'node-worker-a', leaseExpiresAt: new Date(now.getTime() + 1_000),
     });
     prismaMock.analyticsOutboxEntry.updateMany.mockResolvedValue({ count: 1 });
-    const { PrismaAnalyticsOutboxStore } = await import('../server/services/analytics-outbox.ts');
+    const { PrismaAnalyticsOutboxStore } = await import('../server/infrastructure/prisma/prisma-analytics-outbox-store.ts');
 
     await expect(new PrismaAnalyticsOutboxStore().dispatchNext({
       workerId: 'node-worker-a', now, leaseMs: 1_000, maxAttempts: 2,
     })).resolves.toEqual({ status: 'failed', errorCode: 'invalid_canonical_job' });
     expect(prismaMock.analyticsOutboxEntry.updateMany).toHaveBeenCalledWith(expect.objectContaining({
-      data: expect.objectContaining({ state: 'retry' }),
+      data: expect.objectContaining({ state: 'retry', lastErrorCode: 'invalid_canonical_job' }),
     }));
   });
 
@@ -129,27 +132,31 @@ describe('Prisma analytics outbox store', () => {
     prismaMock.completedSessionAnalyticsJob.findUnique.mockResolvedValue({ payload: canonicalJob });
     prismaMock.gameSession.findUnique.mockResolvedValue({ userId: 'user-synthetic' });
     prismaMock.analyticsOutboxEntry.updateMany.mockResolvedValue({ count: 1 });
-    const { persistSessionAnalyticsSummary } = await import('../server/services/analytics-persistence.ts');
-    const { PrismaAnalyticsOutboxStore } = await import('../server/services/analytics-outbox.ts');
+    const { PrismaAnalyticsOutboxStore } = await import('../server/infrastructure/prisma/prisma-analytics-outbox-store.ts');
 
-    const result = await new PrismaAnalyticsOutboxStore().dispatchNext({
+    const result = await new PrismaAnalyticsOutboxStore(null, summaryRepository).dispatchNext({
       workerId: 'node-worker-a', now, leaseMs: 1_000, maxAttempts: 2,
     });
 
     expect(result).toMatchObject({ status: 'completed', summary: { jobId: canonicalJob.jobId, sourceSessionId: baseRecord.sourceSessionId } });
-    expect(persistSessionAnalyticsSummary).toHaveBeenCalledWith('user-synthetic', expect.objectContaining({ jobId: canonicalJob.jobId }));
+    expect(summaryRepository.upsert).toHaveBeenCalledWith('user-synthetic', expect.objectContaining({ jobId: canonicalJob.jobId }));
     expect(JSON.stringify(prismaMock.completedSessionAnalyticsJob.findUnique.mock.calls[0][0])).not.toMatch(/brainid|jwt|email|token|metadata/i);
   });
 
   it('recovers expired leases within the retry budget and emits aggregate-only metrics', async () => {
     prismaMock.analyticsOutboxEntry.findMany
-      .mockResolvedValueOnce([{ id: baseRecord.id, attemptCount: 0 }])
+      .mockResolvedValueOnce([{ id: baseRecord.id, attemptCount: 0 }]);
+    prismaMock.analyticsOutboxEntry.groupBy
       .mockResolvedValueOnce([
-        baseRecord,
-        { ...baseRecord, id: 'outbox-synthetic-dead', state: 'dead', attemptCount: 2, lastErrorCode: 'analyzer_unavailable' },
+        { state: 'pending', _count: { _all: 1 } },
+        { state: 'dead', _count: { _all: 1 } },
+      ])
+      .mockResolvedValueOnce([
+        { state: 'pending', _min: { occurredAt: now } },
       ]);
     prismaMock.analyticsOutboxEntry.updateMany.mockResolvedValue({ count: 1 });
-    const { PrismaAnalyticsOutboxStore } = await import('../server/services/analytics-outbox.ts');
+    prismaMock.$transaction.mockImplementation((work: (transaction: typeof prismaMock) => unknown) => work(prismaMock));
+    const { PrismaAnalyticsOutboxStore } = await import('../server/infrastructure/prisma/prisma-analytics-outbox-store.ts');
     const store = new PrismaAnalyticsOutboxStore();
 
     await expect(store.recoverExpiredLeases(now, 2)).resolves.toBe(1);
@@ -162,6 +169,59 @@ describe('Prisma analytics outbox store', () => {
       oldestLagMs: 0,
       failures: 1,
     });
-    expect(JSON.stringify(prismaMock.analyticsOutboxEntry.findMany.mock.calls[0][0])).not.toMatch(/brainid|jwt|email|token|metadata/i);
+    expect(prismaMock.analyticsOutboxEntry.updateMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: expect.objectContaining({
+        id: baseRecord.id,
+        state: 'processing',
+        attemptCount: 0,
+        leaseExpiresAt: { lte: now },
+      }),
+      data: expect.objectContaining({
+        state: 'retry',
+        attemptCount: 1,
+        lastErrorCode: 'lease_expired',
+      }),
+    }));
+    expect(prismaMock.$transaction).toHaveBeenCalledWith(expect.any(Function), {
+      isolationLevel: 'RepeatableRead',
+      maxWait: 500,
+      timeout: 1_000,
+    });
+    expect(prismaMock.analyticsOutboxEntry.groupBy).toHaveBeenNthCalledWith(1, {
+      by: ['state'],
+      _count: { _all: true },
+    });
+    expect(prismaMock.analyticsOutboxEntry.groupBy).toHaveBeenNthCalledWith(2, {
+      by: ['state'],
+      where: {
+        state: { in: ['pending', 'retry'] },
+      },
+      _min: { occurredAt: true },
+    });
+  });
+
+  it('purges only completed rows older than the retention cutoff', async () => {
+    prismaMock.analyticsOutboxEntry.findMany.mockResolvedValue([{ id: 'outbox-completed-synthetic' }]);
+    prismaMock.analyticsOutboxEntry.deleteMany.mockResolvedValue({ count: 1 });
+    const { PrismaAnalyticsOutboxStore } = await import('../server/infrastructure/prisma/prisma-analytics-outbox-store.ts');
+    const cutoff = new Date('2026-07-01T00:00:00.000Z');
+
+    await expect(new PrismaAnalyticsOutboxStore().purgeCompletedBefore(cutoff, 100)).resolves.toBe(1);
+    expect(prismaMock.analyticsOutboxEntry.findMany).toHaveBeenCalledWith({
+      where: {
+        state: 'completed',
+        completedAt: { lt: cutoff },
+      },
+      orderBy: { completedAt: 'asc' },
+      take: 100,
+      select: { id: true },
+    });
+    expect(prismaMock.analyticsOutboxEntry.deleteMany).toHaveBeenCalledWith({
+      where: {
+        id: { in: ['outbox-completed-synthetic'] },
+        state: 'completed',
+        completedAt: { lt: cutoff },
+      },
+    });
   });
 });

@@ -1,5 +1,4 @@
 import { Router } from 'express';
-import prisma from '../../lib/prisma.ts';
 import { createSafeLogger, safeError } from '../../lib/safe-logger.ts';
 import { authenticate } from '../middleware/auth.ts';
 import {
@@ -11,6 +10,7 @@ import {
   analyzeNeurotraining,
   generateMentalMathTraining,
 } from '../services/neurotrainer.ts';
+import { getNeurotrainerHistoryRepository } from '../infrastructure/container.ts';
 
 const router = Router();
 const logger = createSafeLogger('neurotrainer-route');
@@ -38,20 +38,11 @@ router.post('/analyze', authenticate, async (req: any, res) => {
   }
 
   try {
-    const sessions = await prisma.gameSession.findMany({
-      where: {
-        userId: req.user.id,
-        gameType: parsed.data.gameType,
-        isCompleted: true,
-      },
-      orderBy: { createdAt: 'desc' },
-      take: 10,
-      select: {
-        score: true,
-        timeMs: true,
-        metadata: true,
-      },
-    });
+    const sessions = await getNeurotrainerHistoryRepository().findRecentCompletedByGameType(
+      req.user.id,
+      parsed.data.gameType,
+      10,
+    );
 
     const history = sessions.flatMap((session) => {
       const errors = metadataNumber(session.metadata, 'errors') ?? 0;

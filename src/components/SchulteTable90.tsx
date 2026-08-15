@@ -21,6 +21,24 @@ import { useGameAttempt } from '../lib/game-attempt-client';
 
 const logger = createSafeLogger('schulte-90');
 
+function useMobilePlayLayout() {
+  const query = '(max-width: 1023px)';
+  const [isMobile, setIsMobile] = useState(() => (
+    typeof window !== 'undefined'
+    && typeof window.matchMedia === 'function'
+    && window.matchMedia(query).matches
+  ));
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return;
+    const media = window.matchMedia(query);
+    const update = () => setIsMobile(media.matches);
+    update();
+    media.addEventListener('change', update);
+    return () => media.removeEventListener('change', update);
+  }, []);
+  return isMobile;
+}
+
 const NORMATIVE_RANGE = '90–150 с';
 
 const CELL_VARIANTS = [
@@ -40,6 +58,7 @@ function isGorbovRuleId(value: string): value is GorbovRuleId {
 
 export function SchulteTable90() {
   const { state, startGame, stopGame, resetGame, clickCell, getCompletedAnalyticsJob } = useSchulte90Engine();
+  const isMobilePlayLayout = useMobilePlayLayout();
   const { token, refreshUser } = useAuth();
   const navigate = useNavigate();
   const [showBriefing, setShowBriefing] = useState(false);
@@ -205,7 +224,7 @@ export function SchulteTable90() {
 
             <div className="space-y-4">
               <div>
-                <label className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider mb-2 block">
+                <label className="text-sm text-muted-foreground uppercase font-bold tracking-wider mb-2 block">
                   Режим
                 </label>
                 <select
@@ -213,7 +232,7 @@ export function SchulteTable90() {
                   onChange={(event) => {
                     if (isGorbovRuleId(event.target.value)) setSelectedRule(event.target.value);
                   }}
-                  className="w-full min-h-11 p-3 text-xs rounded-xl border bg-background/50 border-border outline-none text-foreground font-bold transition-all"
+                  className="w-full min-h-11 p-3 text-sm rounded-xl border bg-background/50 border-border outline-none text-foreground font-bold transition-all"
                 >
                   {GORBOV_RULES.map((rule) => (
                     <option key={rule.id} value={rule.id}>{rule.title}</option>
@@ -244,7 +263,8 @@ export function SchulteTable90() {
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               onClick={() => setShowBriefing(true)}
-              className="mt-auto w-full py-4 bg-primary text-primary-foreground text-xs uppercase tracking-[0.2em] rounded-2xl font-black shadow-lg shadow-primary/20 transition-all"
+              data-testid="start-button"
+              className="mt-auto w-full py-4 bg-primary text-primary-foreground text-sm uppercase tracking-[0.2em] rounded-2xl font-black shadow-lg shadow-primary/20 transition-all"
             >
               Начать тест
             </motion.button>
@@ -486,14 +506,14 @@ export function SchulteTable90() {
       {/* Center: Grid */}
       <motion.div
         animate={state.errors > 0 ? { x: [0, -10, 10, -10, 10, 0] } : {}}
+        data-testid="playfield"
         transition={{ duration: 0.4 }}
-        className="lg:col-span-6 border border-border rounded-[2.5rem] p-4 sm:p-6 flex flex-col items-start sm:items-center justify-center relative min-h-[400px] overflow-x-auto overflow-y-hidden lg:h-full shadow-2xl bg-card/30 backdrop-blur-sm"
+        className="lg:col-span-6 -mx-4 w-[calc(100%+2rem)] sm:mx-0 sm:w-auto border border-border rounded-[2.5rem] p-0 sm:p-6 flex flex-col items-center justify-center relative min-h-[400px] overflow-hidden lg:h-full shadow-2xl bg-card/30 backdrop-blur-sm"
       >
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="grid gap-1.5 w-full min-w-[494px] max-w-[700px] relative z-10"
-          style={{ gridTemplateColumns: `repeat(${SCHULTE_90_COLS}, 1fr)` }}
+          className="grid grid-cols-6 gap-0 w-full min-w-0 max-w-[700px] relative z-10 sm:grid-cols-10 sm:gap-1.5"
         >
           {state.grid.map((cell, idx) => {
             const isConsumed = cell.num <= state.expectedIndex;
@@ -537,6 +557,17 @@ export function SchulteTable90() {
         </div>
       </motion.div>
 
+      {isMobilePlayLayout && (
+        <motion.button
+          whileTap={{ scale: 0.97 }}
+          onClick={stopGame}
+          data-testid="stop-button"
+          className="fixed inset-x-4 bottom-[max(6.25rem,calc(env(safe-area-inset-bottom)+5.75rem))] z-40 min-h-11 rounded-2xl border border-destructive/30 bg-card/95 px-4 py-3 text-sm font-black uppercase tracking-widest text-destructive shadow-xl backdrop-blur-md"
+        >
+          Завершить досрочно
+        </motion.button>
+      )}
+
       {/* Right: Controls */}
       <motion.div
         initial={{ opacity: 0, x: 20 }}
@@ -558,7 +589,8 @@ export function SchulteTable90() {
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={stopGame}
-            className="w-full py-4 bg-destructive/10 border border-destructive/20 text-destructive text-xs uppercase font-black tracking-widest rounded-2xl hover:bg-destructive hover:text-white transition-all shadow-lg shadow-destructive/5"
+            data-testid="desktop-stop-button"
+            className="hidden w-full py-4 bg-destructive/10 border border-destructive/20 text-destructive text-xs uppercase font-black tracking-widest rounded-2xl hover:bg-destructive hover:text-white transition-all shadow-lg shadow-destructive/5 lg:block"
           >
             Завершить досрочно
           </motion.button>

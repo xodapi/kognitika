@@ -117,7 +117,7 @@ export function SpeedTyping() {
       </div>
 
       {/* Main Area */}
-      <div className="lg:col-span-9 flex flex-col gap-4">
+      <div data-testid="playfield" className="lg:col-span-9 flex flex-col gap-4">
         <div className="bg-card/20 border border-border rounded-3xl p-6 sm:p-8 flex-1 flex flex-col relative overflow-hidden">
           <AnimatePresence mode="wait">
             {!isActive && !isFinished ? (
@@ -139,7 +139,8 @@ export function SpeedTyping() {
                 </div>
                 <button 
                   onClick={handleStart}
-                  className="min-h-11 px-8 py-4 bg-primary text-primary-foreground rounded-2xl font-black uppercase tracking-widest text-xs shadow-lg shadow-primary/20 hover:scale-105 transition-transform"
+                  data-testid="start-button"
+                  className="min-h-11 px-8 py-4 bg-primary text-primary-foreground rounded-2xl font-black uppercase tracking-widest text-sm shadow-lg shadow-primary/20 hover:scale-105 transition-transform"
                 >
                   Запустить тест
                 </button>

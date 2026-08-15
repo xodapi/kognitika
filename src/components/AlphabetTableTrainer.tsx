@@ -231,7 +231,7 @@ export function AlphabetTableTrainer() {
             <div>
               <label
                 htmlFor="alphabet-table-preset"
-                className="mb-2 block text-[10px] font-black uppercase tracking-widest text-muted-foreground"
+                className="mb-2 block text-sm font-black uppercase tracking-widest text-muted-foreground"
               >
                 Режим
               </label>
@@ -253,7 +253,7 @@ export function AlphabetTableTrainer() {
               <div className="mb-2 flex items-center justify-between">
                 <label
                   htmlFor="alphabet-table-question-count"
-                  className="text-[10px] font-black uppercase tracking-widest text-muted-foreground"
+                  className="text-sm font-black uppercase tracking-widest text-muted-foreground"
                 >
                   Количество букв
                 </label>
@@ -279,7 +279,8 @@ export function AlphabetTableTrainer() {
           <button
             type="button"
             onClick={handleStart}
-            className="mt-8 min-h-12 w-full rounded-2xl bg-primary px-6 py-4 text-xs font-black uppercase tracking-[0.2em] text-primary-foreground shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+            data-testid="start-button"
+            className="mt-8 min-h-12 w-full rounded-2xl bg-primary px-6 py-4 text-sm font-black uppercase tracking-[0.2em] text-primary-foreground shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
           >
             Начать тренировку
           </button>
@@ -345,6 +346,7 @@ export function AlphabetTableTrainer() {
         <button
           type="button"
           onClick={stopGame}
+          data-testid="stop-button"
           className="mt-8 min-h-12 w-full rounded-2xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-xs font-black uppercase tracking-widest text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive"
         >
           Завершить досрочно
@@ -353,6 +355,7 @@ export function AlphabetTableTrainer() {
 
       <motion.div
         key={state.currentIndex}
+        data-testid="playfield"
         initial={{ opacity: 0, scale: 0.96 }}
         animate={{ opacity: 1, scale: 1 }}
         className="flex flex-col items-center justify-center rounded-[2.5rem] border border-border bg-card/30 p-8 text-center shadow-xl lg:col-span-9 sm:p-12"

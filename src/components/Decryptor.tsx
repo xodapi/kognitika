@@ -1,12 +1,44 @@
-import React from 'react';
+import React, { useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useDecryptorEngine } from '../hooks/useDecryptorEngine';
 import { Cpu, Terminal, Brain, Layers, ArrowRight } from 'lucide-react';
 import { clsx } from 'clsx';
 import { CompletionRecommendation } from './CompletionRecommendation';
+import { useAuth } from '../hooks/useAuth';
+import { useGameAttempt } from '../lib/game-attempt-client';
 
 export const Decryptor: React.FC = () => {
-  const { state, startGame, handleAnswer } = useDecryptorEngine();
+  const { state, startGame, handleAnswer, getCompletedAnalyticsJob } = useDecryptorEngine();
+  const { token } = useAuth();
+  const { beginAttempt, saveAttempt } = useGameAttempt(token);
+  const handleStart = useCallback(async (level: number) => {
+    try {
+      await beginAttempt('DECRYPTOR');
+      startGame(level);
+    } catch {
+      // Fail closed when an authenticated attempt cannot be issued.
+    }
+  }, [beginAttempt, startGame]);
+
+  useEffect(() => {
+    void handleStart(1);
+  }, [handleStart]);
+
+  useEffect(() => {
+    const analyticsJob = getCompletedAnalyticsJob();
+    if (state.phase === 'result' && token && analyticsJob) {
+      saveAttempt({
+        timeMs: state.timeMs,
+        metadata: {
+          score: state.score,
+          hits: state.hits,
+          misses: state.misses,
+          level: state.level,
+        },
+        analyticsJob,
+      }).catch(() => {});
+    }
+  }, [state.phase, state.timeMs, state.score, state.hits, state.misses, state.level, token, saveAttempt, getCompletedAnalyticsJob]);
 
   if (state.phase === 'memorize') {
     return (
@@ -81,7 +113,7 @@ export const Decryptor: React.FC = () => {
             sourceModuleId="decryptor"
             score={state.score}
             errors={state.misses}
-            onRepeat={() => startGame(state.level)}
+            onRepeat={() => { void handleStart(state.level); }}
             repeatLabel="Новый цикл"
             className="max-w-3xl bg-slate-800/60"
           />

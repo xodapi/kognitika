@@ -6,21 +6,19 @@ import { createServer, type Server as HttpServer } from 'http';
 import type { AddressInfo } from 'net';
 import jwt from 'jsonwebtoken';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+  resetGameRepositories,
+  setNeurotrainerHistoryRepository,
+} from '../server/infrastructure/container.ts';
+import type { NeurotrainerHistoryRepository } from '../server/repositories/neurotrainer-history-repository.ts';
 
 const JWT_SECRET = 'synthetic-neurotrainer-secret';
-
-const prismaMock = vi.hoisted(() => ({
-  gameSession: {
-    findMany: vi.fn(),
-  },
-}));
 
 const serviceMock = vi.hoisted(() => ({
   generateMentalMathTraining: vi.fn(),
   analyzeNeurotraining: vi.fn(),
 }));
 
-vi.mock('../lib/prisma.ts', () => ({ default: prismaMock }));
 vi.mock('../server/services/neurotrainer.ts', () => serviceMock);
 
 let routes: Router;
@@ -33,6 +31,9 @@ beforeAll(async () => {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  setNeurotrainerHistoryRepository({
+    findRecentCompletedByGameType: historyFindMock,
+  });
   serviceMock.generateMentalMathTraining.mockResolvedValue({
     source: 'fallback',
     set: { legend: {}, questions: [] },
@@ -47,12 +48,15 @@ beforeEach(() => {
 });
 
 afterEach(async () => {
+  resetGameRepositories();
   await Promise.all(servers.splice(0).map((server) => (
     new Promise<void>((resolve, reject) => {
       server.close((error) => (error ? reject(error) : resolve()));
     })
   )));
 });
+
+const historyFindMock = vi.fn<NeurotrainerHistoryRepository['findRecentCompletedByGameType']>();
 
 async function createHarness() {
   const app = express();
@@ -114,7 +118,7 @@ describe('neurotrainer route', () => {
   });
 
   it('projects stored sessions to privacy-safe aggregate fields', async () => {
-    prismaMock.gameSession.findMany.mockResolvedValue([
+    historyFindMock.mockResolvedValue([
       {
         score: 120,
         timeMs: 125000,
@@ -154,5 +158,6 @@ describe('neurotrainer route', () => {
     });
     expect(JSON.stringify(serviceMock.analyzeNeurotraining.mock.calls)).not.toContain('clickHistory');
     expect(JSON.stringify(serviceMock.analyzeNeurotraining.mock.calls)).not.toContain('must-not-pass');
+    expect(historyFindMock).toHaveBeenCalledWith('synthetic-user', 'SCHULTE_90', 10);
   });
 });

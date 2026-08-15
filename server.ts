@@ -64,8 +64,10 @@ import { privacyGuard } from './src/server/middleware/privacy.ts';
 
 import { Server } from 'socket.io';
 import { registerDuelHandlers } from './src/server/realtime/duels.ts';
+import { getDuelRepository } from './src/server/infrastructure/container.ts';
 
 const PORT = Number(process.env.PORT) || 3006;
+const SERVER_SHUTDOWN_GRACE_MS = 10_000;
 
 function resolveBuildId() {
   if (process.env.BUILD_HASH) return process.env.BUILD_HASH;
@@ -107,7 +109,7 @@ async function startServer() {
     perMessageDeflate: false,
   });
 
-  registerDuelHandlers(io, { prisma, jwtSecret: JWT_SECRET });
+  registerDuelHandlers(io, { repository: getDuelRepository(), jwtSecret: JWT_SECRET });
 
   app.use(helmet({
     contentSecurityPolicy: process.env.NODE_ENV !== 'production' 
@@ -268,10 +270,51 @@ async function startServer() {
   }
 
   const listenHost = resolveListenHost(process.env);
-  const shutdown = () => analyticsOutboxWorker?.stop();
-  httpServer.once('close', shutdown);
-  process.once('SIGTERM', shutdown);
-  process.once('SIGINT', shutdown);
+  let shutdownPromise: Promise<void> | null = null;
+  let resolveHttpServerDrain: () => void;
+  const httpServerDrain = new Promise<void>((resolve) => {
+    resolveHttpServerDrain = resolve;
+  });
+  const shutdown = () => {
+    if (shutdownPromise) return shutdownPromise;
+    shutdownPromise = (async () => {
+      logger.info('Server shutdown started');
+      io.close();
+      const workerStop = analyticsOutboxWorker?.stop();
+      const cleanup = httpServerDrain.then(() => Promise.allSettled([
+        workerStop,
+        prisma.$disconnect(),
+      ]));
+      let graceTimer: ReturnType<typeof setTimeout> | undefined;
+      try {
+        const completed = await Promise.race([
+          cleanup.then(() => true),
+          new Promise<boolean>(resolve => {
+            graceTimer = setTimeout(() => resolve(false), SERVER_SHUTDOWN_GRACE_MS);
+            graceTimer.unref?.();
+          }),
+        ]);
+        logger[completed ? 'info' : 'warn'](
+          completed ? 'Server shutdown complete' : 'Server shutdown grace window elapsed',
+        );
+      } finally {
+        if (graceTimer) clearTimeout(graceTimer);
+      }
+    })();
+    return shutdownPromise;
+  };
+  httpServer.once('close', () => {
+    resolveHttpServerDrain();
+    void shutdown();
+  });
+  process.once('SIGTERM', () => {
+    if (httpServer.listening) httpServer.close();
+    else void shutdown();
+  });
+  process.once('SIGINT', () => {
+    if (httpServer.listening) httpServer.close();
+    else void shutdown();
+  });
   httpServer.listen(PORT, listenHost, () => {
     logger.info('Server running', { host: listenHost, port: PORT, buildId: BUILD_ID });
   });

@@ -79,8 +79,12 @@ describe('Brain ID-only identity audit', () => {
 
   it('keeps admin authorization role-based instead of email-based', () => {
     const authMiddleware = readRepoFile('src/server/middleware/auth.ts');
+    const authorizationRepository = readRepoFile(
+      'src/server/infrastructure/prisma/prisma-admin-authorization-repository.ts',
+    );
 
-    expect(authMiddleware).toContain("select: { role: true }");
+    expect(authMiddleware).toContain('getAdminAuthorizationRepository');
+    expect(authorizationRepository).toContain("select: { role: true }");
     expect(authMiddleware).not.toContain('ADMIN_EMAIL');
     expect(authMiddleware).not.toMatch(/email/i);
   });

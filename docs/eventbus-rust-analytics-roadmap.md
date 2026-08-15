@@ -47,11 +47,12 @@ Never include raw Brain ID, user ID in analytics payloads, email, tokens, creden
 
 ### Phase 1, collector adoption in engines
 
-- [~] Add module metadata, lifecycle ownership, and collector integration to each supported cognitive engine. Schulte, N-Back, Stroop, Numerical, Logical, Typing, Spatial, Mental Math, Dispatcher, Collision, Topology, Noise Reduction, Language Scanner, Decryptor, Reality Check, Schulte 90, Stroop Alphabet, Alphabet Table, and Situational are adopters; remaining engines are pending.
-- [~] Record `trial_started`, `trial_answered`, checkpoints, and exactly one terminal event where applicable. The adopted engines record start, answers where available, and completion; checkpoint adoption remains module-specific.
-- [ ] Preserve legacy events only through the bridge while adopters migrate.
+- [x] Define the canonical durable-analytics adopter inventory: Schulte, N-Back, Stroop, Numerical, Logical Sequence, Typing, Spatial, Mental Math, Dispatcher, Collision, Topology, Noise Reduction, Decryptor, Reality Check, Schulte 90, Stroop Alphabet, Alphabet Table, and Situational. The exported registry inventory and contract test are authoritative.
+- [x] Record `trial_started`, `trial_answered`, and exactly one terminal event for canonical adopters where applicable. Checkpoints remain module-specific.
+- [x] Preserve legacy events only through the bridge for canonical adopters.
+- [x] Treat collector-only and presentation-only modules as outside the durable game-save boundary until they implement protected game attempts, canonical job persistence, registry support, and fixtures. They are not silently pending canonical adopters.
 - [x] Reject oversized, unordered, duplicate-terminal, and sensitive event records before any transport.
-- [~] Add deterministic synthetic fixtures for each module family. Schulte, N-Back, Stroop, Numerical, Logical, Typing, Spatial, Mental Math, Dispatcher, Collision, Topology, Noise Reduction, Language Scanner, Decryptor, Reality Check, Schulte 90, Stroop Alphabet, Alphabet Table, and Situational coverage is added; remaining module families are pending.
+- [x] Add deterministic synthetic fixtures for every canonical durable-analytics module family. Collector-only and presentation-only modules are explicitly excluded until they cross the durable game-save boundary.
 
 **Acceptance gate:** a completed supported training session produces a valid `CompletedSessionAnalyticsJob` with non-empty events. Abandoned sessions do not masquerade as completed jobs.
 

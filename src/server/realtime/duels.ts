@@ -2,6 +2,7 @@ import jwt from 'jsonwebtoken';
 import type { Server } from 'socket.io';
 import { generateExpectedSequence } from '../../lib/schulte-generator';
 import { createSafeLogger } from '../../lib/safe-logger.ts';
+import type { DuelRepository, DuelParticipant } from '../repositories/duel-repository.ts';
 
 const DUEL_SIZE = 5;
 const DUEL_MODE = 'classic';
@@ -33,25 +34,7 @@ interface ActiveDuel {
   isFinished: boolean;
 }
 
-interface SocketUser {
-  id: string;
-  name: string | null;
-  pseudonym: string | null;
-  brainId: string | null;
-  rating: number | null;
-  role: string | null;
-}
-
-interface DuelPrisma {
-  user: {
-    findUnique(args: unknown): Promise<any>;
-    update(args: unknown): unknown;
-  };
-  xpEvent: {
-    create(args: unknown): unknown;
-  };
-  $transaction(args: unknown[]): Promise<unknown>;
-}
+type SocketUser = DuelParticipant;
 
 export interface DuelRuntimeState {
   matchmakingQueue: MatchmakingUser[];
@@ -64,7 +47,7 @@ interface DuelLogger {
 
 interface RegisterDuelHandlersOptions {
   jwtSecret: string;
-  prisma: DuelPrisma;
+  repository: DuelRepository;
   logger?: DuelLogger;
   now?: () => number;
   limits?: Partial<DuelSocketLimits>;
@@ -140,7 +123,7 @@ export function registerDuelHandlers(
   io: Server,
   {
     jwtSecret,
-    prisma,
+    repository,
     logger = createSafeLogger('duels'),
     now = Date.now,
     limits: limitOverrides,
@@ -159,17 +142,7 @@ export function registerDuelHandlers(
       const decoded = jwt.verify(token, jwtSecret) as { id?: string };
       if (!decoded.id) return next(new Error('Unauthorized'));
 
-      const user = await prisma.user.findUnique({
-        where: { id: decoded.id },
-        select: {
-          id: true,
-          name: true,
-          pseudonym: true,
-          brainId: true,
-          rating: true,
-          role: true,
-        },
-      });
+      const user = await repository.findParticipant(decoded.id);
 
       if (!user) return next(new Error('Unauthorized'));
       const userConnections = connectionsByUser.get(user.id) || 0;
@@ -190,47 +163,25 @@ export function registerDuelHandlers(
     duel.isFinished = true;
     logger.debug('Resolving duel match');
 
-    const winner = await prisma.user.findUnique({ where: { id: winnerId } });
-    const loser = await prisma.user.findUnique({ where: { id: loserId } });
+    const winner = await repository.findParticipant(winnerId);
+    const loser = await repository.findParticipant(loserId);
 
     if (winner && loser) {
       const kFactor = 32;
-      const expectedWinner = 1 / (1 + Math.pow(10, (loser.rating - winner.rating) / 400));
-      const expectedLoser = 1 / (1 + Math.pow(10, (winner.rating - loser.rating) / 400));
+      const winnerRating = Number.isFinite(winner.rating) ? Number(winner.rating) : 1000;
+      const loserRating = Number.isFinite(loser.rating) ? Number(loser.rating) : 1000;
+      const expectedWinner = 1 / (1 + Math.pow(10, (loserRating - winnerRating) / 400));
+      const expectedLoser = 1 / (1 + Math.pow(10, (winnerRating - loserRating) / 400));
 
       const winnerGain = Math.round(kFactor * (1 - expectedWinner));
       const loserLoss = Math.round(kFactor * (0 - expectedLoser));
 
-      await prisma.$transaction([
-        prisma.user.update({
-          where: { id: winnerId },
-          data: {
-            rating: winner.rating + winnerGain,
-            experience: { increment: 25 },
-          },
-        }),
-        prisma.user.update({
-          where: { id: loserId },
-          data: {
-            rating: Math.max(100, loser.rating + loserLoss),
-            experience: { increment: 5 },
-          },
-        }),
-        prisma.xpEvent.create({
-          data: {
-            userId: winnerId,
-            amount: 25,
-            reason: 'duel:win',
-          },
-        }),
-        prisma.xpEvent.create({
-          data: {
-            userId: loserId,
-            amount: 5,
-            reason: 'duel:loss',
-          },
-        }),
-      ]);
+      await repository.recordOutcome({
+        winnerId,
+        loserId,
+        winnerRating: winnerRating + winnerGain,
+        loserRating: Math.max(100, loserRating + loserLoss),
+      });
 
       logger.debug('Duel ratings updated', { winnerGain, loserLoss });
     }

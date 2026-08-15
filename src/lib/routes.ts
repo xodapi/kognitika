@@ -16,6 +16,7 @@ export const APP_ROUTE_PATHS = [
   '/dialogue',
   '/admin',
   '/ideas',
+  '/privacy',
   '/wiki',
   '/topology',
   '/collision',

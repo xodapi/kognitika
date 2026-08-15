@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { analyzeSession, syntheticCellClickSession } from '../core/analyze-session/index.ts';
 import {
   DEFAULT_RUST_ANALYTICS_CANARY_THRESHOLDS,
+  RUST_ANALYTICS_SIDECAR_MAX_COUNTER,
   RustAnalyticsSidecarClient,
   RustAnalyticsSidecarError,
   evaluateRustAnalyticsCanary,
@@ -68,6 +69,28 @@ describe('Rust analytics sidecar adapter', () => {
 
     await expect(client.analyze(input, typescriptOutput)).resolves.toMatchObject({ accuracy: 0.5 });
     expect(client.getMetrics()).toMatchObject({ requests: 1, matched: 0, mismatched: 1 });
+  });
+
+  it('saturates fixed-shape aggregate counters', async () => {
+    const fetchImpl = vi.fn()
+      .mockResolvedValueOnce(jsonResponse(typescriptOutput))
+      .mockResolvedValueOnce(jsonResponse({ error: 'unavailable' }, 503));
+    const client = new RustAnalyticsSidecarClient({ baseUrl: 'http://sidecar.internal', timeoutMs: 100, fetchImpl });
+    const internal = client as unknown as { metrics: ReturnType<typeof client.getMetrics> };
+    internal.metrics.requests = RUST_ANALYTICS_SIDECAR_MAX_COUNTER;
+    internal.metrics.failures.sidecar_unavailable = RUST_ANALYTICS_SIDECAR_MAX_COUNTER;
+
+    await expect(client.analyze(input, typescriptOutput)).resolves.toEqual(typescriptOutput);
+    await expect(client.analyze(input, typescriptOutput)).rejects.toMatchObject({
+      code: 'sidecar_unavailable',
+    });
+    const metrics = client.getMetrics();
+    expect(metrics).toMatchObject({
+      requests: RUST_ANALYTICS_SIDECAR_MAX_COUNTER,
+      matched: 1,
+      failures: { sidecar_unavailable: RUST_ANALYTICS_SIDECAR_MAX_COUNTER },
+    });
+    expect(Object.keys(metrics.failures)).toHaveLength(4);
   });
 
   it('holds canary promotion on any aggregate threshold breach', () => {

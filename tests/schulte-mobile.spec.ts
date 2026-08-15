@@ -1,7 +1,13 @@
 import { test, expect } from '@playwright/test';
 import { installSyntheticApi, collectUnexpectedBrowserErrors, expectAppReady } from './helpers';
+import {
+  measureSingleGlance,
+  requireMeasurement,
+  settleLayout,
+} from './mobile-contract';
 
 const VIEWPORTS = [
+  { name: 'compact phone', width: 320, height: 700 },
   { name: 'iPhone SE', width: 375, height: 667 },
   { name: 'iPhone 12/13', width: 390, height: 844 },
   { name: 'iPad Mini', width: 768, height: 1024 },
@@ -214,31 +220,117 @@ VIEWPORTS.forEach(({ name, width, height }) => {
       expect(gridOverflow.overflows).toBe(false);
     });
 
-    test('timer and errors HUD should be above grid', async ({ page }) => {
+    test('HUD and target preserve the single-glance contract without covering the playfield', async ({ page }) => {
       await goToSchulte(page);
       await startGame(page);
-      
-      const positions = await page.evaluate(() => {
-        const allDivs = Array.from(document.querySelectorAll('div'));
-        const timer = allDivs.find(el => el.textContent?.includes('Прогресс'));
-        const errors = allDivs.find(el => el.textContent?.includes('Ошибки'));
-        const grid = document.querySelector('div[style*="gridTemplateColumns"], div.grid.gap-2');
-        
-        if (!timer || !errors || !grid) return { error: 'missing elements' };
-        
-        return {
-          timerTop: timer.getBoundingClientRect().top,
-          errorsTop: errors.getBoundingClientRect().top,
-          gridTop: grid.getBoundingClientRect().top,
-          viewportHeight: window.innerHeight
+
+      await settleLayout(page);
+
+      // Before this replacement the assertion compared `timerTop < gridTop`.
+      // That encodes DOM order, not usability: a tall HUD can satisfy it while
+      // pushing the target or playfield below the fold. The shared M-1 probe
+      // checks the actual contract and reports a missing selector as HARNESS
+      // CANNOT MEASURE instead of silently skipping the assertion.
+      const glance = requireMeasurement(
+        await measureSingleGlance(
+          page,
+          '[data-testid="target-indicator"]',
+          '[data-testid="grid-container"]',
+        ),
+        `Schulte single-glance geometry on ${name}`,
+      );
+
+      expect(await page.evaluate(() => window.scrollY)).toBe(0);
+      expect(
+        glance.bothVisible,
+        `target bottom ${glance.indicator.bottom}px, grid top ${glance.playfieldTop}px, viewport ${glance.viewportHeight}px`,
+      ).toBe(true);
+
+      const hud = await page.evaluate(() => {
+        const selectors = [
+          '[data-testid="hud-timer"]',
+          '[data-testid="timer-display"]',
+          '[data-testid="errors-count"]',
+          '[data-testid="grid-container"]',
+        ];
+        const elements = selectors.map((selector) => ({
+          selector,
+          element: document.querySelector(selector) as HTMLElement | null,
+        }));
+        const missing = elements.filter(({ element }) => element === null).map(({ selector }) => selector);
+        if (missing.length > 0) return { missing };
+
+        const box = (element: HTMLElement) => {
+          const rect = element.getBoundingClientRect();
+          return {
+            top: rect.top,
+            right: rect.right,
+            bottom: rect.bottom,
+            left: rect.left,
+            width: rect.width,
+            height: rect.height,
+          };
         };
+        const rects = Object.fromEntries(elements.map(({ selector, element }) => [selector, box(element!)]));
+        const timer = rects['[data-testid="hud-timer"]'];
+        const grid = rects['[data-testid="grid-container"]'];
+        const overlaps = timer.left < grid.right
+          && timer.right > grid.left
+          && timer.top < grid.bottom
+          && timer.bottom > grid.top;
+
+        return { missing: [], rects, overlaps };
       });
-      
-      if (!positions.error) {
-        expect(positions.timerTop).toBeLessThan(positions.gridTop);
-        expect(positions.errorsTop).toBeLessThan(positions.gridTop);
-      }
+
+      expect(hud.missing, `required HUD hooks missing: ${hud.missing.join(', ')}`).toEqual([]);
+      expect(hud.overlaps, `HUD overlaps playfield: ${JSON.stringify(hud.rects)}`).toBe(false);
     });
+  });
+});
+
+test.describe('Schulte desktop HUD layout regression', () => {
+  test.use({ viewport: { width: 1280, height: 900 } });
+
+  test.beforeEach(async ({ page }) => {
+    await installSyntheticApi(page);
+  });
+
+  test('keeps the left HUD, center playfield, and right controls in separate columns', async ({ page }) => {
+    await goToSchulte(page);
+    await startGame(page);
+    await settleLayout(page);
+
+    const layout = await page.evaluate(() => {
+      const selectors = [
+        '[data-testid="hud-timer"]',
+        '[data-testid="target-indicator"]',
+        '[data-testid="grid-container"]',
+        '[data-testid="stop-button"]',
+      ];
+      const elements = selectors.map((selector) => ({
+        selector,
+        element: document.querySelector(selector) as HTMLElement | null,
+      }));
+      const missing = elements.filter(({ element }) => element === null).map(({ selector }) => selector);
+      if (missing.length > 0) return { missing };
+
+      const rects = Object.fromEntries(elements.map(({ selector, element }) => {
+        const rect = element!.getBoundingClientRect();
+        return [selector, { top: rect.top, right: rect.right, bottom: rect.bottom, left: rect.left, width: rect.width }];
+      }));
+      return { missing: [], rects };
+    });
+
+    expect(layout.missing, `required desktop hooks missing: ${layout.missing.join(', ')}`).toEqual([]);
+
+    const timer = layout.rects['[data-testid="hud-timer"]'];
+    const target = layout.rects['[data-testid="target-indicator"]'];
+    const grid = layout.rects['[data-testid="grid-container"]'];
+    const stop = layout.rects['[data-testid="stop-button"]'];
+
+    expect(grid.left, 'center grid must be to the right of the left HUD').toBeGreaterThan(target.right);
+    expect(stop.left, 'right controls must stay to the right of the center grid').toBeGreaterThan(grid.right);
+    expect(grid.width, 'the desktop center column remains wider than a side column').toBeGreaterThan(timer.width);
   });
 });
 

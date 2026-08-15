@@ -15,6 +15,20 @@ describe('Decryptor Core Engine', () => {
     expect(result.current.state.memorizeTimeLeft).toBe(10);
   });
 
+  it('does not advance the briefing until an authenticated session starts', () => {
+    const { result } = renderHook(() => useDecryptorEngine());
+
+    act(() => {
+      vi.advanceTimersByTime(15_000);
+    });
+
+    expect(result.current.state).toMatchObject({
+      phase: 'memorize',
+      memorizeTimeLeft: 10,
+      activeCard: null,
+    });
+  });
+
   it('должен переходить в фазу scan после завершения таймера запоминания', () => {
     const { result } = renderHook(() => useDecryptorEngine());
     

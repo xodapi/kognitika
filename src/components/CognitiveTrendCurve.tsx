@@ -36,6 +36,19 @@ interface CognitiveTrendCurveProps {
   compact?: boolean;
 }
 
+/**
+ * API responses cross a runtime boundary. TypeScript's `res.json()` is `any`,
+ * so a 200 response without `points` must be treated like unavailable trend
+ * data, not trusted until the render reads `.length` and takes down the whole
+ * results screen. This matters especially for an immediate abort, where results
+ * must remain a safe escape path even when analytics are unavailable.
+ */
+function hasTrendPoints(value: unknown): value is CognitiveTrendData {
+  return typeof value === 'object'
+    && value !== null
+    && Array.isArray((value as { points?: unknown }).points);
+}
+
 const DIRECTION_CONFIG = {
   improving: { icon: TrendingUp, color: 'text-emerald-500', bg: 'bg-emerald-500/10', label: 'Улучшение' },
   stable: { icon: Minus, color: 'text-muted-foreground', bg: 'bg-muted', label: 'Стабильно' },
@@ -66,6 +79,9 @@ export function CognitiveTrendCurve({ moduleId, days = 30, compact = false }: Co
         return res.json();
       })
       .then((d) => {
+        if (!hasTrendPoints(d)) {
+          throw new Error('Trend response is missing points');
+        }
         setData(d);
         setLoading(false);
       })

@@ -65,7 +65,7 @@ export function NumericalAnalysis() {
             <p className="text-sm leading-relaxed text-muted-foreground mb-6 sm:mb-8">
               Оценка способности быстро оперировать данными. У вас будет 60 секунд на ответ серии вопросов (вычисление долей, процентных изменений и средневзвешенных значений).
             </p>
-            <button onClick={handleStart} className="w-full max-w-sm min-h-12 px-4 py-3 bg-primary text-primary-foreground text-xs uppercase tracking-wider rounded-xl font-bold hover:bg-primary/90 transition-colors sm:max-w-[250px]">
+            <button onClick={handleStart} data-testid="start-button" className="w-full max-w-sm min-h-12 px-4 py-3 bg-primary text-primary-foreground text-sm uppercase tracking-wider rounded-xl font-bold hover:bg-primary/90 transition-colors sm:max-w-[250px]">
               Начать тест
             </button>
         </div>
@@ -125,7 +125,7 @@ export function NumericalAnalysis() {
       </div>
 
       {/* Center Question Block */}
-      <div className="lg:col-span-9 bg-card/20 border border-border rounded-3xl p-4 sm:p-6 flex flex-col items-center justify-center relative min-h-[400px] lg:h-full">
+      <div data-testid="playfield" className="lg:col-span-9 bg-card/20 border border-border rounded-3xl p-4 sm:p-6 flex flex-col items-center justify-center relative min-h-[400px] lg:h-full">
          <div className="w-full flex-1 flex flex-col justify-center items-center gap-6 sm:gap-8 max-w-3xl">
            
            <div className="text-center space-y-3">

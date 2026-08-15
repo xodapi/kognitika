@@ -118,10 +118,13 @@ const nodeTypes = { moduleNode: ModuleNode };
 export function CognitiveModuleGraph({ className }: { className?: string }) {
   const navigate = useNavigate();
   const [compact, setCompact] = useState(() => (
-    typeof window !== 'undefined' && window.matchMedia('(max-width: 640px)').matches
+    typeof window !== 'undefined'
+      && typeof window.matchMedia === 'function'
+      && window.matchMedia('(max-width: 640px)').matches
   ));
 
   useEffect(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return;
     const media = window.matchMedia('(max-width: 640px)');
     const updateLayout = (event: MediaQueryListEvent) => setCompact(event.matches);
     media.addEventListener('change', updateLayout);

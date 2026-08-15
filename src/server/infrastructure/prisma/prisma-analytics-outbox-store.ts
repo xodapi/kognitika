@@ -1,23 +1,31 @@
 import { Prisma } from '@prisma/client';
-import prisma from '../../lib/prisma.ts';
+import prisma from '../../../lib/prisma.ts';
 import {
   type AnalyticsOutboxEntry,
   type AnalyticsOutboxState,
   buildAnalyticsOutboxMetrics,
-} from '../../core/analytics-outbox/index.ts';
+} from '../../../core/analytics-outbox/index.ts';
 import {
   completedSessionJobToAnalyzeSessionInput,
   parseCompletedSessionAnalyticsJob,
-} from '../../core/cognitive-events/index.ts';
+} from '../../../core/cognitive-events/index.ts';
 import {
   createSessionAnalyticsSummary,
   type SessionAnalyticsSummaryRecord,
-} from '../../core/analyze-session/batch-analytics.ts';
-import { persistSessionAnalyticsSummary } from './analytics-persistence.ts';
-import type { RustAnalyticsSidecarClient } from './rust-analytics-sidecar.ts';
+} from '../../../core/analyze-session/batch-analytics.ts';
+import { PrismaAnalyticsSummaryRepository } from './prisma-analytics-summary-repository.ts';
+import type { AnalyticsSummaryRepository } from '../../repositories/analytics-summary-repository.ts';
+import type { RustAnalyticsSidecarClient } from '../../services/rust-analytics-sidecar.ts';
+import { assertSafeAnalyticsSummary } from '../../services/analytics-summary-policy.ts';
 
 const CLAIMABLE_STATES: AnalyticsOutboxState[] = ['pending', 'retry'];
 const CLAIMABLE_STATE_SQL = Prisma.join(CLAIMABLE_STATES.map(state => Prisma.sql`${state}`));
+
+function toFailureCode(errorCode: string): NonNullable<AnalyticsOutboxEntry['lastErrorCode']> {
+  if (errorCode === 'analyzer unavailable') return 'analyzer_unavailable';
+  if (errorCode === 'invalid canonical job') return 'invalid_canonical_job';
+  return 'unknown';
+}
 
 export type AnalyticsDispatchResult =
   | { status: 'idle' }
@@ -64,7 +72,10 @@ function toEntry(record: {
  * through a Node-mediated boundary and has no database credentials.
  */
 export class PrismaAnalyticsOutboxStore {
-  constructor(private readonly rustSidecar: RustAnalyticsSidecarClient | null = null) {}
+  constructor(
+    private readonly rustSidecar: RustAnalyticsSidecarClient | null = null,
+    private readonly summaries: AnalyticsSummaryRepository = new PrismaAnalyticsSummaryRepository(prisma),
+  ) {}
 
   async claimNext(workerId: string, now: Date, leaseMs: number): Promise<AnalyticsOutboxEntry | null> {
     const leaseExpiresAt = new Date(now.getTime() + leaseMs);
@@ -119,6 +130,7 @@ export class PrismaAnalyticsOutboxStore {
 
     const attemptCount = entry.attemptCount + 1;
     const state: AnalyticsOutboxState = attemptCount >= maxAttempts ? 'dead' : 'retry';
+    const lastErrorCode = toFailureCode(errorCode);
     const result = await prisma.analyticsOutboxEntry.updateMany({
       where: {
         id,
@@ -132,11 +144,11 @@ export class PrismaAnalyticsOutboxStore {
         attemptCount,
         leaseOwner: null,
         leaseExpiresAt: null,
-        lastErrorCode: errorCode === 'analyzer unavailable' ? 'analyzer_unavailable' : 'unknown',
+        lastErrorCode,
       },
     });
     return result.count === 1
-      ? toEntry({ ...entry, state, attemptCount, leaseOwner: null, leaseExpiresAt: null, lastErrorCode: errorCode === 'analyzer unavailable' ? 'analyzer_unavailable' : 'unknown' })
+      ? toEntry({ ...entry, state, attemptCount, leaseOwner: null, leaseExpiresAt: null, lastErrorCode })
       : null;
   }
 
@@ -162,6 +174,27 @@ export class PrismaAnalyticsOutboxStore {
       recovered += result.count;
     }
     return recovered;
+  }
+
+  async purgeCompletedBefore(cutoff: Date, limit: number): Promise<number> {
+    const entries = await prisma.analyticsOutboxEntry.findMany({
+      where: {
+        state: 'completed',
+        completedAt: { lt: cutoff },
+      },
+      orderBy: { completedAt: 'asc' },
+      take: limit,
+      select: { id: true },
+    });
+    if (entries.length === 0) return 0;
+    const result = await prisma.analyticsOutboxEntry.deleteMany({
+      where: {
+        id: { in: entries.map(({ id }) => id) },
+        state: 'completed',
+        completedAt: { lt: cutoff },
+      },
+    });
+    return result.count;
   }
 
   async getCanonicalJob(sourceSessionId: string) {
@@ -211,7 +244,8 @@ export class PrismaAnalyticsOutboxStore {
         receivedAt: job.receivedAt,
         session: { ...canonicalSession, sessionId: entry.sourceSession },
       });
-      await persistSessionAnalyticsSummary(ownerId, summary);
+      assertSafeAnalyticsSummary(summary);
+      await this.summaries.upsert(ownerId, summary);
       if (this.rustSidecar?.shouldAnalyze(entry.sourceSession)) {
         try {
           await this.rustSidecar.analyze(canonicalSession, {
@@ -241,24 +275,39 @@ export class PrismaAnalyticsOutboxStore {
   }
 
   async metrics(now: Date) {
-    const entries = await prisma.analyticsOutboxEntry.findMany({
-      select: {
-        id: true,
-        sourceSessionId: true,
-        analyzerVersion: true,
-        contractVersion: true,
-        idempotencyKey: true,
-        occurredAt: true,
-        state: true,
-        attemptCount: true,
-        leaseOwner: true,
-        leaseExpiresAt: true,
-        completedAt: true,
-        lastErrorCode: true,
-        authority: true,
-        shadowCandidate: true,
-      },
+    return prisma.$transaction(async transaction => {
+      const stateGroups = await transaction.analyticsOutboxEntry.groupBy({
+        by: ['state'],
+        _count: { _all: true },
+      });
+      const lagGroups = await transaction.analyticsOutboxEntry.groupBy({
+        by: ['state'],
+        where: { state: { in: CLAIMABLE_STATES } },
+        _min: { occurredAt: true },
+      });
+      const metrics = {
+        pending: 0,
+        processing: 0,
+        retry: 0,
+        completed: 0,
+        dead: 0,
+        oldestLagMs: 0,
+        failures: 0,
+      };
+      for (const group of stateGroups) {
+        const state = group.state as AnalyticsOutboxState;
+        metrics[state] = group._count._all;
+        if (state === 'dead') metrics.failures = group._count._all;
+      }
+      for (const group of lagGroups) {
+        if (!group._min.occurredAt) continue;
+        metrics.oldestLagMs = Math.max(metrics.oldestLagMs, now.getTime() - group._min.occurredAt.getTime());
+      }
+      return metrics;
+    }, {
+      isolationLevel: 'RepeatableRead',
+      maxWait: 500,
+      timeout: 1_000,
     });
-    return buildAnalyticsOutboxMetrics(entries.map(toEntry), now);
   }
 }

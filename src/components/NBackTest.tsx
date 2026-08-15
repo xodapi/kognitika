@@ -141,7 +141,7 @@ export function NBackTest() {
               )}
             </div>
 
-            <button onClick={handleStartClick} className="w-full max-w-sm min-h-12 px-4 py-3 bg-primary text-primary-foreground text-xs uppercase tracking-wider rounded-xl font-bold hover:bg-primary/90 transition-colors sm:max-w-[250px]">
+            <button onClick={handleStartClick} data-testid="start-button" className="w-full max-w-sm min-h-12 px-4 py-3 bg-primary text-primary-foreground text-sm uppercase tracking-wider rounded-xl font-bold hover:bg-primary/90 transition-colors sm:max-w-[250px]">
               Активировать
             </button>
         </div>
@@ -190,7 +190,7 @@ export function NBackTest() {
       </div>
 
       {/* Center Stimulus Display */}
-      <div className="lg:col-span-9 bg-card/20 border border-border rounded-3xl p-4 sm:p-6 flex flex-col items-center justify-center relative min-h-[400px] lg:h-full">
+      <div data-testid="playfield" className="lg:col-span-9 bg-card/20 border border-border rounded-3xl p-4 sm:p-6 flex flex-col items-center justify-center relative min-h-[400px] lg:h-full">
          
          <div className="flex-1 flex flex-col items-center justify-center w-full">
             <div className="w-full max-w-[280px] sm:max-w-sm aspect-square bg-background border border-border rounded-3xl shadow-sm flex items-center justify-center relative overflow-hidden mb-8 sm:mb-12">

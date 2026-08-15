@@ -4,10 +4,10 @@ import { EventEmitter } from 'events';
 import { v4 as uuidv4 } from 'uuid';
 import jwt from 'jsonwebtoken';
 import { z } from 'zod';
-import prisma from '../../lib/prisma.ts';
 import { createSafeLogger, safeError } from '../../lib/safe-logger.ts';
 import { validateBody } from '../middleware/validate.ts';
 import { createSseConnectionManager, resolveSseConnectionLimits } from '../services/sse-connections.ts';
+import { getChatRepository } from '../infrastructure/container.ts';
 
 const messageSchema = z.object({
   content: z.string().min(1).max(500).trim(),
@@ -69,12 +69,7 @@ router.get('/stream', async (req, res) => {
   res.once('error', close);
 
   try {
-    const lastMessages = await prisma.message.findMany({
-      where: { room: 'global' },
-      take: 50,
-      orderBy: { createdAt: 'desc' },
-      include: { user: { select: { name: true } } }
-    });
+    const lastMessages = await getChatRepository().findRecentGlobalMessages(50);
     const history = lastMessages.reverse().map(m => ({
       id: m.id,
       content: m.content,
@@ -104,18 +99,13 @@ router.post('/messages', validateBody(messageSchema), async (req: any, res) => {
         const decoded: any = jwt.verify(authHeader, JWT_SECRET);
         const authenticatedUserId = String(decoded.id);
         userId = authenticatedUserId;
-        const dbUser = await prisma.user.findUnique({
-          where: { id: authenticatedUserId },
-          select: { name: true, pseudonym: true }
-        });
+        const dbUser = await getChatRepository().findSender(authenticatedUserId);
         resolvedName = dbUser?.pseudonym ?? dbUser?.name ?? 'Участник';
       } catch {}
     }
 
     if (userId) {
-      await prisma.message.create({
-        data: { content: content.trim(), userId, room: 'global' }
-      });
+      await getChatRepository().createGlobalMessage(userId, content.trim());
     }
 
     const messageObj = {

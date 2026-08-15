@@ -1,70 +1,24 @@
-import prisma from '../../lib/prisma.ts';
 import { createSafeLogger, safeError } from '../../lib/safe-logger.ts';
-import {
-  SessionAnalyticsSummaryRecordSchema,
-  type SessionAnalyticsSummaryRecord,
-} from '../../core/analyze-session/index.ts';
+import type { SessionAnalyticsSummaryRecord } from '../../core/analyze-session/index.ts';
 import type { CognitiveTrend, TrendPoint } from '../../lib/cognitive-trend-types.ts';
-import { z } from 'zod';
+import { assertSafeAnalyticsSummary } from './analytics-summary-policy.ts';
+import { getAnalyticsRepositories } from '../infrastructure/container.ts';
 
 const logger = createSafeLogger('analytics-persistence');
-
-const SENSITIVE_FIELD_PATTERN = /(authorization|auth|bearer|brainid|cookie|email|jwt|localstorage|password|rawstorage|refresh|screenshot|secret|token|user)/i;
-
-function containsSensitiveData(record: Record<string, unknown>): boolean {
-  const json = JSON.stringify(record);
-  return SENSITIVE_FIELD_PATTERN.test(json);
-}
 
 export async function persistSessionAnalyticsSummary(
   userId: string,
   record: SessionAnalyticsSummaryRecord,
 ): Promise<void> {
-  if (containsSensitiveData(record as Record<string, unknown>)) {
-    logger.warn('Summary record contains sensitive material, rejecting', {
-      jobId: record.jobId,
-    });
-    throw new Error('Summary record contains sensitive material');
-  }
-
-  const validation = SessionAnalyticsSummaryRecordSchema.safeParse(record);
-  if (!validation.success) {
-    logger.warn('Invalid summary record rejected', { error: validation.error.format() });
-    throw new Error('Invalid SessionAnalyticsSummaryRecord');
+  try {
+    assertSafeAnalyticsSummary(record);
+  } catch (error) {
+    logger.warn('Analytics summary rejected', { error: safeError(error), jobId: record.jobId });
+    throw error;
   }
 
   try {
-    const persisted = await prisma.sessionAnalyticsSummary.upsert({
-      where: { jobId: record.jobId },
-      create: {
-        jobId: record.jobId,
-        userId,
-        sourceSessionId: record.sourceSessionId,
-        moduleId: record.moduleId,
-        category: record.category,
-        completed: record.completed,
-        eventCount: record.eventCount,
-        clickCount: record.clickCount,
-        durationMs: record.durationMs,
-        p50ReactionMs: record.p50ReactionMs,
-        p95ReactionMs: record.p95ReactionMs,
-        speedSlope: record.speedSlope,
-        accuracy: record.accuracy,
-        fatigueIndex: record.fatigueIndex,
-        engagementIndex: record.engagementIndex,
-        suspiciousPatternScore: record.suspiciousPatternScore,
-        recommendationSignals: record.recommendationSignals,
-      },
-      update: {},
-      select: {
-        userId: true,
-        sourceSessionId: true,
-      },
-    });
-
-    if (persisted.userId !== userId || persisted.sourceSessionId !== record.sourceSessionId) {
-      throw new Error('Analytics summary idempotency conflict');
-    }
+    await getAnalyticsRepositories().summaries.upsert(userId, record);
   } catch (err) {
     logger.error('Failed to persist analytics summary', { error: safeError(err), jobId: record.jobId });
     throw err;
@@ -85,22 +39,13 @@ export async function getSessionAnalyticsSummaries(
 ) {
   const { userId, moduleId, category, from, to, limit = 100 } = params;
 
-  return prisma.sessionAnalyticsSummary.findMany({
-    where: {
-      userId,
-      ...(moduleId ? { moduleId } : {}),
-      ...(category ? { category } : {}),
-      ...(from || to
-        ? {
-            createdAt: {
-              ...(from ? { gte: from } : {}),
-              ...(to ? { lte: to } : {}),
-            },
-          }
-        : {}),
-    },
-    orderBy: { createdAt: 'desc' },
-    take: Math.min(limit, 500),
+  return getAnalyticsRepositories().summaries.findSummaries({
+    userId,
+    moduleId,
+    category,
+    from,
+    to,
+    limit,
   });
 }
 
@@ -112,14 +57,7 @@ export async function getModuleTrendData(
   const from = new Date();
   from.setDate(from.getDate() - days);
 
-  const summaries = await prisma.sessionAnalyticsSummary.findMany({
-    where: {
-      userId,
-      moduleId,
-      createdAt: { gte: from },
-    },
-    orderBy: { createdAt: 'asc' },
-  });
+  const summaries = await getAnalyticsRepositories().summaries.findTrendRows(userId, moduleId, from);
 
   return aggregateByDay(summaries);
 }
@@ -131,13 +69,7 @@ export async function getAggregateTrendData(
   const from = new Date();
   from.setDate(from.getDate() - days);
 
-  const summaries = await prisma.sessionAnalyticsSummary.findMany({
-    where: {
-      userId,
-      createdAt: { gte: from },
-    },
-    orderBy: { createdAt: 'asc' },
-  });
+  const summaries = await getAnalyticsRepositories().summaries.findTrendRows(userId, null, from);
 
   return aggregateByDay(summaries);
 }
@@ -195,16 +127,7 @@ export async function computeCognitiveTrend(
   const from = new Date();
   from.setDate(from.getDate() - days);
 
-  const where = {
-    userId,
-    ...(moduleId ? { moduleId } : {}),
-    createdAt: { gte: from },
-  };
-
-  const summaries = await prisma.sessionAnalyticsSummary.findMany({
-    where,
-    orderBy: { createdAt: 'asc' },
-  });
+  const summaries = await getAnalyticsRepositories().summaries.findTrendRows(userId, moduleId, from);
 
   const points = aggregateByDay(summaries);
 

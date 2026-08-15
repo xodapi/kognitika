@@ -1,11 +1,22 @@
 import { createSafeLogger } from '../../lib/safe-logger.ts';
-import { PrismaAnalyticsOutboxStore } from './analytics-outbox.ts';
-import { createRustAnalyticsSidecarClient } from './rust-analytics-sidecar.ts';
+import { PrismaAnalyticsOutboxStore } from '../infrastructure/prisma/prisma-analytics-outbox-store.ts';
+import { createRustAnalyticsSidecarClient, type RustAnalyticsSidecarClient } from './rust-analytics-sidecar.ts';
+import { recordAnalyticsOutboxOperationalSnapshot } from './analytics-outbox-observability.ts';
 
 const logger = createSafeLogger('analytics-outbox-worker');
 
 export interface AnalyticsOutboxDispatcher {
   recoverExpiredLeases(now: Date, maxAttempts: number): Promise<number>;
+  purgeCompletedBefore?(cutoff: Date, limit: number): Promise<number>;
+  metrics?(now: Date): Promise<{
+    pending: number;
+    processing: number;
+    retry: number;
+    completed: number;
+    dead: number;
+    oldestLagMs: number;
+    failures: number;
+  }>;
   dispatchNext(options: {
     workerId: string;
     now: Date;
@@ -20,31 +31,76 @@ export interface AnalyticsOutboxWorkerOptions {
   batchSize: number;
   leaseMs: number;
   maxAttempts: number;
+  completedRetentionMs?: number;
+  metricsTimeoutMs?: number;
 }
+
+export const DEFAULT_ANALYTICS_OUTBOX_COMPLETED_RETENTION_MS = 30 * 24 * 60 * 60 * 1_000;
+export const DEFAULT_ANALYTICS_OUTBOX_METRICS_TIMEOUT_MS = 1_000;
+const MIN_ANALYTICS_OUTBOX_METRICS_TIMEOUT_MS = 100;
+const MAX_ANALYTICS_OUTBOX_METRICS_TIMEOUT_MS = 5_000;
+const MAX_ANALYTICS_OUTBOX_COMPLETED_RETENTION_DAYS = 365;
+export const ANALYTICS_OUTBOX_COMPLETED_PURGE_BATCH_SIZE = 100;
 
 export const DEFAULT_ANALYTICS_OUTBOX_WORKER_OPTIONS: Omit<AnalyticsOutboxWorkerOptions, 'workerId'> = {
   intervalMs: 5_000,
   batchSize: 10,
   leaseMs: 30_000,
   maxAttempts: 3,
+  metricsTimeoutMs: DEFAULT_ANALYTICS_OUTBOX_METRICS_TIMEOUT_MS,
 };
 
 export function isAnalyticsOutboxDispatcherEnabled(environment: Record<string, string | undefined> = process.env): boolean {
   return environment.ANALYTICS_OUTBOX_DISPATCH_ENABLED === 'true';
 }
 
+export function getAnalyticsOutboxCompletedRetentionMs(environment: Record<string, string | undefined> = process.env): number | null {
+  if (environment.ANALYTICS_OUTBOX_RETENTION_ENABLED !== 'true') return null;
+  if (environment.ANALYTICS_OUTBOX_COMPLETED_RETENTION_DAYS === undefined) {
+    return DEFAULT_ANALYTICS_OUTBOX_COMPLETED_RETENTION_MS;
+  }
+  const configuredDays = Number(environment.ANALYTICS_OUTBOX_COMPLETED_RETENTION_DAYS);
+  return Number.isInteger(configuredDays)
+    && configuredDays > 0
+    && configuredDays <= MAX_ANALYTICS_OUTBOX_COMPLETED_RETENTION_DAYS
+    ? configuredDays * 24 * 60 * 60 * 1_000
+    : null;
+}
+
+export function getAnalyticsOutboxMetricsTimeoutMs(environment: Record<string, string | undefined> = process.env): number {
+  if (environment.ANALYTICS_OUTBOX_METRICS_TIMEOUT_MS === undefined) {
+    return DEFAULT_ANALYTICS_OUTBOX_METRICS_TIMEOUT_MS;
+  }
+  const timeoutMs = Number(environment.ANALYTICS_OUTBOX_METRICS_TIMEOUT_MS);
+  return Number.isInteger(timeoutMs)
+    && timeoutMs >= MIN_ANALYTICS_OUTBOX_METRICS_TIMEOUT_MS
+    && timeoutMs <= MAX_ANALYTICS_OUTBOX_METRICS_TIMEOUT_MS
+    ? timeoutMs
+    : DEFAULT_ANALYTICS_OUTBOX_METRICS_TIMEOUT_MS;
+}
+
 export class AnalyticsOutboxWorker {
   private timer: ReturnType<typeof setInterval> | null = null;
-  private running = false;
+  private activeRun: Promise<{ recovered: number; dispatched: number; purged: number }> | null = null;
 
   constructor(
     private readonly dispatcher: AnalyticsOutboxDispatcher,
     private readonly options: AnalyticsOutboxWorkerOptions,
+    private readonly rustSidecar: RustAnalyticsSidecarClient | null = null,
   ) {}
 
-  async runOnce(now = new Date()): Promise<{ recovered: number; dispatched: number }> {
-    if (this.running) return { recovered: 0, dispatched: 0 };
-    this.running = true;
+  async runOnce(now = new Date()): Promise<{ recovered: number; dispatched: number; purged: number }> {
+    if (this.activeRun) return { recovered: 0, dispatched: 0, purged: 0 };
+    const run = this.runCycle(now);
+    this.activeRun = run;
+    try {
+      return await run;
+    } finally {
+      if (this.activeRun === run) this.activeRun = null;
+    }
+  }
+
+  private async runCycle(now: Date): Promise<{ recovered: number; dispatched: number; purged: number }> {
     try {
       const recovered = await this.dispatcher.recoverExpiredLeases(now, this.options.maxAttempts);
       let dispatched = 0;
@@ -58,17 +114,57 @@ export class AnalyticsOutboxWorker {
           });
           if (result.status === 'idle') break;
           dispatched += 1;
-        } catch (error) {
-          logger.error('Analytics outbox dispatch cycle failed', { error });
+        } catch {
+          logger.error('Analytics outbox dispatch cycle failed');
           break;
         }
       }
-      return { recovered, dispatched };
-    } catch (error) {
-      logger.error('Analytics outbox recovery failed', { error });
-      return { recovered: 0, dispatched: 0 };
+      let purged = 0;
+      try {
+        purged = await this.purgeCompleted(now);
+      } catch {
+        logger.warn('Analytics outbox retention cleanup failed');
+      }
+      const result = { recovered, dispatched, purged };
+      try {
+        await this.recordOperationalSnapshot(result, now);
+      } catch {
+        logger.warn('Analytics outbox metrics snapshot failed');
+      }
+      return result;
+    } catch {
+      logger.error('Analytics outbox recovery failed');
+      return { recovered: 0, dispatched: 0, purged: 0 };
+    }
+  }
+
+  private async purgeCompleted(now: Date): Promise<number> {
+    if (!this.dispatcher.purgeCompletedBefore || !this.options.completedRetentionMs) return 0;
+    return this.dispatcher.purgeCompletedBefore(
+      new Date(now.getTime() - this.options.completedRetentionMs),
+      ANALYTICS_OUTBOX_COMPLETED_PURGE_BATCH_SIZE,
+    );
+  }
+
+  private async recordOperationalSnapshot(result: { recovered: number; dispatched: number; purged: number }, now: Date) {
+    if (!this.dispatcher.metrics) return;
+    const timeoutMs = this.options.metricsTimeoutMs ?? DEFAULT_ANALYTICS_OUTBOX_METRICS_TIMEOUT_MS;
+    let timeout: ReturnType<typeof setTimeout> | undefined;
+    try {
+      const outbox = await Promise.race([
+        this.dispatcher.metrics(now),
+        new Promise<never>((_, reject) => {
+          timeout = setTimeout(() => reject(new Error('analytics outbox metrics timed out')), timeoutMs);
+        }),
+      ]);
+      recordAnalyticsOutboxOperationalSnapshot({
+        updatedAt: now.toISOString(),
+        worker: result,
+        outbox,
+        sidecar: this.rustSidecar?.getMetrics() ?? null,
+      });
     } finally {
-      this.running = false;
+      if (timeout) clearTimeout(timeout);
     }
   }
 
@@ -85,21 +181,31 @@ export class AnalyticsOutboxWorker {
     });
   }
 
-  stop() {
-    if (!this.timer) return;
-    clearInterval(this.timer);
-    this.timer = null;
+  async stop(): Promise<void> {
+    if (this.timer) {
+      clearInterval(this.timer);
+      this.timer = null;
+    }
+    await this.activeRun;
   }
 }
 
 export function startAnalyticsOutboxWorker(environment: Record<string, string | undefined> = process.env) {
   if (!isAnalyticsOutboxDispatcherEnabled(environment)) return null;
+  const rustSidecar = createRustAnalyticsSidecarClient(environment);
+  const completedRetentionMs = getAnalyticsOutboxCompletedRetentionMs(environment);
+  const metricsTimeoutMs = getAnalyticsOutboxMetricsTimeoutMs(environment);
   const worker = new AnalyticsOutboxWorker(
-    new PrismaAnalyticsOutboxStore(createRustAnalyticsSidecarClient(environment)),
+    new PrismaAnalyticsOutboxStore(rustSidecar),
     {
       ...DEFAULT_ANALYTICS_OUTBOX_WORKER_OPTIONS,
       workerId: `node-${process.pid}`,
+      metricsTimeoutMs,
+      ...(completedRetentionMs !== null
+        ? { completedRetentionMs }
+        : {}),
     },
+    rustSidecar,
   );
   worker.start();
   return worker;

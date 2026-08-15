@@ -6,6 +6,11 @@ import { createServer, type Server as HttpServer } from 'http';
 import type { AddressInfo } from 'net';
 import jwt from 'jsonwebtoken';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+  resetGameRepositories,
+  setLeaderboardQueryRepository,
+} from '../server/infrastructure/container.ts';
+import type { LeaderboardQueryRepository } from '../server/repositories/leaderboard-query-repository.ts';
 
 const JWT_SECRET = 'synthetic-leaderboard-route-secret';
 
@@ -34,15 +39,23 @@ beforeAll(async () => {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  setLeaderboardQueryRepository({
+    findGlobal: findGlobalMock,
+    findWeekly: findWeeklyMock,
+  });
 });
 
 afterEach(async () => {
+  resetGameRepositories();
   await Promise.all(servers.splice(0).map((server) => (
     new Promise<void>((resolve, reject) => {
       server.close((error) => (error ? reject(error) : resolve()));
     })
   )));
 });
+
+const findGlobalMock = vi.fn<LeaderboardQueryRepository['findGlobal']>();
+const findWeeklyMock = vi.fn<LeaderboardQueryRepository['findWeekly']>();
 
 async function createLeaderboardHarness() {
   const app = express();
@@ -126,29 +139,27 @@ describe('weekly leaderboard XP contract', () => {
 
     expect(response.status).toBe(400);
     expect(response.body).toMatchObject({ code: 'VALIDATION_ERROR' });
-    expect(prismaMock.user.findMany).not.toHaveBeenCalled();
-    expect(prismaMock.xpEvent.groupBy).not.toHaveBeenCalled();
+    expect(findGlobalMock).not.toHaveBeenCalled();
+    expect(findWeeklyMock).not.toHaveBeenCalled();
   });
 
   it('uses recent XpEvent sums for weekly leaderboard ordering', async () => {
-    prismaMock.xpEvent.groupBy.mockResolvedValue([
-      { userId: 'user_synthetic_top', _sum: { amount: 120 } },
-      { userId: 'user_synthetic_runner', _sum: { amount: 75 } },
-    ]);
-    prismaMock.user.findMany.mockResolvedValue([
-      {
-        id: 'user_synthetic_runner',
-        pseudonym: 'Brain Runner',
-        level: 2,
-        rating: 1020,
-        _count: { sessions: 4 },
-      },
+    findWeeklyMock.mockResolvedValue([
       {
         id: 'user_synthetic_top',
         pseudonym: 'Brain Top',
+        experience: 120,
         level: 3,
         rating: 1110,
         _count: { sessions: 7 },
+      },
+      {
+        id: 'user_synthetic_runner',
+        pseudonym: 'Brain Runner',
+        experience: 75,
+        level: 2,
+        rating: 1020,
+        _count: { sessions: 4 },
       },
     ]);
 
@@ -156,16 +167,7 @@ describe('weekly leaderboard XP contract', () => {
     const response = await getLeaderboard(baseUrl, 'weekly');
 
     expect(response.status).toBe(200);
-    expect(prismaMock.xpEvent.groupBy).toHaveBeenCalledWith(expect.objectContaining({
-      by: ['userId'],
-      orderBy: { _sum: { amount: 'desc' } },
-      take: 50,
-    }));
-    expect(prismaMock.user.findMany).toHaveBeenCalledWith(expect.objectContaining({
-      where: {
-        id: { in: ['user_synthetic_top', 'user_synthetic_runner'] },
-      },
-    }));
+    expect(findWeeklyMock).toHaveBeenCalledWith(expect.any(Date), 50);
     expect(response.body).toEqual([
       {
         id: 'user_synthetic_top',
@@ -185,6 +187,32 @@ describe('weekly leaderboard XP contract', () => {
         rating: 1020,
         _count: { sessions: 4 },
       },
+    ]);
+  });
+
+  it('uses the global repository projection when no period is provided', async () => {
+    findGlobalMock.mockResolvedValue([
+      {
+        id: 'user_synthetic_global',
+        pseudonym: 'Brain Global',
+        experience: 950,
+        level: 2,
+        rating: 1010,
+        _count: { sessions: 3 },
+      },
+    ]);
+
+    const baseUrl = await createLeaderboardHarness();
+    const response = await getLeaderboard(baseUrl);
+
+    expect(response.status).toBe(200);
+    expect(findGlobalMock).toHaveBeenCalledWith(50);
+    expect(response.body).toEqual([
+      expect.objectContaining({
+        id: 'user_synthetic_global',
+        name: 'Brain Global',
+        experience: 950,
+      }),
     ]);
   });
 });

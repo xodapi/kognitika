@@ -40,7 +40,7 @@ export function SituationalJudgmentTest() {
             <p className="text-sm leading-relaxed text-muted-foreground mb-6 sm:mb-8 text-balance">
               Оценка управленческого и эмоционального интеллекта. Вам будут предложены гипотетические рабочие ситуации. Выберите наиболее подходящий вариант действий.
             </p>
-            <button onClick={handleStart} className="w-full max-w-sm min-h-12 px-4 py-3 bg-primary text-primary-foreground text-xs uppercase tracking-wider rounded-xl font-bold hover:bg-primary/90 transition-colors sm:max-w-[250px]">
+            <button onClick={handleStart} data-testid="start-button" className="w-full max-w-sm min-h-12 px-4 py-3 bg-primary text-primary-foreground text-sm uppercase tracking-wider rounded-xl font-bold hover:bg-primary/90 transition-colors sm:max-w-[250px]">
               Начать анализ
             </button>
         </div>
@@ -88,7 +88,7 @@ export function SituationalJudgmentTest() {
       </div>
 
       {/* Center Action */}
-      <div className="lg:col-span-6 bg-card/20 border border-border rounded-3xl p-4 sm:p-6 flex flex-col min-h-[400px] lg:h-full">
+      <div data-testid="playfield" className="lg:col-span-6 bg-card/20 border border-border rounded-3xl p-4 sm:p-6 flex flex-col min-h-[400px] lg:h-full">
          <div className="flex-1 overflow-y-auto mb-6 pr-1 sm:pr-2">
             <div className="bg-background/80 border border-border rounded-2xl p-4 sm:p-6 shadow-sm mb-6">
               <h3 className="text-base sm:text-lg lg:text-xl font-medium tracking-tight leading-relaxed text-balance">

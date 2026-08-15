@@ -1,23 +1,20 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import prisma from '../../lib/prisma.ts';
 import { validateBody, validateParams } from '../middleware/validate.ts';
 import { authenticate } from '../middleware/auth.ts';
 import { saveGameSchema, startGameAttemptSchema, updateMetadataSchema } from '../schemas/game.ts';
-import { eventBus } from '../events/event-bus.ts';
-import { GameAttemptError, startGameAttempt } from '../services/game-attempt.ts';
-import { saveCompletedGame } from '../services/game-save.ts';
+import { startGameAttempt } from '../services/game-attempt.ts';
 import { createSafeLogger, safeError } from '../../lib/safe-logger.ts';
+import { getGameServices } from '../infrastructure/container.ts';
+import { sendDomainError } from '../errors/domain-error.ts';
 
 const router = Router();
 const logger = createSafeLogger('game-route');
 
 router.get('/progress', authenticate, async (req: any, res) => {
   try {
-    const sessions = await prisma.gameSession.findMany({
-      where: { userId: req.user.id, isCompleted: true },
-      orderBy: { createdAt: 'asc' }
-    });
+    const services = getGameServices();
+    const sessions = await services.progress.getUserProgress(req.user.id);
     res.json(sessions);
   } catch {
     res.status(500).json({ error: 'Failed to fetch progress' });
@@ -29,9 +26,7 @@ router.post('/attempts', authenticate, validateBody(startGameAttemptSchema), asy
     const attempt = await startGameAttempt({ userId: req.user.id, ...req.validated.body });
     res.status(201).json(attempt);
   } catch (error) {
-    if (error instanceof GameAttemptError) {
-      return res.status(error.status).json({ error: error.message, code: error.code });
-    }
+    if (sendDomainError(res, error)) return;
     logger.error('Game attempt creation failed', { error: safeError(error) });
     res.status(500).json({ error: 'Failed to create game attempt' });
   }
@@ -51,7 +46,8 @@ router.post('/save', authenticate, validateBody(saveGameSchema), async (req: any
   }
 
   try {
-    const saveResult = await saveCompletedGame({
+    const services = getGameServices();
+    const result = await services.completion.complete({
       userId: req.user.id,
       clientRunId,
       attemptId,
@@ -61,26 +57,10 @@ router.post('/save', authenticate, validateBody(saveGameSchema), async (req: any
       metadata,
       ...(analyticsJob === undefined ? {} : { analyticsJob }),
     });
-    const currentLevel = Math.floor(saveResult.user.experience / 500) + 1;
-    if (!saveResult.isReplay) {
-      const EventBusClass: any = eventBus.constructor;
-      eventBus.emit(EventBusClass.EVENTS.GAME_COMPLETED, {
-        userId: req.user.id,
-        sessionId: saveResult.session.id,
-        score: saveResult.session.score,
-        gameType,
-        metadata,
-      });
-    }
-    res.json({
-      session: saveResult.session,
-      newLevel: currentLevel,
-      streakDays: saveResult.user.streakDays,
-    });
+    
+    res.json(result);
   } catch (error) {
-    if (error instanceof GameAttemptError) {
-      return res.status(error.status).json({ error: error.message, code: error.code });
-    }
+    if (sendDomainError(res, error)) return;
     logger.error('Game save failed', { error: safeError(error) });
     res.status(500).json({ error: 'Failed to save session' });
   }
@@ -98,22 +78,11 @@ router.post(
     const { id } = req.validated.params;
 
     try {
-      const session = await prisma.gameSession.findUnique({ where: { id } });
-      if (!session) return res.status(404).json({ error: 'Session not found' });
-      if (session.userId !== req.user.id) return res.status(403).json({ error: 'Forbidden' });
-
-      const updatedSession = await prisma.gameSession.update({
-        where: { id },
-        data: {
-          metadata: {
-            ...(session.metadata as Record<string, any>),
-            ...metadata,
-          },
-        },
-      });
-
+      const services = getGameServices();
+      const updatedSession = await services.session.updateMetadata(id, req.user.id, metadata);
       res.json({ success: true, session: updatedSession });
     } catch (error) {
+      if (sendDomainError(res, error)) return;
       logger.error('Session metadata update failed', {
         error: safeError(error),
         sessionLabel: `Session ${String(id).slice(0, 8)}`,
@@ -125,26 +94,8 @@ router.post(
 
 router.get('/leaderboard', async (req, res) => {
   try {
-    const topUsers = await prisma.user.findMany({
-      take: 50,
-      orderBy: { experience: 'desc' },
-      select: {
-        name: true,
-        pseudonym: true,
-        experience: true,
-        level: true,
-        rating: true,
-        _count: {
-          select: { sessions: true }
-        }
-      }
-    });
-
-    const sanitizedUsers = topUsers.map(user => ({
-      ...user,
-      name: user.name === user.pseudonym ? user.name : '[ANONYMOUS]'
-    }));
-
+    const services = getGameServices();
+    const sanitizedUsers = await services.leaderboard.getTopUsers(50);
     res.json(sanitizedUsers);
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch leaderboard' });

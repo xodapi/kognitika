@@ -18,10 +18,29 @@ import { useGameAttempt } from '../lib/game-attempt-client';
 
 const logger = createSafeLogger('mental-math');
 
+function useMobilePlayLayout() {
+  const query = '(max-width: 1023px)';
+  const [isMobile, setIsMobile] = useState(() => (
+    typeof window !== 'undefined'
+    && typeof window.matchMedia === 'function'
+    && window.matchMedia(query).matches
+  ));
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return;
+    const media = window.matchMedia(query);
+    const update = () => setIsMobile(media.matches);
+    update();
+    media.addEventListener('change', update);
+    return () => media.removeEventListener('change', update);
+  }, []);
+  return isMobile;
+}
+
 export function MentalMathTrainer() {
   const { state, startGame, stopGame, resetGame, submitAnswer, getCompletedAnalyticsJob } = useMentalMathEngine();
   const { token, refreshUser } = useAuth();
   const navigate = useNavigate();
+  const isMobilePlayLayout = useMobilePlayLayout();
   const inputRef = useRef<HTMLInputElement>(null);
   const [inputValue, setInputValue] = useState('');
   const [level, setLevel] = useState<MathLevel>(1);
@@ -263,14 +282,14 @@ export function MentalMathTrainer() {
 
             <div className="space-y-4">
               <div>
-                <label htmlFor="mental-math-level" className="text-xs text-muted-foreground uppercase font-bold tracking-wider mb-2 block">
+                <label htmlFor="mental-math-level" className="text-sm text-muted-foreground uppercase font-bold tracking-wider mb-2 block">
                   Уровень сложности
                 </label>
                 <select
                   id="mental-math-level"
                   value={level}
                   onChange={(e) => setLevel(Number(e.target.value) as MathLevel)}
-                  className="w-full min-h-11 p-3 text-xs rounded-xl border bg-background/50 border-border focus:ring-2 focus:ring-primary/20 outline-none text-foreground font-bold transition-all"
+                  className="w-full min-h-11 p-3 text-sm rounded-xl border bg-background/50 border-border focus:ring-2 focus:ring-primary/20 outline-none text-foreground font-bold transition-all"
                 >
                   {MENTAL_MATH_PRESETS.map((preset) => (
                     <option key={preset.level} value={preset.level}>
@@ -282,7 +301,7 @@ export function MentalMathTrainer() {
 
               <div>
                 <div className="flex justify-between items-center mb-2">
-                  <label htmlFor="mental-math-question-count" className="text-xs text-muted-foreground uppercase font-bold tracking-wider">
+                  <label htmlFor="mental-math-question-count" className="text-sm text-muted-foreground uppercase font-bold tracking-wider">
                     Количество вопросов
                   </label>
                   <span className="text-xs font-mono font-bold text-primary">{questionCount}</span>
@@ -311,7 +330,8 @@ export function MentalMathTrainer() {
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               onClick={handleStartWithBriefing}
-              className="mt-auto w-full py-4 bg-primary text-primary-foreground text-xs uppercase tracking-[0.2em] rounded-2xl font-black shadow-lg shadow-primary/20 transition-all"
+              data-testid="start-button"
+              className="mt-auto w-full py-4 bg-primary text-primary-foreground text-sm uppercase tracking-[0.2em] rounded-2xl font-black shadow-lg shadow-primary/20 transition-all"
             >
               Начать тест
             </motion.button>
@@ -555,6 +575,7 @@ export function MentalMathTrainer() {
       {/* Center: Question + Input */}
       <motion.div
         animate={state.errors > 0 ? { x: [0, -10, 10, -10, 10, 0] } : {}}
+        data-testid="playfield"
         transition={{ duration: 0.4 }}
         className="lg:col-span-6 border border-border rounded-[2.5rem] p-8 flex flex-col items-center justify-center relative min-h-[400px] overflow-hidden lg:h-full shadow-2xl bg-card/30 backdrop-blur-sm"
       >
@@ -607,6 +628,17 @@ export function MentalMathTrainer() {
         </div>
       </motion.div>
 
+      {isMobilePlayLayout && (
+        <motion.button
+          whileTap={{ scale: 0.97 }}
+          onClick={stopGame}
+          data-testid="stop-button"
+          className="fixed inset-x-4 bottom-[max(6.25rem,calc(env(safe-area-inset-bottom)+5.75rem))] z-40 min-h-11 rounded-2xl border border-destructive/30 bg-card/95 px-4 py-3 text-sm font-black uppercase tracking-widest text-destructive shadow-xl backdrop-blur-md"
+        >
+          Завершить досрочно
+        </motion.button>
+      )}
+
       {/* Right: Controls */}
       <motion.div
         initial={{ opacity: 0, x: 20 }}
@@ -648,7 +680,8 @@ export function MentalMathTrainer() {
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={stopGame}
-            className="w-full py-4 bg-destructive/10 border border-destructive/20 text-destructive text-xs uppercase font-black tracking-widest rounded-2xl hover:bg-destructive hover:text-white transition-all shadow-lg shadow-destructive/5"
+            data-testid="desktop-stop-button"
+            className="hidden w-full py-4 bg-destructive/10 border border-destructive/20 text-destructive text-xs uppercase font-black tracking-widest rounded-2xl hover:bg-destructive hover:text-white transition-all shadow-lg shadow-destructive/5 lg:block"
           >
             Завершить досрочно
           </motion.button>

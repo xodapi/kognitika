@@ -28,6 +28,33 @@ const HIGH_CONTRAST_COLORS = [
 ];
 
 type TrainingLevel = 'classic' | 'level1' | 'level2' | 'level3' | 'level4' | 'adaptive';
+type ResultsView = 'stats' | 'curve' | 'attention';
+
+/**
+ * The active-play layout has a real behavioral boundary at Tailwind's `lg`
+ * breakpoint. CSS can hide a chart, but a hidden Recharts tree still mounts,
+ * reconciles and animates. This hook lets the render tree omit the mobile
+ * analytics column altogether while preserving the desktop three-column view.
+ */
+function useMobilePlayLayout() {
+  const query = '(max-width: 1023px)';
+  const [isMobile, setIsMobile] = useState(() =>
+    typeof window !== 'undefined'
+      && typeof window.matchMedia === 'function'
+      && window.matchMedia(query).matches,
+  );
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return;
+    const media = window.matchMedia(query);
+    const update = () => setIsMobile(media.matches);
+    update();
+    media.addEventListener('change', update);
+    return () => media.removeEventListener('change', update);
+  }, []);
+
+  return isMobile;
+}
 
 function pseudoRandom(seed: number) {
   const x = Math.sin(seed) * 10000;
@@ -86,6 +113,8 @@ export function SchulteGrid() {
   const isAIAdaptationEnabled = false; // AI Adaptation disabled as per user request
 
   const { state, startGame, stopGame, resetGame, clickCell, setSettings, applyDifficultySuggestion, getCompletedAnalyticsJob } = useSchulteEngine(5, 'classic', distraction, isAIAdaptationEnabled);
+  const isMobilePlayLayout = useMobilePlayLayout();
+  const [activeResultsView, setActiveResultsView] = useState<ResultsView>('stats');
   const [isHardcore, setIsHardcore] = useState(false);
   const [showBriefing, setShowBriefing] = useState(false);
   const [bonusAwarded, setBonusAwarded] = useState(0);
@@ -366,7 +395,7 @@ export function SchulteGrid() {
               whileTap={{ scale: 0.98 }}
               onClick={handleStartWithBriefing} 
               data-testid="start-button"
-              className="mt-auto w-full py-4 bg-primary text-primary-foreground text-xs uppercase tracking-[0.2em] rounded-2xl font-black shadow-lg shadow-primary/20 transition-all"
+              className="mt-auto w-full py-4 bg-primary text-primary-foreground text-sm uppercase tracking-[0.2em] rounded-2xl font-black shadow-lg shadow-primary/20 transition-all"
             >
               Начать тест
             </motion.button>
@@ -539,27 +568,107 @@ export function SchulteGrid() {
            animate={{ opacity: 1, y: 0 }}
            className="lg:col-start-2 lg:col-span-10 flex flex-col gap-8"
          >
-            <PostGameInsight 
-              gameType={isGorbov ? 'SCHULTE_GORBOV' : 'SCHULTE'}
-              score={finalScore}
-              timeMs={state.timeMs}
-              errors={state.errors}
-              onPlayAgain={resetGame}
-              onBackToMenu={() => navigate('/')}
-            />
-
-            <div data-testid="results-section" className="w-full bg-background/50 border border-border rounded-[2.5rem] p-8 overflow-hidden shadow-inner grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <div data-testid="result-stats">
-                   <SchulteStats 
-                     history={state.clickHistory} 
-                     size={state.size} 
-                     totalTimeMs={state.timeMs} 
-                     errors={state.errors} 
-                   />
+            {isMobilePlayLayout ? (
+              <section
+                data-testid="session-verdict"
+                className="rounded-3xl border border-border bg-card/50 p-4 shadow-sm"
+                aria-label="Итог тренировки"
+              >
+                <p className="text-xs font-black uppercase tracking-widest text-muted-foreground">Итог тренировки</p>
+                <div className="mt-3 grid grid-cols-3 gap-2 text-center">
+                  <div>
+                    <p className="text-sm uppercase text-muted-foreground">Счёт</p>
+                    <p className="text-xl font-mono font-black text-primary">{finalScore}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm uppercase text-muted-foreground">Время</p>
+                    <p className="text-xl font-mono font-black">{(state.timeMs / 1000).toFixed(1)}s</p>
+                  </div>
+                  <div>
+                    <p className="text-sm uppercase text-muted-foreground">Ошибки</p>
+                    <p className="text-xl font-mono font-black">{state.errors}</p>
+                  </div>
                 </div>
-                <div className="h-[300px] lg:h-full min-h-[250px]">
+                <div data-testid="session-primary-actions" className="mt-4 grid grid-cols-2 gap-3">
+                  <button
+                    onClick={() => {
+                      setActiveResultsView('stats');
+                      resetGame();
+                    }}
+                    className="min-h-11 rounded-xl bg-primary px-3 py-2 text-xs font-black uppercase tracking-wider text-primary-foreground"
+                  >
+                    Повторить
+                  </button>
+                  <button
+                    onClick={() => navigate('/')}
+                    className="min-h-11 rounded-xl border border-border px-3 py-2 text-xs font-black uppercase tracking-wider"
+                  >
+                    В меню
+                  </button>
+                </div>
+              </section>
+            ) : (
+              <PostGameInsight
+                gameType={isGorbov ? 'SCHULTE_GORBOV' : 'SCHULTE'}
+                score={finalScore}
+                timeMs={state.timeMs}
+                errors={state.errors}
+                onPlayAgain={resetGame}
+                onBackToMenu={() => navigate('/')}
+              />
+            )}
+
+            <div data-testid="results-section" className="w-full bg-background/50 border border-border rounded-[2.5rem] p-4 sm:p-8 overflow-hidden shadow-inner grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {isMobilePlayLayout && (
+                <div data-testid="results-view-tabs" role="tablist" aria-label="Подробности результата" className="col-span-full grid grid-cols-3 gap-2">
+                  {([
+                    ['stats', 'Статистика', 'Статистика'],
+                    ['curve', 'Кривая', 'Кривая концентрации'],
+                    ['attention', 'Внимание', 'Карта внимания'],
+                  ] as const).map(([view, label, accessibleLabel]) => (
+                    <button
+                      key={view}
+                      type="button"
+                      role="tab"
+                      aria-label={accessibleLabel}
+                      aria-selected={activeResultsView === view}
+                      aria-controls={`results-view-${view}`}
+                      onClick={() => setActiveResultsView(view)}
+                      className={`min-h-11 rounded-xl border px-1 py-2 text-sm font-black uppercase tracking-tight ${
+                        activeResultsView === view ? 'border-primary bg-primary/10 text-primary' : 'border-border text-muted-foreground'
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              )}
+              {(!isMobilePlayLayout || activeResultsView === 'stats') && (
+                <div id="results-view-stats" role={isMobilePlayLayout ? 'tabpanel' : undefined} data-testid="result-stats">
+                  {state.clickHistory.length > 0 ? (
+                    <SchulteStats
+                      history={state.clickHistory}
+                      size={state.size}
+                      totalTimeMs={state.timeMs}
+                      errors={state.errors}
+                    />
+                  ) : (
+                    <p className="py-8 text-center text-sm text-muted-foreground">
+                      Нет данных по нажатиям. Завершите несколько шагов, чтобы увидеть статистику.
+                    </p>
+                  )}
+                </div>
+              )}
+              {(!isMobilePlayLayout || activeResultsView === 'curve') && (
+                <div id="results-view-curve" role={isMobilePlayLayout ? 'tabpanel' : undefined} data-testid="result-curve" className="h-[300px] lg:h-full min-h-[250px]">
                    <ConcentrationCurve data={state.clickHistory} />
                 </div>
+              )}
+              {isMobilePlayLayout && activeResultsView === 'attention' && (
+                <div id="results-view-attention" role="tabpanel" data-testid="result-attention" className="flex justify-center">
+                  <AttentionMap clicks={state.clickHistory} />
+                </div>
+              )}
             </div>
          </motion.div>
       </div>
@@ -608,7 +717,7 @@ export function SchulteGrid() {
             </div>
          </div>
 
-         <div className="bg-primary/10 backdrop-blur-md border border-primary/20 rounded-3xl p-8 flex flex-col items-center justify-center flex-1 shadow-sm shadow-primary/5 min-w-0">
+         <div data-testid="target-indicator" className="bg-primary/10 backdrop-blur-md border border-primary/20 rounded-3xl p-8 flex flex-col items-center justify-center flex-1 shadow-sm shadow-primary/5 min-w-0">
             <p className="text-sm text-primary uppercase mb-4 font-black tracking-[0.3em] whitespace-nowrap">
                {isGorbov ? 'АКТИВНАЯ ЦЕЛЬ' : 'ТЕКУЩЕЕ ЧИСЛО'}
             </p>
@@ -645,7 +754,7 @@ export function SchulteGrid() {
       <motion.div 
         animate={state.errors > 0 ? { x: [0, -10, 10, -10, 10, 0] } : {}}
         transition={{ duration: 0.4 }}
-        className={`lg:col-span-6 border border-border rounded-[2.5rem] p-4 sm:p-8 flex flex-col items-center justify-center relative min-h-[400px] overflow-hidden lg:h-full shadow-2xl ${state.modifications.bgTheme === 'dark-green' ? 'bg-[#064e3b]' : 'bg-card/30 backdrop-blur-sm'} min-w-0`}
+        className={`lg:col-span-6 -mx-4 w-[calc(100%+2rem)] sm:mx-0 sm:w-auto border border-border rounded-[2.5rem] p-0 sm:p-8 flex flex-col items-center justify-center relative min-h-[400px] overflow-hidden lg:h-full shadow-2xl ${state.modifications.bgTheme === 'dark-green' ? 'bg-[#064e3b]' : 'bg-card/30 backdrop-blur-sm'} min-w-0`}
         data-testid="grid-container"
       >
          <div className="absolute inset-0 pointer-events-none flex items-center justify-center opacity-[0.05]">
@@ -657,7 +766,7 @@ export function SchulteGrid() {
          <motion.div 
            initial={{ opacity: 0 }}
            animate={{ opacity: 1 }}
-           className="grid gap-2 w-full max-w-[600px] relative z-10" 
+           className="grid gap-2 !gap-0 sm:!gap-2 w-full min-w-0 max-w-[600px] relative z-10"
            style={{ gridTemplateColumns: `repeat(${state.size}, 1fr)` }}
          >
             {state.grid.map((cell, idx) => {
@@ -701,7 +810,22 @@ export function SchulteGrid() {
          </div>
       </motion.div>
 
-      {/* HUD: Right Controls */}
+      {isMobilePlayLayout && (
+        <motion.button
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          whileTap={{ scale: 0.97 }}
+          onClick={stopGame}
+          data-testid="stop-button"
+          className="fixed inset-x-4 bottom-[max(6.25rem,calc(env(safe-area-inset-bottom)+5.75rem))] z-40 min-h-11 rounded-2xl border border-destructive/30 bg-card/95 px-4 py-3 text-sm font-black uppercase tracking-widest text-destructive shadow-xl backdrop-blur-md"
+        >
+          Завершить досрочно
+        </motion.button>
+      )}
+
+      {/* Analytics stay available during desktop play. On phones they must not
+          mount at all: hidden charts still reconcile and animate below fold. */}
+      {!isMobilePlayLayout && (
       <motion.div 
         initial={{ opacity: 0, x: 20 }}
         animate={{ opacity: 1, x: 0 }}
@@ -732,6 +856,7 @@ export function SchulteGrid() {
           </motion.button>
         </div>
       </motion.div>
+      )}
     </div>
   );
 }

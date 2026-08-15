@@ -4,10 +4,13 @@
  * и реагировать только на едва заметный целевой паттерн в центре.
  */
 import { motion, AnimatePresence } from 'motion/react';
+import { useCallback, useEffect } from 'react';
 import { useNoiseReductionEngine } from '../hooks/useNoiseReductionEngine';
 import { Play, Shield, AlertTriangle, Eye, Zap, Target } from 'lucide-react';
 import { CompletionRecommendation } from './CompletionRecommendation';
 import { haptic } from '../lib/haptic';
+import { useAuth } from '../hooks/useAuth';
+import { useGameAttempt } from '../lib/game-attempt-client';
 
 interface NoiseReductionProps {
   level?: number;
@@ -21,7 +24,34 @@ function formatTime(ms: number) {
 }
 
 export function NoiseReduction({ level = 1, onComplete }: NoiseReductionProps) {
-  const { state, startGame, stopGame, reactToSignal, reactToDistractor } = useNoiseReductionEngine();
+  const { state, startGame, stopGame, reactToSignal, reactToDistractor, getCompletedAnalyticsJob } = useNoiseReductionEngine();
+  const { token } = useAuth();
+  const { beginAttempt, saveAttempt } = useGameAttempt(token);
+  const handleStart = useCallback(async (selectedLevel: number) => {
+    try {
+      await beginAttempt('NOISE_REDUCTION');
+      startGame(selectedLevel);
+    } catch {
+      // Fail closed when an authenticated attempt cannot be issued.
+    }
+  }, [beginAttempt, startGame]);
+
+  useEffect(() => {
+    const analyticsJob = getCompletedAnalyticsJob();
+    if (state.isFinished && token && analyticsJob) {
+      saveAttempt({
+        timeMs: state.timeMs,
+        metadata: {
+          score: state.score,
+          hits: state.hits,
+          misses: state.misses,
+          falseAlarms: state.falseAlarms,
+          level: state.level,
+        },
+        analyticsJob,
+      }).catch(() => {});
+    }
+  }, [state.isFinished, state.timeMs, state.score, state.hits, state.misses, state.falseAlarms, state.level, token, saveAttempt, getCompletedAnalyticsJob]);
 
   const accuracy = state.hits + state.falseAlarms > 0
     ? Math.round((state.hits / Math.max(1, state.hits + state.misses)) * 100)
@@ -84,7 +114,7 @@ export function NoiseReduction({ level = 1, onComplete }: NoiseReductionProps) {
               <button
                 key={lvl}
                 id={`noise-level-${lvl}`}
-                onClick={() => startGame(lvl)}
+                onClick={() => { void handleStart(lvl); }}
                 className={`min-h-11 px-6 py-3 rounded-2xl font-black text-sm border transition-all
                   ${lvl === level
                     ? 'bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/20'
@@ -98,7 +128,7 @@ export function NoiseReduction({ level = 1, onComplete }: NoiseReductionProps) {
           </div>
           <button
             id="noise-start-btn"
-            onClick={() => startGame(level)}
+            onClick={() => { void handleStart(level); }}
             className="flex items-center gap-2 px-10 py-4 bg-primary hover:bg-primary/90 text-primary-foreground rounded-2xl font-black text-lg transition-all hover:scale-105 active:scale-95"
           >
             <Play className="w-5 h-5 fill-current" />
@@ -146,13 +176,13 @@ export function NoiseReduction({ level = 1, onComplete }: NoiseReductionProps) {
           accuracy={accuracy}
           errors={state.misses + state.falseAlarms}
           durationMs={state.timeMs}
-          onRepeat={() => startGame(state.level)}
+          onRepeat={() => { void handleStart(state.level); }}
           className="max-w-3xl"
         />
         <div className="flex gap-3">
           <button
             id="noise-next-level-btn"
-            onClick={() => startGame(Math.min(state.level + 1, 4))}
+            onClick={() => { void handleStart(Math.min(state.level + 1, 4)); }}
             className="min-h-11 px-8 py-3 bg-card/40 border border-border rounded-2xl font-bold hover:border-primary/50 transition-all"
           >
             Уровень {Math.min(state.level + 1, 4)}

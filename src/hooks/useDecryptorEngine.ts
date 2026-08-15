@@ -20,6 +20,7 @@ interface DecryptorState {
 }
 
 export const useDecryptorEngine = (initialLevel: number = 1) => {
+  const [sessionStarted, setSessionStarted] = useState(false);
   const [state, setState] = useState<DecryptorState>({
     phase: 'memorize',
     level: initialLevel,
@@ -69,6 +70,7 @@ export const useDecryptorEngine = (initialLevel: number = 1) => {
       trialType: 'decryptor:fact-selection',
       difficulty: `level-${level}`,
     });
+    setSessionStarted(true);
     setState(s => ({
       ...s,
       phase: 'memorize',
@@ -106,7 +108,7 @@ export const useDecryptorEngine = (initialLevel: number = 1) => {
   // Timers
   useEffect(() => {
     let interval: any;
-    if (state.phase === 'memorize' && state.memorizeTimeLeft > 0) {
+    if (sessionStarted && state.phase === 'memorize' && state.memorizeTimeLeft > 0) {
       interval = setInterval(() => {
         setState(s => ({ ...s, memorizeTimeLeft: s.memorizeTimeLeft - 1 }));
       }, 1000);
@@ -115,7 +117,7 @@ export const useDecryptorEngine = (initialLevel: number = 1) => {
       nextCard();
     }
     return () => clearInterval(interval);
-  }, [state.phase, state.memorizeTimeLeft, nextCard]);
+  }, [sessionStarted, state.phase, state.memorizeTimeLeft, nextCard]);
 
   useEffect(() => {
     let interval: any;
