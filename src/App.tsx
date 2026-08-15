@@ -569,11 +569,11 @@ function AppContent() {
 
       <footer
         aria-label="Версия сборки"
-        className="fixed bottom-[max(6rem,calc(env(safe-area-inset-bottom)+5.25rem))] right-3 lg:bottom-3 z-40 rounded-lg border border-border bg-card/80 px-2.5 py-1 text-sm font-mono font-bold text-muted-foreground shadow-sm backdrop-blur-md"
+        className="pointer-events-none fixed bottom-[max(6rem,calc(env(safe-area-inset-bottom)+5.25rem))] right-3 lg:bottom-3 z-40 rounded-lg border border-border bg-card/80 px-2.5 py-1 text-sm font-mono font-bold text-muted-foreground shadow-sm backdrop-blur-md"
       >
         <span>build {appBuildId}</span>
         <span aria-hidden="true"> · </span>
-        <a aria-label="Приватность" className="hover:text-primary hover:underline" href="/privacy">privacy</a>
+        <a aria-label="Приватность" className="pointer-events-auto hover:text-primary hover:underline" href="/privacy">privacy</a>
       </footer>
 
       {/* Floating Mobile Nav (hidden below sm on the dashboard route, which has its own bottom nav) */}
