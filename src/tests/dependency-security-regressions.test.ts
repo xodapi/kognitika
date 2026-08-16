@@ -18,7 +18,7 @@ describe('dependency security regressions', () => {
     expect(lockfile).not.toContain('vite@7.3.3');
     expect(lockfile).not.toContain('esbuild@0.27.7');
     expect(lockfile).toContain('vite@7.3.6');
-    expect(lockfile).toContain('esbuild@0.28.0');
+    expect(lockfile).toContain('esbuild@0.28.1');
   });
 
   it('resolves Valibot to the patched version', () => {
