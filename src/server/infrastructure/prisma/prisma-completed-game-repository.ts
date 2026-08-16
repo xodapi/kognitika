@@ -7,14 +7,10 @@ import type {
 import type { GameSessionRecord } from '../../repositories/game-session-repository.ts';
 import { ReplayResolver } from '../../services/game-save/replay-resolver.ts';
 import { StreakPolicy } from '../../services/game-save/streak-policy.ts';
-import {
-  createAnalyticsOutboxEntry,
-  isAnalyticsOutboxEnabled,
-} from '../../../core/analytics-outbox/index.ts';
+import type { AnalyticsJobWriter } from '../../services/game-save/analytics-job-writer.ts';
+import { PrismaAnalyticsJobWriter } from './prisma-analytics-job-writer.ts';
 import { GameAttemptError } from '../../services/game-attempt.ts';
 
-const SHADOW_ANALYZER_VERSION = 'rust-shadow-v1';
-const ANALYTICS_CONTRACT_VERSION = 'analytics-contract-v1';
 
 function toSessionRecord(session: GameSession): GameSessionRecord {
   return session as unknown as GameSessionRecord;
@@ -44,7 +40,10 @@ export class PrismaCompletedGameRepository implements CompletedGameRepository {
   private replayResolver = new ReplayResolver();
   private streakPolicy = new StreakPolicy();
 
-  constructor(private prisma: PrismaClient) {}
+  constructor(
+    private prisma: PrismaClient,
+    private analyticsJobWriter: AnalyticsJobWriter = new PrismaAnalyticsJobWriter(),
+  ) {}
 
   /**
    * Validates attempt contract: userId, challenge, gameType, clientRunId must match.
@@ -170,40 +169,7 @@ export class PrismaCompletedGameRepository implements CompletedGameRepository {
           },
         });
 
-        // Create analytics job if provided
-        if (analyticsJob) {
-          await tx.completedSessionAnalyticsJob.create({
-            data: {
-              jobId: analyticsJob.jobId,
-              gameSessionId: session.id,
-              moduleId: analyticsJob.moduleId,
-              moduleVersion: analyticsJob.moduleVersion,
-              category: analyticsJob.category,
-              analyzerVersion: analyticsJob.analyzerVersion,
-              completedAt: new Date(analyticsJob.completedAt),
-              payload: analyticsJob as unknown as Prisma.InputJsonValue,
-            },
-          });
-        }
-
-        // Create analytics outbox entry
-        if (isAnalyticsOutboxEnabled()) {
-          const entry = createAnalyticsOutboxEntry({
-            sourceSession: session.id,
-            analyzerVersion: SHADOW_ANALYZER_VERSION,
-            contractVersion: ANALYTICS_CONTRACT_VERSION,
-            occurredAt: now,
-          });
-          await tx.analyticsOutboxEntry.create({
-            data: {
-              sourceSessionId: session.id,
-              analyzerVersion: entry.analyzerVersion,
-              contractVersion: entry.contractVersion,
-              idempotencyKey: entry.idempotencyKey,
-              occurredAt: entry.occurredAt,
-            },
-          });
-        }
+        await this.analyticsJobWriter.write(tx, session.id, analyticsJob, now);
 
         // Link attempt to session
         if (hasAttempt) {
