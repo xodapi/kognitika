@@ -9,8 +9,11 @@ describe('dependency security regressions', () => {
   });
 
   it('keeps patched transitive dependency overrides', () => {
+    expect(lockfile).toMatch(/^  deepmerge-ts: 8\.0\.0$/m);
     expect(lockfile).toMatch(/^  nanoid: 3\.3\.18$/m);
     expect(lockfile).toMatch(/^  valibot: 1\.4\.2$/m);
+    expect(lockfile).toContain('deepmerge-ts@8.0.0');
+    expect(lockfile).not.toContain('deepmerge-ts@7.1.5');
   });
 
   it('keeps every workspace on a patched Vite and esbuild resolution', () => {
