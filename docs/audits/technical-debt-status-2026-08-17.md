@@ -46,7 +46,14 @@ P3 audit item — AUDIT_BRIEF.md domain staleness — is **already resolved**; t
 
 ## Knip report
 
-Knip configuration exists at `knip.config.js` with workspace rules for root, `apps/capacitor`, and `apps/mobile`. A fresh Knip run is needed to identify any unused dependencies at commit `64c92c6`.
+Knip configuration exists at `knip.config.js` with workspace rules for root, `apps/capacitor`, and `apps/mobile`. Knip was run directly with Node.js on Windows because the pnpm shim could not resolve `node` in the agent shell:
+
+```text
+node node_modules/knip/dist/index.js --production --strict
+node node_modules/knip/dist/index.js
+```
+
+Both audits exited with code 0 and produced no findings. No unused production or development dependencies were identified.
 
 ---
 
@@ -67,7 +74,7 @@ Knip configuration exists at `knip.config.js` with workspace rules for root, `ap
 
 ## Next recommended actions
 
-1. **Knip audit** — run `pnpm knip` in a Linux environment to identify any unused dependencies at current head.
-2. **#226 local-only mode** — privacy/identity P1; requires product and security gate before implementation.
-3. **#223 Axum strangler contract** — deferred until Rust runtime authority decision is made.
-4. **#248 mobile testing guide** — P2 documentation update to reflect complete 13-trainer rollout.
+1. **#226 local-only mode** — privacy/identity P1; requires product and security gate before implementation.
+2. **#223 Axum strangler contract** — deferred until Rust runtime authority decision is made.
+3. **#248 mobile testing guide** — ✅ complete; the 13-trainer standard is documented in `docs/mobile-testing-guide.md`.
+4. **#220 and #158** — production-only acceptance remains blocked on protected access, backup evidence, and reviewer approval; do not execute locally.
