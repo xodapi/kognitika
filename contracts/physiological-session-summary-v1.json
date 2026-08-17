@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "contractId": "physiological-session-summary-v1",
+  "purpose": "Optional vendor-independent aggregate-only input for TypeScript/Rust shadow parity",
+  "forbiddenFields": [
+    "brainId",
+    "userId",
+    "email",
+    "token",
+    "jwt",
+    "deviceId",
+    "serial",
+    "geolocation",
+    "rawTelemetry",
+    "samples",
+    "metadata",
+    "screenshot"
+  ],
+  "availabilityStates": [
+    "available",
+    "unavailable",
+    "revoked",
+    "stale",
+    "low_quality",
+    "conflicting"
+  ],
+  "lifecycle": {
+    "windowMaximumMs": 7200000,
+    "staleAfterMs": 900000,
+    "duplicateSummaryId": "reject",
+    "outOfOrderGeneratedAt": "reject before correlation",
+    "capabilityOrSourceVersionChange": "treat as a new versioned input and do not merge measurements",
+    "gaps": "emit unavailable with empty measurements",
+    "timeout": "emit stale with empty measurements"
+  },
+  "safety": {
+    "missingOrLowQualityMayBeInterpretedAsPhysiologicalState": false,
+    "persistsRawTelemetry": false,
+    "changesTrainingAutomatically": false,
+    "requiresExplicitConsent": true
+  }
+}
