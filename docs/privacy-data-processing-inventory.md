@@ -8,7 +8,7 @@ This document records facts verified in the current Kognitika source and limited
 
 | Boundary | Current behavior | Data category | Default / retention | Open evidence |
 | --- | --- | --- | --- | --- |
-| Web browser identity | `localStorage` stores Brain ID cache, access token and user record through the identity vault. | Anonymous credential and session material, potentially personal data. | Persists until user/app cleanup. | Migration away from browser `localStorage` is planned in [#223](https://github.com/xodapi/kognitika/issues/223). |
+| Web browser identity | `localStorage` stores Brain ID cache, access token and user record through the identity vault. | Anonymous credential and session material, potentially personal data. | Persists until user/app cleanup. | Migration away from browser `localStorage` is planned in [#226](https://github.com/xodapi/kognitika/issues/226). |
 | Native browser bridge | Capacitor uses secure storage and can migrate legacy browser identity. | Same identity material. | Platform-controlled secure storage. | Device backup and platform-key policy need review. |
 | Per-tab practice flow | Session-scoped random identifier is used only when telemetry is explicitly enabled. | Route/module/timing/checkpoint event data. | Default-deny after the privacy control change. | Production configuration and endpoint behavior must be verified after deploy. |
 | Application database | PostgreSQL stores Brain ID, pseudonym, game sessions/results/timing, XP/rating/streak data, and feedback/ideas that can contain free text. | Profile-linked product and potentially sensitive contextual data. | Server-side persistence remains current product behavior. | Retention/deletion owner and production DB identity require [#221](https://github.com/xodapi/kognitika/issues/221). |
@@ -67,6 +67,6 @@ The absence of observed analytics cookies is not evidence that no data is proces
 - [#220](https://github.com/xodapi/kognitika/issues/220), schema-guarded production ADMIN recovery.
 - [#221](https://github.com/xodapi/kognitika/issues/221), deployment and technical-data-boundary audit.
 - [#222](https://github.com/xodapi/kognitika/issues/222), telemetry default-deny.
-- [#223](https://github.com/xodapi/kognitika/issues/223), local-only mode and encrypted vault design.
+- [#226](https://github.com/xodapi/kognitika/issues/226), local-only mode and encrypted vault design.
 - [#224](https://github.com/xodapi/kognitika/issues/224), ongoing inventory, retention and policy/legal review.
 - [#78](https://github.com/xodapi/kognitika/issues/78), encrypted portable backup export/import.
