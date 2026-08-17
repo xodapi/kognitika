@@ -22,6 +22,43 @@ Do **not** claim that Kognitika processes no personal data, stores no profile/pr
 
 The absence of observed analytics cookies is not evidence that no data is processed.
 
+## Privacy review and operations worksheet
+
+The following assignments are review targets, not claims that a controller,
+processor, retention period, or legal basis has been approved. An **unassigned**
+owner is an explicit release blocker for a flow that processes real user data.
+
+| Flow | Product purpose | Proposed accountable owner | Legal/privacy question for review | Retention and deletion control | Evidence still required |
+| --- | --- | --- | --- | --- | --- |
+| Web browser identity | Keep a user session and Brain ID cache available in the browser. | Identity product owner, unassigned | What data category, basis, user notice, and browser-clearing guidance apply to the cached identity and token? | Browser storage persists until the user/app clears it; no server-side deletion claim follows from browser clearing. | Confirm production keys, session expiry, logout behavior, and deployed storage paths. |
+| Native secure storage | Preserve the same identity material in a platform-backed keystore. | Mobile owner, unassigned | Which platform backup, device-transfer, and shared-device behaviors must be disclosed? | Platform-controlled; product must provide a clear/logout path and document limitations. | Review iOS/Android keystore, backup, and uninstall behavior on supported versions. |
+| PostgreSQL profile, results, and progress | Provide account-backed training, dashboards, progression, and support operations. | Data product owner, unassigned | Identify controller/processor roles, purpose limitation, access model, retention schedule, deletion executor, and legal basis. | Retention and deletion are not verified; no time limit or erasure SLA may be represented as current behavior. | Read-only production schema, backup, job, and operational-access audit under #221. |
+| Feedback and ideas free text | Receive user feedback and product suggestions. | Support/product owner, unassigned | Free text can contain unexpected sensitive or personal data. What notice, moderation access, retention, and deletion process applies? | Current application persistence is verified; retention/deletion process is not. | Review admin access, notification channels, backups, and deletion workflow. |
+| Practice-flow telemetry | Measure optional training-flow behavior only when explicitly enabled. | Analytics owner, unassigned | Confirm default-deny state, consent wording, data minimization, destination, and whether any profiling rules apply. | Bounded in-process data is documented; deployed configuration and clearing behavior require verification. | Production configuration and endpoint behavior after deploy under #222. |
+| Backups and infrastructure logs | Operate, secure, recover, and diagnose the service. | Infrastructure owner, unassigned | Identify hosting, DNS/CDN, Nginx, database, CI, and backup processors; determine IP/log categories, access, retention, deletion, and incident disclosure obligations. | Not verified from source. Application-level deletion does not imply removal from backups or infrastructure logs. | Production infrastructure and backup inventory under #221. |
+
+## 152-FZ and privacy-counsel review checklist
+
+Before publishing a privacy notice, retention policy, or compliance statement,
+the designated privacy/legal reviewer must record answers, evidence locations,
+review date, and responsible owner for the following:
+
+1. Data categories and purposes for every flow in the worksheet, including
+   whether free text or behavioral data creates heightened obligations.
+2. Controller/processor roles, hosting and cross-border transfer facts, and
+   applicable jurisdictional requirements, including 152-FZ where applicable.
+3. The documented lawful basis or other legal condition for each purpose,
+   together with consent and withdrawal requirements where relevant.
+4. Retention schedules, backup retention, deletion/erasure execution, access
+   control, auditability, and how a user can exercise applicable rights.
+5. Security controls for browser storage, native keystores, PostgreSQL,
+   operational access, secrets, incident response, and vendor access.
+6. The final user-facing wording for local-only limitations, optional telemetry,
+   export/import, optional synchronization, and any LLM/BYOK transfer.
+
+Keep review records free of raw user data, tokens, Brain IDs, private telemetry,
+backup payloads, credentials, and production log excerpts.
+
 ## Phased local-first migration
 
 ### Phase A, data-minimization controls
