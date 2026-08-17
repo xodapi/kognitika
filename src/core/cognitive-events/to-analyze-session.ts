@@ -1,6 +1,9 @@
 import type { AnalyzeSessionInput } from '../analyze-session/session-analysis.ts';
 import { parseAnalyzeSessionInput } from '../analyze-session/session-analysis.ts';
-import { CompletedSessionAnalyticsJobSchema } from './contract.ts';
+import {
+  CompletedSessionAnalyticsJobSchema,
+  MAX_COMPLETED_SESSION_ANALYTICS_JOB_BYTES,
+} from './contract.ts';
 
 const SENSITIVE_FIELD_PATTERN = /(authorization|auth|bearer|brainid|cookie|email|jwt|localstorage|password|rawstorage|refresh|screenshot|secret|token|user)/i;
 
@@ -13,11 +16,27 @@ function hasSensitiveKey(value: unknown): boolean {
   ));
 }
 
+function exceedsSerializedJobLimit(value: unknown): boolean {
+  try {
+    return new TextEncoder().encode(JSON.stringify(value)).length
+      > MAX_COMPLETED_SESSION_ANALYTICS_JOB_BYTES;
+  } catch {
+    return true;
+  }
+}
+
 export function parseCompletedSessionAnalyticsJob(value: unknown) {
   if (hasSensitiveKey(value)) {
     return {
       success: false as const,
       error: 'Cognitive analytics jobs must not contain identity, token, raw storage, or screenshot fields',
+    };
+  }
+
+  if (exceedsSerializedJobLimit(value)) {
+    return {
+      success: false as const,
+      error: 'Cognitive analytics job exceeds the serialized byte limit',
     };
   }
 

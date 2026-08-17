@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 const MAX_SESSION_DURATION_MS = 24 * 60 * 60 * 1_000;
+export const MAX_COMPLETED_SESSION_ANALYTICS_JOB_BYTES = 1_000_000;
 const sessionIdSchema = z.string().min(1).max(120).regex(/^[A-Za-z0-9._:-]+$/);
 const moduleIdSchema = z.string().min(1).max(64).regex(/^[a-z0-9-]+$/);
 const moduleVersionSchema = z.string().min(1).max(64).regex(/^[A-Za-z0-9._:-]+$/);

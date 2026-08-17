@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   CompletedSessionAnalyticsJobSchema,
+  MAX_COMPLETED_SESSION_ANALYTICS_JOB_BYTES,
   assertCognitiveModuleCoverage,
   completedSessionJobToAnalyzeSessionInput,
   parseCompletedSessionAnalyticsJob,
@@ -58,6 +59,34 @@ const validJob = {
     },
   ],
 } as const;
+
+function createSizedJob(eventCount: number) {
+  const completedAt = '2026-01-02T00:00:02.000Z';
+  return {
+    ...validJob,
+    events: Array.from({ length: eventCount }, (_, index) => {
+      const common = {
+        ...base,
+        eventId: `event-sized-${index}`,
+        sequence: index,
+        tMs: index,
+      };
+
+      if (index === 0) {
+        return { ...common, kind: 'trial_started' as const, trialType: 'schulte:cell' };
+      }
+      if (index === eventCount - 1) {
+        return { ...common, kind: 'session_completed' as const, completedAt };
+      }
+      return {
+        ...common,
+        kind: 'trial_answered' as const,
+        trialType: 'schulte:cell',
+        isCorrect: true,
+      };
+    }),
+  };
+}
 
 describe('canonical cognitive event contract', () => {
   it('accepts a privacy-safe completed session and converts its trials for AnalyzeSession', () => {
@@ -121,6 +150,22 @@ describe('canonical cognitive event contract', () => {
         ? { ...event, screenshot: 'not-allowed' }
         : event),
     }).success).toBe(false);
+  });
+
+  it('enforces the shared serialized-byte limit before accepting a canonical job', () => {
+    const withinLimit = createSizedJob(2_500);
+    const oversized = createSizedJob(10_000);
+
+    expect(new TextEncoder().encode(JSON.stringify(withinLimit)).length)
+      .toBeLessThanOrEqual(MAX_COMPLETED_SESSION_ANALYTICS_JOB_BYTES);
+    expect(parseCompletedSessionAnalyticsJob(withinLimit).success).toBe(true);
+
+    expect(new TextEncoder().encode(JSON.stringify(oversized)).length)
+      .toBeGreaterThan(MAX_COMPLETED_SESSION_ANALYTICS_JOB_BYTES);
+    expect(parseCompletedSessionAnalyticsJob(oversized)).toEqual({
+      success: false,
+      error: 'Cognitive analytics job exceeds the serialized byte limit',
+    });
   });
 
   it('covers all recommended cognitive module routes', () => {

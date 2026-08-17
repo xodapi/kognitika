@@ -1,11 +1,11 @@
 import {
+  MAX_COMPLETED_SESSION_ANALYTICS_JOB_BYTES,
   CompletedSessionAnalyticsJobSchema,
   type CognitiveInteractionEvent,
   type CompletedSessionAnalyticsJob,
 } from './contract.ts';
 
 const MAX_EVENTS = 10_000;
-const MAX_SERIALIZED_BYTES = 1_000_000;
 const MAX_SESSION_DURATION_MS = 24 * 60 * 60 * 1_000;
 const SENSITIVE_FIELD_PATTERN = /(authorization|auth|bearer|brainid|cookie|email|jwt|localstorage|password|rawstorage|refresh|screenshot|secret|token|user)/i;
 
@@ -67,7 +67,7 @@ export class CognitiveSessionEventCollector {
       sequence: this.events.length,
     } as CognitiveInteractionEvent;
 
-    if (byteLength([...this.events, canonical]) > MAX_SERIALIZED_BYTES) {
+    if (byteLength([...this.events, canonical]) > MAX_COMPLETED_SESSION_ANALYTICS_JOB_BYTES) {
       throw new Error('Cognitive session serialized byte limit exceeded');
     }
 
