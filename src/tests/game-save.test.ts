@@ -87,7 +87,7 @@ describe('game save idempotency service', () => {
     });
   });
 
-  it('atomically creates a privacy-safe outbox job with a successful game save when enabled', async () => {
+  it('does not queue an outbox job without a canonical analytics job when enabled', async () => {
     process.env.ANALYTICS_OUTBOX_SHADOW_ENABLED = 'true';
     const { saveCompletedGame } = await import('../server/services/game-save.ts');
 
@@ -100,15 +100,7 @@ describe('game save idempotency service', () => {
     });
 
     expect(result.isReplay).toBe(false);
-    expect(transactionClient.analyticsOutboxEntry.create).toHaveBeenCalledWith({
-      data: expect.objectContaining({
-        sourceSessionId: 'session-a',
-        analyzerVersion: 'rust-shadow-v1',
-        contractVersion: 'analytics-contract-v1',
-        idempotencyKey: 'session-a:rust-shadow-v1:analytics-contract-v1',
-      }),
-    });
-    expect(JSON.stringify(transactionClient.analyticsOutboxEntry.create.mock.calls[0][0])).not.toMatch(/brainid|metadata|jwt|email|token/i);
+    expect(transactionClient.analyticsOutboxEntry.create).not.toHaveBeenCalled();
   });
 
   it('binds a validated Schulte canonical job outside GameSession metadata', async () => {

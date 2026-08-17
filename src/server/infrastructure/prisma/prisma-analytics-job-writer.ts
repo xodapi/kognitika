@@ -30,7 +30,7 @@ export class PrismaAnalyticsJobWriter implements AnalyticsJobWriter {
       });
     }
 
-    if (isAnalyticsOutboxEnabled()) {
+    if (analyticsJob && isAnalyticsOutboxEnabled()) {
       const entry = createAnalyticsOutboxEntry({
         sourceSession: sessionId,
         analyzerVersion: SHADOW_ANALYZER_VERSION,

@@ -1,8 +1,16 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { PrismaAnalyticsJobWriter } from '../server/infrastructure/prisma/prisma-analytics-job-writer.ts';
 
 describe('PrismaAnalyticsJobWriter', () => {
-  it('writes a canonical analytics job without copying arbitrary session metadata', async () => {
+  beforeEach(() => {
+    vi.stubEnv('ANALYTICS_OUTBOX_SHADOW_ENABLED', 'true');
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it('writes a canonical analytics job and queues it without copying arbitrary session metadata', async () => {
     const tx = {
       completedSessionAnalyticsJob: { create: vi.fn().mockResolvedValue({}) },
       analyticsOutboxEntry: { create: vi.fn().mockResolvedValue({}) },
@@ -20,5 +28,23 @@ describe('PrismaAnalyticsJobWriter', () => {
     expect(tx.completedSessionAnalyticsJob.create).toHaveBeenCalledWith({
       data: expect.objectContaining({ jobId: 'job-a', gameSessionId: 'session-a' }),
     });
+    expect(tx.analyticsOutboxEntry.create).toHaveBeenCalledOnce();
+  });
+
+  it('does not queue an outbox entry without a canonical analytics job', async () => {
+    const tx = {
+      completedSessionAnalyticsJob: { create: vi.fn().mockResolvedValue({}) },
+      analyticsOutboxEntry: { create: vi.fn().mockResolvedValue({}) },
+    };
+
+    await new PrismaAnalyticsJobWriter().write(
+      tx,
+      'session-without-canonical-job',
+      undefined,
+      new Date('2026-01-01T00:00:02.000Z'),
+    );
+
+    expect(tx.completedSessionAnalyticsJob.create).not.toHaveBeenCalled();
+    expect(tx.analyticsOutboxEntry.create).not.toHaveBeenCalled();
   });
 });
