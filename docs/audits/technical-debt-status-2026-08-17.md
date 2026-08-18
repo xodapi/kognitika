@@ -1,8 +1,8 @@
-# Technical Debt Status, 2026-08-17
+# Technical Debt Status, 2026-08-18
 
 **Branch:** main  
-**Head:** 64c92c6 (Merge PR #274 refactor/game-save-srp)  
-**Audit basis:** audit documents in `docs/audits/`, recent PRs #270–274, open GitHub issues.
+**Head:** `553013f` (`feat: add local Health Connect summary adapter`)
+**Audit basis:** audit documents in `docs/audits/`, current source contracts, recent CI runs, and open GitHub issues.
 
 ---
 
@@ -15,6 +15,12 @@
 | #272 | Added test guards for all patched dependency resolutions |
 | #273 | Documented dependency security exceptions in `docs/dependency-risk-register.md` |
 | #274 | Extracted `analytics-job-writer.ts` from monolithic game-save service (SRP) |
+| `ac16264` | Enforced the 1 MB canonical analytics-job limit at the parser boundary |
+| `bae6abe` | Prevented outbox rows without canonical analytics jobs |
+| `edaf3b3` | Patched transitive `deepmerge-ts` to 8.0.0; Dependabot alert fixed |
+| `d11419b` | Added physiological session summary contract |
+| `a0b0eea` | Added opt-in, shadow-only wearable recommendation policy |
+| `553013f` | Added dependency-injected local-only Health Connect summary adapter |
 
 P3 audit item — AUDIT_BRIEF.md domain staleness — is **already resolved**; the file correctly references `https://kognitika.ru` and `af58af6` is the documented Prisma baseline commit, not a claim about head.
 
@@ -22,20 +28,25 @@ P3 audit item — AUDIT_BRIEF.md domain staleness — is **already resolved**; t
 
 ## Open Items
 
-### P1 — High priority stabilization
+### P0/P1 — Protected or high-priority work
 
 | Issue | Title | Status |
 |---|---|---|
+| #220 | Protected, schema-guarded ADMIN recovery | ⚠️ **PRODUCTION-GATED** — repository workflow exists; protected production review and recovery evidence remain required |
+| #158 | Reconcile production Prisma migration baseline | ⚠️ **PRODUCTION-GATED** — requires backup, read-only production inspection, reviewed reconciliation, and smoke checks |
 | #247 | Roll mobile contract to remaining 11 trainers | ✅ **COMPLETE** — all 13 rollout trainers have required data-testid hooks (see `docs/mobile-rollout-audit-2026-08-17.md`) |
-| #226 | Design local-only mode and encrypted IndexedDB vault | status:planned |
-| #223 | Define strangler contract for phased Axum API migration | status:planned |
+| #226 | Design local-only mode and encrypted IndexedDB identity vault | ✅ **DESIGN PROPOSED** — `docs/local-only-encrypted-vault-design.md`; product/security approval remains |
+| #223 | Define strangler contract for phased Axum API migration | ✅ **CONTRACT PROPOSED** — `docs/axum-strangler-contract.md`; infrastructure/operations approval remains |
+| #149 | Versioned physiological session summary contract | ✅ **CONTRACT IMPLEMENTED** — `contracts/physiological-session-summary-v1.json` and Zod contract; no connector or persistence |
+| #151 | Shadow policy for wearable-informed recommendations | ✅ **SHADOW CONTRACT IMPLEMENTED** — default-off, cognitive-first, no user-visible rollout |
 
 ### P2 — Medium priority hygiene
 
 | Issue | Title | Status |
 |---|---|---|
-| #224 | Publish verified data-processing inventory, retention policy, local-first roadmap | status:planned |
-| #248 | Fix mobile testing guide and publish as trainer standard | status:planned |
+| #224 | Publish verified data-processing inventory, retention policy, local-first roadmap | ✅ **INVENTORY IMPLEMENTED** — legal/owner assignment and protected infrastructure evidence remain |
+| #248 | Fix mobile testing guide and publish as trainer standard | ✅ **COMPLETE** — the 13-trainer standard is documented in `docs/mobile-testing-guide.md` |
+| #150 | Health Connect adapter with local-only summaries | ✅ **LOCAL ADAPTER IMPLEMENTED** — dependency-injected aggregate mapping; no SDK or permissions integration |
 
 ### P3 — Documentation / future-gated
 
@@ -55,9 +66,19 @@ node node_modules/knip/dist/index.js
 
 Both audits exited with code 0 and produced no findings. No unused production or development dependencies were identified.
 
+## Dependabot status
+
+- `esbuild` is resolved to `0.28.1`; alert #4 is fixed. The historical `0.28.0`
+  state existed after the Vite/Valibot patch and before the later esbuild
+  override/guard.
+- `deepmerge-ts` is resolved to `8.0.0`; alert #58 is fixed.
+- `image-size@1.2.1` alerts #54/#55 and `uuid@7.0.3` alert #2 remain accepted
+  transitive mobile-tooling exceptions documented in `SECURITY.md`. Do not
+  force incompatible major overrides without an upstream parent upgrade.
+
 ---
 
-## Verification baseline at 64c92c6
+## Latest verification baseline
 
 | Check | Result |
 |---|---|
@@ -69,12 +90,17 @@ Both audits exited with code 0 and produced no findings. No unused production or
 | Prisma generate | Passed |
 | Production Vite build | Passed |
 | Full local Vitest suite | 663 tests passed (Windows bind-mount; confirm in Linux CI) |
+| Wearable/Health Connect contract suites | 37 focused tests passed |
+| Source TypeScript check | Passed |
+| `a0b0eea` CI, Android, protected deployment | Passed |
+| `d11419b` CI and protected deployment | Passed |
+| `553013f` Secret Scan | Passed; CI/deployment pending at audit time |
 
 ---
 
 ## Next recommended actions
 
-1. **#226 local-only mode** — privacy/identity P1; requires product and security gate before implementation.
-2. **#223 Axum strangler contract** — deferred until Rust runtime authority decision is made.
-3. **#248 mobile testing guide** — ✅ complete; the 13-trainer standard is documented in `docs/mobile-testing-guide.md`.
-4. **#220 and #158** — production-only acceptance remains blocked on protected access, backup evidence, and reviewer approval; do not execute locally.
+1. **#220 and #158** — protected production acceptance remains blocked on reviewer access, backup evidence, and read-only production verification; do not execute locally.
+2. **#144** — next large repository design: 7/30/90-day longitudinal projections, uncertainty, Rust/TS parity, and non-destructive backfill.
+3. **#140/#146/#147** — canonical event lifecycle remains partially implemented; abandonment lifecycle and full module mapping need a separate reviewed slice.
+4. **#149/#150/#151** — contracts are repository-implemented; update GitHub issue labels/status after owner review rather than claiming production wearable rollout.
