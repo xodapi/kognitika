@@ -5,6 +5,7 @@ import { PrismaUserRepository } from './prisma/prisma-user-repository.ts';
 import { PrismaCompletedGameRepository } from './prisma/prisma-completed-game-repository.ts';
 import { PrismaAnalyticsSessionRepository } from './prisma/prisma-analytics-session-repository.ts';
 import { PrismaAnalyticsSummaryRepository } from './prisma/prisma-analytics-summary-repository.ts';
+import { PrismaLongitudinalObservationRepository } from './prisma/prisma-longitudinal-observation-repository.ts';
 import { PrismaDailyTrajectoryRepository } from './prisma/prisma-daily-trajectory-repository.ts';
 import { PrismaFeedbackRepository } from './prisma/prisma-feedback-repository.ts';
 import { PrismaIdeaRepository } from './prisma/prisma-idea-repository.ts';
@@ -47,6 +48,7 @@ import { ExportService } from '../services/analytics/export.ts';
 import { SummaryPersistenceService } from '../services/analytics/summary-persistence.ts';
 import { SummaryQueryService } from '../services/analytics/summary-query.ts';
 import { CognitiveTrendService } from '../services/analytics/cognitive-trend.ts';
+import { LongitudinalAnalyticsService } from '../services/analytics/longitudinal-analytics.ts';
 
 export type GameRepositories = {
   gameAttempts: GameAttemptRepository;
@@ -69,6 +71,7 @@ export type AnalyticsServices = {
   summaryPersistence: SummaryPersistenceService;
   summaryQuery: SummaryQueryService;
   cognitiveTrend: CognitiveTrendService;
+  longitudinal: LongitudinalAnalyticsService;
 };
 
 export type AnalyticsRepositories = {
@@ -130,6 +133,7 @@ export function getAnalyticsServices(): AnalyticsServices {
       summaryPersistence: new SummaryPersistenceService(repos.summaries),
       summaryQuery: new SummaryQueryService(repos.summaries),
       cognitiveTrend: new CognitiveTrendService(repos.summaries),
+      longitudinal: new LongitudinalAnalyticsService(new PrismaLongitudinalObservationRepository(prisma)),
     };
   }
   return _analyticsServices;

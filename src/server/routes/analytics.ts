@@ -36,6 +36,10 @@ const trendQuerySchema = z.object({
   days: z.coerce.number().int().min(1).max(365).default(30),
 }).strict();
 
+const longitudinalQuerySchema = z.object({
+  moduleId: z.string().trim().min(1).max(64).regex(/^[a-z0-9-]+$/),
+}).strict();
+
 /**
  * GET /api/analytics/compare — compare current results with user history
  */
@@ -220,6 +224,22 @@ router.get('/cognitive-trend', authenticate, validateQuery(trendQuerySchema), as
   } catch (err) {
     logger.error('Failed to compute cognitive trend', { error: safeError(err) });
     res.status(500).json({ error: 'Failed to compute cognitive trend' });
+  }
+});
+
+/**
+ * GET /api/analytics/longitudinal — module-scoped, aggregate longitudinal analytics
+ */
+router.get('/longitudinal', authenticate, validateQuery(longitudinalQuerySchema), async (req: any, res) => {
+  try {
+    const analytics = await getAnalyticsServices().longitudinal.getLongitudinalAnalytics(
+      req.user.id,
+      req.validated!.query.moduleId,
+    );
+    res.json(analytics);
+  } catch (err) {
+    logger.error('Failed to compute longitudinal analytics', { error: safeError(err) });
+    res.status(500).json({ error: 'Failed to compute longitudinal analytics' });
   }
 });
 

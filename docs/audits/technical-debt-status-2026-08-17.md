@@ -101,6 +101,14 @@ Both audits exited with code 0 and produced no findings. No unused production or
 ## Next recommended actions
 
 1. **#220 and #158** — protected production acceptance remains blocked on reviewer access, backup evidence, and read-only production verification; do not execute locally.
-2. **#144** — next large repository design: 7/30/90-day longitudinal projections, uncertainty, Rust/TS parity, and non-destructive backfill.
-3. **#140/#146/#147** — canonical event lifecycle remains partially implemented; abandonment lifecycle and full module mapping need a separate reviewed slice.
-4. **#149/#150/#151** — contracts are repository-implemented; update GitHub issue labels/status after owner review rather than claiming production wearable rollout.
+2. **#144** — ✅ **PARTIALLY IMPLEMENTED** — versioned 7/30/90-day,
+   module-scoped, aggregate-only read projection and authenticated API now
+   exist. Rust/TS parity, normalization, version/difficulty strata, policy
+   for outliers/missing data, and non-destructive backfill remain.
+3. **#140/#146/#147** — canonical event lifecycle remains partially
+   implemented; abandoned sessions now have an explicit local terminal policy
+   but still require a separate reviewed lifecycle sink and full module
+   mapping.
+4. **#149/#150/#151** — contracts are repository-implemented; update GitHub
+   issue labels/status after owner review rather than claiming production
+   wearable rollout.
