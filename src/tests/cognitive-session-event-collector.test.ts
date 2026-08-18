@@ -43,6 +43,8 @@ describe('cognitive session event collector', () => {
 
   it('rejects sensitive, out-of-order, and terminal-race records', () => {
     const collector = createCollector();
+    expect(collector.lifecycle).toBe('active');
+    expect(collector.terminalEvent).toBeNull();
     collector.record({ kind: 'trial_started', tMs: 100, trialType: 'nback:trial' });
 
     expect(() => collector.record({
@@ -60,7 +62,21 @@ describe('cognitive session event collector', () => {
     } as never)).toThrow(/sensitive/);
 
     collector.abandon(300, 'user_exit', 'halfway');
+    expect(collector.lifecycle).toBe('abandoned');
+    expect(collector.terminalEvent).toMatchObject({
+      kind: 'session_abandoned',
+      reason: 'user_exit',
+      lastCheckpoint: 'halfway',
+    });
     expect(() => collector.complete(400, '2026-01-02T00:00:00.400Z')).toThrow(/termination/);
     expect(() => collector.createCompletedJob('2026-01-02T00:00:01.000Z')).toThrow(/Only a completed session/);
+  });
+
+  it('marks a completed collector separately from an abandoned lifecycle', () => {
+    const collector = createCollector();
+    collector.complete(1_000, '2026-01-02T00:00:01.000Z');
+
+    expect(collector.lifecycle).toBe('completed');
+    expect(collector.terminalEvent?.kind).toBe('session_completed');
   });
 });

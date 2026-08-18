@@ -26,6 +26,7 @@ export interface CognitiveSessionCollectorOptions {
 }
 
 export type CognitiveSessionAbandonment = Extract<CognitiveInteractionEvent, { kind: 'session_abandoned' }>;
+export type CognitiveSessionLifecycle = 'active' | 'completed' | 'abandoned';
 
 function hasSensitiveKey(value: unknown): boolean {
   if (!value || typeof value !== 'object') return false;
@@ -91,6 +92,20 @@ export class CognitiveSessionEventCollector {
       reason,
       ...(lastCheckpoint ? { lastCheckpoint } : {}),
     }) as CognitiveSessionAbandonment;
+  }
+
+  /**
+   * Reports the terminal state without treating abandonment as a completed
+   * analytics job. Callers can use this policy boundary to route abandoned
+   * sessions to a separate lifecycle sink.
+   */
+  get lifecycle(): CognitiveSessionLifecycle {
+    if (!this.terminal) return 'active';
+    return this.terminal.kind === 'session_completed' ? 'completed' : 'abandoned';
+  }
+
+  get terminalEvent(): CognitiveInteractionEvent | null {
+    return this.terminal;
   }
 
   createCompletedJob(receivedAt: string): CompletedSessionAnalyticsJob {
