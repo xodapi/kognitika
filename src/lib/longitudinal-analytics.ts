@@ -43,13 +43,15 @@ export function aggregateLongitudinalAnalytics(
   observations: readonly LongitudinalObservation[],
   asOf: Date,
 ): LongitudinalAnalytics {
-  if (Number.isNaN(asOf.getTime())) throw new Error('asOf must be a valid date');
+  const asOfTime = asOf.getTime();
+  if (!Number.isFinite(asOfTime)) throw new Error('asOf must be a valid date');
+  const validObservations = observations.filter(isValidObservation);
 
   const windows: LongitudinalWindow[] = LONGITUDINAL_WINDOWS_DAYS.map((days) => {
-    const cutoff = asOf.getTime() - days * 24 * 60 * 60 * 1000;
-    const rows = observations.filter((row) => {
+    const cutoff = asOfTime - days * 24 * 60 * 60 * 1000;
+    const rows = validObservations.filter((row) => {
       const time = row.occurredAt.getTime();
-      return !Number.isNaN(time) && time >= cutoff && time <= asOf.getTime();
+      return time >= cutoff && time <= asOfTime;
     });
     const sessionCount = rows.length;
     const observedDays = new Set(rows.map((row) => row.occurredAt.toISOString().slice(0, 10))).size;
@@ -71,6 +73,16 @@ export function aggregateLongitudinalAnalytics(
   });
 
   return { version: LONGITUDINAL_ANALYTICS_VERSION, asOf, windows };
+}
+
+function isValidObservation(row: LongitudinalObservation): boolean {
+  return row.occurredAt instanceof Date
+    && Number.isFinite(row.occurredAt.getTime())
+    && Number.isFinite(row.accuracy)
+    && row.accuracy >= 0
+    && row.accuracy <= 1
+    && Number.isFinite(row.reactionMs)
+    && row.reactionMs >= 0;
 }
 
 function emptyMetric() {

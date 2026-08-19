@@ -35,4 +35,54 @@ describe('longitudinal analytics v1', () => {
     expect(result.windows[1].sessionCount).toBe(3);
     expect(result.windows[2].sessionCount).toBe(4);
   });
+
+  it('excludes malformed metrics and future observations without contaminating aggregates', () => {
+    const result = aggregateLongitudinalAnalytics([
+      observation(1, 0.6, 100),
+      observation(2, 0.8, 200),
+      observation(3, 1, 300),
+      observation(1, Number.NaN, 100),
+      observation(1, Number.POSITIVE_INFINITY, 100),
+      observation(1, -0.1, 100),
+      observation(1, 1.1, 100),
+      observation(1, 0.5, Number.NaN),
+      observation(1, 0.5, Number.POSITIVE_INFINITY),
+      observation(1, 0.5, -1),
+      { occurredAt: new Date(Number.NaN), accuracy: 0.5, reactionMs: 100 },
+      observation(-1, 0.5, 100),
+    ], asOf);
+
+    expect(result.windows[0]).toMatchObject({
+      status: 'ready',
+      sessionCount: 3,
+      accuracy: { mean: 0.8 },
+      speed: { meanReactionMs: 200 },
+    });
+  });
+
+  it('uses inclusive elapsed-time cutoffs and UTC day coverage', () => {
+    const nearMidnight = new Date('2026-08-20T00:30:00.000Z');
+    const atSevenDayCutoff = {
+      occurredAt: new Date('2026-08-13T00:30:00.000Z'),
+      accuracy: 0.6,
+      reactionMs: 100,
+    };
+    const result = aggregateLongitudinalAnalytics([
+      atSevenDayCutoff,
+      { ...atSevenDayCutoff, occurredAt: new Date('2026-08-13T00:29:59.999Z'), accuracy: 0.7 },
+      { ...atSevenDayCutoff, occurredAt: new Date('2026-08-19T23:30:00.000Z'), accuracy: 0.8, reactionMs: 200 },
+      { ...atSevenDayCutoff, occurredAt: new Date('2026-08-20T00:15:00.000Z'), accuracy: 1, reactionMs: 300 },
+      { ...atSevenDayCutoff, occurredAt: new Date('2026-07-21T00:30:00.000Z') },
+      { ...atSevenDayCutoff, occurredAt: new Date('2026-05-22T00:30:00.000Z') },
+    ], nearMidnight);
+
+    expect(result.windows[0]).toMatchObject({
+      status: 'ready',
+      sessionCount: 3,
+      coverage: { observedDays: 3, proportion: 0.429 },
+      accuracy: { mean: 0.8 },
+    });
+    expect(result.windows[1].sessionCount).toBe(5);
+    expect(result.windows[2].sessionCount).toBe(6);
+  });
 });
