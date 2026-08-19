@@ -1,0 +1,79 @@
+{
+  "schemaVersion": 1,
+  "contractId": "longitudinal-backfill-recompute-v1",
+  "status": "documentation-contract-only",
+  "ownership": {
+    "productionDdlOwner": "prisma",
+    "writer": "node-prisma",
+    "rustDatabaseAccess": "forbidden"
+  },
+  "privacy": {
+    "permitsRawIdentity": false,
+    "permitsRawPrivateTelemetry": false,
+    "permittedOperationalReferences": [
+      "opaque request key",
+      "opaque projection version",
+      "aggregate-only audit fields"
+    ]
+  },
+  "protectedInternalBoundaries": {
+    "publicWriteApi": "forbidden",
+    "sourceMutation": "forbidden",
+    "directDatabaseWritesOutsideNodePrisma": "forbidden",
+    "rustDatabaseAccess": "forbidden",
+    "outboxPurge": "excluded"
+  },
+  "recompute": {
+    "mode": "append-only",
+    "createsNewProjectionVersion": true,
+    "historicalProjections": "immutable",
+    "activation": "atomic-publish",
+    "rollback": {
+      "method": "activate-existing-version",
+      "deletesProjectionRows": false,
+      "rewritesHistoricalProjectionRows": false
+    }
+  },
+  "idempotency": {
+    "requestKey": {
+      "unique": true,
+      "retry": "reuse-existing-request"
+    },
+    "lease": {
+      "required": true,
+      "singleActiveHolderPerRequestKey": true,
+      "expiredLease": "may-be-reclaimed"
+    },
+    "publish": {
+      "atomic": true,
+      "requiresCompletedProjectionBeforeActivation": true
+    }
+  },
+  "retention": {
+    "projectionVersionRetention": "retain-until-approved-policy-expiry",
+    "deletionException": "privacy-deletion-request",
+    "privacyDeletion": {
+      "mayRemoveAffectedProjectionData": true,
+      "mayOverrideAppendOnlyRetention": true,
+      "requiresAuditableTombstoneWithoutRawIdentity": true
+    }
+  },
+  "preconditions": [
+    "approved versioned projection definition",
+    "Prisma migration and schema review when persistence changes are required",
+    "privacy review of aggregate-only input and output",
+    "retention policy approved before execution",
+    "source snapshot or deterministic read boundary is defined",
+    "unique request key and lease storage are available",
+    "atomic publish transaction boundary is defined"
+  ],
+  "nonGoals": [
+    "Prisma migration or database schema",
+    "backfill worker or scheduler",
+    "public write API",
+    "source-data repair or mutation",
+    "outbox purge",
+    "Rust database writer or migration",
+    "UI or production execution"
+  ]
+}
