@@ -1,0 +1,100 @@
+{
+  "fixtureVersion": 1,
+  "cases": [
+    {
+      "name": "eligible-at-inclusive-threshold",
+      "maxSuspiciousPatternScore": 0.2,
+      "input": {
+        "completed": true,
+        "eventCount": 3,
+        "suspiciousPatternScore": 0.2,
+        "accuracy": 0.8,
+        "reactionMs": 250
+      },
+      "expected": { "eligible": true, "reason": "eligible" }
+    },
+    {
+      "name": "not-completed",
+      "maxSuspiciousPatternScore": 0.2,
+      "input": {
+        "completed": false,
+        "eventCount": 3,
+        "suspiciousPatternScore": 0.2,
+        "accuracy": 0.8,
+        "reactionMs": 250
+      },
+      "expected": { "eligible": false, "reason": "not_completed" }
+    },
+    {
+      "name": "missing-event-count",
+      "maxSuspiciousPatternScore": 0.2,
+      "input": {
+        "completed": true,
+        "suspiciousPatternScore": 0.2,
+        "accuracy": 0.8,
+        "reactionMs": 250
+      },
+      "expected": { "eligible": false, "reason": "missing_or_empty_event_count" }
+    },
+    {
+      "name": "fractional-event-count",
+      "maxSuspiciousPatternScore": 0.2,
+      "input": {
+        "completed": true,
+        "eventCount": 1.5,
+        "suspiciousPatternScore": 0.2,
+        "accuracy": 0.8,
+        "reactionMs": 250
+      },
+      "expected": { "eligible": false, "reason": "missing_or_empty_event_count" }
+    },
+    {
+      "name": "invalid-suspicious-score",
+      "maxSuspiciousPatternScore": 0.2,
+      "input": {
+        "completed": true,
+        "eventCount": 3,
+        "suspiciousPatternScore": 1.01,
+        "accuracy": 0.8,
+        "reactionMs": 250
+      },
+      "expected": { "eligible": false, "reason": "missing_or_invalid_suspicious_score" }
+    },
+    {
+      "name": "score-exceeds-policy",
+      "maxSuspiciousPatternScore": 0.2,
+      "input": {
+        "completed": true,
+        "eventCount": 3,
+        "suspiciousPatternScore": 0.21,
+        "accuracy": 0.8,
+        "reactionMs": 250
+      },
+      "expected": { "eligible": false, "reason": "score_exceeds_policy" }
+    },
+    {
+      "name": "invalid-accuracy",
+      "maxSuspiciousPatternScore": 0.2,
+      "input": {
+        "completed": true,
+        "eventCount": 3,
+        "suspiciousPatternScore": 0.2,
+        "accuracy": -0.01,
+        "reactionMs": 250
+      },
+      "expected": { "eligible": false, "reason": "missing_or_invalid_accuracy" }
+    },
+    {
+      "name": "invalid-reaction-ms",
+      "maxSuspiciousPatternScore": 0.2,
+      "input": {
+        "completed": true,
+        "eventCount": 3,
+        "suspiciousPatternScore": 0.2,
+        "accuracy": 0.8,
+        "reactionMs": -1
+      },
+      "expected": { "eligible": false, "reason": "missing_or_invalid_reaction_ms" }
+    }
+  ]
+}

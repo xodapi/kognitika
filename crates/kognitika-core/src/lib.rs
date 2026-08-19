@@ -77,6 +77,102 @@ pub enum AnalyzeSessionError {
     InvalidSchema(String),
 }
 
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct LongitudinalQualityInput {
+    pub completed: Option<bool>,
+    pub event_count: Option<f64>,
+    pub suspicious_pattern_score: Option<f64>,
+    pub accuracy: Option<f64>,
+    pub reaction_ms: Option<f64>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum LongitudinalQualityReason {
+    NotCompleted,
+    MissingOrEmptyEventCount,
+    MissingOrInvalidSuspiciousScore,
+    ScoreExceedsPolicy,
+    MissingOrInvalidAccuracy,
+    MissingOrInvalidReactionMs,
+    Eligible,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LongitudinalQualityResolution {
+    pub eligible: bool,
+    pub reason: LongitudinalQualityReason,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum LongitudinalQualityError {
+    InvalidMaxSuspiciousPatternScore,
+}
+
+pub fn resolve_longitudinal_quality(
+    input: &LongitudinalQualityInput,
+    max_suspicious_pattern_score: f64,
+) -> Result<LongitudinalQualityResolution, LongitudinalQualityError> {
+    if !is_unit_interval(max_suspicious_pattern_score) {
+        return Err(LongitudinalQualityError::InvalidMaxSuspiciousPatternScore);
+    }
+
+    if input.completed != Some(true) {
+        return Ok(ineligible_quality(LongitudinalQualityReason::NotCompleted));
+    }
+    if !input.event_count.is_some_and(is_positive_integer) {
+        return Ok(ineligible_quality(
+            LongitudinalQualityReason::MissingOrEmptyEventCount,
+        ));
+    }
+    if !input.suspicious_pattern_score.is_some_and(is_unit_interval) {
+        return Ok(ineligible_quality(
+            LongitudinalQualityReason::MissingOrInvalidSuspiciousScore,
+        ));
+    }
+    if input.suspicious_pattern_score.unwrap_or_default() > max_suspicious_pattern_score {
+        return Ok(ineligible_quality(
+            LongitudinalQualityReason::ScoreExceedsPolicy,
+        ));
+    }
+    if !input.accuracy.is_some_and(is_unit_interval) {
+        return Ok(ineligible_quality(
+            LongitudinalQualityReason::MissingOrInvalidAccuracy,
+        ));
+    }
+    if !input.reaction_ms.is_some_and(is_nonnegative_finite) {
+        return Ok(ineligible_quality(
+            LongitudinalQualityReason::MissingOrInvalidReactionMs,
+        ));
+    }
+
+    Ok(LongitudinalQualityResolution {
+        eligible: true,
+        reason: LongitudinalQualityReason::Eligible,
+    })
+}
+
+fn ineligible_quality(reason: LongitudinalQualityReason) -> LongitudinalQualityResolution {
+    LongitudinalQualityResolution {
+        eligible: false,
+        reason,
+    }
+}
+
+fn is_positive_integer(value: f64) -> bool {
+    value.is_finite() && value > 0.0 && value.fract() == 0.0
+}
+
+fn is_unit_interval(value: f64) -> bool {
+    value.is_finite() && (0.0..=1.0).contains(&value)
+}
+
+fn is_nonnegative_finite(value: f64) -> bool {
+    value.is_finite() && value >= 0.0
+}
+
 const MAX_SESSION_DURATION_MS: i64 = 24 * 60 * 60 * 1_000;
 const MAX_EVENT_T_MS: u32 = MAX_SESSION_DURATION_MS as u32;
 const MAX_REACTION_TIME_MS: u32 = 60_000;
@@ -794,6 +890,46 @@ mod tests {
                 result.is_ok(),
                 expected_valid,
                 "shared contract fixture {name} has unexpected Rust acceptance"
+            );
+        }
+    }
+
+    #[test]
+    fn matches_shared_longitudinal_quality_fixture() {
+        #[derive(Deserialize)]
+        #[serde(rename_all = "camelCase")]
+        struct FixtureCase {
+            name: String,
+            max_suspicious_pattern_score: f64,
+            input: LongitudinalQualityInput,
+            expected: LongitudinalQualityResolution,
+        }
+
+        #[derive(Deserialize)]
+        #[serde(rename_all = "camelCase")]
+        struct Fixture {
+            fixture_version: u8,
+            cases: Vec<FixtureCase>,
+        }
+
+        let fixture: Fixture = serde_json::from_str(include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../fixtures/longitudinal-quality/quality-cases.v1.json"
+        )))
+        .expect("shared longitudinal quality fixture JSON is valid");
+
+        assert_eq!(fixture.fixture_version, 1);
+        assert!(!fixture.cases.is_empty());
+
+        for case in fixture.cases {
+            let resolution =
+                resolve_longitudinal_quality(&case.input, case.max_suspicious_pattern_score)
+                    .expect("fixture threshold is valid");
+
+            assert_eq!(
+                resolution, case.expected,
+                "shared longitudinal quality fixture {} has unexpected Rust resolution",
+                case.name
             );
         }
     }
