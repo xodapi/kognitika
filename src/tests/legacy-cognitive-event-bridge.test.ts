@@ -37,6 +37,102 @@ describe('legacy cognitive EventBus bridge', () => {
     });
   });
 
+  it('maps only complete, strict Schulte 90 legacy payloads', () => {
+    const bridge = new LegacyCognitiveEventBridge({ ...context, moduleId: 'schulte-90' });
+
+    const click = bridge.translate({
+      legacyEventId: 'schulte-90-click',
+      event: 'CELL_CLICK',
+      tMs: 0,
+      data: { num: 1, color: 'black', cellId: 4, gridIndex: 4, x: 0.5, y: 0.5, isCorrect: true, reactionTimeMs: 0 },
+    });
+    expect(click).toMatchObject({
+      kind: 'trial_answered',
+      moduleId: 'schulte-90',
+      trialType: 'schulte-90:trial',
+      tMs: 0,
+      isCorrect: true,
+    });
+    expect(click).not.toHaveProperty('reactionTimeMs');
+    expect(click).not.toHaveProperty('color');
+    expect(click).not.toHaveProperty('cellId');
+
+    const completion = bridge.translate({
+      legacyEventId: 'schulte-90-complete',
+      event: 'TRAINING_COMPLETE',
+      tMs: 60_000,
+      data: {
+        type: 'SCHULTE_90',
+        timeMs: 60_000,
+        accuracy: 90,
+        score: 500,
+        errors: 10,
+        metadata: { rule: 'black-red', rows: 9, cols: 10, size: 10, totalQuestions: 90 },
+      },
+    });
+    expect(completion).toMatchObject({
+      kind: 'session_completed',
+      moduleId: 'schulte-90',
+      completedAt: '2026-01-02T00:01:00.000Z',
+    });
+    expect(completion).not.toHaveProperty('accuracy');
+    expect(completion).not.toHaveProperty('score');
+    expect(completion).not.toHaveProperty('errors');
+    expect(completion).not.toHaveProperty('metadata');
+  });
+
+  it('rejects anomalous, mismatched, and incomplete Schulte 90 payloads', () => {
+    const valid = {
+      type: 'SCHULTE_90',
+      timeMs: 60_000,
+      accuracy: 90,
+      score: 500,
+      errors: 10,
+      metadata: { rule: 'classic', rows: 9, cols: 10, size: 10, totalQuestions: 90 },
+    };
+    const invalidPayloads = [
+      { ...valid, type: 'SCHULTE' },
+      { ...valid, timeMs: 60_001 },
+      { ...valid, accuracy: Number.NaN },
+      { ...valid, accuracy: 100.1 },
+      { ...valid, score: 10.5 },
+      { ...valid, score: 1_001 },
+      { ...valid, errors: -1 },
+      { ...valid, errors: 1.5 },
+      { ...valid, metadata: { ...valid.metadata, rule: 'unexpected' } },
+      { ...valid, metadata: { ...valid.metadata, rows: 8 } },
+      { ...valid, metadata: { rule: 'classic', rows: 9, cols: 10, size: 10 } },
+      { ...valid, metadata: { ...valid.metadata, extra: true } },
+      { ...valid, reason: 'middleware' },
+      { ...valid, anomalous: true },
+    ];
+
+    for (const [index, data] of invalidPayloads.entries()) {
+      const bridge = new LegacyCognitiveEventBridge({ ...context, moduleId: 'schulte-90' });
+      expect(bridge.translate({
+        legacyEventId: `invalid-schulte-90-${index}`,
+        event: 'TRAINING_COMPLETE',
+        tMs: 60_000,
+        data,
+      })).toBeNull();
+    }
+
+    const wrongModuleBridge = new LegacyCognitiveEventBridge({ ...context, moduleId: 'schulte' });
+    expect(wrongModuleBridge.translate({
+      legacyEventId: 'schulte-90-wrong-module',
+      event: 'TRAINING_COMPLETE',
+      tMs: 60_000,
+      data: valid,
+    })).toBeNull();
+    const bridge = new LegacyCognitiveEventBridge({ ...context, moduleId: 'schulte-90' });
+    expect(bridge.translate({
+      legacyEventId: 'schulte-90-click-extra',
+      event: 'CELL_CLICK',
+      tMs: 60_000,
+      data: { num: 1, color: 'black', isCorrect: true, anomalous: true },
+    })).toBeNull();
+  });
+
   it('does not treat zero reaction time as a measurement', () => {
     const bridge = new LegacyCognitiveEventBridge({ ...context, moduleId: 'nback' });
     const event = bridge.translate({

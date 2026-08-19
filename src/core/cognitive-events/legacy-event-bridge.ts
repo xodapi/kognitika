@@ -18,6 +18,11 @@ const LegacyCellClickSchema = z.object({
   y: z.number().finite().min(0).max(1).optional(),
 }).strict();
 
+const LegacySchulte90CellClickSchema = LegacyCellClickSchema.extend({
+  // Schulte 90 emits the displayed cell color; it is intentionally discarded.
+  color: z.enum(['black', 'red']),
+}).strict();
+
 const LegacyTrainingCompleteSchema = z.object({
   type: z.enum(['SCHULTE', 'NBACK', 'NUMERICAL_ANALYSIS', 'LOGICAL_SEQUENCE']),
   timeMs: z.number().int().nonnegative().max(MAX_SESSION_DURATION_MS),
@@ -39,9 +44,25 @@ const LegacyStroopTrainingCompleteSchema = z.object({
   }).strict(),
 }).strict();
 
+const LegacySchulte90TrainingCompleteSchema = z.object({
+  type: z.literal('SCHULTE_90'),
+  timeMs: z.number().int().nonnegative().max(MAX_SESSION_DURATION_MS),
+  accuracy: z.number().finite().min(0).max(100),
+  score: z.number().int().min(10).max(1_000),
+  errors: z.number().int().nonnegative(),
+  metadata: z.object({
+    rule: z.enum(['classic', 'black-red', 'red-black', 'black-pairs', 'red-pairs']),
+    rows: z.literal(9),
+    cols: z.literal(10),
+    size: z.literal(10),
+    totalQuestions: z.literal(90),
+  }).strict(),
+}).strict();
+
 const LegacyAnyTrainingCompleteSchema = z.union([
   LegacyTrainingCompleteSchema,
   LegacyStroopTrainingCompleteSchema,
+  LegacySchulte90TrainingCompleteSchema,
 ]);
 
 const LegacyTrainingAbandonedSchema = z.object({
@@ -62,7 +83,7 @@ export const LegacyCognitiveEventNameSchema = z.enum([
 
 export interface LegacyCognitiveEventBridgeContext {
   sessionId: string;
-  moduleId: 'schulte' | 'numerical' | 'nback' | 'logical' | 'stroop';
+  moduleId: 'schulte' | 'schulte-90' | 'numerical' | 'nback' | 'logical' | 'stroop';
   moduleVersion: string;
   startedAt: string;
 }
@@ -117,7 +138,9 @@ export class LegacyCognitiveEventBridge {
 
     let event: CognitiveInteractionEvent | null = null;
     if (envelope.event === 'CELL_CLICK') {
-      const parsed = LegacyCellClickSchema.safeParse(envelope.data);
+      const parsed = (this.context.moduleId === 'schulte-90'
+        ? LegacySchulte90CellClickSchema
+        : LegacyCellClickSchema).safeParse(envelope.data);
       if (!parsed.success) return null;
 
       event = {
@@ -170,6 +193,7 @@ export class LegacyCognitiveEventBridge {
   private matchesModule(type: z.infer<typeof LegacyAnyTrainingCompleteSchema>['type']) {
     return (
       (this.context.moduleId === 'schulte' && type === 'SCHULTE')
+      || (this.context.moduleId === 'schulte-90' && type === 'SCHULTE_90')
       || (this.context.moduleId === 'nback' && type === 'NBACK')
       || (this.context.moduleId === 'numerical' && type === 'NUMERICAL_ANALYSIS')
       || (this.context.moduleId === 'logical' && type === 'LOGICAL_SEQUENCE')

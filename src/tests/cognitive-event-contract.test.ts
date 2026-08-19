@@ -186,4 +186,11 @@ describe('canonical cognitive event contract', () => {
       currentCapture: 'legacy-events',
     });
   });
+
+  it('declares Schulte 90 as legacy-event coverage', () => {
+    expect(getCognitiveModuleCoverage('/schulte-90')).toMatchObject({
+      moduleId: 'schulte-90',
+      currentCapture: 'legacy-events',
+    });
+  });
 });
