@@ -104,9 +104,10 @@ Both audits exited with code 0 and produced no findings. No unused production or
 2. **#144** — ✅ **PARTIALLY IMPLEMENTED** — versioned 7/30/90-day,
    module-scoped, aggregate-only read projection and authenticated API now
    exist. The repository also has strict version/difficulty eligibility and
-   identity-free quality policy/projection contracts with exclusion counters.
-   Rust/TS parity, normalization, strata read model, threshold governance,
-   and non-destructive backfill remain.
+   identity-free quality policy/projection contracts with exclusion counters,
+   plus a robust personal baseline/change contract for separately supplied
+   metrics. Rust/TS parity, integrated normalization, strata read model,
+   threshold governance, and non-destructive backfill remain.
 3. **#140/#146/#147** — canonical event lifecycle remains partially
    implemented; abandoned sessions now have an explicit local terminal policy
    but still require a separate reviewed lifecycle sink and full module
