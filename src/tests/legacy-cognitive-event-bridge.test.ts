@@ -9,14 +9,14 @@ const context = {
 };
 
 describe('legacy cognitive EventBus bridge', () => {
-  it('converts supported Schulte clicks and completion without changing legacy payloads', () => {
+  it('converts supported Schulte clicks and completion into canonical events', () => {
     const bridge = new LegacyCognitiveEventBridge(context);
 
     expect(bridge.translate({
       legacyEventId: 'click-1',
       event: 'CELL_CLICK',
       tMs: 240,
-      data: { num: 1, isCorrect: true, reactionTimeMs: 240, cellId: 4 },
+      data: { num: 1, isCorrect: true, reactionTimeMs: 240, cellId: 4, x: 0.5, y: 0.5 },
     })).toMatchObject({
       kind: 'trial_answered',
       sequence: 0,
@@ -50,7 +50,65 @@ describe('legacy cognitive EventBus bridge', () => {
     expect(event).not.toHaveProperty('reactionTimeMs');
   });
 
-  it('rejects duplicate, terminal-race, unsupported, and sensitive legacy payloads', () => {
+  it('supports Numerical and N-back representative legacy completions', () => {
+    const numerical = new LegacyCognitiveEventBridge({ ...context, moduleId: 'numerical' });
+    const nback = new LegacyCognitiveEventBridge({ ...context, moduleId: 'nback' });
+
+    expect(numerical.translate({
+      legacyEventId: 'numerical-complete',
+      event: 'TRAINING_COMPLETE',
+      tMs: 700,
+      data: { type: 'NUMERICAL_ANALYSIS', timeMs: 700, score: 3, errors: 1, level: 1 },
+    })).toMatchObject({ kind: 'session_completed', moduleId: 'numerical', tMs: 700 });
+    expect(nback.translate({
+      legacyEventId: 'nback-complete',
+      event: 'TRAINING_COMPLETE',
+      tMs: 900,
+      data: { type: 'NBACK', timeMs: 900, score: 2, errors: 1, level: 2 },
+    })).toMatchObject({ kind: 'session_completed', moduleId: 'nback', tMs: 900 });
+  });
+
+  it('keeps missing and incomplete reaction measurements absent', () => {
+    const bridge = new LegacyCognitiveEventBridge(context);
+
+    for (const [legacyEventId, reactionTimeMs] of [
+      ['missing-reaction', undefined],
+      ['fractional-reaction', 10.5],
+      ['negative-reaction', -1],
+    ] as const) {
+      const event = bridge.translate({
+        legacyEventId,
+        event: 'CELL_CLICK',
+        tMs: 100,
+        data: { num: 1, isCorrect: true, ...(reactionTimeMs === undefined ? {} : { reactionTimeMs }) },
+      });
+      expect(event).toMatchObject({ kind: 'trial_answered', tMs: 100 });
+      expect(event).not.toHaveProperty('reactionTimeMs');
+    }
+  });
+
+  it('emits one terminal abandonment event', () => {
+    const bridge = new LegacyCognitiveEventBridge(context);
+    expect(bridge.translate({
+      legacyEventId: 'abandoned',
+      event: 'TRAINING_ABANDONED',
+      tMs: 300,
+      data: { reason: 'timeout', lastCheckpoint: 'round:3' },
+    })).toMatchObject({
+      kind: 'session_abandoned',
+      reason: 'timeout',
+      lastCheckpoint: 'round:3',
+      sequence: 0,
+    });
+    expect(bridge.translate({
+      legacyEventId: 'completed-after-abandonment',
+      event: 'TRAINING_COMPLETE',
+      tMs: 400,
+      data: { type: 'SCHULTE', timeMs: 400 },
+    })).toBeNull();
+  });
+
+  it('rejects duplicate, out-of-order, terminal-race, unsupported, and private payloads', () => {
     const bridge = new LegacyCognitiveEventBridge(context);
     const click = {
       legacyEventId: 'click-1',
@@ -72,6 +130,36 @@ describe('legacy cognitive EventBus bridge', () => {
       event: 'CELL_CLICK',
       tMs: 200,
       data: { num: 2, isCorrect: false, reactionTimeMs: 100, token: 'synthetic-token' },
+    })).toBeNull();
+    expect(bridge.translate({
+      legacyEventId: 'free-text',
+      event: 'CELL_CLICK',
+      tMs: 200,
+      data: { num: 2, isCorrect: false, reactionTimeMs: 100, note: 'private text' },
+    })).toBeNull();
+    expect(bridge.translate({
+      legacyEventId: 'raw-storage',
+      event: 'TRAINING_COMPLETE',
+      tMs: 250,
+      data: { type: 'SCHULTE', timeMs: 250, metadata: { screenshot: 'data:image/png' } },
+    })).toBeNull();
+    expect(bridge.translate({
+      legacyEventId: 'identity',
+      event: 'CELL_CLICK',
+      tMs: 250,
+      data: { num: 2, isCorrect: false, userId: 'user-1' },
+    })).toBeNull();
+    expect(bridge.translate({
+      legacyEventId: 'screenshot',
+      event: 'CELL_CLICK',
+      tMs: 250,
+      data: { num: 2, isCorrect: false, screenshot: 'data:image/png' },
+    })).toBeNull();
+    expect(bridge.translate({
+      legacyEventId: 'mismatched-time',
+      event: 'TRAINING_COMPLETE',
+      tMs: 275,
+      data: { type: 'SCHULTE', timeMs: 274 },
     })).toBeNull();
     expect(bridge.translate({
       legacyEventId: 'wrong-terminal',
