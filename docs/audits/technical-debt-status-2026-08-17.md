@@ -111,11 +111,11 @@ Both audits exited with code 0 and produced no findings. No unused production or
    normalization, strata read model, threshold governance, actual backfill
    implementation, and wider Rust parity remain.
 3. **#140/#146/#147** — canonical event lifecycle is partially implemented:
-   versioned contract, local collector lifecycle, and an additive Schulte /
-   Numerical / N-back / Logical / Stroop legacy bridge now exist. Logical's
-   legacy stream has no wrong-answer event, while Stroop preserves only its
-   strict allowlisted completion shape. Full module coverage, reviewed
-   lifecycle sink, and runtime wiring remain.
+   versioned contract, local collector lifecycle, and additive Schulte /
+   Numerical / N-back / Logical / Stroop / Schulte-90 legacy bridges now
+   exist. Logical's legacy stream has no wrong-answer event, while Stroop and
+   Schulte-90 preserve only strict allowlisted completion shapes. Full module
+   coverage, reviewed lifecycle sink, and runtime wiring remain.
 4. **#149/#150/#151** — contracts are repository-implemented; update GitHub
    issue labels/status after owner review rather than claiming production
    wearable rollout.
