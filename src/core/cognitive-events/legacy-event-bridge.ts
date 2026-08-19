@@ -19,7 +19,7 @@ const LegacyCellClickSchema = z.object({
 }).strict();
 
 const LegacyTrainingCompleteSchema = z.object({
-  type: z.enum(['SCHULTE', 'NBACK', 'NUMERICAL_ANALYSIS']),
+  type: z.enum(['SCHULTE', 'NBACK', 'NUMERICAL_ANALYSIS', 'LOGICAL_SEQUENCE']),
   timeMs: z.number().int().nonnegative().max(MAX_SESSION_DURATION_MS),
   size: z.number().finite().optional(),
   accuracy: z.number().finite().optional(),
@@ -46,7 +46,7 @@ export const LegacyCognitiveEventNameSchema = z.enum([
 
 export interface LegacyCognitiveEventBridgeContext {
   sessionId: string;
-  moduleId: 'schulte' | 'numerical' | 'nback';
+  moduleId: 'schulte' | 'numerical' | 'nback' | 'logical';
   moduleVersion: string;
   startedAt: string;
 }
@@ -156,6 +156,7 @@ export class LegacyCognitiveEventBridge {
       (this.context.moduleId === 'schulte' && type === 'SCHULTE')
       || (this.context.moduleId === 'nback' && type === 'NBACK')
       || (this.context.moduleId === 'numerical' && type === 'NUMERICAL_ANALYSIS')
+      || (this.context.moduleId === 'logical' && type === 'LOGICAL_SEQUENCE')
     );
   }
 }

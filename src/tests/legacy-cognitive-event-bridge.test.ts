@@ -50,6 +50,37 @@ describe('legacy cognitive EventBus bridge', () => {
     expect(event).not.toHaveProperty('reactionTimeMs');
   });
 
+  it('converts logical clicks and completion while omitting zero reaction time', () => {
+    const bridge = new LegacyCognitiveEventBridge({ ...context, moduleId: 'logical' });
+
+    const click = bridge.translate({
+      legacyEventId: 'logical-click-1',
+      event: 'CELL_CLICK',
+      tMs: 500,
+      data: { num: 0, isCorrect: true, reactionTimeMs: 0 },
+    });
+    expect(click).toMatchObject({
+      kind: 'trial_answered',
+      moduleId: 'logical',
+      sequence: 0,
+      tMs: 500,
+      isCorrect: true,
+    });
+    expect(click).not.toHaveProperty('reactionTimeMs');
+
+    expect(bridge.translate({
+      legacyEventId: 'logical-complete-1',
+      event: 'TRAINING_COMPLETE',
+      tMs: 1_200,
+      data: { type: 'LOGICAL_SEQUENCE', timeMs: 1_200 },
+    })).toMatchObject({
+      kind: 'session_completed',
+      moduleId: 'logical',
+      sequence: 1,
+      completedAt: '2026-01-02T00:00:01.200Z',
+    });
+  });
+
   it('supports Numerical and N-back representative legacy completions', () => {
     const numerical = new LegacyCognitiveEventBridge({ ...context, moduleId: 'numerical' });
     const nback = new LegacyCognitiveEventBridge({ ...context, moduleId: 'nback' });

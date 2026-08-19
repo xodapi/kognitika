@@ -112,7 +112,8 @@ Both audits exited with code 0 and produced no findings. No unused production or
    implementation, and wider Rust parity remain.
 3. **#140/#146/#147** — canonical event lifecycle is partially implemented:
    versioned contract, local collector lifecycle, and an additive Schulte /
-   Numerical / N-back legacy bridge now exist. Full module coverage, reviewed
+   Numerical / N-back / Logical legacy bridge now exist. Logical's legacy
+   stream has no wrong-answer event, so full module coverage, reviewed
    lifecycle sink, and runtime wiring remain.
 4. **#149/#150/#151** — contracts are repository-implemented; update GitHub
    issue labels/status after owner review rather than claiming production

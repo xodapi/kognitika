@@ -5,6 +5,7 @@ import {
   assertCognitiveModuleCoverage,
   completedSessionJobToAnalyzeSessionInput,
   parseCompletedSessionAnalyticsJob,
+  getCognitiveModuleCoverage,
 } from '../core/cognitive-events';
 
 const base = {
@@ -170,5 +171,12 @@ describe('canonical cognitive event contract', () => {
 
   it('covers all recommended cognitive module routes', () => {
     expect(assertCognitiveModuleCoverage()).toEqual([]);
+  });
+
+  it('declares logical as legacy-event coverage', () => {
+    expect(getCognitiveModuleCoverage('/logical')).toMatchObject({
+      moduleId: 'logical',
+      currentCapture: 'legacy-events',
+    });
   });
 });
