@@ -110,10 +110,10 @@ Both audits exited with code 0 and produced no findings. No unused production or
    and recompute has an append-only backfill contract. Integrated
    normalization, strata read model, threshold governance, actual backfill
    implementation, and wider Rust parity remain.
-3. **#140/#146/#147** — canonical event lifecycle remains partially
-   implemented; abandoned sessions now have an explicit local terminal policy
-   but still require a separate reviewed lifecycle sink and full module
-   mapping.
+3. **#140/#146/#147** — canonical event lifecycle is partially implemented:
+   versioned contract, local collector lifecycle, and an additive Schulte /
+   Numerical / N-back legacy bridge now exist. Full module coverage, reviewed
+   lifecycle sink, and runtime wiring remain.
 4. **#149/#150/#151** — contracts are repository-implemented; update GitHub
    issue labels/status after owner review rather than claiming production
    wearable rollout.
