@@ -9,7 +9,7 @@ export interface CognitiveModuleCoverage {
   currentCapture: 'legacy-events' | 'practice-flow-only' | 'not-instrumented';
 }
 
-const LEGACY_EVENT_MODULE_IDS = new Set(['schulte', 'numerical', 'nback', 'logical']);
+const LEGACY_EVENT_MODULE_IDS = new Set(['schulte', 'numerical', 'nback', 'logical', 'stroop']);
 
 export const COGNITIVE_MODULE_COVERAGE: readonly CognitiveModuleCoverage[] = Object.entries(PUBLIC_PRACTICE_ROUTES)
   .filter(([, meta]) => meta.category === 'cognitive')

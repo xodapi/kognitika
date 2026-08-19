@@ -28,6 +28,22 @@ const LegacyTrainingCompleteSchema = z.object({
   errors: z.number().finite().optional(),
 }).strict();
 
+const LegacyStroopTrainingCompleteSchema = z.object({
+  type: z.literal('STROOP'),
+  timeMs: z.number().int().nonnegative().max(MAX_SESSION_DURATION_MS),
+  score: z.number().finite(),
+  errors: z.number().finite(),
+  level: z.number().finite(),
+  metadata: z.object({
+    avgReactionTime: z.number().finite(),
+  }).strict(),
+}).strict();
+
+const LegacyAnyTrainingCompleteSchema = z.union([
+  LegacyTrainingCompleteSchema,
+  LegacyStroopTrainingCompleteSchema,
+]);
+
 const LegacyTrainingAbandonedSchema = z.object({
   reason: z.enum(['route_change', 'pagehide', 'inactive', 'user_exit', 'timeout']),
   lastCheckpoint: z.string().min(1).max(80).regex(/^[a-z0-9:_-]+$/).optional(),
@@ -46,7 +62,7 @@ export const LegacyCognitiveEventNameSchema = z.enum([
 
 export interface LegacyCognitiveEventBridgeContext {
   sessionId: string;
-  moduleId: 'schulte' | 'numerical' | 'nback' | 'logical';
+  moduleId: 'schulte' | 'numerical' | 'nback' | 'logical' | 'stroop';
   moduleVersion: string;
   startedAt: string;
 }
@@ -130,7 +146,7 @@ export class LegacyCognitiveEventBridge {
     }
 
     if (envelope.event === 'TRAINING_COMPLETE') {
-      const parsed = LegacyTrainingCompleteSchema.safeParse(envelope.data);
+      const parsed = LegacyAnyTrainingCompleteSchema.safeParse(envelope.data);
       if (!parsed.success || !this.matchesModule(parsed.data.type)) return null;
       if (parsed.data.timeMs !== envelope.tMs) return null;
       const terminalCompletedAt = completedAt(this.context.startedAt, envelope.tMs);
@@ -151,12 +167,13 @@ export class LegacyCognitiveEventBridge {
     return event;
   }
 
-  private matchesModule(type: z.infer<typeof LegacyTrainingCompleteSchema>['type']) {
+  private matchesModule(type: z.infer<typeof LegacyAnyTrainingCompleteSchema>['type']) {
     return (
       (this.context.moduleId === 'schulte' && type === 'SCHULTE')
       || (this.context.moduleId === 'nback' && type === 'NBACK')
       || (this.context.moduleId === 'numerical' && type === 'NUMERICAL_ANALYSIS')
       || (this.context.moduleId === 'logical' && type === 'LOGICAL_SEQUENCE')
+      || (this.context.moduleId === 'stroop' && type === 'STROOP')
     );
   }
 }

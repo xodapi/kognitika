@@ -99,6 +99,149 @@ describe('legacy cognitive EventBus bridge', () => {
     })).toMatchObject({ kind: 'session_completed', moduleId: 'nback', tMs: 900 });
   });
 
+  it('converts privacy-safe Stroop clicks and strict completion metadata', () => {
+    const bridge = new LegacyCognitiveEventBridge({ ...context, moduleId: 'stroop' });
+
+    expect(bridge.translate({
+      legacyEventId: 'stroop-click-1',
+      event: 'CELL_CLICK',
+      tMs: 240,
+      data: {
+        num: 0,
+        isCorrect: true,
+        reactionTimeMs: 240,
+        stimulus: 'RED',
+        answer: 'blue',
+        score: 10,
+        errors: 1,
+        level: 1,
+      },
+    })).toBeNull();
+
+    const click = bridge.translate({
+      legacyEventId: 'stroop-click-2',
+      event: 'CELL_CLICK',
+      tMs: 240,
+      data: { num: 0, isCorrect: true, reactionTimeMs: 240 },
+    });
+    expect(click).toEqual(expect.objectContaining({
+      kind: 'trial_answered',
+      moduleId: 'stroop',
+      sequence: 0,
+      tMs: 240,
+      isCorrect: true,
+      reactionTimeMs: 240,
+    }));
+    expect(click).not.toHaveProperty('num');
+    expect(click).not.toHaveProperty('stimulus');
+    expect(click).not.toHaveProperty('answer');
+    expect(click).not.toHaveProperty('score');
+    expect(click).not.toHaveProperty('errors');
+    expect(click).not.toHaveProperty('level');
+
+    const completion = bridge.translate({
+      legacyEventId: 'stroop-complete-1',
+      event: 'TRAINING_COMPLETE',
+      tMs: 60_000,
+      data: {
+        type: 'STROOP',
+        timeMs: 60_000,
+        score: 10,
+        errors: 1,
+        level: 1,
+        metadata: { avgReactionTime: 240 },
+      },
+    });
+    expect(completion).toMatchObject({
+      kind: 'session_completed',
+      moduleId: 'stroop',
+      sequence: 1,
+      completedAt: '2026-01-02T00:01:00.000Z',
+    });
+    expect(completion).not.toHaveProperty('metadata');
+  });
+
+  it('rejects invalid Stroop completion metadata and timing mismatches', () => {
+    const invalidPayloads = [
+      { type: 'STROOP', timeMs: 60_000 },
+      { type: 'STROOP', timeMs: 60_000, metadata: {} },
+      { type: 'STROOP', timeMs: 60_000, metadata: { avgReactionTime: '240' } },
+      { type: 'STROOP', timeMs: 60_000, metadata: { avgReactionTime: Number.NaN } },
+      { type: 'STROOP', timeMs: 60_000, metadata: { avgReactionTime: 240, score: 10 } },
+      {
+        type: 'STROOP',
+        timeMs: 60_000,
+        score: 10,
+        errors: 1,
+        level: 1,
+        metadata: { avgReactionTime: 240, unexpected: true },
+      },
+    ];
+
+    for (const [index, data] of invalidPayloads.entries()) {
+      const bridge = new LegacyCognitiveEventBridge({ ...context, moduleId: 'stroop' });
+      expect(bridge.translate({
+        legacyEventId: `invalid-stroop-${index}`,
+        event: 'TRAINING_COMPLETE',
+        tMs: 60_000,
+        data,
+      })).toBeNull();
+    }
+
+    const bridge = new LegacyCognitiveEventBridge({ ...context, moduleId: 'stroop' });
+    expect(bridge.translate({
+      legacyEventId: 'stroop-time-mismatch',
+      event: 'TRAINING_COMPLETE',
+      tMs: 60_000,
+      data: {
+        type: 'STROOP',
+        timeMs: 59_999,
+        score: 10,
+        errors: 1,
+        level: 1,
+        metadata: { avgReactionTime: 240 },
+      },
+    })).toBeNull();
+  });
+
+  it('omits zero and fractional Stroop reaction times and rejects post-terminal events', () => {
+    const bridge = new LegacyCognitiveEventBridge({ ...context, moduleId: 'stroop' });
+
+    for (const [legacyEventId, reactionTimeMs] of [
+      ['stroop-zero', 0],
+      ['stroop-fractional', 10.5],
+    ] as const) {
+      const event = bridge.translate({
+        legacyEventId,
+        event: 'CELL_CLICK',
+        tMs: 100,
+        data: { num: 0, isCorrect: true, reactionTimeMs },
+      });
+      expect(event).toMatchObject({ kind: 'trial_answered', moduleId: 'stroop' });
+      expect(event).not.toHaveProperty('reactionTimeMs');
+    }
+
+    expect(bridge.translate({
+      legacyEventId: 'stroop-completed',
+      event: 'TRAINING_COMPLETE',
+      tMs: 60_000,
+      data: {
+        type: 'STROOP',
+        timeMs: 60_000,
+        score: 10,
+        errors: 1,
+        level: 1,
+        metadata: { avgReactionTime: 240 },
+      },
+    })).not.toBeNull();
+    expect(bridge.translate({
+      legacyEventId: 'stroop-after-terminal',
+      event: 'CELL_CLICK',
+      tMs: 60_001,
+      data: { num: 0, isCorrect: true, reactionTimeMs: 10 },
+    })).toBeNull();
+  });
+
   it('keeps missing and incomplete reaction measurements absent', () => {
     const bridge = new LegacyCognitiveEventBridge(context);
 

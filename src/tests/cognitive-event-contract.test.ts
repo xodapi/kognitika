@@ -179,4 +179,11 @@ describe('canonical cognitive event contract', () => {
       currentCapture: 'legacy-events',
     });
   });
+
+  it('declares Stroop as legacy-event coverage', () => {
+    expect(getCognitiveModuleCoverage('/stroop')).toMatchObject({
+      moduleId: 'stroop',
+      currentCapture: 'legacy-events',
+    });
+  });
 });
