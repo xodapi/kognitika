@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { aggregateLongitudinalAnalytics, LONGITUDINAL_ANALYTICS_VERSION } from '../lib/longitudinal-analytics.ts';
+import {
+  aggregateLongitudinalAnalytics,
+  aggregateQualityFilteredLongitudinalAnalytics,
+  LONGITUDINAL_ANALYTICS_VERSION,
+} from '../lib/longitudinal-analytics.ts';
 
 const asOf = new Date('2026-08-20T12:00:00.000Z');
 const observation = (daysAgo: number, accuracy: number, reactionMs: number) => ({
@@ -84,5 +88,58 @@ describe('longitudinal analytics v1', () => {
     });
     expect(result.windows[1].sessionCount).toBe(5);
     expect(result.windows[2].sessionCount).toBe(6);
+  });
+
+  it('counts quality exclusions while aggregating only eligible observations', () => {
+    const result = aggregateQualityFilteredLongitudinalAnalytics([
+      { ...observation(1, 0.6, 100), completed: true, eventCount: 1, suspiciousPatternScore: 0.2 },
+      { ...observation(2, 0.8, 200), completed: true, eventCount: 1, suspiciousPatternScore: 0.2 },
+      { ...observation(3, 1, 300), completed: true, eventCount: 1, suspiciousPatternScore: 0.2 },
+      { ...observation(4, 0.5, 250), completed: true, eventCount: 1, suspiciousPatternScore: 0.3 },
+      { ...observation(5, Number.NaN, 250), completed: true, eventCount: 1, suspiciousPatternScore: 0.2 },
+    ], asOf, 0.2);
+
+    expect(result.windows[0]).toMatchObject({
+      status: 'ready',
+      sessionCount: 3,
+      accuracy: { mean: 0.8 },
+      quality: {
+        denominator: 5,
+        eligibleCount: 3,
+        excludedCount: 2,
+        exclusions: {
+          score_exceeds_policy: 1,
+          missing_or_invalid_accuracy: 1,
+          not_completed: 0,
+        },
+      },
+    });
+  });
+
+  it('uses eligible counts for readiness and excludes invalid or future dates from denominators', () => {
+    const result = aggregateQualityFilteredLongitudinalAnalytics([
+      { ...observation(1, 0.8, 200), completed: true, eventCount: 1, suspiciousPatternScore: 0.2 },
+      { ...observation(2, 0.8, 200), completed: true, eventCount: 1, suspiciousPatternScore: 0.2 },
+      { ...observation(3, 0.8, 200), completed: true, eventCount: 0, suspiciousPatternScore: 0.2 },
+      { ...observation(4, 0.8, 200), completed: true, eventCount: 0, suspiciousPatternScore: 0.2 },
+      { ...observation(-1, 0.8, 200), completed: true, eventCount: 1, suspiciousPatternScore: 0.2 },
+      { occurredAt: new Date(Number.NaN), completed: true, eventCount: 1, suspiciousPatternScore: 0.2, accuracy: 0.8, reactionMs: 200 },
+    ], asOf, 0.2);
+
+    expect(result.windows[0]).toMatchObject({
+      status: 'insufficient_data',
+      sessionCount: 2,
+      accuracy: { mean: null },
+      quality: {
+        denominator: 4,
+        eligibleCount: 2,
+        excludedCount: 2,
+        exclusions: { missing_or_empty_event_count: 2 },
+      },
+    });
+    const serialized = JSON.stringify(result);
+    expect(serialized).not.toMatch(/brain|telemetry|diagnos|fraud|clinical/i);
+    expect(serialized).not.toContain('sessionId');
+    expect(serialized).not.toContain('userId');
   });
 });
