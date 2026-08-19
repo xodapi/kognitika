@@ -106,8 +106,10 @@ Both audits exited with code 0 and produced no findings. No unused production or
    exist. The repository also has strict version/difficulty eligibility and
    identity-free quality policy/projection contracts with exclusion counters,
    plus a robust personal baseline/change contract for separately supplied
-   metrics. Rust/TS parity, integrated normalization, strata read model,
-   threshold governance, and non-destructive backfill remain.
+   metrics. The quality resolver has a shared Rust/TS fixture parity contract,
+   and recompute has an append-only backfill contract. Integrated
+   normalization, strata read model, threshold governance, actual backfill
+   implementation, and wider Rust parity remain.
 3. **#140/#146/#147** — canonical event lifecycle remains partially
    implemented; abandoned sessions now have an explicit local terminal policy
    but still require a separate reviewed lifecycle sink and full module
