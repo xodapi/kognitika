@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
   resolveLongitudinalQuality,
+  LONGITUDINAL_MAX_SUSPICIOUS_PATTERN_SCORE,
+  LONGITUDINAL_QUALITY_POLICY_VERSION,
   type LongitudinalQualityInput,
 } from '../lib/longitudinal-quality-policy.ts';
 
@@ -13,6 +15,13 @@ const completeInput = (): LongitudinalQualityInput => ({
 });
 
 describe('longitudinal quality policy', () => {
+  it('uses the versioned inclusive production boundary', () => {
+    expect(LONGITUDINAL_QUALITY_POLICY_VERSION).toBe('longitudinal-quality-policy-v1');
+    expect(resolveLongitudinalQuality(
+      { ...completeInput(), suspiciousPatternScore: LONGITUDINAL_MAX_SUSPICIOUS_PATTERN_SCORE },
+      LONGITUDINAL_MAX_SUSPICIOUS_PATTERN_SCORE,
+    )).toEqual({ eligible: true, reason: 'eligible' });
+  });
   it.each([
     ['not_completed', { completed: false }],
     ['missing_or_empty_event_count', { eventCount: 0 }],

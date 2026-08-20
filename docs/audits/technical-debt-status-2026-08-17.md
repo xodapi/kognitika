@@ -107,9 +107,13 @@ Both audits exited with code 0 and produced no findings. No unused production or
    identity-free quality policy/projection contracts with exclusion counters,
    plus a robust personal baseline/change contract for separately supplied
    metrics. The quality resolver has a shared Rust/TS fixture parity contract,
-   and recompute has an append-only backfill contract. Integrated
-   normalization, strata read model, threshold governance, actual backfill
-   implementation, and wider Rust parity remain.
+   and recompute has an append-only backfill contract. An authenticated,
+   module-scoped strata projection now reads only owned canonical-job/summary
+   intersections and exposes aggregate-safe policy/exclusion counts. The v1
+   policy allow-lists only `mental-math@1` levels 1–4 and `nback@1` `n-2`;
+   its private inclusive quality boundary is `1.0`. Integrated normalization,
+   actual backfill implementation, future threshold review, and wider Rust
+   parity remain.
 3. **#140/#146/#147** — canonical event lifecycle is partially implemented:
    versioned contract, local collector lifecycle, and additive Schulte /
    Numerical / N-back / Logical / Stroop / Schulte-90 / Mental Math /

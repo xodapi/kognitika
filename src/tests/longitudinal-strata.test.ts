@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
   resolveLongitudinalStratum,
+  LONGITUDINAL_STRATA_POLICY,
+  LONGITUDINAL_STRATA_POLICY_VERSION,
   type LongitudinalStrataPolicy,
 } from '../lib/longitudinal-strata.ts';
 
@@ -28,6 +30,19 @@ function job(events: readonly Record<string, unknown>[], moduleVersion = '2026.1
 const completed = { kind: 'session_completed' };
 
 describe('longitudinal strata resolver', () => {
+  it('ships only the approved versioned production mappings', () => {
+    expect(LONGITUDINAL_STRATA_POLICY_VERSION).toBe('longitudinal-strata-policy-v1');
+    expect(resolveLongitudinalStratum({
+      moduleId: 'mental-math', moduleVersion: '1',
+      events: [{ kind: 'trial_started', difficulty: 'level-1' }, completed],
+    }, LONGITUDINAL_STRATA_POLICY)).toMatchObject({ eligible: true, stratum: { label: 'level-1' } });
+    expect(resolveLongitudinalStratum({
+      moduleId: 'nback', moduleVersion: '1',
+      events: [{ kind: 'trial_started', difficulty: 'n-2' }, completed],
+    }, LONGITUDINAL_STRATA_POLICY)).toMatchObject({ eligible: true, stratum: { label: 'n-2' } });
+    expect(resolveLongitudinalStratum(job([{ kind: 'trial_started', difficulty: '5x5' }, completed]), LONGITUDINAL_STRATA_POLICY))
+      .toMatchObject({ eligible: false, reason: 'unsupported_module_version' });
+  });
   it('places matching trial_started and trial_answered events in one explicit stratum', () => {
     expect(resolveLongitudinalStratum(job([
       { kind: 'trial_started', difficulty: '5x5' },

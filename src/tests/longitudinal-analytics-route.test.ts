@@ -60,6 +60,27 @@ function authorization(userId = 'user-longitudinal') {
 }
 
 describe('longitudinal analytics route', () => {
+  it('protects and validates the additive strata projection without returning identities', async () => {
+    const baseUrl = await createHarness();
+
+    expect((await fetch(`${baseUrl}/api/analytics/longitudinal/strata?moduleId=nback`)).status).toBe(401);
+    expect((await fetch(`${baseUrl}/api/analytics/longitudinal/strata?moduleId=N_BACK`, {
+      headers: authorization(),
+    })).status).toBe(400);
+
+    const response = await fetch(`${baseUrl}/api/analytics/longitudinal/strata?moduleId=nback`, {
+      headers: authorization(),
+    });
+    const body = await response.json();
+    expect(response.status).toBe(200);
+    expect(body).toMatchObject({
+      version: 'longitudinal-strata-projection-v1',
+      policyVersion: { strata: 'longitudinal-strata-policy-v1', quality: 'longitudinal-quality-policy-v1' },
+      strata: [],
+    });
+    expect(JSON.stringify(body)).not.toMatch(/user-longitudinal|session-a|jobId|payload|threshold|raw/i);
+  });
+
   it('requires authentication, validates a required strict moduleId, and returns aggregate-only data', async () => {
     const baseUrl = await createHarness();
 

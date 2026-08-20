@@ -24,6 +24,10 @@ export type LongitudinalQualityResolution = Readonly<{
   reason: LongitudinalQualityReason;
 }>;
 
+/** Private, versioned production configuration; its numeric value is never transported. */
+export const LONGITUDINAL_QUALITY_POLICY_VERSION = 'longitudinal-quality-policy-v1' as const;
+export const LONGITUDINAL_MAX_SUSPICIOUS_PATTERN_SCORE = 1.0 as const;
+
 const INELIGIBLE = (
   reason: Exclude<LongitudinalQualityReason, 'eligible'>,
 ): LongitudinalQualityResolution => ({ eligible: false, reason });

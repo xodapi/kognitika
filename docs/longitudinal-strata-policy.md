@@ -4,13 +4,15 @@ Related issue: #144
 
 ## Purpose and scope
 
-This policy defines the conservative eligibility boundary for a future
-identity-free longitudinal read projection. The pure resolver in
+This policy defines the conservative eligibility boundary for the identity-free
+longitudinal read projection. The pure resolver in
 `src/lib/longitudinal-strata.ts` returns an eligibility decision, a stable
 reason, and (only when eligible) a stratum containing `moduleId`,
 `moduleVersion`, the observed difficulty, and an explicitly configured label.
-It has no persistence, API, repository, schema migration, backfill, UI, or
-diagnostic behavior.
+The production policy version is `longitudinal-strata-policy-v1`. Its complete
+allow-list is `mental-math@1` with `level-1` through `level-4` (each label is
+the identical string), and `nback@1` with `n-2` (identical label). All other
+inputs are excluded exactly as written: no normalization or inference occurs.
 
 ## Eligibility
 

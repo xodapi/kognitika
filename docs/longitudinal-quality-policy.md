@@ -4,14 +4,17 @@ Related issue: #144
 
 ## Purpose and scope
 
-This policy defines a narrow, identity-free quality and coverage gate for a
-future longitudinal read projection. The pure resolver in
+This policy defines a narrow, identity-free quality and coverage gate for the
+longitudinal read projection. The pure resolver in
 `src/lib/longitudinal-quality-policy.ts` accepts only `completed`,
 `eventCount`, `suspiciousPatternScore`, `accuracy`, `reactionMs`, and a
 caller-supplied `maxSuspiciousPatternScore`. It returns only `eligible` and
 one stable data-quality reason.
 
-It has no persistence, API, repository, schema migration, backfill, UI, raw
+The production configuration is versioned as
+`longitudinal-quality-policy-v1` and uses an inclusive maximum suspicious
+pattern score of `1.0`. The numeric configuration is private and is never
+returned by the API. It has no persistence, schema migration, backfill, UI, raw
 identity, telemetry, diagnosis, fraud detection, effort assessment, clinical,
 or cognitive interpretation behavior.
 

@@ -49,6 +49,7 @@ import { SummaryPersistenceService } from '../services/analytics/summary-persist
 import { SummaryQueryService } from '../services/analytics/summary-query.ts';
 import { CognitiveTrendService } from '../services/analytics/cognitive-trend.ts';
 import { LongitudinalAnalyticsService } from '../services/analytics/longitudinal-analytics.ts';
+import { LongitudinalStrataProjectionService } from '../services/analytics/longitudinal-strata-projection.ts';
 
 export type GameRepositories = {
   gameAttempts: GameAttemptRepository;
@@ -72,6 +73,7 @@ export type AnalyticsServices = {
   summaryQuery: SummaryQueryService;
   cognitiveTrend: CognitiveTrendService;
   longitudinal: LongitudinalAnalyticsService;
+  longitudinalStrata: LongitudinalStrataProjectionService;
 };
 
 export type AnalyticsRepositories = {
@@ -134,6 +136,7 @@ export function getAnalyticsServices(): AnalyticsServices {
       summaryQuery: new SummaryQueryService(repos.summaries),
       cognitiveTrend: new CognitiveTrendService(repos.summaries),
       longitudinal: new LongitudinalAnalyticsService(new PrismaLongitudinalObservationRepository(prisma)),
+      longitudinalStrata: new LongitudinalStrataProjectionService(new PrismaLongitudinalObservationRepository(prisma)),
     };
   }
   return _analyticsServices;

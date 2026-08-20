@@ -243,4 +243,20 @@ router.get('/longitudinal', authenticate, validateQuery(longitudinalQuerySchema)
   }
 });
 
+/**
+ * GET /api/analytics/longitudinal/strata — bounded, identity-free projection.
+ */
+router.get('/longitudinal/strata', authenticate, validateQuery(longitudinalQuerySchema), async (req: any, res) => {
+  try {
+    const projection = await getAnalyticsServices().longitudinalStrata.getProjection(
+      req.user.id,
+      req.validated!.query.moduleId,
+    );
+    res.json(projection);
+  } catch (err) {
+    logger.error('Failed to compute longitudinal strata projection', { error: safeError(err) });
+    res.status(500).json({ error: 'Failed to compute longitudinal strata projection' });
+  }
+});
+
 export default router;

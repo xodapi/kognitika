@@ -10,6 +10,26 @@ export type LongitudinalStrataMapping = {
 
 export type LongitudinalStrataPolicy = readonly LongitudinalStrataMapping[];
 
+/** Production allow-list. Additions require an explicit policy version. */
+export const LONGITUDINAL_STRATA_POLICY_VERSION = 'longitudinal-strata-policy-v1' as const;
+export const LONGITUDINAL_STRATA_POLICY: LongitudinalStrataPolicy = [
+  {
+    moduleId: 'mental-math',
+    moduleVersion: '1',
+    difficulties: {
+      'level-1': 'level-1',
+      'level-2': 'level-2',
+      'level-3': 'level-3',
+      'level-4': 'level-4',
+    },
+  },
+  {
+    moduleId: 'nback',
+    moduleVersion: '1',
+    difficulties: { 'n-2': 'n-2' },
+  },
+];
+
 export type LongitudinalStratum = {
   readonly moduleId: string;
   readonly moduleVersion: string;
