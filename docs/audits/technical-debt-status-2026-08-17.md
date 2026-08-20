@@ -116,8 +116,10 @@ Both audits exited with code 0 and produced no findings. No unused production or
    Alphabet Table / Typing legacy bridges now exist. Language Scanner now has
    a protected canonical-job save path. Logical's legacy stream has no
    wrong-answer event, while the extended modules preserve only strict
-   allowlisted completion shapes. Full module coverage, reviewed lifecycle
-   sink, and runtime wiring remain.
+   allowlisted completion shapes. A source-level contract now requires every
+   collector-backed component to deliver its completed canonical job through
+   the protected save path. Full module coverage, reviewed lifecycle sink,
+   and runtime wiring remain.
 4. **#149/#150/#151** — contracts are repository-implemented; update GitHub
    issue labels/status after owner review rather than claiming production
    wearable rollout.
