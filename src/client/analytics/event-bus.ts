@@ -60,7 +60,7 @@ eventBus.use((event, data, next) => {
 
 eventBus.use((event, data, next) => {
   if (process.env.NODE_ENV === 'development') {
-    logger.debug('Event emitted', { event, data });
+    logger.debug('Event emitted', { event });
   }
   next();
 });

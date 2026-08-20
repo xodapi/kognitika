@@ -4,6 +4,9 @@ import type {
   PracticeRecommendation,
 } from '@kognitika/shared-types';
 import { submitPracticeRecommended } from './api';
+import { createSafeLogger, safeError } from './safe-logger';
+
+const logger = createSafeLogger('practice-recommendations');
 
 export const MODULE_TITLES: Record<string, string> = {
   schulte: 'Таблицы Шульте',
@@ -100,6 +103,6 @@ export async function recordPracticeRecommended(
       sourceSessionId,
     });
   } catch (err) {
-    console.warn('Failed to record practice recommended:', err);
+    logger.warn('Failed to record practice recommendation', { error: safeError(err) });
   }
 }

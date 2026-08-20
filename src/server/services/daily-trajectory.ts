@@ -181,7 +181,7 @@ export async function getOrCreateDailyPlan(userId: string, date?: Date): Promise
   try {
     await getDailyTrajectoryRepository().createPlan(userId, new Date(dateStr), items);
   } catch (err) {
-    logger.error('Failed to persist daily plan', { error: safeError(err), userId });
+    logger.error('Failed to persist daily plan', { error: safeError(err), operation: 'create-plan' });
   }
 
   return items;
@@ -213,7 +213,7 @@ export async function updateItemStatus(
   try {
     await getDailyTrajectoryRepository().replacePlanItems(plan.id, updated);
   } catch (err) {
-    logger.error('Failed to update item status', { error: safeError(err), userId, itemId });
+    logger.error('Failed to update item status', { error: safeError(err), operation: 'replace-plan-items' });
   }
 
   return updated;

@@ -2,8 +2,10 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
 import type { BrainIdPayload } from '@kognitika/shared-types';
 import { resolveMobileApiOrigin } from './api-origin';
+import { createSafeLogger } from './safe-logger';
 
 const API_URL = resolveMobileApiOrigin(process.env.EXPO_PUBLIC_API_URL, process.env.NODE_ENV);
+const logger = createSafeLogger('mobile-api');
 
 const TOKEN_KEY = 'kognitika-jwt';
 const BRAIN_ID_KEY = 'kognitika-brain-id';
@@ -197,6 +199,6 @@ export async function submitPracticeRecommended(payload: {
   });
 
   if (!res.ok) {
-    console.warn('Failed to submit practice recommendation event:', res.status);
+    logger.warn('Practice recommendation event was not accepted');
   }
 }

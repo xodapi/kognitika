@@ -111,6 +111,29 @@ describe('daily trajectory service', () => {
     expect(updated![0].completedAt).toBeDefined();
   });
 
+  it('logs persistence failures without user or item identifiers', async () => {
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    vi.stubEnv('DEBUG_LOGS', 'true');
+    const userId = 'user-private-identifier';
+    const itemId = 'item-private-identifier';
+    const mockItems = [
+      { id: itemId, category: 'cognitive', moduleId: 'schulte', title: 'Test', reason: 'weak_area', status: 'planned', xpReward: 150 },
+    ];
+    prismaMock.dailyPracticePlan.findUnique.mockResolvedValue({
+      id: 'plan-1',
+      items: mockItems,
+    });
+    prismaMock.dailyPracticePlan.update.mockRejectedValue(new Error('database unavailable'));
+
+    const { updateItemStatus } = await import('../server/services/daily-trajectory.ts');
+    await updateItemStatus(userId, itemId, 'completed');
+
+    const output = JSON.stringify(errorSpy.mock.calls);
+    expect(output).toContain('replace-plan-items');
+    expect(output).not.toContain(userId);
+    expect(output).not.toContain(itemId);
+  });
+
   it('returns null when updating non-existent plan', async () => {
     prismaMock.dailyPracticePlan.findUnique.mockResolvedValue(null);
 

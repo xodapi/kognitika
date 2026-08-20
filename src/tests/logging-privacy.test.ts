@@ -2,11 +2,13 @@ import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createSafeLogger } from '../lib/safe-logger';
+import { eventBus } from '../client/analytics/event-bus';
 
 const root = process.cwd();
-const runtimeRoots = ['server.ts', 'src'];
+const runtimeRoots = ['server.ts', 'src', 'apps/mobile'];
 const allowedConsoleFiles = new Set([
   'src/lib/safe-logger.ts',
+  'apps/mobile/src/lib/safe-logger.ts',
 ]);
 
 function listRuntimeFiles(entry: string): string[] {
@@ -17,7 +19,7 @@ function listRuntimeFiles(entry: string): string[] {
   return readdirSync(absolute).flatMap((name) => {
     const child = join(absolute, name);
     const childRelative = relative(root, child).replace(/\\/g, '/');
-    if (childRelative.startsWith('src/tests/')) return [];
+    if (/(^|\/)(tests?|__tests__|__fixtures__|node_modules|dist|dist-web|\.expo)(\/|$)/.test(childRelative)) return [];
     if (childRelative.includes('/__fixtures__/')) return [];
     if (statSync(child).isDirectory()) return listRuntimeFiles(childRelative);
     return [child];
@@ -66,5 +68,35 @@ describe('logging privacy boundary', () => {
     expect(output).not.toContain('BR-SYNTHETIC-RAW');
     expect(output).not.toContain('eyJhbGciOiJIUzI1NiJ9');
     expect(output).toContain('[redacted]');
+  });
+
+  it('logs only an event name, never event payload free text', () => {
+    const debugSpy = vi.spyOn(console, 'debug').mockImplementation(() => undefined);
+    vi.stubEnv('DEBUG_LOGS', 'true');
+    vi.stubEnv('NODE_ENV', 'development');
+    const privateFeedback = 'private feedback that must never reach logs';
+
+    eventBus.emit('FEEDBACK_SUBMITTED', {
+      userId: 'user-should-not-be-logged',
+      trackingNum: 'tracking-should-not-be-logged',
+      type: 'feedback',
+      content: privateFeedback,
+    });
+
+    const output = JSON.stringify(debugSpy.mock.calls);
+    expect(output).not.toContain(privateFeedback);
+    expect(output).not.toContain('user-should-not-be-logged');
+    expect(debugSpy).toHaveBeenCalledWith('[client-event-bus] Event emitted', {
+      event: 'FEEDBACK_SUBMITTED',
+    });
+  });
+
+  it('keeps daily trajectory error context limited to safe operation labels', () => {
+    const source = readFileSync(join(root, 'src/server/services/daily-trajectory.ts'), 'utf8');
+
+    expect(source).toContain("operation: 'create-plan'");
+    expect(source).toContain("operation: 'replace-plan-items'");
+    expect(source).not.toMatch(/logger\.error\([^)]*userId/s);
+    expect(source).not.toMatch(/logger\.error\([^)]*itemId/s);
   });
 });

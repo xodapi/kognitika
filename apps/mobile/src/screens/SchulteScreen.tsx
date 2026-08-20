@@ -21,7 +21,9 @@ import {
 } from '../lib/api';
 import CompletionRecommendation from '../components/CompletionRecommendation';
 import { createClientRunId } from '../lib/client-run-id';
+import { createSafeLogger, safeError } from '../lib/safe-logger';
 
+const logger = createSafeLogger('schulte-screen');
 
 interface SchulteScreenProps {
   onLogout: () => void;
@@ -75,7 +77,7 @@ export default function SchulteScreen({ onLogout }: SchulteScreenProps) {
             setDisplayName(data.user.pseudonym);
           }
         })
-        .catch((err) => console.warn('Failed to sync profile on mount:', err));
+        .catch((err) => logger.warn('Failed to sync profile on mount', { error: safeError(err) }));
     });
   }, []);
 
@@ -207,7 +209,7 @@ export default function SchulteScreen({ onLogout }: SchulteScreenProps) {
       });
       if (isCurrentRun()) setSubmitSuccess(true);
     } catch (err) {
-      console.warn('Failed to submit results:', err);
+      logger.warn('Failed to submit results', { error: safeError(err) });
       if (isCurrentRun()) setSubmitSuccess(false);
     } finally {
       if (isCurrentRun()) setSubmitting(false);

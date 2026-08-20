@@ -127,3 +127,8 @@ Both audits exited with code 0 and produced no findings. No unused production or
 4. **#149/#150/#151** — contracts are repository-implemented; update GitHub
    issue labels/status after owner review rather than claiming production
    wearable rollout.
+5. **Logging privacy** — client EventBus logging now emits only event names;
+   server errors omit internal identifiers; mobile runtime uses a sanitized
+   logger; and source contracts reject direct runtime console calls and
+   payload/identifier regressions. The unrelated test typecheck backlog
+   remains outside this remediation.

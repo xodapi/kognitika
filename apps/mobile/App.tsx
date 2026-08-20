@@ -8,8 +8,10 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import BrainIdScreen from './src/screens/BrainIdScreen';
 import SchulteScreen from './src/screens/SchulteScreen';
 import { getStoredToken, clearAuth } from './src/lib/api';
+import { createSafeLogger, safeError } from './src/lib/safe-logger';
 
 const Stack = createNativeStackNavigator();
+const logger = createSafeLogger('app');
 
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
@@ -22,7 +24,7 @@ export default function App() {
         const token = await getStoredToken();
         setIsAuthenticated(!!token);
       } catch (err) {
-        console.warn('Failed to read auth state:', err);
+        logger.warn('Failed to read auth state', { error: safeError(err) });
       } finally {
         setCheckingAuth(false);
       }
@@ -39,7 +41,7 @@ export default function App() {
       await clearAuth();
       setIsAuthenticated(false);
     } catch (err) {
-      console.warn('Logout failed:', err);
+      logger.warn('Logout failed', { error: safeError(err) });
     }
   }, []);
 
