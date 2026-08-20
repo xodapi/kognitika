@@ -300,6 +300,97 @@ describe('legacy cognitive EventBus bridge', () => {
     })).toBeNull();
   });
 
+  it('maps only strict Mental Math completion payloads and discards metrics', () => {
+    const payload = {
+      type: 'MENTAL_MATH',
+      timeMs: 60_000,
+      level: 2,
+      accuracy: 80,
+      errors: 2,
+      score: 1_250.5,
+      metadata: { correctAnswers: 8, totalQuestions: 10 },
+    };
+    const bridge = new LegacyCognitiveEventBridge({ ...context, moduleId: 'mental-math' });
+
+    const completion = bridge.translate({
+      legacyEventId: 'mental-math-complete',
+      event: 'TRAINING_COMPLETE',
+      tMs: 60_000,
+      data: payload,
+    });
+    expect(completion).toMatchObject({
+      kind: 'session_completed',
+      moduleId: 'mental-math',
+      completedAt: '2026-01-02T00:01:00.000Z',
+    });
+    expect(completion).not.toHaveProperty('level');
+    expect(completion).not.toHaveProperty('accuracy');
+    expect(completion).not.toHaveProperty('errors');
+    expect(completion).not.toHaveProperty('score');
+    expect(completion).not.toHaveProperty('metadata');
+  });
+
+  it('rejects Mental Math trials, invalid payloads, timing mismatches, and wrong modules', () => {
+    const valid = {
+      type: 'MENTAL_MATH',
+      timeMs: 60_000,
+      level: 2,
+      accuracy: 80,
+      errors: 2,
+      score: 1_250.5,
+      metadata: { correctAnswers: 8, totalQuestions: 10 },
+    };
+    const invalidPayloads = [
+      { ...valid, timeMs: 60_001 },
+      { ...valid, level: 0 },
+      { ...valid, level: 5 },
+      { ...valid, level: 2.5 },
+      { ...valid, accuracy: Number.NaN },
+      { ...valid, accuracy: 100.1 },
+      { ...valid, errors: -1 },
+      { ...valid, errors: 1.5 },
+      { ...valid, score: Number.NaN },
+      { ...valid, metadata: { correctAnswers: -1, totalQuestions: 10 } },
+      { ...valid, metadata: { correctAnswers: 8, totalQuestions: 0 } },
+      { ...valid, metadata: { correctAnswers: 8, totalQuestions: 49 } },
+      { ...valid, metadata: { correctAnswers: 8, totalQuestions: 10, equation: '2 + 2' } },
+      { ...valid, metadata: { correctAnswers: 8 } },
+      { ...valid, extra: true },
+    ];
+
+    for (const [index, data] of invalidPayloads.entries()) {
+      const bridge = new LegacyCognitiveEventBridge({ ...context, moduleId: 'mental-math' });
+      expect(bridge.translate({
+        legacyEventId: `invalid-mental-math-${index}`,
+        event: 'TRAINING_COMPLETE',
+        tMs: 60_000,
+        data,
+      })).toBeNull();
+    }
+
+    const bridge = new LegacyCognitiveEventBridge({ ...context, moduleId: 'mental-math' });
+    expect(bridge.translate({
+      legacyEventId: 'mental-math-raw-trial',
+      event: 'CELL_CLICK',
+      tMs: 200,
+      data: { num: 1, isCorrect: true, equation: '2 + 2', answer: '4' },
+    })).toBeNull();
+    expect(bridge.translate({
+      legacyEventId: 'mental-math-timing-mismatch',
+      event: 'TRAINING_COMPLETE',
+      tMs: 60_000,
+      data: { ...valid, timeMs: 59_999 },
+    })).toBeNull();
+
+    const wrongModuleBridge = new LegacyCognitiveEventBridge(context);
+    expect(wrongModuleBridge.translate({
+      legacyEventId: 'mental-math-wrong-module',
+      event: 'TRAINING_COMPLETE',
+      tMs: 60_000,
+      data: valid,
+    })).toBeNull();
+  });
+
   it('omits zero and fractional Stroop reaction times and rejects post-terminal events', () => {
     const bridge = new LegacyCognitiveEventBridge({ ...context, moduleId: 'stroop' });
 

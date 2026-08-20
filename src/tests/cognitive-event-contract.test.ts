@@ -193,4 +193,11 @@ describe('canonical cognitive event contract', () => {
       currentCapture: 'legacy-events',
     });
   });
+
+  it('declares Mental Math as legacy-event coverage', () => {
+    expect(getCognitiveModuleCoverage('/mental-math')).toMatchObject({
+      moduleId: 'mental-math',
+      currentCapture: 'legacy-events',
+    });
+  });
 });
