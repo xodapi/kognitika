@@ -391,6 +391,111 @@ describe('legacy cognitive EventBus bridge', () => {
     })).toBeNull();
   });
 
+  it('maps only consistent, strict Alphabet Table completions and discards metrics', () => {
+    const payload = {
+      type: 'ALPHABET_TABLE',
+      timeMs: 60_000,
+      accuracy: 80,
+      errors: 2,
+      score: 800,
+      metadata: {
+        mode: 'alternating',
+        correctAnswers: 8,
+        totalQuestions: 10,
+        averageReactionTimeMs: 240,
+      },
+    };
+    const bridge = new LegacyCognitiveEventBridge({ ...context, moduleId: 'alphabet-table' });
+
+    const completion = bridge.translate({
+      legacyEventId: 'alphabet-table-complete',
+      event: 'TRAINING_COMPLETE',
+      tMs: 60_000,
+      data: payload,
+    });
+    expect(completion).toMatchObject({
+      kind: 'session_completed',
+      moduleId: 'alphabet-table',
+      completedAt: '2026-01-02T00:01:00.000Z',
+    });
+    expect(completion).not.toHaveProperty('accuracy');
+    expect(completion).not.toHaveProperty('errors');
+    expect(completion).not.toHaveProperty('score');
+    expect(completion).not.toHaveProperty('metadata');
+  });
+
+  it('rejects Alphabet Table clicks, invalid metrics, timing mismatches, and wrong modules', () => {
+    const valid = {
+      type: 'ALPHABET_TABLE',
+      timeMs: 60_000,
+      accuracy: 80,
+      errors: 2,
+      score: 800,
+      metadata: {
+        mode: 'balanced',
+        correctAnswers: 8,
+        totalQuestions: 10,
+        averageReactionTimeMs: 240,
+      },
+    };
+    const invalidPayloads = [
+      { ...valid, type: 'SCHULTE' },
+      { ...valid, timeMs: 60_001 },
+      { ...valid, accuracy: Number.NaN },
+      { ...valid, accuracy: 80.1 },
+      { ...valid, errors: -1 },
+      { ...valid, errors: 2.5 },
+      { ...valid, errors: 34 },
+      { ...valid, score: 800.5 },
+      { ...valid, score: 1_001 },
+      { ...valid, metadata: { ...valid.metadata, mode: 'unexpected' } },
+      { ...valid, metadata: { ...valid.metadata, correctAnswers: 8.5 } },
+      { ...valid, metadata: { ...valid.metadata, correctAnswers: 34 } },
+      { ...valid, metadata: { ...valid.metadata, totalQuestions: 8 } },
+      { ...valid, metadata: { ...valid.metadata, totalQuestions: 34 } },
+      { ...valid, metadata: { ...valid.metadata, averageReactionTimeMs: 240.5 } },
+      { ...valid, metadata: { ...valid.metadata, averageReactionTimeMs: 86_400_001 } },
+      { ...valid, metadata: { mode: 'balanced', correctAnswers: 8, totalQuestions: 10 } },
+      { ...valid, metadata: { ...valid.metadata, extra: true } },
+      { ...valid, errors: 1 },
+      { ...valid, accuracy: 70 },
+      { ...valid, score: 799 },
+      { ...valid, extra: true },
+    ];
+
+    for (const [index, data] of invalidPayloads.entries()) {
+      const bridge = new LegacyCognitiveEventBridge({ ...context, moduleId: 'alphabet-table' });
+      expect(bridge.translate({
+        legacyEventId: `invalid-alphabet-table-${index}`,
+        event: 'TRAINING_COMPLETE',
+        tMs: 60_000,
+        data,
+      })).toBeNull();
+    }
+
+    const bridge = new LegacyCognitiveEventBridge({ ...context, moduleId: 'alphabet-table' });
+    expect(bridge.translate({
+      legacyEventId: 'alphabet-table-raw-click',
+      event: 'CELL_CLICK',
+      tMs: 200,
+      data: { num: 1, isCorrect: true, reactionTimeMs: 200 },
+    })).toBeNull();
+    expect(bridge.translate({
+      legacyEventId: 'alphabet-table-timing-mismatch',
+      event: 'TRAINING_COMPLETE',
+      tMs: 60_000,
+      data: { ...valid, timeMs: 59_999 },
+    })).toBeNull();
+
+    const wrongModuleBridge = new LegacyCognitiveEventBridge(context);
+    expect(wrongModuleBridge.translate({
+      legacyEventId: 'alphabet-table-wrong-module',
+      event: 'TRAINING_COMPLETE',
+      tMs: 60_000,
+      data: valid,
+    })).toBeNull();
+  });
+
   it('omits zero and fractional Stroop reaction times and rejects post-terminal events', () => {
     const bridge = new LegacyCognitiveEventBridge({ ...context, moduleId: 'stroop' });
 

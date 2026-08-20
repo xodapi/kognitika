@@ -72,11 +72,26 @@ const LegacyMentalMathTrainingCompleteSchema = z.object({
   }).strict(),
 }).strict();
 
+const LegacyAlphabetTableTrainingCompleteSchema = z.object({
+  type: z.literal('ALPHABET_TABLE'),
+  timeMs: z.number().int().nonnegative().max(MAX_SESSION_DURATION_MS),
+  accuracy: z.number().finite().min(0).max(100),
+  errors: z.number().int().min(0).max(33),
+  score: z.number().int().min(0).max(1_000),
+  metadata: z.object({
+    mode: z.enum(['balanced', 'alternating', 'switching']),
+    correctAnswers: z.number().int().min(0).max(33),
+    totalQuestions: z.number().int().min(9).max(33),
+    averageReactionTimeMs: z.number().int().min(0).max(MAX_SESSION_DURATION_MS),
+  }).strict(),
+}).strict();
+
 const LegacyAnyTrainingCompleteSchema = z.union([
   LegacyTrainingCompleteSchema,
   LegacyStroopTrainingCompleteSchema,
   LegacySchulte90TrainingCompleteSchema,
   LegacyMentalMathTrainingCompleteSchema,
+  LegacyAlphabetTableTrainingCompleteSchema,
 ]);
 
 const LegacyTrainingAbandonedSchema = z.object({
@@ -97,7 +112,7 @@ export const LegacyCognitiveEventNameSchema = z.enum([
 
 export interface LegacyCognitiveEventBridgeContext {
   sessionId: string;
-  moduleId: 'schulte' | 'schulte-90' | 'numerical' | 'nback' | 'logical' | 'stroop' | 'mental-math';
+  moduleId: 'schulte' | 'schulte-90' | 'numerical' | 'nback' | 'logical' | 'stroop' | 'mental-math' | 'alphabet-table';
   moduleVersion: string;
   startedAt: string;
 }
@@ -152,7 +167,7 @@ export class LegacyCognitiveEventBridge {
 
     let event: CognitiveInteractionEvent | null = null;
     if (envelope.event === 'CELL_CLICK') {
-      if (this.context.moduleId === 'mental-math') return null;
+      if (this.context.moduleId === 'mental-math' || this.context.moduleId === 'alphabet-table') return null;
       const parsed = (this.context.moduleId === 'schulte-90'
         ? LegacySchulte90CellClickSchema
         : LegacyCellClickSchema).safeParse(envelope.data);
@@ -187,6 +202,14 @@ export class LegacyCognitiveEventBridge {
       const parsed = LegacyAnyTrainingCompleteSchema.safeParse(envelope.data);
       if (!parsed.success || !this.matchesModule(parsed.data.type)) return null;
       if (parsed.data.timeMs !== envelope.tMs) return null;
+      if (
+        parsed.data.type === 'ALPHABET_TABLE'
+        && (
+          parsed.data.errors + parsed.data.metadata.correctAnswers !== parsed.data.metadata.totalQuestions
+          || parsed.data.accuracy !== (parsed.data.metadata.correctAnswers / parsed.data.metadata.totalQuestions) * 100
+          || parsed.data.score !== Math.round(parsed.data.accuracy * 10)
+        )
+      ) return null;
       const terminalCompletedAt = completedAt(this.context.startedAt, envelope.tMs);
       if (!terminalCompletedAt) return null;
 
@@ -214,6 +237,7 @@ export class LegacyCognitiveEventBridge {
       || (this.context.moduleId === 'logical' && type === 'LOGICAL_SEQUENCE')
       || (this.context.moduleId === 'stroop' && type === 'STROOP')
       || (this.context.moduleId === 'mental-math' && type === 'MENTAL_MATH')
+      || (this.context.moduleId === 'alphabet-table' && type === 'ALPHABET_TABLE')
     );
   }
 }

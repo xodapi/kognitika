@@ -187,6 +187,13 @@ describe('canonical cognitive event contract', () => {
     });
   });
 
+  it('declares Alphabet Table as legacy-event coverage', () => {
+    expect(getCognitiveModuleCoverage('/alphabet-table')).toMatchObject({
+      moduleId: 'alphabet-table',
+      currentCapture: 'legacy-events',
+    });
+  });
+
   it('declares Schulte 90 as legacy-event coverage', () => {
     expect(getCognitiveModuleCoverage('/schulte-90')).toMatchObject({
       moduleId: 'schulte-90',
