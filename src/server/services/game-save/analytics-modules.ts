@@ -1,5 +1,13 @@
 import { AnalyticsModuleDefinition } from './analytics-module-definition.ts';
 
+/** Language Scanner semantic rule-selection test */
+export class LanguageScannerAnalyticsModule implements AnalyticsModuleDefinition {
+  readonly moduleId = 'language-scanner';
+  supports(gameType: string): boolean {
+    return gameType === 'LANGUAGE_SCANNER';
+  }
+}
+
 /** Schulte tables (Schulte and Gorbov variations) */
 export class SchulteAnalyticsModule implements AnalyticsModuleDefinition {
   readonly moduleId = 'schulte';

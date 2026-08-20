@@ -18,6 +18,7 @@ import {
   NoiseReductionAnalyticsModule,
   DecryptorAnalyticsModule,
   RealityCheckAnalyticsModule,
+  LanguageScannerAnalyticsModule,
 } from './analytics-modules.ts';
 
 export const CANONICAL_ANALYTICS_MODULE_IDS = [
@@ -39,6 +40,7 @@ export const CANONICAL_ANALYTICS_MODULE_IDS = [
   'noise-reduction',
   'decryptor',
   'reality-check',
+  'language-scanner',
 ] as const;
 
 let _registry: AnalyticsModuleRegistry | null = null;
@@ -70,6 +72,7 @@ export function getAnalyticsModuleRegistry(): AnalyticsModuleRegistry {
     _registry.register(new NoiseReductionAnalyticsModule());
     _registry.register(new DecryptorAnalyticsModule());
     _registry.register(new RealityCheckAnalyticsModule());
+    _registry.register(new LanguageScannerAnalyticsModule());
   }
   
   return _registry;

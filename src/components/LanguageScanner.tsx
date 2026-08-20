@@ -1,6 +1,8 @@
-import React from 'react';
+import React, { useCallback, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useLanguageScannerEngine } from '../hooks/useLanguageScannerEngine';
+import { useAuth } from '../hooks/useAuth';
+import { useGameAttempt } from '../lib/game-attempt-client';
 import {
   Shield, 
   CheckCircle, 
@@ -20,11 +22,43 @@ import { haptic } from '../lib/haptic';
 
 export const LanguageScanner: React.FC = () => {
   const engine = useLanguageScannerEngine();
-  const { state, startScan, flagCard, startGame } = engine;
+  const { state, startScan, flagCard, startGame, getCompletedAnalyticsJob } = engine;
+  const { token } = useAuth();
+  const { beginAttempt, saveAttempt } = useGameAttempt(token);
+  const savedSessionRef = useRef(false);
 
-  React.useEffect(() => {
-    engine.startGame(1, 123);
-  }, []);
+  const beginScannerSession = useCallback(async (level: number) => {
+    try {
+      await beginAttempt('LANGUAGE_SCANNER');
+      savedSessionRef.current = false;
+      startGame(level, 123);
+    } catch {
+      // Fail closed: do not start an unprotected scanner session.
+    }
+  }, [beginAttempt, startGame]);
+
+  useEffect(() => {
+    void beginScannerSession(1);
+  }, [beginScannerSession]);
+
+  useEffect(() => {
+    if (state.phase !== 'result' || !token || savedSessionRef.current) return;
+    const analyticsJob = getCompletedAnalyticsJob();
+    if (!analyticsJob) return;
+    savedSessionRef.current = true;
+    void saveAttempt({
+      timeMs: state.timeMs,
+      isCompleted: true,
+      metadata: {
+        score: state.score,
+        maxScore: state.maxScore,
+        hits: state.hits,
+        misses: state.misses,
+        falsePositives: state.falsePositives,
+      },
+      analyticsJob,
+    }).catch(() => {});
+  }, [getCompletedAnalyticsJob, saveAttempt, state.falsePositives, state.hits, state.maxScore, state.misses, state.phase, state.score, state.timeMs, token]);
 
   // Instruction Phase
   if (state.phase === 'memorize') {
@@ -114,7 +148,7 @@ export const LanguageScanner: React.FC = () => {
           maxScore={state.maxScore}
           errors={state.misses + state.falsePositives}
           durationMs={state.timeMs}
-          onRepeat={() => startGame(state.level, 123)}
+          onRepeat={() => { void beginScannerSession(state.level); }}
           className="max-w-3xl"
         />
       </div>

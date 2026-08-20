@@ -31,6 +31,7 @@ describe('collector save delivery contract', () => {
     ['NoiseReduction', 'NOISE_REDUCTION'],
     ['Decryptor', 'DECRYPTOR'],
     ['RealityCheck', 'REALITY_CHECK'],
+    ['LanguageScanner', 'LANGUAGE_SCANNER'],
   ])('%s saves completed canonical analytics jobs through game attempts', (component, gameType) => {
     const source = readComponent(component);
 

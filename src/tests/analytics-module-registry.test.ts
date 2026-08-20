@@ -4,6 +4,7 @@ import {
   SchulteAnalyticsModule,
   StroopAnalyticsModule,
   NBackAnalyticsModule,
+  LanguageScannerAnalyticsModule,
 } from '../server/services/game-save/analytics-modules.ts';
 import {
   CANONICAL_ANALYTICS_MODULE_IDS,
@@ -125,6 +126,14 @@ describe('Analytics module implementations', () => {
       expect(module.supports('STROOP')).toBe(false);
     });
   });
+
+  describe('LanguageScannerAnalyticsModule', () => {
+    it('supports only LANGUAGE_SCANNER', () => {
+      const module = new LanguageScannerAnalyticsModule();
+      expect(module.supports('LANGUAGE_SCANNER')).toBe(true);
+      expect(module.supports('STROOP')).toBe(false);
+    });
+  });
 });
 
 describe('getAnalyticsModuleRegistry', () => {
@@ -168,6 +177,7 @@ describe('getAnalyticsModuleRegistry', () => {
     expect(registry.findByGameType('NOISE_REDUCTION')).toBeDefined();
     expect(registry.findByGameType('DECRYPTOR')).toBeDefined();
     expect(registry.findByGameType('REALITY_CHECK')).toBeDefined();
+    expect(registry.findByGameType('LANGUAGE_SCANNER')).toBeDefined();
   });
 
   it('resets the singleton when resetAnalyticsModuleRegistry is called', () => {
