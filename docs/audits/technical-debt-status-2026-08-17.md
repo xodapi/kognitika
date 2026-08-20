@@ -113,8 +113,8 @@ Both audits exited with code 0 and produced no findings. No unused production or
 3. **#140/#146/#147** — canonical event lifecycle is partially implemented:
    versioned contract, local collector lifecycle, and additive Schulte /
    Numerical / N-back / Logical / Stroop / Schulte-90 / Mental Math /
-   Alphabet Table legacy bridges now exist. Logical's legacy stream has no
-   wrong-answer event, while the extended modules preserve only strict
+   Alphabet Table / Typing legacy bridges now exist. Logical's legacy stream
+   has no wrong-answer event, while the extended modules preserve only strict
    allowlisted completion shapes. Full module coverage, reviewed lifecycle
    sink, and runtime wiring remain.
 4. **#149/#150/#151** — contracts are repository-implemented; update GitHub

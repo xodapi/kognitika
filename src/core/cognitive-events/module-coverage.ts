@@ -18,6 +18,7 @@ const LEGACY_EVENT_MODULE_IDS = new Set([
   'stroop',
   'mental-math',
   'alphabet-table',
+  'typing',
 ]);
 
 export const COGNITIVE_MODULE_COVERAGE: readonly CognitiveModuleCoverage[] = Object.entries(PUBLIC_PRACTICE_ROUTES)

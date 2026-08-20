@@ -646,4 +646,54 @@ describe('legacy cognitive EventBus bridge', () => {
       data: { num: 2, isCorrect: true, reactionTimeMs: 50 },
     })).toBeNull();
   });
+
+  it('maps only strict Typing completions and discards typing metrics', () => {
+    const payload = { type: 'TYPING', cpm: 300, wpm: 60, accuracy: 98.5, errors: 2, timeMs: 60_000 };
+    const bridge = new LegacyCognitiveEventBridge({ ...context, moduleId: 'typing' });
+
+    const completion = bridge.translate({
+      legacyEventId: 'typing-complete',
+      event: 'TRAINING_COMPLETE',
+      tMs: 60_000,
+      data: payload,
+    });
+    expect(completion).toMatchObject({
+      kind: 'session_completed',
+      moduleId: 'typing',
+      completedAt: '2026-01-02T00:01:00.000Z',
+    });
+    for (const field of ['type', 'cpm', 'wpm', 'accuracy', 'errors', 'timeMs', 'metadata', 'text']) {
+      expect(completion).not.toHaveProperty(field);
+    }
+  });
+
+  it('rejects invalid Typing completions, wrong modules, and post-terminal input', () => {
+    const valid = { type: 'TYPING', cpm: 300, wpm: 60, accuracy: 98.5, errors: 2, timeMs: 60_000 };
+    const invalidPayloads = [
+      { ...valid, type: 'typing' },
+      { ...valid, cpm: Number.NaN },
+      { ...valid, cpm: -1 },
+      { ...valid, wpm: Number.POSITIVE_INFINITY },
+      { ...valid, accuracy: -0.1 },
+      { ...valid, accuracy: 100.1 },
+      { ...valid, errors: -1 },
+      { ...valid, timeMs: 60_001 },
+      { ...valid, timeMs: 1.5 },
+      { ...valid, text: 'private text' },
+      { ...valid, metadata: { source: 'legacy' } },
+      { ...valid, wpm: undefined },
+    ];
+
+    for (const [index, data] of invalidPayloads.entries()) {
+      const bridge = new LegacyCognitiveEventBridge({ ...context, moduleId: 'typing' });
+      expect(bridge.translate({ legacyEventId: `invalid-typing-${index}`, event: 'TRAINING_COMPLETE', tMs: 60_000, data })).toBeNull();
+    }
+
+    const wrongModuleBridge = new LegacyCognitiveEventBridge(context);
+    expect(wrongModuleBridge.translate({ legacyEventId: 'typing-wrong-module', event: 'TRAINING_COMPLETE', tMs: 60_000, data: valid })).toBeNull();
+
+    const bridge = new LegacyCognitiveEventBridge({ ...context, moduleId: 'typing' });
+    expect(bridge.translate({ legacyEventId: 'typing-terminal', event: 'TRAINING_COMPLETE', tMs: 60_000, data: valid })).not.toBeNull();
+    expect(bridge.translate({ legacyEventId: 'typing-after-terminal', event: 'TRAINING_COMPLETE', tMs: 60_001, data: valid })).toBeNull();
+  });
 });

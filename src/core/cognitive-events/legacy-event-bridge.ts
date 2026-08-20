@@ -86,12 +86,22 @@ const LegacyAlphabetTableTrainingCompleteSchema = z.object({
   }).strict(),
 }).strict();
 
+const LegacyTypingTrainingCompleteSchema = z.object({
+  type: z.literal('TYPING'),
+  cpm: z.number().finite().nonnegative(),
+  wpm: z.number().finite().nonnegative(),
+  accuracy: z.number().finite().min(0).max(100),
+  errors: z.number().finite().nonnegative(),
+  timeMs: z.number().int().nonnegative().max(MAX_SESSION_DURATION_MS),
+}).strict();
+
 const LegacyAnyTrainingCompleteSchema = z.union([
   LegacyTrainingCompleteSchema,
   LegacyStroopTrainingCompleteSchema,
   LegacySchulte90TrainingCompleteSchema,
   LegacyMentalMathTrainingCompleteSchema,
   LegacyAlphabetTableTrainingCompleteSchema,
+  LegacyTypingTrainingCompleteSchema,
 ]);
 
 const LegacyTrainingAbandonedSchema = z.object({
@@ -112,7 +122,7 @@ export const LegacyCognitiveEventNameSchema = z.enum([
 
 export interface LegacyCognitiveEventBridgeContext {
   sessionId: string;
-  moduleId: 'schulte' | 'schulte-90' | 'numerical' | 'nback' | 'logical' | 'stroop' | 'mental-math' | 'alphabet-table';
+  moduleId: 'schulte' | 'schulte-90' | 'numerical' | 'nback' | 'logical' | 'stroop' | 'mental-math' | 'alphabet-table' | 'typing';
   moduleVersion: string;
   startedAt: string;
 }
@@ -238,6 +248,7 @@ export class LegacyCognitiveEventBridge {
       || (this.context.moduleId === 'stroop' && type === 'STROOP')
       || (this.context.moduleId === 'mental-math' && type === 'MENTAL_MATH')
       || (this.context.moduleId === 'alphabet-table' && type === 'ALPHABET_TABLE')
+      || (this.context.moduleId === 'typing' && type === 'TYPING')
     );
   }
 }

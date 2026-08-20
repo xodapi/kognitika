@@ -180,6 +180,14 @@ describe('canonical cognitive event contract', () => {
     });
   });
 
+  it('declares typing as legacy-event coverage', () => {
+    expect(getCognitiveModuleCoverage('/typing')).toMatchObject({
+      moduleId: 'typing',
+      route: '/typing',
+      currentCapture: 'legacy-events',
+    });
+  });
+
   it('declares Stroop as legacy-event coverage', () => {
     expect(getCognitiveModuleCoverage('/stroop')).toMatchObject({
       moduleId: 'stroop',
