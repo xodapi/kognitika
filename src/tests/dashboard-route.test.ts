@@ -16,8 +16,11 @@ const JWT_SECRET = 'synthetic-dashboard-route-secret';
 let dashboardRoutes: Router;
 const servers: HttpServer[] = [];
 
-const userMock = async (): ReturnType<DashboardRepository['findUser']> => null;
-const sessionsMock = async (): ReturnType<DashboardRepository['findRecentCompletedSessions']> => [];
+const userMock = async (_userId: string): ReturnType<DashboardRepository['findUser']> => null;
+const sessionsMock = async (
+  _userId: string,
+  _limit: number,
+): ReturnType<DashboardRepository['findRecentCompletedSessions']> => [];
 let findUser = userMock;
 let findRecentCompletedSessions = sessionsMock;
 
