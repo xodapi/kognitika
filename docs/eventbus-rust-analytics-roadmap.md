@@ -47,7 +47,7 @@ Never include raw Brain ID, user ID in analytics payloads, email, tokens, creden
 
 ### Phase 1, collector adoption in engines
 
-- [x] Define the canonical durable-analytics adopter inventory: Schulte, N-Back, Stroop, Numerical, Logical Sequence, Typing, Spatial, Mental Math, Dispatcher, Collision, Topology, Noise Reduction, Decryptor, Reality Check, Schulte 90, Stroop Alphabet, Alphabet Table, and Situational. The exported registry inventory and contract test are authoritative.
+- [x] Define the canonical durable-analytics adopter inventory: Schulte, N-Back, Stroop, Numerical, Logical Sequence, Typing, Spatial, Mental Math, Dispatcher, Collision, Topology, Noise Reduction, Decryptor, Reality Check, Language Scanner, Schulte 90, Stroop Alphabet, Alphabet Table, and Situational. The exported registry inventory and contract test are authoritative.
 - [x] Record `trial_started`, `trial_answered`, and exactly one terminal event for canonical adopters where applicable. Checkpoints remain module-specific.
 - [x] Preserve legacy events only through the bridge for canonical adopters.
 - [x] Treat collector-only and presentation-only modules as outside the durable game-save boundary until they implement protected game attempts, canonical job persistence, registry support, and fixtures. They are not silently pending canonical adopters.
@@ -61,7 +61,7 @@ Never include raw Brain ID, user ID in analytics payloads, email, tokens, creden
 - [x] Insert opt-in `analytics_outbox` metadata in the authoritative Node/Prisma game-save transaction.
 - [x] Implement idempotency, worker leases, bounded retry, dead-letter state, and aggregate-only outbox metrics.
 - [x] Implement a Node-owned dispatcher method that leases an outbox row, reloads and revalidates the canonical job by source session, persists the TypeScript summary, and completes or retries the lease. Rust sidecar delivery remains Phase 3.
-- [x] Persist a validated canonical job in `completed_session_analytics_jobs`, bound one-to-one to the source `GameSession`, outside `GameSession.metadata` and within the authoritative transaction. Reviewed request bindings cover Schulte, Stroop, N-Back, Numerical, Logical Sequence, Mental Math, Situational Judgment, Spatial Concealment, Schulte 90, Stroop Alphabet, Alphabet Table, Collision Detector, Async Dispatcher, Topology Memory, and Speed Typing. Topology waits for the completed level save before creating the next level's server attempt, preserving one attempt and one canonical job per level.
+- [x] Persist a validated canonical job in `completed_session_analytics_jobs`, bound one-to-one to the source `GameSession`, outside `GameSession.metadata` and within the authoritative transaction. Reviewed request bindings cover Schulte, Stroop, N-Back, Numerical, Logical Sequence, Mental Math, Situational Judgment, Spatial Concealment, Language Scanner, Schulte 90, Stroop Alphabet, Alphabet Table, Collision Detector, Async Dispatcher, Topology Memory, and Speed Typing. Topology waits for the completed level save before creating the next level's server attempt, preserving one attempt and one canonical job per level.
 - [x] Remove the fallback EventBus subscriber that analyzed `events: []`. Only persisted, validated canonical jobs are eligible for Node dispatch.
 - [x] Add an independently feature-flagged Node worker with lease recovery, bounded batches, overlap protection, and shutdown cleanup. It persists TypeScript summaries only; Rust delivery remains disabled.
 

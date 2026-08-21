@@ -122,7 +122,8 @@ Both audits exited with code 0 and produced no findings. No unused production or
    now documented as an explicit pending approval gate without changing
    runtime behavior. Integrated normalization, actual backfill implementation,
    and wider Rust parity remain.
-3. **#140/#146/#147** — canonical event lifecycle is partially implemented:
+3. **#140/#146/#147** — canonical event lifecycle is implemented for all 19
+   collector-backed canonical modules:
    versioned contract, local collector lifecycle, and additive Schulte /
    Numerical / N-back / Logical / Stroop / Schulte-90 / Mental Math /
    Alphabet Table / Typing legacy bridges now exist. Language Scanner now has
@@ -130,8 +131,8 @@ Both audits exited with code 0 and produced no findings. No unused production or
    wrong-answer event, while the extended modules preserve only strict
    allowlisted completion shapes. A source-level contract now requires every
    collector-backed component to deliver its completed canonical job through
-   the protected save path. Full module coverage, reviewed lifecycle sink,
-   and runtime wiring remain.
+   the protected save path. Presentation-only practice flows remain explicitly
+   outside this inventory; no collector-only canonical module remains.
 4. **#149/#150/#151** — contracts are repository-implemented; update GitHub
    issue labels/status after owner review rather than claiming production
    wearable rollout.

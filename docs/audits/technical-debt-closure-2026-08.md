@@ -12,7 +12,7 @@ separate product, security, and deployment gates are approved.
 - Privacy notice is a canonical, non-navigable system route. It is excluded
   from training knowledge-base requirements and has route, accessibility, and
   external-inventory-link regression coverage.
-- The durable analytics inventory is explicit: 18 registered game-save
+- The durable analytics inventory is explicit: 19 registered game-save
   modules are the canonical adopter set. Collector-only and presentation-only
   modules are not represented as pending durable adopters.
 - Analytics outbox retention is bounded to 100 completed rows per cycle.

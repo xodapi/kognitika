@@ -230,6 +230,7 @@ describe('game save idempotency service', () => {
     ['noise-reduction', 'NOISE_REDUCTION', 'noise-reduction:signal-response'],
     ['decryptor', 'DECRYPTOR', 'decryptor:fact-selection'],
     ['reality-check', 'REALITY_CHECK', 'reality-check:classification'],
+    ['language-scanner', 'LANGUAGE_SCANNER', 'language-scanner:rule-selection'],
   ])('binds a validated %s canonical job to %s', async (moduleId, gameType, trialType) => {
     const { saveCompletedGame } = await import('../server/services/game-save.ts');
     const analyticsJob = completedAnalyticsJob(moduleId, moduleId, trialType);
@@ -263,6 +264,7 @@ describe('game save idempotency service', () => {
     ['noise-reduction', 'NOISE_REDUCTION', 'noise-reduction:signal-response'],
     ['decryptor', 'DECRYPTOR', 'decryptor:fact-selection'],
     ['reality-check', 'REALITY_CHECK', 'reality-check:classification'],
+    ['language-scanner', 'LANGUAGE_SCANNER', 'language-scanner:rule-selection'],
   ])('rejects %s canonical jobs for a different game type before starting a transaction', async (moduleId, gameType, trialType) => {
     const { saveCompletedGame } = await import('../server/services/game-save.ts');
 
