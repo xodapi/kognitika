@@ -4,7 +4,6 @@ import {
   DEFAULT_RUST_ANALYTICS_CANARY_THRESHOLDS,
   RUST_ANALYTICS_SIDECAR_MAX_COUNTER,
   RustAnalyticsSidecarClient,
-  RustAnalyticsSidecarError,
   evaluateRustAnalyticsCanary,
   isRustAnalyticsSidecarEnabled,
 } from '../server/services/rust-analytics-sidecar.ts';
@@ -117,7 +116,7 @@ describe('Rust analytics sidecar adapter', () => {
     for (const [request, code] of cases) {
       const fetchImpl = vi.fn().mockImplementation(request);
       const client = new RustAnalyticsSidecarClient({ baseUrl: 'http://sidecar.internal', timeoutMs: 100, fetchImpl });
-      await expect(client.analyze(input, typescriptOutput)).rejects.toMatchObject<RustAnalyticsSidecarError>({ code });
+      await expect(client.analyze(input, typescriptOutput)).rejects.toMatchObject({ code });
       expect(client.getMetrics().failures[code as keyof ReturnType<typeof client.getMetrics>['failures']]).toBe(1);
     }
   });
