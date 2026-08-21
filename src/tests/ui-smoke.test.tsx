@@ -17,14 +17,14 @@ vi.mock('../hooks/useLanguageScannerEngine', () => ({
 
 vi.mock('../hooks/useRealityCheckEngine', () => ({
   useRealityCheckEngine: (): RealityCheckEngine => ({
-    currentPair: { fact: 'Test', statement: 'Test' },
+    currentPair: { id: 0, fact: 'Test', statement: 'Test', isHallucination: false },
     progress: 0,
     isActive: true,
     startSession: vi.fn(),
     submitAnswer: vi.fn(),
     score: 0,
     pairsRemaining: 10,
-    getCompletedAnalyticsJob: vi.fn(() => undefined),
+    getCompletedAnalyticsJob: vi.fn(() => null),
     isFinished: false,
   })
 }));
