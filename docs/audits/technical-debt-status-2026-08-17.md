@@ -1,7 +1,7 @@
-# Technical Debt Status, 2026-08-18
+# Technical Debt Status, 2026-08-21
 
 **Branch:** main  
-**Head:** `553013f` (`feat: add local Health Connect summary adapter`)
+**Head:** `47df272` (`docs: record longitudinal quality threshold governance`)
 **Audit basis:** audit documents in `docs/audits/`, current source contracts, recent CI runs, and open GitHub issues.
 
 ---
@@ -21,6 +21,7 @@
 | `d11419b` | Added physiological session summary contract |
 | `a0b0eea` | Added opt-in, shadow-only wearable recommendation policy |
 | `553013f` | Added dependency-injected local-only Health Connect summary adapter |
+| `47df272` | Recorded conservative #144 threshold governance gate without changing runtime behavior |
 
 P3 audit item — AUDIT_BRIEF.md domain staleness — is **already resolved**; the file correctly references `https://kognitika.ru` and `af58af6` is the documented Prisma baseline commit, not a claim about head.
 
@@ -86,15 +87,16 @@ Both audits exited with code 0 and produced no findings. No unused production or
 | Analytics registry, collector, game-save contracts (73) | Passed |
 | Analytics outbox, shutdown, admin, sidecar, canary (41) | Passed |
 | Dependency security regression guards (added in #272) | Passed |
-| TypeScript typecheck | Passed |
+| TypeScript typecheck and test typecheck | Passed |
 | Prisma generate | Passed |
 | Production Vite build | Passed |
-| Full local Vitest suite | 663 tests passed (Windows bind-mount; confirm in Linux CI) |
+| Full local Vitest suite | 772 tests passed (Windows bind-mount; confirm in Linux CI) |
 | Wearable/Health Connect contract suites | 37 focused tests passed |
 | Source TypeScript check | Passed |
 | `a0b0eea` CI, Android, protected deployment | Passed |
 | `d11419b` CI and protected deployment | Passed |
-| `553013f` Secret Scan | Passed; CI/deployment pending at audit time |
+| `f08ee7b` protected workflows | CI, Secret Scan, Android Build, and Deploy passed |
+| `47df272` workflow status | GitHub API status unavailable during this audit due to TLS timeout |
 
 ---
 
@@ -111,9 +113,10 @@ Both audits exited with code 0 and produced no findings. No unused production or
    module-scoped strata projection now reads only owned canonical-job/summary
    intersections and exposes aggregate-safe policy/exclusion counts. The v1
    policy allow-lists only `mental-math@1` levels 1–4 and `nback@1` `n-2`;
-   its private inclusive quality boundary is `1.0`. Integrated normalization,
-   actual backfill implementation, future threshold review, and wider Rust
-   parity remain.
+   its private inclusive quality boundary is `1.0`. Threshold governance is
+   now documented as an explicit pending approval gate without changing
+   runtime behavior. Integrated normalization, actual backfill implementation,
+   and wider Rust parity remain.
 3. **#140/#146/#147** — canonical event lifecycle is partially implemented:
    versioned contract, local collector lifecycle, and additive Schulte /
    Numerical / N-back / Logical / Stroop / Schulte-90 / Mental Math /
@@ -130,5 +133,5 @@ Both audits exited with code 0 and produced no findings. No unused production or
 5. **Logging privacy** — client EventBus logging now emits only event names;
    server errors omit internal identifiers; mobile runtime uses a sanitized
    logger; and source contracts reject direct runtime console calls and
-   payload/identifier regressions. The unrelated test typecheck backlog
-   remains outside this remediation.
+   payload/identifier regressions. The former test typecheck backlog was
+   isolated and resolved in test-only commits through `f08ee7b`.
