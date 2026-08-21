@@ -101,7 +101,7 @@ describe('durable analytics outbox contract', () => {
 
     const metrics = buildAnalyticsOutboxMetrics([
       entry,
-      { ...entry, id: 'entry-dead', state: 'dead', attemptCount: 2, lastErrorCode: 'analyzer_unavailable' },
+      { occurredAt: entry.occurredAt, state: 'dead' },
     ], now);
     expect(metrics).toEqual({ pending: 1, processing: 0, retry: 0, completed: 0, dead: 1, oldestLagMs: 0, failures: 1 });
     expect(entry.authority).toBe('typescript');
