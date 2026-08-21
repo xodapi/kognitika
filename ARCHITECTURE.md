@@ -95,7 +95,11 @@ The canonical v1 event contract lives in `src/core/cognitive-events`. `Cognitive
 
 The opt-in `analytics_outbox` is Node/Prisma-owned. It supports idempotency keys, leases, bounded retries, dead-letter state, and aggregate-only operational metrics. A saved game must never wait for or depend on a Rust analysis result.
 
-The currently registered `game:completed` subscriber still creates a summary job with `events: []`. That best-effort legacy path cannot produce event-level analysis and must be replaced by collector-backed delivery before analytics outputs are treated as behavior-level session analysis.
+The former fallback `game:completed` subscriber that created summary jobs with
+`events: []` has been removed. `game:completed` is now only a best-effort
+server-domain notification after authoritative persistence. Durable analytics
+accepts only validated, collector-backed canonical jobs written by the
+Node/Prisma game-save transaction.
 
 ---
 

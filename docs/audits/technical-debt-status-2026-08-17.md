@@ -51,8 +51,12 @@ P3 audit item — AUDIT_BRIEF.md domain staleness — is **already resolved**; t
 
 ### P3 — Documentation / future-gated
 
-- Wiki artifacts advertise `/api/docs` and `/api/docs.json` as planned endpoints. These are not live. Correct through the owning wiki workflow when OpenAPI is promoted.
-- `game:completed` subscriber still creates summary jobs with `events: []`. Requires collector-backed delivery before analytics outputs can claim event-level behavior analysis. Tracked in ARCHITECTURE.md durable analytics boundary.
+- The repository wiki API reference correctly states that `/api/docs` and
+  `/api/docs.json` are not live. Keep it aligned with issue #138 when OpenAPI
+  is promoted.
+- The former `game:completed` fallback that created `events: []` summaries was
+  removed. The server-domain event remains non-durable; only validated,
+  collector-backed canonical jobs enter Node/Prisma analytics delivery.
 
 ---
 
