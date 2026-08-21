@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { AnalyticsSummaryRepository } from '../server/repositories/analytics-summary-repository.ts';
 
 const prismaMock = vi.hoisted(() => ({
   $queryRaw: vi.fn(),
@@ -15,8 +16,10 @@ const prismaMock = vi.hoisted(() => ({
 }));
 
 vi.mock('../lib/prisma.ts', () => ({ default: prismaMock }));
-const summaryRepository = vi.hoisted(() => ({
+const summaryRepository: AnalyticsSummaryRepository = vi.hoisted(() => ({
   upsert: vi.fn(),
+  findSummaries: vi.fn().mockResolvedValue([]),
+  findTrendRows: vi.fn().mockResolvedValue([]),
 }));
 
 const now = new Date('2026-08-03T02:20:00.000Z');
