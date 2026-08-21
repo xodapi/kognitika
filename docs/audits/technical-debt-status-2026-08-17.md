@@ -48,6 +48,7 @@ P3 audit item — AUDIT_BRIEF.md domain staleness — is **already resolved**; t
 | #224 | Publish verified data-processing inventory, retention policy, local-first roadmap | ✅ **INVENTORY IMPLEMENTED** — legal/owner assignment and protected infrastructure evidence remain |
 | #248 | Fix mobile testing guide and publish as trainer standard | ✅ **COMPLETE** — the 13-trainer standard is documented in `docs/mobile-testing-guide.md` |
 | #150 | Health Connect adapter with local-only summaries | ✅ **LOCAL ADAPTER IMPLEMENTED** — dependency-injected aggregate mapping; no SDK or permissions integration |
+| #212 | Request-only investor data room workflow | ✅ **RUNBOOK DEFINED** — `docs/investor-data-room-runbook.md`; provider configuration and owner evidence remain external |
 
 ### P3 — Documentation / future-gated
 
