@@ -1,9 +1,12 @@
 import { describe, expect, it, vi } from 'vitest';
 import { WearableConsentState } from '../core/wearable-consent/index.ts';
-import { readHealthConnectLocalSummary } from '../../apps/mobile/src/wearable/health-connect-local-summary.ts';
+import {
+  readHealthConnectLocalSummary,
+  type HealthConnectAggregateRecord,
+} from '../../apps/mobile/src/wearable/health-connect-local-summary.ts';
 
 const now = new Date('2026-08-18T10:00:00.000Z');
-const record = {
+const record: HealthConnectAggregateRecord = {
   capability: 'heart_rate' as const,
   capabilityVersion: 'health-connect-aggregate-v1',
   windowStartedAt: '2026-08-18T09:55:00.000Z',
