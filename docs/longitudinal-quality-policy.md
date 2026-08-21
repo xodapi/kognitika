@@ -18,6 +18,28 @@ returned by the API. It has no persistence, schema migration, backfill, UI, raw
 identity, telemetry, diagnosis, fraud detection, effort assessment, clinical,
 or cognitive interpretation behavior.
 
+## Threshold governance record
+
+**Review status:** pending product/science/privacy approval; no threshold change
+is authorized by this document.
+
+**Current owner role:** product owner together with a science/privacy reviewer.
+An accountable named owner, review date, and evidence link must be recorded
+before changing the policy version or threshold.
+
+**Current rationale:** keep the existing `1.0` boundary because it is the
+smallest already-reviewed configuration supported by the v1 contract, is
+inclusive at equality, and avoids silently excluding otherwise valid completed
+sessions while the strata mappings and source comparability remain narrow.
+This is an implementation rationale, not scientific validation or a claim that
+the score is a clinical, fraud, effort, or cognitive measure.
+
+Before any future change, the review record must include representative
+per-stratum coverage, equal/above/below-boundary fixtures, invalid-input
+behavior, comparability evidence, aggregate exclusion impact, retention/privacy
+impact, and an explicit rollback/versioning decision. The API must continue to
+omit the private threshold and identity-bearing source fields.
+
 ## Resolution order
 
 `maxSuspiciousPatternScore` is required to be finite and in `[0, 1]`.

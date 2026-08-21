@@ -45,6 +45,11 @@ describe('longitudinal quality policy', () => {
       .toEqual({ eligible: false, reason: 'score_exceeds_policy' });
   });
 
+  it('keeps the current policy version and threshold stable until governance approval', () => {
+    expect(LONGITUDINAL_QUALITY_POLICY_VERSION).toBe('longitudinal-quality-policy-v1');
+    expect(LONGITUDINAL_MAX_SUSPICIOUS_PATTERN_SCORE).toBe(1.0);
+  });
+
   it.each([Number.NaN, Number.NEGATIVE_INFINITY, -0.01, 1.01])(
     'requires a finite threshold in the unit interval',
     (threshold) => {
