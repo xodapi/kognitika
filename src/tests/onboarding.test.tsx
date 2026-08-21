@@ -74,7 +74,7 @@ describe('onboarding flow', () => {
       />,
     );
 
-    const close = screen.getByRole('button', { name: 'Закрыть онбординг' });
+    const close = screen.getByRole('button', { name: 'Закрыть и больше не показывать' });
     const next = screen.getByRole('button', { name: 'Далее' });
 
     close.focus();
@@ -97,5 +97,21 @@ describe('onboarding flow', () => {
     expect(window.localStorage.getItem(ONBOARDING_STATE_KEY)).not.toMatch(
       /brainId|userId|email|token|pseudonym/i,
     );
+  });
+
+  it('explains that skipping permanently dismisses onboarding', () => {
+    const onComplete = vi.fn();
+    render(
+      <OnboardingModal
+        isOpen
+        onComplete={onComplete}
+        onStartTraining={vi.fn()}
+        onOpenProfile={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Пропустить и больше не показывать' }));
+
+    expect(onComplete).toHaveBeenCalledOnce();
   });
 });

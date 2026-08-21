@@ -120,7 +120,7 @@ export function OnboardingModal({
           <button
             type="button"
             onClick={onComplete}
-            aria-label="Закрыть онбординг"
+            aria-label="Закрыть и больше не показывать"
             className="rounded-xl p-2 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
           >
             <X className="h-5 w-5" />
@@ -273,7 +273,7 @@ export function OnboardingModal({
             onClick={onComplete}
             className="px-4 py-3 text-sm font-black uppercase tracking-widest text-muted-foreground hover:text-foreground"
           >
-            Пропустить
+            Пропустить и больше не показывать
           </button>
           <div className="flex flex-1 gap-3 sm:justify-end">
             {step > 0 && (

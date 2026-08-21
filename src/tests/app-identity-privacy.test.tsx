@@ -73,7 +73,7 @@ describe('App identity privacy', () => {
     expect(container).not.toHaveTextContent('00000000-0000-4000-8000-000000000488');
 
     expect(await screen.findByRole('dialog', { name: 'Зачем нужна Когнитика' })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Пропустить' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Пропустить и больше не показывать' }));
 
     fireEvent.click(screen.getAllByRole('button')[0]);
 
