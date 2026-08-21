@@ -10,7 +10,7 @@ describe('PrismaLongitudinalObservationRepository', () => {
       schemaVersion: 1, sessionId, moduleId: 'nback', moduleVersion: '1', category: 'cognitive',
     };
     const payload = {
-      schemaVersion: 1, jobId, analyzerVersion: 'analyze-session-v1',
+      jobId, analyzerVersion: 'analyze-session-v1',
       receivedAt: '2026-08-19T12:00:01.000Z', ...eventBase,
       startedAt: '2026-08-19T12:00:00.000Z', completedAt: completedAt.toISOString(),
       events: [
