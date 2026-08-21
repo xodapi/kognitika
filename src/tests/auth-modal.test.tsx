@@ -78,7 +78,7 @@ describe('AuthModal Brain ID public contract', () => {
   });
 
   it('offers a text access file with only the Brain ID and site link after registration', async () => {
-    const createObjectUrl = vi.fn(() => 'blob:synthetic-access-file');
+    const createObjectUrl = vi.fn<(object: Blob) => string>(() => 'blob:synthetic-access-file');
     const revokeObjectUrl = vi.fn();
     Object.defineProperty(window.URL, 'createObjectURL', { value: createObjectUrl, configurable: true });
     Object.defineProperty(window.URL, 'revokeObjectURL', { value: revokeObjectUrl, configurable: true });
@@ -92,11 +92,14 @@ describe('AuthModal Brain ID public contract', () => {
     fireEvent.click(screen.getByRole('button', { name: /Скачать файл доступа/i }));
 
     expect(createObjectUrl).toHaveBeenCalledOnce();
-    const [blob] = createObjectUrl.mock.calls[0];
+    const blob = createObjectUrl.mock.calls[0]?.[0];
     expect(blob).toBeInstanceOf(Blob);
-    await expect((blob as Blob).text()).resolves.toContain('Brain ID: BR-SYNTHETIC-001');
-    await expect((blob as Blob).text()).resolves.toContain(`Сайт: ${window.location.origin}`);
-    await expect((blob as Blob).text()).resolves.not.toContain('synthetic-token');
+    if (!(blob instanceof Blob)) {
+      throw new Error('Expected createObjectURL to receive a Blob');
+    }
+    await expect(blob.text()).resolves.toContain('Brain ID: BR-SYNTHETIC-001');
+    await expect(blob.text()).resolves.toContain(`Сайт: ${window.location.origin}`);
+    await expect(blob.text()).resolves.not.toContain('synthetic-token');
     expect(appendChild).toHaveBeenCalledWith(expect.objectContaining({
       download: 'kognitika-access.txt',
       href: 'blob:synthetic-access-file',
