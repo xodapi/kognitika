@@ -114,7 +114,7 @@ describe('ideas route notification contract', () => {
         title: 'Synthetic legacy idea',
         description: 'Synthetic legacy idea description.',
         status: 'open',
-        createdAt: '2026-01-01T00:00:00.000Z',
+        createdAt: new Date('2026-01-01T00:00:00.000Z'),
         user: {
           id: 'user_synthetic_idea',
           name: null,
@@ -145,13 +145,14 @@ describe('ideas route notification contract', () => {
       title: 'Synthetic idea title',
       description: 'Synthetic idea description without personal data.',
       status: 'PENDING',
-      createdAt: '2026-01-01T00:00:00.000Z',
+      createdAt: new Date('2026-01-01T00:00:00.000Z'),
       user: {
         id: 'user_synthetic_idea',
         name: null,
         pseudonym: 'Brain Synthetic',
         brainId: 'BR-SYNTHETIC-IDEA-SECRET',
       },
+      votes: [],
       _count: {
         votes: 0,
       },
