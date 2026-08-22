@@ -1,6 +1,7 @@
 /// <reference types="vite/client" />
 import {StrictMode} from 'react';
 import {createRoot} from 'react-dom/client';
+import { MotionConfig } from 'motion/react';
 import './lib/zod-config.ts';
 import App from './App.tsx';
 import { ThemeProvider } from './components/ThemeProvider.tsx';
@@ -32,9 +33,11 @@ const Router = nativeRuntime ? HashRouter : BrowserRouter;
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ThemeProvider attribute="data-theme" defaultTheme="light" enableSystem={false}>
-      <Router>
-        <App />
-      </Router>
+      <MotionConfig reducedMotion="user">
+        <Router>
+          <App />
+        </Router>
+      </MotionConfig>
     </ThemeProvider>
   </StrictMode>,
 );

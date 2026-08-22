@@ -27,6 +27,41 @@ for (const viewport of MOBILE_VIEWPORTS) {
       await installSyntheticApi(page);
     });
 
+    test('honors reduced motion without hiding shell content', async ({ page }) => {
+      await page.emulateMedia({ reducedMotion: 'reduce' });
+      await page.goto('/schulte', { waitUntil: 'networkidle' });
+      await expectAppReady(page);
+      await expect(page.getByRole('button', { name: 'Открыть меню' }).first()).toBeVisible();
+      await page.getByRole('button', { name: 'Открыть меню' }).first().click();
+      await expect(page.getByText('Центр Управления')).toBeVisible();
+
+      const motion = await page.evaluate(() => {
+        const root = document.documentElement;
+        const style = getComputedStyle(root);
+        const sidebar = Array.from(document.querySelectorAll<HTMLElement>('div')).find((element) =>
+          element.className.includes('fixed inset-y-0 left-0'),
+        );
+        const durations = Array.from(document.querySelectorAll<HTMLElement>('*'))
+          .map((element) => getComputedStyle(element))
+          .flatMap((computed) => [
+            Number.parseFloat(computed.animationDuration),
+            Number.parseFloat(computed.transitionDuration),
+          ])
+          .filter((duration) => Number.isFinite(duration));
+        return {
+          mediaMatches: window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+          rootScrollBehavior: style.scrollBehavior,
+          sidebarTransform: sidebar ? getComputedStyle(sidebar).transform : null,
+          maxMotionDuration: Math.max(0, ...durations),
+        };
+      });
+
+      expect(motion.mediaMatches).toBe(true);
+      expect(motion.rootScrollBehavior).toBe('auto');
+      expect(motion.sidebarTransform).toBe('none');
+      expect(motion.maxMotionDuration).toBeLessThanOrEqual(0.01);
+    });
+
     test('keeps the drawer and fixed navigation reachable without horizontal overflow', async ({ page }) => {
       await page.goto('/schulte', { waitUntil: 'networkidle' });
       await expectAppReady(page);

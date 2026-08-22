@@ -280,6 +280,22 @@
   }
 }
 
+/* Decorative motion must yield immediately for users who request reduced
+   motion. Keep state changes and task timing functional, but remove ambient
+   pulses, transforms, and transitions from the shell and trainer surfaces. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition: none !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
 .hide-scrollbar::-webkit-scrollbar {
   display: none;
 }
