@@ -122,7 +122,7 @@ export function Dashboard({
   ];
 
   return (
-    <div className="flex flex-col space-y-6 pb-24 sm:space-y-8 sm:pb-12">
+    <div className="pb-mobile-chrome flex flex-col space-y-6 sm:space-y-8">
       {/* Navigation Tabs - hidden on mobile (replaced by bottom nav) */}
       <div className="hidden sm:flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
         <div className="grid w-full grid-cols-2 gap-2 bg-card/30 p-1.5 border border-border rounded-2xl sm:w-fit sm:flex sm:flex-wrap">

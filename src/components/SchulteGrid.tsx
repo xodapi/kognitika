@@ -292,7 +292,7 @@ export function SchulteGrid() {
 
   if (!state.isActive && !state.isFinished && !showBriefing) {
     return (
-      <div className="col-span-12 grid grid-cols-1 lg:grid-cols-12 gap-6 h-full min-h-0 pb-6 lg:pb-0 min-w-0">
+      <div className="col-span-12 grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 h-full min-h-0 min-w-0">
         
         {/* Left Column: Settings */}
         <motion.div 
@@ -300,13 +300,13 @@ export function SchulteGrid() {
           animate={{ opacity: 1, x: 0 }}
           className="lg:col-span-3 flex flex-col gap-6"
         >
-          <div className="bg-card/40 backdrop-blur-md border border-border rounded-3xl p-6 flex flex-col gap-6 flex-1 shadow-sm">
+          <div className="bg-card/40 backdrop-blur-md border border-border rounded-3xl p-4 sm:p-6 flex flex-col gap-4 sm:gap-6 flex-1 shadow-sm">
             <div className="flex items-center gap-3">
               <Activity className="w-4 h-4 text-primary" />
               <h3 className="text-sm font-black text-muted-foreground uppercase tracking-[0.2em]">Настройки</h3>
             </div>
             
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               <div>
                 <div className="flex justify-between items-center mb-2">
                   <label className="text-sm text-muted-foreground uppercase font-bold tracking-wider">Размер таблицы</label>
@@ -390,15 +390,19 @@ export function SchulteGrid() {
 
             </div>
 
-            <motion.button 
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={handleStartWithBriefing} 
-              data-testid="start-button"
-              className="mt-auto w-full py-4 bg-primary text-primary-foreground text-sm uppercase tracking-[0.2em] rounded-2xl font-black shadow-lg shadow-primary/20 transition-all"
-            >
-              Начать тест
-            </motion.button>
+            {/* Sticky on phones: the settings list is taller than the viewport,
+                so a static CTA forced a scroll before the test could start. */}
+            <div className="sticky bottom-mobile-chrome z-30 -mx-4 -mb-4 mt-auto rounded-b-3xl bg-gradient-to-t from-card via-card/95 to-transparent px-4 pb-4 pt-3 sm:-mx-6 sm:-mb-6 sm:px-6 sm:pb-6 lg:static lg:bottom-auto lg:mx-0 lg:mb-0 lg:rounded-none lg:bg-none lg:px-0 lg:pb-0">
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={handleStartWithBriefing}
+                data-testid="start-button"
+                className="w-full py-4 bg-primary text-primary-foreground text-sm uppercase tracking-[0.2em] rounded-2xl font-black shadow-lg shadow-primary/20 transition-all"
+              >
+                Начать тест
+              </motion.button>
+            </div>
           </div>
         </motion.div>
 
@@ -406,7 +410,7 @@ export function SchulteGrid() {
         <motion.div 
           initial={{ opacity: 0, scale: 0.98 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="lg:col-span-6 bg-card/20 border border-border rounded-[2.5rem] p-12 flex flex-col items-center justify-center relative min-h-[400px] lg:h-full overflow-hidden"
+          className="hidden lg:col-span-6 bg-card/20 border border-border rounded-[2.5rem] p-12 lg:flex flex-col items-center justify-center relative min-h-[400px] lg:h-full overflow-hidden"
         >
            <div className="absolute inset-0 pointer-events-none flex items-center justify-center opacity-[0.03]">
               <div className="w-px h-full bg-foreground"></div>
@@ -437,13 +441,13 @@ export function SchulteGrid() {
           animate={{ opacity: 1, x: 0 }}
           className="lg:col-span-3 flex flex-col gap-6"
         >
-          <div className="bg-card/40 backdrop-blur-md border border-border rounded-3xl p-6 shadow-sm">
-            <div className="flex items-center gap-3 mb-6">
+          <div className="bg-card/40 backdrop-blur-md border border-border rounded-3xl p-4 sm:p-6 shadow-sm">
+            <div className="flex items-center gap-3 mb-4 sm:mb-6">
               <Info className="w-4 h-4 text-primary" />
               <h3 className="text-sm font-black text-muted-foreground uppercase tracking-[0.2em]">Инструкция</h3>
             </div>
             
-            <div className="space-y-6">
+            <div className="space-y-4 sm:space-y-6">
               <div className="space-y-4">
                 <div className="flex gap-4">
                    <div className="w-6 h-6 rounded-lg bg-primary/10 flex items-center justify-center text-sm font-bold text-primary flex-shrink-0">1</div>
@@ -676,22 +680,22 @@ export function SchulteGrid() {
   }
 
   return (
-      <div className="col-span-12 grid grid-cols-1 lg:grid-cols-12 gap-6 h-full min-h-0 relative pb-6 lg:pb-0 min-w-0">
+      <div className="col-span-12 grid grid-cols-1 lg:grid-cols-12 gap-3 lg:gap-6 h-full min-h-0 relative min-w-0">
       {/* HUD: Left Status */}
       <motion.div 
         initial={{ opacity: 0, x: -20 }}
         animate={{ opacity: 1, x: 0 }}
         className="lg:col-span-3 flex flex-col gap-4 min-w-0"
       >
-         <div data-testid="hud-timer" className="bg-card/40 backdrop-blur-md border border-border rounded-3xl p-6 shadow-sm min-w-0">
-            <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+         <div data-testid="hud-timer" className="bg-card/40 backdrop-blur-md border border-border rounded-2xl lg:rounded-3xl p-3 lg:p-6 shadow-sm min-w-0">
+            <div className="flex items-center justify-between mb-2 lg:mb-4 flex-wrap gap-2">
               <span className="text-sm text-muted-foreground uppercase font-black tracking-widest whitespace-nowrap">Прогресс</span>
               <Activity className="w-4 h-4 text-primary opacity-50 flex-shrink-0" />
             </div>
-            <div className="space-y-4">
+            <div className="space-y-2 lg:space-y-4">
                <div data-testid="timer-display">
                   <div className="flex justify-between items-baseline mb-1 flex-wrap gap-2">
-                    <p className="text-3xl font-mono font-black tabular-nums text-foreground whitespace-nowrap">
+                    <p className="text-2xl lg:text-3xl font-mono font-black tabular-nums text-foreground whitespace-nowrap">
                       {(state.timeMs / 1000).toFixed(2)}<span className="text-sm text-muted-foreground pl-1">s</span>
                     </p>
                     <span className="text-sm font-mono text-muted-foreground uppercase whitespace-nowrap">{(state.timeMs/targetTime/10).toFixed(0)}%</span>
@@ -704,12 +708,12 @@ export function SchulteGrid() {
                     />
                   </div>
                </div>
-               <div className="flex items-center justify-between pt-2 flex-wrap gap-2" data-testid="errors-count">
-                 <div className="flex flex-col">
+               <div className="flex items-center justify-between pt-0 lg:pt-2 flex-wrap gap-2" data-testid="errors-count">
+                 <div className="flex flex-row items-baseline gap-2 lg:flex-col lg:gap-0">
                     <span className="text-sm text-muted-foreground uppercase font-black whitespace-nowrap">Ошибки</span>
                     <span className={`text-sm font-mono font-bold ${state.errors > 0 ? 'text-destructive' : 'text-foreground'}`}>{state.errors}</span>
                  </div>
-                 <div className="flex flex-col items-end">
+                 <div className="flex flex-row items-baseline gap-2 lg:flex-col lg:items-end lg:gap-0">
                     <span className={`text-sm uppercase font-black ${state.modifications.chaosIntervalMs < 500 ? 'text-destructive' : 'text-muted-foreground'}`}>Интенсивность</span>
                     <span className="text-sm font-mono font-bold whitespace-nowrap">{(1000 / state.modifications.chaosIntervalMs).toFixed(1)}x</span>
                  </div>
@@ -717,8 +721,10 @@ export function SchulteGrid() {
             </div>
          </div>
 
-         <div data-testid="target-indicator" className="bg-primary/10 backdrop-blur-md border border-primary/20 rounded-3xl p-8 flex flex-col items-center justify-center flex-1 shadow-sm shadow-primary/5 min-w-0">
-            <p className="text-sm text-primary uppercase mb-4 font-black tracking-[0.3em] whitespace-nowrap">
+         {/* Compact row on phones so the grid stays above the fold; the tall
+             centred card is kept for the desktop three-column HUD. */}
+         <div data-testid="target-indicator" className="bg-primary/10 backdrop-blur-md border border-primary/20 rounded-3xl px-4 py-3 lg:p-8 flex flex-row items-center justify-between gap-3 lg:flex-col lg:justify-center lg:flex-1 shadow-sm shadow-primary/5 min-w-0">
+            <p className="text-xs lg:text-sm text-primary uppercase lg:mb-4 font-black tracking-[0.2em] lg:tracking-[0.3em] whitespace-nowrap">
                {isGorbov ? 'АКТИВНАЯ ЦЕЛЬ' : 'ТЕКУЩЕЕ ЧИСЛО'}
             </p>
             <div className="relative min-w-0">
@@ -726,7 +732,7 @@ export function SchulteGrid() {
                 key={state.expectedIndex}
                 initial={{ scale: 0.8, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                className="text-6xl sm:text-8xl font-black text-foreground drop-shadow-[0_0_15px_rgba(var(--primary-rgb),0.3)]"
+                className="text-4xl lg:text-8xl font-black leading-none text-foreground drop-shadow-[0_0_15px_rgba(var(--primary-rgb),0.3)]"
               >
                 {state.expectedIndex < state.expectedSequence.length ? (
                    (isGorbov || isHardcore) ? (
@@ -744,7 +750,7 @@ export function SchulteGrid() {
                 </div>
               )}
             </div>
-            <p className="text-sm text-muted-foreground uppercase mt-8 font-black tracking-widest text-center opacity-60 whitespace-nowrap">
+            <p className="hidden lg:block text-sm text-muted-foreground uppercase mt-8 font-black tracking-widest text-center opacity-60 whitespace-nowrap">
               {isHardcore ? 'Pro-режим: Подсказки скрыты' : 'Визуальный трекер активен'}
             </p>
          </div>
@@ -754,7 +760,7 @@ export function SchulteGrid() {
       <motion.div 
         animate={state.errors > 0 ? { x: [0, -10, 10, -10, 10, 0] } : {}}
         transition={{ duration: 0.4 }}
-        className={`lg:col-span-6 -mx-4 w-[calc(100%+2rem)] sm:mx-0 sm:w-auto border border-border rounded-[2.5rem] p-0 sm:p-8 flex flex-col items-center justify-center relative min-h-[400px] overflow-hidden lg:h-full shadow-2xl ${state.modifications.bgTheme === 'dark-green' ? 'bg-[#064e3b]' : 'bg-card/30 backdrop-blur-sm'} min-w-0`}
+        className={`lg:col-span-6 border border-border rounded-3xl sm:rounded-[2.5rem] p-2 sm:p-8 flex flex-col items-center justify-center relative min-h-0 lg:min-h-[400px] overflow-hidden lg:h-full shadow-2xl ${state.modifications.bgTheme === 'dark-green' ? 'bg-[#064e3b]' : 'bg-card/30 backdrop-blur-sm'} min-w-0`}
         data-testid="grid-container"
       >
          <div className="absolute inset-0 pointer-events-none flex items-center justify-center opacity-[0.05]">
@@ -766,7 +772,7 @@ export function SchulteGrid() {
          <motion.div 
            initial={{ opacity: 0 }}
            animate={{ opacity: 1 }}
-           className="grid gap-2 !gap-0 sm:!gap-2 w-full min-w-0 max-w-[600px] relative z-10"
+           className="play-grid-fit grid gap-1 sm:gap-2 min-w-0 relative z-10"
            style={{ gridTemplateColumns: `repeat(${state.size}, 1fr)` }}
          >
             {state.grid.map((cell, idx) => {
@@ -804,12 +810,14 @@ export function SchulteGrid() {
             })}
          </motion.div>
 
-         <div className="mt-8 flex gap-4 z-10 opacity-40">
+         <div className="mt-8 hidden lg:flex gap-4 z-10 opacity-40">
             <span className="px-4 py-1.5 bg-background border border-border text-foreground text-sm font-black uppercase rounded-full tracking-widest">{distraction !== 'none' ? 'Jammer Active' : 'Clear Link'}</span>
             <span className="px-4 py-1.5 bg-background border border-border text-foreground text-sm font-black uppercase rounded-full tracking-widest">{size}x{size} Matrix</span>
          </div>
       </motion.div>
 
+      {/* In normal flow, not fixed: as an overlay it sat on top of the last grid
+          rows and the build badge. */}
       {isMobilePlayLayout && (
         <motion.button
           initial={{ opacity: 0, y: 12 }}
@@ -817,7 +825,7 @@ export function SchulteGrid() {
           whileTap={{ scale: 0.97 }}
           onClick={stopGame}
           data-testid="stop-button"
-          className="fixed inset-x-4 bottom-[max(6.25rem,calc(env(safe-area-inset-bottom)+5.75rem))] z-40 min-h-11 rounded-2xl border border-destructive/30 bg-card/95 px-4 py-3 text-sm font-black uppercase tracking-widest text-destructive shadow-xl backdrop-blur-md"
+          className="w-full min-h-11 rounded-2xl border border-destructive/30 bg-card/95 px-4 py-3 text-sm font-black uppercase tracking-widest text-destructive shadow-sm backdrop-blur-md"
         >
           Завершить досрочно
         </motion.button>

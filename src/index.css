@@ -220,6 +220,66 @@
   }
 }
 
+/* Mobile chrome geometry. The floating bottom nav is fixed, so every scroll
+   container has to reserve exactly this much room or its last control ends up
+   under the nav. Single source of truth for that offset. */
+:root {
+  --mobile-nav-height: 4rem;
+  --mobile-nav-gap: 1.5rem;
+  /* env() needs the 0px fallback: without it the whole calc() is invalid on
+     browsers that do not expose safe-area insets. */
+  --mobile-chrome-offset: calc(
+    var(--mobile-nav-height) + var(--mobile-nav-gap) + env(safe-area-inset-bottom, 0px)
+  );
+}
+
+.pb-mobile-chrome {
+  padding-bottom: calc(var(--mobile-chrome-offset) + 0.75rem);
+}
+
+.mb-mobile-chrome {
+  margin-bottom: calc(var(--mobile-chrome-offset) + 0.75rem);
+}
+
+.bottom-mobile-chrome {
+  bottom: calc(var(--mobile-chrome-offset) + 0.5rem);
+}
+
+@media (min-width: 1024px) {
+  .pb-mobile-chrome {
+    padding-bottom: 2.5rem;
+  }
+
+  .mb-mobile-chrome {
+    margin-bottom: 0;
+  }
+}
+
+/* Square play grid that stays inside the visible area. aspect-ratio keeps the
+   board square, so capping the height also caps the width: the browser does the
+   fitting instead of a hardcoded guess about surrounding chrome height. */
+.play-grid-fit {
+  /* min() on width, not max-height: a height cap alone would leave the box wide
+     and short, and the square cells inside would overflow it. */
+  width: min(100%, 58vh);
+  max-width: 600px;
+  aspect-ratio: 1 / 1;
+  margin-inline: auto;
+}
+
+@supports (height: 100dvh) {
+  .play-grid-fit {
+    width: min(100%, 58dvh);
+  }
+}
+
+@media (min-width: 1024px) {
+  .play-grid-fit {
+    width: 100%;
+    aspect-ratio: auto;
+  }
+}
+
 .hide-scrollbar::-webkit-scrollbar {
   display: none;
 }

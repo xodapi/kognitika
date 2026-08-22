@@ -633,7 +633,7 @@ export function MentalMathTrainer() {
           whileTap={{ scale: 0.97 }}
           onClick={stopGame}
           data-testid="stop-button"
-          className="fixed inset-x-4 bottom-[max(6.25rem,calc(env(safe-area-inset-bottom)+5.75rem))] z-40 min-h-11 rounded-2xl border border-destructive/30 bg-card/95 px-4 py-3 text-sm font-black uppercase tracking-widest text-destructive shadow-xl backdrop-blur-md"
+          className="w-full min-h-11 rounded-2xl border border-destructive/30 bg-card/95 px-4 py-3 text-sm font-black uppercase tracking-widest text-destructive shadow-sm backdrop-blur-md"
         >
           Завершить досрочно
         </motion.button>

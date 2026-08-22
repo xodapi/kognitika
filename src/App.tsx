@@ -487,7 +487,7 @@ function AppContent() {
         )}
       </AnimatePresence>
 
-      <main className="flex-1 w-full max-w-[1400px] mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 relative z-10 pb-32 lg:pb-10 px-4 md:px-8 mt-4">
+      <main className="flex-1 w-full max-w-[1400px] mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 relative z-10 px-4 md:px-8 mt-4 pb-4 lg:pb-10">
          <div className={`${isChatEnabled ? 'lg:col-span-9' : 'lg:col-span-12'} h-full`}>
             <LazySection>
               <Routes>
@@ -567,9 +567,11 @@ function AppContent() {
          )}
       </main>
 
+      {/* On phones this sits in normal flow: as a fixed overlay it covered the
+          primary CTA of every trainer. Fixed only from lg up. */}
       <footer
         aria-label="Версия сборки"
-        className="pointer-events-none fixed bottom-[max(6rem,calc(env(safe-area-inset-bottom)+5.25rem))] right-3 lg:bottom-3 z-40 rounded-lg border border-border bg-card/80 px-2.5 py-1 text-sm font-mono font-bold text-muted-foreground shadow-sm backdrop-blur-md"
+        className="mb-mobile-chrome pointer-events-none relative z-10 mx-auto w-fit rounded-lg border border-border bg-card/80 px-2.5 py-1 text-xs font-mono font-bold text-muted-foreground shadow-sm backdrop-blur-md lg:fixed lg:bottom-3 lg:right-3 lg:z-40 lg:mx-0 lg:mb-0 lg:text-sm"
       >
         <span>build {appBuildId}</span>
         <span aria-hidden="true"> · </span>
@@ -579,7 +581,7 @@ function AppContent() {
       {/* Floating Mobile Nav (hidden below sm on the dashboard route, which has its own bottom nav) */}
       <div
         className={`fixed left-1/2 -translate-x-1/2 w-[min(90%,24rem)] max-w-sm h-16 bg-card/60 backdrop-blur-2xl border border-white/10 rounded-3xl lg:hidden z-50 items-center justify-around px-2 shadow-[0_15px_40px_-15px_rgba(0,0,0,0.3)] ${activeTab === 'dashboard' ? 'hidden sm:flex' : 'flex'}`}
-        style={{ bottom: 'max(1.5rem, calc(env(safe-area-inset-bottom) + 0.75rem))' }}
+        style={{ bottom: 'calc(var(--mobile-nav-gap) / 2 + env(safe-area-inset-bottom, 0px))' }}
       >
          {BOTTOM_NAV_ITEMS.map((item) => {
            const label = item.id === 'dashboard' ? 'Главная' : (item.id === 'schulte' ? 'Таблицы Шульте' : item.id === 'logical' ? 'Логика' : item.id === 'nback' ? 'Память' : item.id === 'situational' ? 'Ситуации' : item.id);

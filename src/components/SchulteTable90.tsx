@@ -508,7 +508,7 @@ export function SchulteTable90() {
         animate={state.errors > 0 ? { x: [0, -10, 10, -10, 10, 0] } : {}}
         data-testid="playfield"
         transition={{ duration: 0.4 }}
-        className="lg:col-span-6 -mx-4 w-[calc(100%+2rem)] sm:mx-0 sm:w-auto border border-border rounded-[2.5rem] p-0 sm:p-6 flex flex-col items-center justify-center relative min-h-[400px] overflow-hidden lg:h-full shadow-2xl bg-card/30 backdrop-blur-sm"
+        className="lg:col-span-6 border border-border rounded-3xl sm:rounded-[2.5rem] p-2 sm:p-6 flex flex-col items-center justify-center relative min-h-0 lg:min-h-[400px] overflow-hidden lg:h-full shadow-2xl bg-card/30 backdrop-blur-sm"
       >
         <motion.div
           initial={{ opacity: 0 }}
@@ -562,7 +562,7 @@ export function SchulteTable90() {
           whileTap={{ scale: 0.97 }}
           onClick={stopGame}
           data-testid="stop-button"
-          className="fixed inset-x-4 bottom-[max(6.25rem,calc(env(safe-area-inset-bottom)+5.75rem))] z-40 min-h-11 rounded-2xl border border-destructive/30 bg-card/95 px-4 py-3 text-sm font-black uppercase tracking-widest text-destructive shadow-xl backdrop-blur-md"
+          className="w-full min-h-11 rounded-2xl border border-destructive/30 bg-card/95 px-4 py-3 text-sm font-black uppercase tracking-widest text-destructive shadow-sm backdrop-blur-md"
         >
           Завершить досрочно
         </motion.button>
