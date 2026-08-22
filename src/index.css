@@ -177,6 +177,10 @@
   * {
     @apply border-border;
   }
+  *:focus-visible {
+    outline: 3px solid hsl(var(--ring));
+    outline-offset: 3px;
+  }
   html,
   body,
   #root {

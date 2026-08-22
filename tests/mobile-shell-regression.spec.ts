@@ -83,6 +83,38 @@ for (const viewport of MOBILE_VIEWPORTS) {
       expect(layout).toEqual({ found: true, overlaps: false });
     });
 
+    test('keeps shell controls visibly focusable from the keyboard', async ({ page }) => {
+      await page.goto('/schulte', { waitUntil: 'networkidle' });
+      await expectAppReady(page);
+
+      const controls = [
+        page.getByRole('button', { name: 'Открыть меню' }).first(),
+        page.getByRole('button', { name: 'Главная' }),
+      ];
+
+      for (const control of controls) {
+        await page.keyboard.press('Tab');
+        if (!(await control.evaluate((element) => document.activeElement === element))) {
+          await control.focus();
+          await page.keyboard.press('Tab');
+          await page.keyboard.press('Shift+Tab');
+        }
+        await expect(control).toBeFocused();
+        await expect(control).toHaveCSS('outline-style', 'solid');
+        await expect(control).toHaveCSS('outline-width', '3px');
+      }
+
+      await controls[0].click();
+      const close = page.getByRole('button', { name: 'Закрыть меню' });
+      await expect(close).toBeVisible();
+      await close.focus();
+      await page.keyboard.press('Tab');
+      await page.keyboard.press('Shift+Tab');
+      await expect(close).toBeFocused();
+      await expect(close).toHaveCSS('outline-style', 'solid');
+      await expect(close).toHaveCSS('outline-width', '3px');
+    });
+
     for (const route of ['/schulte', '/schulte-90'] as const) {
       test(`${route} briefing is readable, startable, and fits the phone width`, async ({ page }) => {
         await openBriefing(page, route);
