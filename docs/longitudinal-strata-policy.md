@@ -14,6 +14,12 @@ allow-list is `mental-math@1` with `level-1` through `level-4` (each label is
 the identical string), and `nback@1` with `n-2` (identical label). All other
 inputs are excluded exactly as written: no normalization or inference occurs.
 
+Synthetic regression fixtures in
+`fixtures/longitudinal-strata/exclusion-cases.v1.json` lock this boundary:
+alternate labels, formatted aliases, whitespace variants, mixed labels, and
+unapproved versions remain excluded until a reviewed policy version adds an
+explicit mapping.
+
 ## Eligibility
 
 Only a completed candidate with exactly one terminal `session_completed` event

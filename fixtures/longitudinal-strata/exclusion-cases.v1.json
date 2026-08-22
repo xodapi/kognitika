@@ -1,0 +1,66 @@
+{
+  "fixtureVersion": 1,
+  "cases": [
+    {
+      "name": "excludes an alternate mental-math difficulty label",
+      "input": {
+        "moduleId": "mental-math",
+        "moduleVersion": "1",
+        "events": [
+          { "kind": "trial_started", "difficulty": "beginner" },
+          { "kind": "session_completed" }
+        ]
+      },
+      "expected": { "eligible": false, "reason": "unknown_difficulty", "stratum": null }
+    },
+    {
+      "name": "excludes a formatted nback alias",
+      "input": {
+        "moduleId": "nback",
+        "moduleVersion": "1",
+        "events": [
+          { "kind": "trial_started", "difficulty": "N-2" },
+          { "kind": "session_completed" }
+        ]
+      },
+      "expected": { "eligible": false, "reason": "unknown_difficulty", "stratum": null }
+    },
+    {
+      "name": "excludes whitespace padded difficulty without trimming",
+      "input": {
+        "moduleId": "mental-math",
+        "moduleVersion": "1",
+        "events": [
+          { "kind": "trial_started", "difficulty": " level-1 " },
+          { "kind": "session_completed" }
+        ]
+      },
+      "expected": { "eligible": false, "reason": "unknown_difficulty", "stratum": null }
+    },
+    {
+      "name": "excludes an unapproved module version with otherwise matching difficulty",
+      "input": {
+        "moduleId": "mental-math",
+        "moduleVersion": "2",
+        "events": [
+          { "kind": "trial_started", "difficulty": "level-1" },
+          { "kind": "session_completed" }
+        ]
+      },
+      "expected": { "eligible": false, "reason": "unsupported_module_version", "stratum": null }
+    },
+    {
+      "name": "excludes a mixed canonical and alternate label",
+      "input": {
+        "moduleId": "nback",
+        "moduleVersion": "1",
+        "events": [
+          { "kind": "trial_started", "difficulty": "n-2" },
+          { "kind": "trial_answered", "difficulty": "2-back" },
+          { "kind": "session_completed" }
+        ]
+      },
+      "expected": { "eligible": false, "reason": "mixed_difficulty", "stratum": null }
+    }
+  ]
+}
