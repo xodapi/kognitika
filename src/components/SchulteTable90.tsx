@@ -518,13 +518,8 @@ export function SchulteTable90() {
           {state.grid.map((cell, idx) => {
             const isConsumed = cell.num <= state.expectedIndex;
             return (
-              <motion.button
+              <button
               key={cell.id}
-              initial={{ opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ delay: idx * 0.003 }}
-              whileHover={isConsumed ? undefined : { scale: 1.1, zIndex: 30 }}
-              whileTap={{ scale: 0.9, backgroundColor: 'var(--primary)', color: 'var(--primary-foreground)' }}
               disabled={isConsumed}
               aria-label={isConsumed ? `Число ${cell.num}, найдено` : `Число ${cell.num}`}
               aria-description={`${cell.color === 'red' ? 'Красная' : 'Чёрная'} клетка`}
@@ -545,7 +540,7 @@ export function SchulteTable90() {
               }`}
             >
               {cell.num}
-            </motion.button>
+            </button>
             );
           })}
         </motion.div>

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { useGameAttempt } from '../lib/game-attempt-client';
 import { motion, AnimatePresence } from 'motion/react';
 import { Star, Target, Info, Activity, AlertCircle, History } from 'lucide-react';
@@ -224,6 +224,17 @@ export function SchulteGrid() {
 
   const isGorbov = mode === 'gorbov';
   const targetTime = isGorbov ? 60 : (size === 5 ? 25 : 45);
+
+  // Starting from a sticky briefing action can preserve its former scroll
+  // position after the briefing unmounts. Active mobile play always begins at
+  // the HUD, target, and safe exit, so reset that incidental offset before the
+  // next paint and once more after the browser processes focus restoration.
+  useLayoutEffect(() => {
+    if (!state.isActive || !isMobilePlayLayout) return;
+    window.scrollTo(0, 0);
+    const frame = window.requestAnimationFrame(() => window.scrollTo(0, 0));
+    return () => window.cancelAnimationFrame(frame);
+  }, [state.isActive, isMobilePlayLayout]);
 
   useEffect(() => {
       if (state.isFinished && state.timeMs > 0 && token) {
@@ -778,13 +789,8 @@ export function SchulteGrid() {
             {state.grid.map((cell, idx) => {
                const isRed = cell.color === 'red';
                return (
-                  <motion.button
+                  <button
                     key={cell.id}
-                    initial={{ opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    transition={{ delay: idx * 0.01 }}
-                    whileHover={{ scale: 1.05, zIndex: 30 }}
-                    whileTap={{ scale: 0.9, backgroundColor: 'var(--primary)', color: 'var(--primary-foreground)' }}
                     onClick={(e) => {
                       const rect = e.currentTarget.parentElement?.getBoundingClientRect();
                       if (rect) {
@@ -805,7 +811,7 @@ export function SchulteGrid() {
                     } : (distraction === 'visual' || distraction === 'chaos' || currentLevel !== 'classic') ? generateChaosStyle(state.modifications, state.timeMs, cell.id) : {} }
                   >
                     {cell.num}
-                  </motion.button>
+                  </button>
                )
             })}
          </motion.div>
