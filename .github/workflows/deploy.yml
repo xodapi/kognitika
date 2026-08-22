@@ -117,9 +117,22 @@ jobs:
           }
           trap cleanup EXIT
 
-          git fetch origin main
+          retry_git() {
+            local attempt=1
+            until "$@"; do
+              if [ "$attempt" -ge 3 ]; then
+                echo "Command failed after ${attempt} attempts: $*" >&2
+                return 1
+              fi
+              echo "Retrying transient Git operation ($attempt/3): $*" >&2
+              sleep $((attempt * 5))
+              attempt=$((attempt + 1))
+            done
+          }
+
+          retry_git git fetch origin main
           git checkout main
-          git pull --ff-only origin main
+          retry_git git pull --ff-only origin main
 
           actual_sha="$(git rev-parse HEAD)"
           if [ "$actual_sha" != "$EXPECTED_SHA" ]; then
