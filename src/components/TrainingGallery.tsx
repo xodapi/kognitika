@@ -41,7 +41,7 @@ const MODULES: TrainingModule[] = [
   { id: 'scanner', title: 'Смысловой Сканер', description: 'Обнаружение скрытых манипуляций и логических уловок.', icon: Shield, color: 'text-blue-400', category: 'Страж Разума', domain: 'guard', level: 9 },
   { id: 'decryptor', title: 'Декриптор', description: 'Разделение фактов и эмоциональных искажений в тексте.', icon: Zap, color: 'text-purple-400', category: 'Страж Разума', domain: 'guard', level: 9 },
   { id: 'reality', title: 'Проверка Реальности', description: 'Обнаружение галлюцинаций ИИ и семантического дрейфа.', icon: Target, color: 'text-emerald-400', category: 'Страж Разума', domain: 'guard', level: 10 },
-  { id: 'silence', title: 'Техника «Тишина»', description: 'Двухминутная нейрофизиологическая дыхательная сессия для снижения уровня стресса и кортизола.', icon: VolumeX, color: 'text-neutral-400', category: 'Страж Разума', domain: 'guard', level: 1 },
+  { id: 'silence', title: 'Техника «Тишина»', description: 'Двухминутная дыхательная практика для спокойного наблюдения за своим состоянием.', icon: VolumeX, color: 'text-neutral-400', category: 'Страж Разума', domain: 'guard', level: 1 },
   { id: 'filter', title: 'Ментальный фильтр', description: 'Разделение объективных фактов и субъективных когнитивных искажений.', icon: Shield, color: 'text-indigo-400', category: 'Страж Разума', domain: 'guard', level: 4 },
 
   // SOFT SKILLS
@@ -68,6 +68,7 @@ export function TrainingGallery({ onStart }: { onStart: (id: string) => void }) 
             key={d.id}
             onClick={() => setActiveDomain(d.id as any)}
             aria-pressed={activeDomain === d.id}
+            data-testid="training-domain-tab"
             className={`flex min-h-12 min-w-0 flex-col items-center justify-center gap-1 rounded-xl px-2 py-2 text-[10px] font-black uppercase tracking-wide transition-all sm:flex-row sm:gap-2 sm:px-6 sm:py-3 sm:text-xs sm:tracking-widest ${
               activeDomain === d.id
                 ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20'
@@ -112,19 +113,20 @@ export function TrainingGallery({ onStart }: { onStart: (id: string) => void }) 
               exit={{ opacity: 0, scale: 0.9 }}
               transition={{ duration: 0.2, delay: i * 0.05 }}
               onClick={() => onStart(m.id)}
+              data-testid="training-module-card"
               className="group relative flex min-h-[164px] h-full flex-col overflow-hidden rounded-3xl border border-border bg-card/40 p-4 text-left transition-all hover:border-primary/50 active:scale-[0.985] sm:min-h-[220px] sm:p-5"
             >
               <div className="mb-3 flex items-start justify-between gap-3 sm:mb-4">
                 <div className={`rounded-2xl border border-border bg-background/80 p-2.5 transition-all group-hover:scale-110 group-hover:bg-primary/10 sm:p-3 ${m.color}`}>
                   <m.icon className="h-5 w-5 shrink-0 sm:h-6 sm:w-6" />
                 </div>
-                <div className="max-w-[58%] truncate rounded-lg border border-border bg-secondary/50 px-2 py-1 text-[9px] font-black uppercase tracking-wide text-muted-foreground sm:text-xs sm:tracking-widest">
+                <div className="max-w-[58%] rounded-lg border border-border bg-secondary/50 px-2 py-1 text-[9px] font-black uppercase leading-tight tracking-wide text-muted-foreground sm:text-xs sm:tracking-widest">
                   {m.category}
                 </div>
               </div>
               
               <h3 className="mb-1 text-base font-black tracking-tight transition-colors group-hover:text-primary sm:mb-2 sm:text-lg">{m.title}</h3>
-              <p className="mb-3 line-clamp-2 flex-grow text-xs leading-relaxed text-muted-foreground sm:mb-4 sm:line-clamp-3">
+              <p className="mb-3 line-clamp-2 flex-grow text-sm leading-relaxed text-muted-foreground sm:mb-4 sm:line-clamp-3">
                 {m.description}
               </p>
 

@@ -38,6 +38,19 @@ describe('TrainingGallery UI', () => {
     expect(screen.queryByText(/Таблицы Шульте/i)).toBeNull();
   });
 
+  it('помечает выбранный домен через aria-pressed', () => {
+    render(<TrainingGallery onStart={() => {}} />);
+
+    const baseTab = screen.getByRole('button', { name: /База/i });
+    const engineeringTab = screen.getByRole('button', { name: /Инжиниринг/i });
+    expect(baseTab).toHaveAttribute('aria-pressed', 'true');
+    expect(engineeringTab).toHaveAttribute('aria-pressed', 'false');
+
+    fireEvent.click(engineeringTab);
+    expect(baseTab).toHaveAttribute('aria-pressed', 'false');
+    expect(engineeringTab).toHaveAttribute('aria-pressed', 'true');
+  });
+
   it('должен переключаться на домен Страж Разума', () => {
     render(<TrainingGallery onStart={() => {}} />);
     
