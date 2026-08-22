@@ -772,15 +772,15 @@ export function SchulteGrid() {
          <motion.div 
            initial={{ opacity: 0 }}
            animate={{ opacity: 1 }}
-           className="play-grid-fit grid gap-1 sm:gap-2 min-w-0 relative z-10"
-           style={{ gridTemplateColumns: `repeat(${state.size}, 1fr)` }}
+           className="play-grid-fit grid gap-2 sm:gap-2 min-w-0 relative z-10"
+           style={{ gridTemplateColumns: `repeat(${state.size}, 1fr)`, gap: '0.25rem' }}
          >
             {state.grid.map((cell, idx) => {
                const isRed = cell.color === 'red';
                return (
                   <motion.button
                     key={cell.id}
-                    initial={{ scale: 0.9, opacity: 0 }}
+                    initial={{ opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
                     transition={{ delay: idx * 0.01 }}
                     whileHover={{ scale: 1.05, zIndex: 30 }}
@@ -820,12 +820,12 @@ export function SchulteGrid() {
           rows and the build badge. */}
       {isMobilePlayLayout && (
         <motion.button
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
           whileTap={{ scale: 0.97 }}
           onClick={stopGame}
           data-testid="stop-button"
-          className="w-full min-h-11 rounded-2xl border border-destructive/30 bg-card/95 px-4 py-3 text-sm font-black uppercase tracking-widest text-destructive shadow-sm backdrop-blur-md"
+          className="order-first w-full min-h-11 rounded-2xl border border-destructive/30 bg-card/95 px-4 py-3 text-sm font-black uppercase tracking-widest text-destructive shadow-sm backdrop-blur-md lg:order-none"
         >
           Завершить досрочно
         </motion.button>

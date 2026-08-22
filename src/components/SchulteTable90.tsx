@@ -520,7 +520,7 @@ export function SchulteTable90() {
             return (
               <motion.button
               key={cell.id}
-              initial={{ scale: 0.9, opacity: 0 }}
+              initial={{ opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ delay: idx * 0.003 }}
               whileHover={isConsumed ? undefined : { scale: 1.1, zIndex: 30 }}
@@ -562,7 +562,7 @@ export function SchulteTable90() {
           whileTap={{ scale: 0.97 }}
           onClick={stopGame}
           data-testid="stop-button"
-          className="w-full min-h-11 rounded-2xl border border-destructive/30 bg-card/95 px-4 py-3 text-sm font-black uppercase tracking-widest text-destructive shadow-sm backdrop-blur-md"
+          className="order-first w-full min-h-11 rounded-2xl border border-destructive/30 bg-card/95 px-4 py-3 text-sm font-black uppercase tracking-widest text-destructive shadow-sm backdrop-blur-md lg:order-none"
         >
           Завершить досрочно
         </motion.button>
