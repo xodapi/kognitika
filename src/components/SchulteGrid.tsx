@@ -771,7 +771,7 @@ export function SchulteGrid() {
       <motion.div 
         animate={state.errors > 0 ? { x: [0, -10, 10, -10, 10, 0] } : {}}
         transition={{ duration: 0.4 }}
-        className={`lg:col-span-6 border border-border rounded-3xl sm:rounded-[2.5rem] p-2 sm:p-8 flex flex-col items-center justify-center relative min-h-0 lg:min-h-[400px] overflow-hidden lg:h-full shadow-2xl ${state.modifications.bgTheme === 'dark-green' ? 'bg-[#064e3b]' : 'bg-card/30 backdrop-blur-sm'} min-w-0`}
+        className={`-mx-4 w-[calc(100%+2rem)] lg:mx-0 lg:w-auto lg:col-span-6 border border-border rounded-3xl sm:rounded-[2.5rem] p-1 sm:p-8 flex flex-col items-center justify-center relative min-h-0 lg:min-h-[400px] overflow-hidden lg:h-full shadow-2xl ${state.modifications.bgTheme === 'dark-green' ? 'bg-[#064e3b]' : 'bg-card/30 backdrop-blur-sm'} min-w-0`}
         data-testid="grid-container"
       >
          <div className="absolute inset-0 pointer-events-none flex items-center justify-center opacity-[0.05]">
@@ -784,7 +784,7 @@ export function SchulteGrid() {
            initial={{ opacity: 0 }}
            animate={{ opacity: 1 }}
            className="play-grid-fit grid gap-2 sm:gap-2 min-w-0 relative z-10"
-           style={{ gridTemplateColumns: `repeat(${state.size}, 1fr)`, gap: '0.25rem' }}
+           style={{ gridTemplateColumns: `repeat(${state.size}, 1fr)`, gap: 0 }}
          >
             {state.grid.map((cell, idx) => {
                const isRed = cell.color === 'red';
