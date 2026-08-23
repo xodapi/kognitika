@@ -245,6 +245,12 @@ function AppContent() {
 
   return (
     <div className="min-h-screen flex flex-col font-sans transition-colors duration-300 bg-background text-foreground relative">
+      <a
+        href="#main-content"
+        className="sr-only fixed left-4 top-4 z-[300] rounded-xl bg-primary px-4 py-3 text-sm font-bold text-primary-foreground shadow-lg focus:not-sr-only focus:outline-none focus:ring-4 focus:ring-primary/40"
+      >
+        Перейти к содержимому
+      </a>
       {/* Background Gradients */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden -z-10">
         <div className="absolute top-[10%] left-[5%] w-[40%] h-[40%] bg-primary/5 rounded-full blur-[120px] animate-pulse"></div>
@@ -551,7 +557,7 @@ function AppContent() {
         )}
       </AnimatePresence>
 
-      <main className="flex-1 w-full max-w-[1400px] mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 relative z-10 px-4 md:px-8 mt-4 pb-4 lg:pb-10">
+      <main id="main-content" tabIndex={-1} className="flex-1 w-full max-w-[1400px] mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 relative z-10 px-4 md:px-8 mt-4 pb-4 lg:pb-10 focus:outline-none">
          <div className={`${isChatEnabled ? 'lg:col-span-9' : 'lg:col-span-12'} h-full`}>
             <LazySection>
               <Routes>

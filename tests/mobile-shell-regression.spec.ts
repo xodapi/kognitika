@@ -160,6 +160,17 @@ for (const viewport of MOBILE_VIEWPORTS) {
       await expect(close).toHaveCSS('outline-width', '3px');
     });
 
+    test('provides a keyboard skip link to the main content', async ({ page }) => {
+      await page.goto('/schulte', { waitUntil: 'networkidle' });
+      await expectAppReady(page);
+
+      const skipLink = page.getByRole('link', { name: 'Перейти к содержимому' });
+      await page.keyboard.press('Tab');
+      await expect(skipLink).toBeFocused();
+      await page.keyboard.press('Enter');
+      await expect(page.locator('#main-content')).toBeFocused();
+    });
+
     for (const route of ['/schulte', '/schulte-90'] as const) {
       test(`${route} briefing is readable, startable, and fits the phone width`, async ({ page }) => {
         await openBriefing(page, route);
