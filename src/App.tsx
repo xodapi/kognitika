@@ -643,7 +643,8 @@ function AppContent() {
       </footer>
 
       {/* Floating Mobile Nav (hidden below sm on the dashboard route, which has its own bottom nav) */}
-      <div
+      <nav
+        aria-label="Быстрая навигация"
         className={`fixed left-1/2 -translate-x-1/2 w-[min(90%,24rem)] max-w-sm h-16 bg-card/60 backdrop-blur-2xl border border-white/10 rounded-3xl lg:hidden z-50 items-center justify-around px-2 shadow-[0_15px_40px_-15px_rgba(0,0,0,0.3)] ${activeTab === 'dashboard' ? 'hidden sm:flex' : 'flex'}`}
         style={{ bottom: 'calc(var(--mobile-nav-gap) / 2 + env(safe-area-inset-bottom, 0px))' }}
       >
@@ -654,6 +655,7 @@ function AppContent() {
              key={item.id}
              onClick={() => navigate(item.id === 'dashboard' ? '/' : `/${item.id}`)}
              aria-label={label}
+             aria-current={activeTab === item.id ? 'page' : undefined}
              className={`min-h-11 min-w-11 p-3 rounded-2xl transition-all relative flex items-center justify-center ${activeTab === item.id ? 'text-primary scale-110' : 'text-muted-foreground hover:text-foreground'}`}
            >
              <item.icon className="w-5 h-5" />
@@ -671,7 +673,7 @@ function AppContent() {
          <button onClick={(event) => openMobileMenu(event.currentTarget)} aria-label="Открыть меню" className="min-h-11 min-w-11 p-3 text-muted-foreground hover:text-foreground flex items-center justify-center">
             <Menu className="w-5 h-5" />
          </button>
-      </div>
+      </nav>
 
       <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />
       <FeedbackModal isOpen={isFeedbackOpen} onClose={() => setIsFeedbackOpen(false)} />

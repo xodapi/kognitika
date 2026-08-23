@@ -73,7 +73,7 @@ for (const viewport of MOBILE_VIEWPORTS) {
 
       const layout = await page.evaluate(() => {
         const build = document.querySelector('footer[aria-label="Версия сборки"]')?.getBoundingClientRect();
-        const navigation = Array.from(document.querySelectorAll('div')).find((element) =>
+        const navigation = Array.from(document.querySelectorAll('nav')).find((element) =>
           String(element.className).includes('fixed left-1/2') && String(element.className).includes('max-w-sm'),
         )?.getBoundingClientRect();
         if (!build || !navigation) return { found: false };
@@ -81,6 +81,16 @@ for (const viewport of MOBILE_VIEWPORTS) {
         return { found: true, overlaps };
       });
       expect(layout).toEqual({ found: true, overlaps: false });
+    });
+
+    test('announces the active route in fixed mobile navigation', async ({ page }) => {
+      await page.goto('/schulte', { waitUntil: 'networkidle' });
+      await expectAppReady(page);
+
+      const navigation = page.getByRole('navigation', { name: 'Быстрая навигация' });
+      await expect(navigation).toBeVisible();
+      await expect(navigation.getByRole('button', { name: 'Таблицы Шульте' })).toHaveAttribute('aria-current', 'page');
+      await expect(navigation.getByRole('button', { name: 'Логика' })).not.toHaveAttribute('aria-current');
     });
 
     test('contains keyboard focus in the drawer and restores it after closing', async ({ page }) => {
