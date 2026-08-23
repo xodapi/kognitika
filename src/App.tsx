@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { lazy, Suspense, useCallback, useState, useEffect, type ReactNode } from 'react';
+import { lazy, Suspense, useCallback, useState, useEffect, useRef, type ReactNode } from 'react';
 import { useTheme } from 'next-themes';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
@@ -151,7 +151,18 @@ function AppContent() {
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
   const [isChatEnabled, setIsChatEnabled] = useState(false);
   const [isLuscherWellbeingPreferenceEnabled, setIsLuscherWellbeingPreferenceEnabled] = useState(isLuscherWellbeingEnabled);
+  const mobileMenuRef = useRef<HTMLDivElement>(null);
+  const mobileMenuOpenerRef = useRef<HTMLElement | null>(null);
   const { user, logout, token, isReady } = useAuth();
+
+  const openMobileMenu = useCallback((opener: HTMLElement) => {
+    mobileMenuOpenerRef.current = opener;
+    setIsMobileMenuOpen(true);
+  }, []);
+
+  const closeMobileMenu = useCallback(() => {
+    setIsMobileMenuOpen(false);
+  }, []);
 
   const handleLuscherWellbeingPreferenceChange = (enabled: boolean) => {
     setIsLuscherWellbeingPreferenceEnabled(enabled);
@@ -166,12 +177,12 @@ function AppContent() {
 
   useEffect(() => {
     const openAuthentication = () => {
-      setIsMobileMenuOpen(false);
+      closeMobileMenu();
       setIsAuthOpen(true);
     };
     window.addEventListener(GAME_ATTEMPT_AUTH_REQUIRED_EVENT, openAuthentication);
     return () => window.removeEventListener(GAME_ATTEMPT_AUTH_REQUIRED_EVENT, openAuthentication);
-  }, []);
+  }, [closeMobileMenu]);
 
   useEffect(() => {
     if (isReady && user && !isAuthOpen && !hasCompletedOnboarding()) {
@@ -184,6 +195,54 @@ function AppContent() {
     setIsOnboardingOpen(false);
   }, []);
 
+  useEffect(() => {
+    if (!isMobileMenuOpen || !mobileMenuRef.current) return;
+
+    const drawer = mobileMenuRef.current;
+    const previousBodyOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const focusTimer = window.setTimeout(() => {
+      drawer.querySelector<HTMLElement>('button[aria-label="Закрыть меню"]')?.focus();
+    }, 0);
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        closeMobileMenu();
+        return;
+      }
+      if (event.key !== 'Tab') return;
+
+      const focusable = Array.from(drawer.querySelectorAll<HTMLElement>(
+        'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      ));
+      if (focusable.length === 0) {
+        event.preventDefault();
+        drawer.focus();
+        return;
+      }
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && (document.activeElement === first || document.activeElement === drawer)) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.clearTimeout(focusTimer);
+      window.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = previousBodyOverflow;
+      if (mobileMenuOpenerRef.current?.isConnected) {
+        mobileMenuOpenerRef.current.focus();
+      }
+    };
+  }, [closeMobileMenu, isMobileMenuOpen]);
+
   return (
     <div className="min-h-screen flex flex-col font-sans transition-colors duration-300 bg-background text-foreground relative">
       {/* Background Gradients */}
@@ -195,7 +254,7 @@ function AppContent() {
       <header className="flex justify-between items-center bg-card/50 border-b border-border px-4 sm:px-8 py-3 sm:py-4 flex-shrink-0 backdrop-blur-md relative z-50">
         <div className="flex items-center gap-3">
           <button
-            onClick={() => setIsMobileMenuOpen(true)}
+            onClick={(event) => openMobileMenu(event.currentTarget)}
             aria-label="Открыть меню"
             className="2xl:hidden p-2"
           >
@@ -253,7 +312,7 @@ function AppContent() {
           {user ? (
             <div className="flex items-center gap-2">
               <button
-                onClick={() => setIsMobileMenuOpen(true)}
+                onClick={(event) => openMobileMenu(event.currentTarget)}
                 className="flex min-w-0 max-w-[220px] items-center gap-2 pl-2 pr-1 py-1 bg-secondary rounded-full border border-border hover:border-primary/30 transition-all group"
                 title={user.pseudonym || user.name || 'Аноним'}
               >
@@ -294,7 +353,7 @@ function AppContent() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               className="fixed inset-0 bg-background/80 backdrop-blur-md z-[50] 2xl:hidden"
-              onClick={() => setIsMobileMenuOpen(false)}
+              onClick={closeMobileMenu}
             />
             <motion.div
               key="sidebar"
@@ -302,6 +361,11 @@ function AppContent() {
               animate={{ x: 0, opacity: 1 }}
               exit={{ x: '-100%', opacity: 0 }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              ref={mobileMenuRef}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="mobile-menu-title"
+              tabIndex={-1}
               className="fixed inset-y-0 left-0 w-[min(22rem,calc(100vw-2rem))] bg-card/60 backdrop-blur-2xl border-r border-white/10 z-[51] 2xl:hidden flex flex-col shadow-2xl"
               style={{
                 paddingTop: 'env(safe-area-inset-top)',
@@ -314,9 +378,9 @@ function AppContent() {
                  <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white shadow-lg shadow-primary/20">
                     <div className="w-4 h-4 border-2 border-current rotate-45"></div>
                  </div>
-                 <span className="font-black uppercase tracking-tighter text-sm">Центр Управления</span>
+                 <span id="mobile-menu-title" className="font-black uppercase tracking-tighter text-sm">Центр Управления</span>
               </div>
-              <button onClick={() => setIsMobileMenuOpen(false)} aria-label="Закрыть меню" className="min-h-11 min-w-11 hover:bg-secondary rounded-full transition-colors flex items-center justify-center">
+              <button onClick={closeMobileMenu} aria-label="Закрыть меню" className="min-h-11 min-w-11 hover:bg-secondary rounded-full transition-colors flex items-center justify-center">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -351,7 +415,7 @@ function AppContent() {
                 <div className="bg-primary/10 border border-primary/20 rounded-2xl p-6 text-center">
                   <Trophy className="w-8 h-8 text-primary mx-auto mb-3 opacity-50" />
                   <p className="text-xs font-bold uppercase tracking-widest mb-4">Войдите для сохранения прогресса</p>
-                  <button onClick={() => { setIsAuthOpen(true); setIsMobileMenuOpen(false); }} className="w-full min-h-11 py-2.5 bg-primary text-white rounded-xl font-bold text-xs uppercase tracking-widest shadow-md">
+                  <button onClick={() => { setIsAuthOpen(true); closeMobileMenu(); }} className="w-full min-h-11 py-2.5 bg-primary text-white rounded-xl font-bold text-xs uppercase tracking-widest shadow-md">
                     Авторизация
                   </button>
                 </div>
@@ -363,7 +427,7 @@ function AppContent() {
                  {MOBILE_NAV_ITEMS.map((item) => (
                    <button
                       key={item.id}
-                      onClick={() => { navigate(item.id === 'dashboard' ? '/' : `/${item.id}`); setIsMobileMenuOpen(false); }}
+                      onClick={() => { navigate(item.id === 'dashboard' ? '/' : `/${item.id}`); closeMobileMenu(); }}
                       className={`w-full flex items-center justify-between min-h-11 px-4 py-3 rounded-xl text-sm font-bold transition-all ${activeTab === item.id ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'hover:bg-secondary text-muted-foreground hover:text-foreground'}`}
                    >
                       <div className="flex items-center gap-3">
@@ -379,7 +443,7 @@ function AppContent() {
                  <p className="text-[10px] font-black text-muted-foreground uppercase px-3 mb-3 tracking-widest">Персонализация</p>
                  <div className="bg-secondary/30 rounded-2xl p-2 border border-border">
                     <button
-                       onClick={() => { setIsOnboardingOpen(true); setIsMobileMenuOpen(false); }}
+                       onClick={() => { setIsOnboardingOpen(true); closeMobileMenu(); }}
                        className="w-full flex items-center justify-between min-h-11 px-3 py-3 rounded-xl hover:bg-secondary transition-all"
                     >
                       <div className="flex items-center gap-3">
@@ -391,7 +455,7 @@ function AppContent() {
                       <ChevronRight className="w-4 h-4 text-muted-foreground" />
                     </button>
                     <button
-                       onClick={() => { setIsFeedbackOpen(true); setIsMobileMenuOpen(false); }}
+                       onClick={() => { setIsFeedbackOpen(true); closeMobileMenu(); }}
                        className="w-full flex items-center justify-between min-h-11 px-3 py-3 rounded-xl hover:bg-secondary transition-all"
                     >
                       <div className="flex items-center gap-3">
@@ -435,7 +499,7 @@ function AppContent() {
                       </div>
                     </button>
                     <button
-                       onClick={() => { setIsDonateOpen(true); setIsMobileMenuOpen(false); }}
+                       onClick={() => { setIsDonateOpen(true); closeMobileMenu(); }}
                        className="w-full flex items-center justify-between min-h-11 px-3 py-3 rounded-xl hover:bg-secondary transition-all"
                     >
                       <div className="flex items-center gap-3">
@@ -477,7 +541,7 @@ function AppContent() {
 
             {user && (
               <div className="p-4 border-t border-border bg-secondary/10">
-                <button onClick={() => { void logout().then((loggedOut) => { if (loggedOut) setIsMobileMenuOpen(false); }); }} className="w-full flex items-center justify-center gap-2 min-h-11 px-4 py-3 text-destructive hover:bg-destructive/10 rounded-xl transition-all font-black text-xs uppercase tracking-widest border border-transparent hover:border-destructive/20">
+                <button onClick={() => { void logout().then((loggedOut) => { if (loggedOut) closeMobileMenu(); }); }} className="w-full flex items-center justify-center gap-2 min-h-11 px-4 py-3 text-destructive hover:bg-destructive/10 rounded-xl transition-all font-black text-xs uppercase tracking-widest border border-transparent hover:border-destructive/20">
                   <LogOut className="w-4 h-4" /> Завершить сеанс
                 </button>
               </div>
@@ -604,7 +668,7 @@ function AppContent() {
            );
          })}
          <div className="w-px h-6 bg-border mx-1"></div>
-         <button onClick={() => setIsMobileMenuOpen(true)} aria-label="Открыть меню" className="min-h-11 min-w-11 p-3 text-muted-foreground hover:text-foreground flex items-center justify-center">
+         <button onClick={(event) => openMobileMenu(event.currentTarget)} aria-label="Открыть меню" className="min-h-11 min-w-11 p-3 text-muted-foreground hover:text-foreground flex items-center justify-center">
             <Menu className="w-5 h-5" />
          </button>
       </div>

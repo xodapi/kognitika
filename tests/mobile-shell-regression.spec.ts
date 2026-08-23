@@ -83,6 +83,25 @@ for (const viewport of MOBILE_VIEWPORTS) {
       expect(layout).toEqual({ found: true, overlaps: false });
     });
 
+    test('contains keyboard focus in the drawer and restores it after closing', async ({ page }) => {
+      await page.goto('/schulte', { waitUntil: 'networkidle' });
+      await expectAppReady(page);
+
+      const trigger = page.getByRole('button', { name: 'Открыть меню' }).first();
+      await trigger.click();
+
+      const drawer = page.getByRole('dialog', { name: 'Центр Управления' });
+      const close = drawer.getByRole('button', { name: 'Закрыть меню' });
+      await expect(close).toBeFocused();
+
+      await page.keyboard.press('Shift+Tab');
+      await expect.poll(() => drawer.evaluate((element) => element.contains(document.activeElement))).toBe(true);
+
+      await page.keyboard.press('Escape');
+      await expect(drawer).toBeHidden();
+      await expect(trigger).toBeFocused();
+    });
+
     test('keeps shell controls visibly focusable from the keyboard', async ({ page }) => {
       await page.goto('/schulte', { waitUntil: 'networkidle' });
       await expectAppReady(page);
