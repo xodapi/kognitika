@@ -72,6 +72,13 @@ for (const viewport of MOBILE_VIEWPORTS) {
       const secondCell = page.getByRole('button', { name: '2', exact: true });
 
       await expect(target).toContainText('1');
+      await expect(target).toHaveAttribute('role', 'status');
+      await expect(target).toHaveAttribute('aria-live', 'polite');
+      await expect(target).toHaveAttribute('aria-atomic', 'true');
+      await expect(page.getByTestId('errors-count').locator('[aria-live="polite"]')).toHaveAttribute(
+        'aria-label',
+        'Ошибки: 0',
+      );
       await firstCell.focus();
       await expect(firstCell).toBeFocused();
       await expect(firstCell).toHaveClass(/focus-visible:ring-4/);

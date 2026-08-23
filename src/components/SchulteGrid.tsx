@@ -722,7 +722,14 @@ export function SchulteGrid() {
                <div className="flex items-center justify-between pt-0 lg:pt-2 flex-wrap gap-2" data-testid="errors-count">
                  <div className="flex flex-row items-baseline gap-2 lg:flex-col lg:gap-0">
                     <span className="text-sm text-muted-foreground uppercase font-black whitespace-nowrap">Ошибки</span>
-                    <span className={`text-sm font-mono font-bold ${state.errors > 0 ? 'text-destructive' : 'text-foreground'}`}>{state.errors}</span>
+                    <span
+                      aria-live="polite"
+                      aria-atomic="true"
+                      aria-label={`Ошибки: ${state.errors}`}
+                      className={`text-sm font-mono font-bold ${state.errors > 0 ? 'text-destructive' : 'text-foreground'}`}
+                    >
+                      {state.errors}
+                    </span>
                  </div>
                  <div className="flex flex-row items-baseline gap-2 lg:flex-col lg:items-end lg:gap-0">
                     <span className={`text-sm uppercase font-black ${state.modifications.chaosIntervalMs < 500 ? 'text-destructive' : 'text-muted-foreground'}`}>Интенсивность</span>
@@ -734,7 +741,13 @@ export function SchulteGrid() {
 
          {/* Compact row on phones so the grid stays above the fold; the tall
              centred card is kept for the desktop three-column HUD. */}
-         <div data-testid="target-indicator" className="bg-primary/10 backdrop-blur-md border border-primary/20 rounded-3xl px-4 py-3 lg:p-8 flex flex-row items-center justify-between gap-3 lg:flex-col lg:justify-center lg:flex-1 shadow-sm shadow-primary/5 min-w-0">
+         <div
+           data-testid="target-indicator"
+           role="status"
+           aria-live="polite"
+           aria-atomic="true"
+           className="bg-primary/10 backdrop-blur-md border border-primary/20 rounded-3xl px-4 py-3 lg:p-8 flex flex-row items-center justify-between gap-3 lg:flex-col lg:justify-center lg:flex-1 shadow-sm shadow-primary/5 min-w-0"
+         >
             <p className="text-xs lg:text-sm text-primary uppercase lg:mb-4 font-black tracking-[0.2em] lg:tracking-[0.3em] whitespace-nowrap">
                {isGorbov ? 'АКТИВНАЯ ЦЕЛЬ' : 'ТЕКУЩЕЕ ЧИСЛО'}
             </p>
