@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { X, Send, MessageSquare, Lightbulb, Bug, Info, CheckCircle2, Zap } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useToast } from '../hooks/useToast';
+import { useModalFocus } from '../hooks/useModalFocus';
 import { createSafeLogger, safeError } from '../lib/safe-logger';
 
 const logger = createSafeLogger('feedback-modal');
@@ -23,6 +24,7 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
   const [isSuccess, setIsSuccess] = useState(false);
   const [trackingNum, setTrackingNum] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
+  const dialogRef = useModalFocus<HTMLDivElement>(isOpen, onClose);
 
   const readResponseError = async (response: Response) => {
     try {
@@ -91,6 +93,11 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
           />
           
           <motion.div 
+            ref={dialogRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="feedback-dialog-title"
+            tabIndex={-1}
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -101,7 +108,7 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
                   <div className="w-8 h-8 rounded-lg bg-primary/20 text-primary flex items-center justify-center">
                      <MessageSquare className="w-4 h-4" />
                   </div>
-                  <h2 className="text-xs font-black uppercase tracking-widest text-foreground">Обратная связь</h2>
+                  <h2 id="feedback-dialog-title" className="text-xs font-black uppercase tracking-widest text-foreground">Обратная связь</h2>
                </div>
                <button onClick={onClose} className="min-h-11 min-w-11 hover:bg-secondary rounded-xl transition-colors flex items-center justify-center">
                   <X className="w-5 h-5" />

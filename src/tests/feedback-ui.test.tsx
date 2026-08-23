@@ -65,6 +65,18 @@ describe('feedback modal delivery UX', () => {
       body: JSON.stringify({ type: 'idea', content: 'Synthetic feedback without personal data.' }),
     }));
   });
+
+  it('exposes a labelled dialog and closes with Escape', async () => {
+    const onClose = vi.fn();
+
+    render(<FeedbackModal isOpen onClose={onClose} />);
+
+    const dialog = screen.getByRole('dialog', { name: 'Обратная связь' });
+    expect(dialog).toHaveAttribute('aria-modal', 'true');
+    fireEvent.keyDown(window, { key: 'Escape' });
+
+    expect(onClose).toHaveBeenCalledOnce();
+  });
 });
 
 describe('feedback and ideas network failure UX', () => {

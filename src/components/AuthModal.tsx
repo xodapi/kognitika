@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
+import { useModalFocus } from '../hooks/useModalFocus';
 import { X, Copy, Check, Brain, Key } from 'lucide-react';
 import { apiUrl } from '../lib/runtime-platform';
 
@@ -11,6 +12,7 @@ export function AuthModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
   const [copied, setCopied] = useState(false);
   
   const { login } = useAuth();
+  const dialogRef = useModalFocus<HTMLDivElement>(isOpen, onClose);
 
   if (!isOpen) return null;
 
@@ -95,12 +97,12 @@ export function AuthModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
   if (successBrainId) {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/90 backdrop-blur-md p-4">
-        <div className="relative bg-card w-full max-w-sm p-8 rounded-3xl border border-primary/20 shadow-2xl text-center">
+        <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="auth-success-title" tabIndex={-1} className="relative bg-card w-full max-w-sm p-8 rounded-3xl border border-primary/20 shadow-2xl text-center outline-none">
           <div className="w-20 h-20 bg-primary/10 border border-primary/30 text-primary rounded-2xl flex items-center justify-center mx-auto mb-6">
             <Brain className="w-10 h-10" />
           </div>
           
-          <h2 className="text-2xl font-black tracking-tight mb-2 uppercase">Сессия создана</h2>
+          <h2 id="auth-success-title" className="text-2xl font-black tracking-tight mb-2 uppercase">Сессия создана</h2>
           <p className="text-muted-foreground text-sm mb-8">
             Это ваш уникальный Brain ID. Сохраните его, чтобы восстановить прогресс. Мы не храним ваши персональные данные.
           </p>
@@ -136,7 +138,7 @@ export function AuthModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4">
-      <div className="relative bg-card w-full max-w-sm p-6 rounded-3xl border border-border shadow-2xl animate-in zoom-in-95 duration-200">
+      <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="auth-dialog-title" tabIndex={-1} className="relative bg-card w-full max-w-sm p-6 rounded-3xl border border-border shadow-2xl animate-in zoom-in-95 duration-200 outline-none">
         
         <button 
           onClick={onClose} 
@@ -159,7 +161,7 @@ export function AuthModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
         
         <div className="space-y-6">
           <div className="text-center space-y-2">
-            <h3 className="text-lg font-black tracking-tight uppercase">Анонимный доступ</h3>
+            <h3 id="auth-dialog-title" className="text-lg font-black tracking-tight uppercase">Анонимный доступ</h3>
             <p className="text-muted-foreground text-[11px] leading-relaxed">
               Тренируйтесь без пароля и email. Весь прогресс привязан к Brain ID.
             </p>

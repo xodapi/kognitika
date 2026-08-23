@@ -1,8 +1,19 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { useState } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AuthModal } from '../components/AuthModal';
 
 const loginMock = vi.fn();
+
+function AuthModalHarness() {
+  const [isOpen, setIsOpen] = useState(false);
+  return (
+    <>
+      <button type="button" onClick={() => setIsOpen(true)}>Открыть авторизацию</button>
+      <AuthModal isOpen={isOpen} onClose={() => setIsOpen(false)} />
+    </>
+  );
+}
 
 vi.mock('../hooks/useAuth', () => ({
   useAuth: () => ({
@@ -128,5 +139,21 @@ describe('AuthModal Brain ID public contract', () => {
       );
       expect(onClose).toHaveBeenCalled();
     });
+  });
+
+  it('traps focus, closes with Escape, and restores the trigger focus', async () => {
+    render(<AuthModalHarness />);
+
+    const trigger = screen.getByRole('button', { name: 'Открыть авторизацию' });
+    trigger.focus();
+    fireEvent.click(trigger);
+
+    const dialog = await screen.findByRole('dialog', { name: 'Анонимный доступ' });
+    const close = screen.getByRole('button', { name: 'Закрыть' });
+    await waitFor(() => expect(close).toHaveFocus());
+
+    fireEvent.keyDown(window, { key: 'Escape' });
+    await waitFor(() => expect(dialog).not.toBeInTheDocument());
+    await waitFor(() => expect(trigger).toHaveFocus());
   });
 });

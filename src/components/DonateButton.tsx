@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Heart, X, Copy, Check, Coffee } from 'lucide-react';
+import { useModalFocus } from '../hooks/useModalFocus';
 
 interface DonateButtonProps {
   isOpen: boolean;
@@ -9,6 +10,7 @@ interface DonateButtonProps {
 
 export const DonateButton: React.FC<DonateButtonProps> = ({ isOpen, onClose }) => {
   const [copied, setCopied] = React.useState<string | null>(null);
+  const dialogRef = useModalFocus<HTMLDivElement>(isOpen, onClose);
 
   // Bot-protected data assembly
   const getWallet = () => ['41001', '18345', '467491'].join('');
@@ -31,6 +33,11 @@ export const DonateButton: React.FC<DonateButtonProps> = ({ isOpen, onClose }) =
             className="absolute inset-0 bg-background/80 backdrop-blur-sm"
           />
           <motion.div
+            ref={dialogRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="donate-dialog-title"
+            tabIndex={-1}
             initial={{ scale: 0.95, opacity: 0, y: 10 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.95, opacity: 0, y: 10 }}
@@ -47,7 +54,7 @@ export const DonateButton: React.FC<DonateButtonProps> = ({ isOpen, onClose }) =
               <div className="w-16 h-16 bg-rose-500/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
                 <Coffee className="w-8 h-8 text-rose-500" />
               </div>
-              <h2 className="text-2xl font-black uppercase tracking-tighter">Поддержать</h2>
+              <h2 id="donate-dialog-title" className="text-2xl font-black uppercase tracking-tighter">Поддержать</h2>
               <p className="text-xs text-muted-foreground leading-relaxed">Ваша поддержка помогает нам развивать проект и оплачивать вычислительные мощности.</p>
             </div>
 
