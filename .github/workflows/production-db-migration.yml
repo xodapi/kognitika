@@ -72,14 +72,8 @@ jobs:
           DB_CHANGE_REVIEW_URL: ${{ inputs.review_url }}
         run: node scripts/production-db-change-gate.mjs "${{ inputs.base_sha }}" "${{ inputs.target_sha }}"
 
-      - name: Preflight migration history before incremental DDL
-        if: inputs.operation == 'apply_migrations'
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-        run: node scripts/check-migration-baseline.mjs
-
       - name: Prepare protected host connection
-        if: inputs.operation == 'clean_rebuild'
+        if: inputs.operation == 'apply_migrations' || inputs.operation == 'clean_rebuild'
         env:
           DEPLOY_HOST: ${{ secrets.KOGNITIKA_DEPLOY_HOST }}
           DEPLOY_PORT: ${{ secrets.KOGNITIKA_DEPLOY_PORT }}
@@ -91,6 +85,38 @@ jobs:
           printf '%s\n' "$DEPLOY_KEY" > ~/.ssh/kognitika_db_rebuild_key
           chmod 600 ~/.ssh/kognitika_db_rebuild_key
           ssh-keyscan -p "$DEPLOY_PORT" -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts
+
+      - name: Apply committed migrations on protected host
+        if: inputs.operation == 'apply_migrations'
+        env:
+          DEPLOY_HOST: ${{ secrets.KOGNITIKA_DEPLOY_HOST }}
+          DEPLOY_PORT: ${{ secrets.KOGNITIKA_DEPLOY_PORT }}
+          DEPLOY_USER: ${{ secrets.KOGNITIKA_DEPLOY_USER }}
+          EXPECTED_SHA: ${{ inputs.target_sha }}
+        run: |
+          set -euo pipefail
+          ssh -i ~/.ssh/kognitika_db_rebuild_key \
+            -p "$DEPLOY_PORT" \
+            -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=yes \
+            "$DEPLOY_USER@$DEPLOY_HOST" \
+            "EXPECTED_SHA='$EXPECTED_SHA' bash -s" <<'REMOTE'
+          set -Eeuo pipefail
+
+          cd /opt/kognitika
+          test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+          test -r /opt/kognitika/.env
+          set -a
+          . /opt/kognitika/.env
+          set +a
+          test -n "${DATABASE_URL:-}"
+
+          # The service host is the authority for this migration. Do not use a
+          # runner secret that may point at a different database.
+          node scripts/check-migration-baseline.mjs
+          pnpm exec prisma migrate deploy
+          pnpm exec prisma migrate status
+          REMOTE
 
       - name: Clean rebuild on protected host
         if: inputs.operation == 'clean_rebuild'

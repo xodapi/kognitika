@@ -47,7 +47,8 @@ describe('production database governance contracts', () => {
     expect(workflow).toContain('db_change_runbook_id:');
     expect(workflow).toContain('review_url:');
     expect(workflow).toContain('node scripts/production-db-change-gate.mjs');
-    expect(workflow).toContain('DATABASE_URL: ${{ secrets.DATABASE_URL }}');
+    expect(workflow).toContain('The service host is the authority for this migration.');
+    expect(workflow).toContain('test -n "${DATABASE_URL:-}"');
     expect(workflow).not.toContain('prisma migrate resolve');
     expect(preflight).toBeGreaterThanOrEqual(0);
     expect(preflight).toBeLessThan(ddl);
@@ -61,7 +62,7 @@ describe('production database governance contracts', () => {
     const checksum = workflow.indexOf('sha256sum --check');
     const stopService = workflow.indexOf('sudo systemctl stop kognitika');
     const reset = workflow.indexOf('DROP SCHEMA public CASCADE');
-    const migration = workflow.indexOf('pnpm exec prisma migrate deploy');
+    const migration = workflow.indexOf('pnpm exec prisma migrate deploy', reset);
     const finalStatus = workflow.lastIndexOf('pnpm exec prisma migrate status');
 
     expect(workflow).toContain('operation:');
