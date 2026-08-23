@@ -804,6 +804,7 @@ export function SchulteGrid() {
                return (
                   <button
                     key={cell.id}
+                    aria-label={`Число ${cell.num}, ${isRed ? 'красная' : 'чёрная'} клетка`}
                     onClick={(e) => {
                       const rect = e.currentTarget.parentElement?.getBoundingClientRect();
                       if (rect) {

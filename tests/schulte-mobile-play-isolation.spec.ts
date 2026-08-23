@@ -68,10 +68,12 @@ for (const viewport of MOBILE_VIEWPORTS) {
       await startSchulte(page);
 
       const target = page.getByTestId('target-indicator');
-      const firstCell = page.getByRole('button', { name: '1', exact: true });
-      const secondCell = page.getByRole('button', { name: '2', exact: true });
+      const firstCell = page.getByRole('button', { name: /Число 1,/ });
+      const secondCell = page.getByRole('button', { name: /Число 2,/ });
 
       await expect(target).toContainText('1');
+      await expect(firstCell).toHaveAccessibleName(/Число 1, (красная|чёрная) клетка/);
+      await expect(secondCell).toHaveAccessibleName(/Число 2, (красная|чёрная) клетка/);
       await expect(target).toHaveAttribute('role', 'status');
       await expect(target).toHaveAttribute('aria-live', 'polite');
       await expect(target).toHaveAttribute('aria-atomic', 'true');
