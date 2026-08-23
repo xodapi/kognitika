@@ -49,7 +49,8 @@ describe('navigation contract', () => {
     for (const href of hrefTargets) {
       const isExternal = /^https:\/\//.test(href);
       const isInternalRoute = href.startsWith('/') && declaredRoutes.has(href);
-      expect(isExternal || isInternalRoute, `href '${href}' should be https or an app route`).toBe(true);
+      const isDocumentFragment = href.startsWith('#') && href.length > 1;
+      expect(isExternal || isInternalRoute || isDocumentFragment, `href '${href}' should be https, an app route, or a document fragment`).toBe(true);
     }
   });
 
