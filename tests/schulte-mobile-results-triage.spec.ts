@@ -43,6 +43,9 @@ for (const viewport of MOBILE_VIEWPORTS) {
       await openResults(page);
       expect(await page.evaluate(() => window.scrollY)).toBe(0);
 
+      await expect(page.getByTestId('results-limitation')).toContainText('wellness-тренировка');
+      await expect(page.getByTestId('results-limitation')).toContainText('не медицинская диагностика');
+
       for (const selector of [VERDICT, PRIMARY_ACTIONS]) {
         const box = await page.locator(selector).boundingBox();
         expect(box, `${selector} should be mounted`).not.toBeNull();

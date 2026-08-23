@@ -604,6 +604,9 @@ export function SchulteGrid() {
                     <p className="text-xl font-mono font-black">{state.errors}</p>
                   </div>
                 </div>
+                <p data-testid="results-limitation" className="mt-4 text-sm leading-relaxed text-muted-foreground">
+                  Это wellness-тренировка, а не медицинская диагностика. На результат влияют сон, стресс, устройство и знакомство с задачей.
+                </p>
                 <div data-testid="session-primary-actions" className="mt-4 grid grid-cols-2 gap-3">
                   <button
                     onClick={() => {
