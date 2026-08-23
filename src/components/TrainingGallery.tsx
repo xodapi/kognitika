@@ -69,14 +69,14 @@ export function TrainingGallery({ onStart }: { onStart: (id: string) => void }) 
             onClick={() => setActiveDomain(d.id as any)}
             aria-pressed={activeDomain === d.id}
             data-testid="training-domain-tab"
-            className={`flex min-h-12 min-w-0 flex-col items-center justify-center gap-1 rounded-xl px-2 py-2 text-[10px] font-black uppercase tracking-wide transition-all sm:flex-row sm:gap-2 sm:px-6 sm:py-3 sm:text-xs sm:tracking-widest ${
+            className={`flex min-h-12 min-w-0 flex-col items-center justify-center gap-0 rounded-xl px-1 py-2 text-[10px] font-black uppercase tracking-wide transition-all sm:flex-row sm:gap-2 sm:px-6 sm:py-3 sm:text-xs sm:tracking-widest ${
               activeDomain === d.id
                 ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20'
                 : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'
             }`}
           >
             <d.icon className="h-4 w-4 shrink-0" />
-            <span className="min-w-0 max-w-full text-center leading-tight">{d.label}</span>
+            <span className="min-w-0 max-w-full break-words text-center leading-tight">{d.label}</span>
           </button>
         ))}
       </div>
