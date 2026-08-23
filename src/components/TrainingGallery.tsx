@@ -76,7 +76,7 @@ export function TrainingGallery({ onStart }: { onStart: (id: string) => void }) 
             }`}
           >
             <d.icon className="h-4 w-4 shrink-0" />
-            <span className="truncate">{d.label}</span>
+            <span className="min-w-0 max-w-full text-center leading-tight">{d.label}</span>
           </button>
         ))}
       </div>
