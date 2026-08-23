@@ -69,7 +69,7 @@ for (const viewport of MOBILE_VIEWPORTS) {
 
       const layout = await page.evaluate(() => {
         const abort = document.querySelector('[data-testid="stop-button"]')?.getBoundingClientRect();
-        const nav = Array.from(document.querySelectorAll('div')).find((element) =>
+        const nav = Array.from(document.querySelectorAll('nav')).find((element) =>
           String(element.className).includes('fixed left-1/2')
           && String(element.className).includes('max-w-sm'),
         )?.getBoundingClientRect();
