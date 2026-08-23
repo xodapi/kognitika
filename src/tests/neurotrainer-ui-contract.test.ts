@@ -1,5 +1,5 @@
 import React from 'react';
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { MentalMathTrainer } from '../components/MentalMathTrainer';
 import { PostGameInsight } from '../components/PostGameInsight';
@@ -123,7 +123,14 @@ describe('new trainer UI contract', () => {
     expect(screen.getByRole('button', { name: 'Л — Левая рука' })).toHaveClass('min-h-24');
     expect(screen.getByRole('button', { name: 'О — Обе руки' })).toHaveClass('min-h-24');
 
-    fireEvent.keyDown(window, { key: 'ArrowRight' });
+    await waitFor(() => {
+      expect(screen.getByRole('progressbar', { name: 'Прогресс таблицы алфавита' }))
+        .toHaveAttribute('aria-valuenow', '0');
+    });
+    await act(async () => {
+      fireEvent.keyDown(window, { key: 'ArrowRight' });
+      await Promise.resolve();
+    });
     await waitFor(() => {
       expect(screen.getByRole('progressbar', { name: 'Прогресс таблицы алфавита' }))
         .toHaveAttribute('aria-valuenow', '1');
