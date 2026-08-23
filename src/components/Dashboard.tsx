@@ -128,6 +128,7 @@ export function Dashboard({
         <div className="grid w-full grid-cols-2 gap-2 bg-card/30 p-1.5 border border-border rounded-2xl sm:w-fit sm:flex sm:flex-wrap">
           <button 
             onClick={() => setActiveTab('training')}
+            aria-pressed={activeTab === 'training'}
             className={`flex min-w-0 items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all sm:px-6 ${activeTab === 'training' ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20' : 'text-muted-foreground hover:text-foreground'}`}
           >
             <Activity className="w-4 h-4 shrink-0" />
@@ -135,6 +136,7 @@ export function Dashboard({
           </button>
           <button 
             onClick={() => setActiveTab('profile')}
+            aria-pressed={activeTab === 'profile'}
             className={`flex min-w-0 items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all sm:px-6 ${activeTab === 'profile' ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20' : 'text-muted-foreground hover:text-foreground'}`}
           >
             <Brain className="w-4 h-4 shrink-0" />
@@ -142,6 +144,7 @@ export function Dashboard({
           </button>
           <button 
             onClick={() => setActiveTab('duels')}
+            aria-pressed={activeTab === 'duels'}
             className={`flex min-w-0 items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all sm:px-6 ${activeTab === 'duels' ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20' : 'text-muted-foreground hover:text-foreground'}`}
           >
             <Sword className="w-4 h-4 shrink-0" />
@@ -149,6 +152,7 @@ export function Dashboard({
           </button>
           <button 
             onClick={() => setActiveTab('wiki')}
+            aria-pressed={activeTab === 'wiki'}
             className={`flex min-w-0 items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all sm:px-6 ${activeTab === 'wiki' ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20' : 'text-muted-foreground hover:text-foreground'}`}
           >
             <BookOpen className="w-4 h-4 shrink-0" />
@@ -157,6 +161,7 @@ export function Dashboard({
           {userRole === 'ADMIN' && (
             <button 
               onClick={() => setActiveTab('admin')}
+              aria-pressed={activeTab === 'admin'}
               className={`flex min-w-0 items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all sm:px-6 ${activeTab === 'admin' ? 'bg-destructive text-destructive-foreground shadow-lg shadow-destructive/20' : 'text-muted-foreground hover:text-destructive'}`}
             >
               <Shield className="w-4 h-4 shrink-0" />
@@ -453,6 +458,7 @@ export function Dashboard({
 
       {/* Mobile Bottom Navigation */}
       <nav
+        aria-label="Разделы обзора"
         className="sm:hidden fixed bottom-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-xl border-t border-border"
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
@@ -466,6 +472,7 @@ export function Dashboard({
             <button
               key={id}
               onClick={() => setActiveTab(id)}
+              aria-pressed={activeTab === id}
               className={`flex flex-col items-center gap-0.5 px-3 py-2 rounded-xl transition-all min-w-[64px] active:scale-95 ${
                 activeTab === id ? 'text-primary bg-primary/10' : 'text-muted-foreground'
               }`}
@@ -477,6 +484,7 @@ export function Dashboard({
           {userRole === 'ADMIN' && (
             <button
               onClick={() => setActiveTab('admin')}
+              aria-pressed={activeTab === 'admin'}
               className={`flex flex-col items-center gap-0.5 px-3 py-2 rounded-xl transition-all min-w-[64px] active:scale-95 ${
                 activeTab === 'admin' ? 'text-destructive bg-destructive/10' : 'text-muted-foreground'
               }`}

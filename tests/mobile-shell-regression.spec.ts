@@ -93,6 +93,22 @@ for (const viewport of MOBILE_VIEWPORTS) {
       await expect(navigation.getByRole('button', { name: 'Логика' })).not.toHaveAttribute('aria-current');
     });
 
+    test('announces the active Dashboard section in its mobile navigation', async ({ page }) => {
+      await page.goto('/', { waitUntil: 'networkidle' });
+      await expectAppReady(page);
+
+      const navigation = page.getByRole('navigation', { name: 'Разделы обзора' });
+      await expect(navigation).toBeVisible();
+      const training = navigation.getByRole('button', { name: 'Тренировки' });
+      const profile = navigation.getByRole('button', { name: 'Профиль' });
+
+      await expect(training).toHaveAttribute('aria-pressed', 'true');
+      await expect(profile).toHaveAttribute('aria-pressed', 'false');
+      await profile.click();
+      await expect(training).toHaveAttribute('aria-pressed', 'false');
+      await expect(profile).toHaveAttribute('aria-pressed', 'true');
+    });
+
     test('contains keyboard focus in the drawer and restores it after closing', async ({ page }) => {
       await page.goto('/schulte', { waitUntil: 'networkidle' });
       await expectAppReady(page);
