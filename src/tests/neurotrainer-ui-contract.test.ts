@@ -1,5 +1,5 @@
 import React from 'react';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { MentalMathTrainer } from '../components/MentalMathTrainer';
 import { PostGameInsight } from '../components/PostGameInsight';
@@ -124,8 +124,10 @@ describe('new trainer UI contract', () => {
     expect(screen.getByRole('button', { name: 'О — Обе руки' })).toHaveClass('min-h-24');
 
     fireEvent.keyDown(window, { key: 'ArrowRight' });
-    expect(screen.getByRole('progressbar', { name: 'Прогресс таблицы алфавита' }))
-      .toHaveAttribute('aria-valuenow', '1');
+    await waitFor(() => {
+      expect(screen.getByRole('progressbar', { name: 'Прогресс таблицы алфавита' }))
+        .toHaveAttribute('aria-valuenow', '1');
+    });
   });
 
   it('keeps combined Stroop responses accessible in a stable order', async () => {
