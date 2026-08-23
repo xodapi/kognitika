@@ -56,7 +56,7 @@ const TRAINERS: TrainerContract[] = [
   { name: 'Mental math', route: '/mental-math', clauses: ALL_APPLY, playfield: '[data-testid="playfield"]' },
   { name: 'N-back', route: '/nback', clauses: NO_ABORT, playfield: '[data-testid="playfield"]' },
   { name: 'Numerical analysis', route: '/numerical', clauses: NO_ABORT, playfield: '[data-testid="playfield"]' },
-  { name: 'Schulte', route: '/schulte', clauses: ALL_APPLY },
+  { name: 'Schulte', route: '/schulte', clauses: ALL_APPLY, playfield: '[data-testid="grid-container"]' },
   {
     name: 'Schulte 90',
     route: '/schulte-90',
