@@ -1,3 +1,4 @@
+import { act, renderHook } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   createGameAttempt,
@@ -5,6 +6,7 @@ import {
   GameAttemptError,
   requestGameAttemptAuthentication,
   saveGameAttempt,
+  useGameAttempt,
 } from '../lib/game-attempt-client';
 
 const attemptResponse = {
@@ -72,6 +74,60 @@ describe('game attempt client', () => {
         attemptId: 'attempt-1',
         challenge: 'one-time-secret',
       });
+    }
+  });
+
+  it('surfaces a server-side 500 without exposing the response body', async () => {
+    const fetchImpl = vi.fn<typeof fetch>().mockResolvedValue(
+      new Response(JSON.stringify({ error: 'Failed to save session', detail: 'relation does not exist' }), { status: 500 }),
+    );
+    const credentials = {
+      ...attemptResponse,
+      gameType: 'SCHULTE',
+      clientRunId: '33333333-3333-4333-8333-333333333333',
+    };
+
+    await expect(saveGameAttempt('token', credentials, { timeMs: 900 }, fetchImpl))
+      .rejects.toThrow('status 500');
+    expect(fetchImpl).toHaveBeenCalledOnce();
+  });
+
+  it('retries a failed save exactly once and preserves attempt credentials', async () => {
+    vi.useFakeTimers();
+    const fetchImpl = vi.fn<typeof fetch>()
+      .mockResolvedValueOnce(new Response(JSON.stringify(attemptResponse), { status: 201 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ error: 'Failed to save session' }), { status: 500 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ error: 'Failed to save session' }), { status: 500 }));
+    vi.stubGlobal('fetch', fetchImpl);
+
+    try {
+      const { result } = renderHook(() => useGameAttempt('token'));
+      await act(async () => {
+        await result.current.beginAttempt(
+          'SCHULTE',
+        );
+      });
+
+      const savePromise = result.current.saveAttempt({ timeMs: 900 });
+      const settledSave = savePromise.then(
+        () => null,
+        (error) => error,
+      );
+      await vi.advanceTimersByTimeAsync(1000);
+      await expect(settledSave).resolves.toMatchObject({ message: 'Game attempt request failed with status 500' });
+      expect(fetchImpl).toHaveBeenCalledTimes(3);
+
+      const saveBodies = fetchImpl.mock.calls.slice(1).map(([, init]) => JSON.parse(String(init?.body)));
+      expect(saveBodies[0]).toMatchObject({
+        clientRunId: expect.any(String),
+        gameType: 'SCHULTE',
+        attemptId: attemptResponse.attemptId,
+        challenge: attemptResponse.challenge,
+      });
+      expect(saveBodies[1]).toEqual(saveBodies[0]);
+    } finally {
+      vi.useRealTimers();
+      vi.unstubAllGlobals();
     }
   });
 

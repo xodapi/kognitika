@@ -210,6 +210,26 @@ describe('game route XP event contract', () => {
     expect(eventBusMock.emit).toHaveBeenCalledWith('game:completed', expect.not.objectContaining({ analyticsJob }));
   });
 
+  it('maps an unexpected persistence failure to a safe 500 response', async () => {
+    process.env.GAME_SAVE_LEGACY_COMPAT_ENABLED = 'true';
+    gameSaveMock.saveCompletedGame.mockRejectedValue(new Error('relation does not exist'));
+
+    const baseUrl = await createGameHarness();
+    const token = userToken({ id: 'user_synthetic_game' });
+    const response = await postJson(baseUrl, '/api/game/save', token, {
+      clientRunId: '11111111-1111-4111-8111-111111111111',
+      gameType: 'SCHULTE',
+      timeMs: 5000,
+      metadata: { size: 3 },
+      analyticsJob: { schemaVersion: 1, jobId: 'analytics-job-synthetic-schulte' },
+    });
+
+    expect(response.status).toBe(500);
+    expect(response.body).toEqual({ error: 'Failed to save session' });
+    expect(JSON.stringify(response.body)).not.toContain('relation does not exist');
+    expect(eventBusMock.emit).not.toHaveBeenCalled();
+  });
+
   it('does not emit completion again for an idempotent attempt replay', async () => {
     gameSaveMock.saveCompletedGame.mockResolvedValue({
       session: { id: 'session_synthetic_1', score: 21 },
