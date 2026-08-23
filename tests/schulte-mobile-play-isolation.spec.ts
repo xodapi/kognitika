@@ -74,6 +74,7 @@ for (const viewport of MOBILE_VIEWPORTS) {
       await expect(target).toContainText('1');
       await firstCell.focus();
       await expect(firstCell).toBeFocused();
+      await expect(firstCell).toHaveClass(/focus-visible:ring-4/);
       await page.keyboard.press('Enter');
       await expect(target).toContainText('2');
 

@@ -804,7 +804,7 @@ export function SchulteGrid() {
                     className={`aspect-square bg-card border border-border flex items-center justify-center font-black transition-all cursor-pointer select-none shadow-sm
                        ${isRed ? 'text-destructive' : 'text-foreground'} 
                        ${state.size > 5 ? 'text-lg sm:text-xl' : state.size > 3 ? 'text-xl sm:text-2xl' : 'text-2xl sm:text-4xl'}
-                       hover:ring-4 hover:ring-primary/20 hover:border-primary transition-all duration-75`}
+                       hover:ring-4 hover:ring-primary/20 hover:border-primary focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/60 transition-all duration-75`}
                     style={ cell.chaosStyle ? { 
                        opacity: cell.chaosStyle.opacity, 
                        transform: `rotate(${cell.chaosStyle.rotate}deg) scale(${cell.chaosStyle.scale})` 
