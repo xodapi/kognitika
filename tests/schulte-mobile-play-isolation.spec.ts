@@ -64,6 +64,26 @@ for (const viewport of MOBILE_VIEWPORTS) {
       await expect(page.locator(CHART_SURFACES)).toHaveCount(0);
     });
 
+    test('grid cells advance the sequence through Enter and Space', async ({ page }) => {
+      await startSchulte(page);
+
+      const target = page.getByTestId('target-indicator');
+      const firstCell = page.getByRole('button', { name: '1', exact: true });
+      const secondCell = page.getByRole('button', { name: '2', exact: true });
+
+      await expect(target).toContainText('1');
+      await firstCell.focus();
+      await expect(firstCell).toBeFocused();
+      await page.keyboard.press('Enter');
+      await expect(target).toContainText('2');
+
+      await secondCell.focus();
+      await expect(secondCell).toBeFocused();
+      await page.keyboard.press('Space');
+      await expect(target).toContainText('3');
+      await expect(page.getByTestId('errors-count')).toContainText('0');
+    });
+
     test('abort does not overlap the fixed bottom navigation', async ({ page }) => {
       await startSchulte(page);
 
