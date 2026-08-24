@@ -37,6 +37,17 @@ describe('production database governance contracts', () => {
     expect(preflight).toBeLessThan(productionDeploy.indexOf('systemctl restart kognitika'));
   });
 
+  it('runs asset retention in dry-run mode without deleting active bundles during deploy', () => {
+    const deploy = read('.github/workflows/deploy.yml');
+    const productionDeploy = deploy.slice(deploy.indexOf("'REMOTE'"));
+    const retention = productionDeploy.indexOf('node scripts/asset-retention-guard.mjs');
+
+    expect(retention).toBeGreaterThanOrEqual(0);
+    expect(productionDeploy.slice(retention, retention + 120)).toContain('--dry-run');
+    expect(productionDeploy.slice(retention, retention + 120)).not.toContain('--apply');
+    expect(retention).toBeLessThan(productionDeploy.indexOf('systemctl restart kognitika'));
+  });
+
   it('requires a manual, externally approved DB-migration workflow with reviewable evidence before DDL', () => {
     const workflow = read('.github/workflows/production-db-migration.yml');
     const preflight = workflow.indexOf('node scripts/check-migration-baseline.mjs');

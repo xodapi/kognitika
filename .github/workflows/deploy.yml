@@ -191,6 +191,9 @@ jobs:
 
           mkdir -p dist/assets
           cp -an "$asset_keep"/. dist/assets/ 2>/dev/null || true
+          # Report stale unreferenced hashed assets without deleting them during deploy.
+          # Cleanup remains an explicit, separately reviewed --apply operation.
+          node scripts/asset-retention-guard.mjs --root=dist --dry-run
 
           # Сборка и деплой мобильной веб-версии
           echo "=== Exporting mobile web version ==="
