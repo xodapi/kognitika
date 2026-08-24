@@ -4,7 +4,15 @@ import type {
   DailyTrajectoryRepository,
   DailyTrajectorySession,
 } from '../../repositories/daily-trajectory-repository.ts';
-import type { DailyPracticeItem } from '../../../lib/daily-practice-types.ts';
+import { DailyPracticeItemSchema, type DailyPracticeItem } from '../../../lib/daily-practice-types.ts';
+
+function parseDailyPracticeItems(items: unknown): DailyPracticeItem[] {
+  const parsed = DailyPracticeItemSchema.array().safeParse(items);
+  if (!parsed.success) {
+    throw new Error('Invalid persisted daily practice plan items');
+  }
+  return parsed.data;
+}
 
 export class PrismaDailyTrajectoryRepository implements DailyTrajectoryRepository {
   constructor(private readonly prisma: PrismaClient) {}
@@ -23,17 +31,19 @@ export class PrismaDailyTrajectoryRepository implements DailyTrajectoryRepositor
       where: { userId_date: { userId, date } },
       select: { id: true, items: true },
     });
-    return plan ? { id: plan.id, items: plan.items as unknown as DailyPracticeItem[] } : null;
+    return plan ? { id: plan.id, items: parseDailyPracticeItems(plan.items) } : null;
   }
 
   async createPlan(userId: string, date: Date, items: DailyPracticeItem[]): Promise<void> {
-    await this.prisma.dailyPracticePlan.create({ data: { userId, date, items: items as unknown as object } });
+    const validatedItems = parseDailyPracticeItems(items);
+    await this.prisma.dailyPracticePlan.create({ data: { userId, date, items: validatedItems as unknown as object } });
   }
 
   async replacePlanItems(planId: string, items: DailyPracticeItem[]): Promise<void> {
+    const validatedItems = parseDailyPracticeItems(items);
     await this.prisma.dailyPracticePlan.update({
       where: { id: planId },
-      data: { items: items as unknown as object },
+      data: { items: validatedItems as unknown as object },
     });
   }
 }
