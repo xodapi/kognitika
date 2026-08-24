@@ -61,6 +61,7 @@ import investorLeadRoutes from './src/server/routes/investor-leads.ts';
 import { authenticate } from './src/server/middleware/auth.ts';
 import { apiErrorHandler, apiNotFound } from './src/server/middleware/api-errors.ts';
 import { privacyGuard } from './src/server/middleware/privacy.ts';
+import { createOpenApiDocument, openApiDocsHtml } from './src/server/openapi.ts';
 
 import { Server } from 'socket.io';
 import { registerDuelHandlers } from './src/server/realtime/duels.ts';
@@ -150,6 +151,14 @@ async function startServer() {
 
   app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString(), buildId: BUILD_ID });
+  });
+
+  app.get('/api/docs.json', (_req, res) => {
+    res.json(createOpenApiDocument(process.env.APP_URL || `http://localhost:${PORT}`));
+  });
+
+  app.get('/api/docs', (_req, res) => {
+    res.type('html').send(openApiDocsHtml());
   });
 
   app.get('/api/me', authenticate, async (req: any, res) => {

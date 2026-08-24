@@ -81,7 +81,7 @@ pnpm dev
 | База знаний тренажёров (в приложении) | `src/lib/knowledge-base.ts` |
 | Описание для внешнего аудитора | [`docs/AUDIT_BRIEF.md`](docs/AUDIT_BRIEF.md) |
 | Стратегическое видение | [`GLOBAL_VISION.md`](GLOBAL_VISION.md), стратегическая заметка, не runtime source of truth |
-| API Reference (OpenAPI) | [Issue #138](https://github.com/xodapi/kognitika/issues/138), planned; `/api/docs` и `/api/docs.json` пока не доступны |
+| API Reference (OpenAPI) | [`/api/docs`](https://kognitika.ru/api/docs) и [`/api/docs.json`](https://kognitika.ru/api/docs.json) |
 
 ---
 
@@ -245,7 +245,7 @@ pnpm test:e2e
 - **Целевой Rust-контур**: единые события всех когнитивных модулей → durable analytics jobs → internal Axum analyzer → shadow → canary → Rust-primary с временным TS fallback. Roadmap: [#139](https://github.com/xodapi/kognitika/issues/139).
 - **Browser WASM**: включается только после frame-budget гейта `docs/frame-budget-benchmark.md`; серверный native Rust оценивается отдельно и не требует переписывания React UI.
 - **Wearable feedback, opt-in**: не относится к raw telemetry pipeline. Будущий mobile adapter сначала получает явное consent, локально агрегирует quality-aware summary и только затем может передать versioned physiological input в recommendation-only shadow policy. Без consent, при отсутствии, stale, low-quality или revoked signal применяется обычная cognitive-only логика. Roadmap: [#148](https://github.com/xodapi/kognitika/issues/148) → [#149](https://github.com/xodapi/kognitika/issues/149) → [#150](https://github.com/xodapi/kognitika/issues/150) → [#151](https://github.com/xodapi/kognitika/issues/151).
-- **OpenAPI**: [#138](https://github.com/xodapi/kognitika/issues/138) должен описывать независимый от языка HTTP-контракт, совместимый с Express и будущими Rust endpoints. `/api/docs` и `/api/docs.json` пока не доступны.
+- **OpenAPI**: независимый от языка HTTP-контракт доступен на `/api/docs` и `/api/docs.json`; схема остаётся совместимой с Express и будущими Rust endpoints.
 - **Production-патчи**: запрещены без задокументированного hotfix-протокола.
 
 ---
