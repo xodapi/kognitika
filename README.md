@@ -194,6 +194,8 @@ pnpm dev
 
 Дополнительно: Telegram и Neurotrainer, опционально, см. `.env.example`.
 
+Полный краткий справочник HTTP endpoints: [`docs/api-reference.md`](docs/api-reference.md).
+
 ---
 
 ## Скрипты
