@@ -1,6 +1,7 @@
 import { eventBus } from '../server/events/event-bus.ts';
 import { createSafeLogger, safeError } from './safe-logger.ts';
 import { getNotificationRecipientRepository } from '../server/infrastructure/container.ts';
+import { markDailyPlanItemCompleted } from '../server/services/daily-trajectory.ts';
 import {
   buildFeedbackTelegramMessage,
   buildIdeaTelegramMessage,
@@ -12,6 +13,17 @@ const logger = createSafeLogger('subscribers');
 function adminNotificationUserLabel(user: { pseudonym?: string | null; name?: string | null }) {
   return user.pseudonym || user.name || 'Brain ID user';
 }
+
+eventBus.on('game:completed', async (data) => {
+  try {
+    await markDailyPlanItemCompleted(data.userId, data.gameType);
+  } catch (err) {
+    logger.error('Daily trajectory completion update failed', {
+      error: safeError(err),
+      operation: 'mark-daily-item-completed',
+    });
+  }
+});
 
 async function deliverTelegramAdminNotification(text: string, eventLabel: string) {
   const result = await sendTelegramAdminMessage(text);

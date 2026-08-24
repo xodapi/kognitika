@@ -38,6 +38,28 @@ describe('daily trajectory service', () => {
     expect(items.some((i) => i.category === 'somatic')).toBe(true);
   });
 
+  it('uses nback as the documented deterministic fallback for empty history', async () => {
+    prismaMock.gameSession.findMany.mockResolvedValue([]);
+
+    const { generateDailyPlan } = await import('../server/services/daily-trajectory.ts');
+    const items = await generateDailyPlan('user-1', new Date('2026-08-24T12:00:00.000Z'));
+
+    expect(items[0]).toMatchObject({ moduleId: 'nback', reason: 'weak_area' });
+  });
+
+  it('normalizes multi-word game types for weak-area and completion detection', async () => {
+    const targetDate = new Date('2026-08-24T12:00:00.000Z');
+    prismaMock.gameSession.findMany.mockResolvedValue([
+      { gameType: 'N_BACK', score: 10, createdAt: new Date('2026-08-24T08:00:00.000Z') },
+      { gameType: 'SCHULTE', score: 900, createdAt: new Date('2026-08-23T08:00:00.000Z') },
+    ]);
+
+    const { generateDailyPlan } = await import('../server/services/daily-trajectory.ts');
+    const items = await generateDailyPlan('user-1', targetDate);
+
+    expect(items[0]).toMatchObject({ moduleId: 'nback', status: 'completed' });
+  });
+
   it('includes safety item for users with >= 5 sessions', async () => {
     prismaMock.gameSession.findMany.mockResolvedValue(
       Array.from({ length: 10 }, (_, i) => ({
@@ -55,8 +77,8 @@ describe('daily trajectory service', () => {
   it('marks items as completed if played today', async () => {
     const now = new Date();
     prismaMock.gameSession.findMany.mockResolvedValue([
-      { gameType: 'SCHULTE', score: 600 },
-      { gameType: 'STROOP', score: 700 },
+      { gameType: 'SCHULTE', score: 600, createdAt: now },
+      { gameType: 'STROOP', score: 700, createdAt: now },
     ]);
 
     const { generateDailyPlan } = await import('../server/services/daily-trajectory.ts');
@@ -66,6 +88,19 @@ describe('daily trajectory service', () => {
     if (schulteItem) {
       expect(schulteItem.status).toBe('completed');
     }
+  });
+
+  it('excludes future sessions when generating a historical date plan', async () => {
+    const targetDate = new Date('2026-08-20T12:00:00.000Z');
+    prismaMock.gameSession.findMany.mockResolvedValue([
+      { gameType: 'N_BACK', score: 10, createdAt: new Date('2026-08-21T08:00:00.000Z') },
+      { gameType: 'SCHULTE', score: 900, createdAt: new Date('2026-08-19T08:00:00.000Z') },
+    ]);
+
+    const { generateDailyPlan } = await import('../server/services/daily-trajectory.ts');
+    const items = await generateDailyPlan('user-1', targetDate);
+
+    expect(items[0]).toMatchObject({ moduleId: 'schulte', status: 'planned' });
   });
 
   it('returns existing plan from database', async () => {
@@ -111,6 +146,49 @@ describe('daily trajectory service', () => {
     expect(updated![0].completedAt).toBeDefined();
   });
 
+  it('clears completion metadata when an item leaves completed status', async () => {
+    const mockItems = [
+      {
+        id: 'dp-1',
+        category: 'cognitive',
+        moduleId: 'schulte',
+        title: 'Test',
+        reason: 'weak_area',
+        status: 'completed',
+        completedAt: '2026-08-24T10:00:00.000Z',
+        xpReward: 150,
+      },
+    ];
+    prismaMock.dailyPracticePlan.findUnique.mockResolvedValue({ id: 'plan-1', items: mockItems });
+
+    const { updateItemStatus } = await import('../server/services/daily-trajectory.ts');
+    const updated = await updateItemStatus('user-1', 'dp-1', 'planned');
+
+    expect(updated![0]).toMatchObject({ status: 'planned', completedAt: undefined });
+  });
+
+  it('marks the matching current-day item completed from a canonical game type', async () => {
+    const completedAt = new Date('2026-08-24T12:00:00.000Z');
+    const items = [
+      { id: 'dp-1', category: 'cognitive', moduleId: 'nback', title: 'N-back', reason: 'weak_area', status: 'planned', xpReward: 150 },
+      { id: 'dp-2', category: 'somatic', moduleId: 'silence', title: 'Silence', reason: 'recovery', status: 'planned', xpReward: 80 },
+    ];
+    prismaMock.dailyPracticePlan.findUnique.mockResolvedValue({ id: 'plan-1', items });
+
+    const { markDailyPlanItemCompleted } = await import('../server/services/daily-trajectory.ts');
+    await expect(markDailyPlanItemCompleted('user-1', 'N_BACK', completedAt)).resolves.toBe(true);
+
+    expect(prismaMock.dailyPracticePlan.update).toHaveBeenCalledWith(expect.objectContaining({
+      where: { id: 'plan-1' },
+      data: {
+        items: [
+          expect.objectContaining({ id: 'dp-1', status: 'completed', completedAt: completedAt.toISOString() }),
+          items[1],
+        ],
+      },
+    }));
+  });
+
   it('logs persistence failures without user or item identifiers', async () => {
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
     vi.stubEnv('DEBUG_LOGS', 'true');
@@ -126,7 +204,7 @@ describe('daily trajectory service', () => {
     prismaMock.dailyPracticePlan.update.mockRejectedValue(new Error('database unavailable'));
 
     const { updateItemStatus } = await import('../server/services/daily-trajectory.ts');
-    await updateItemStatus(userId, itemId, 'completed');
+    await expect(updateItemStatus(userId, itemId, 'completed')).rejects.toThrow('database unavailable');
 
     const output = JSON.stringify(errorSpy.mock.calls);
     expect(output).toContain('replace-plan-items');
@@ -141,6 +219,17 @@ describe('daily trajectory service', () => {
     const result = await updateItemStatus('user-1', 'dp-1', 'completed');
 
     expect(result).toBeNull();
+  });
+
+  it('returns null and does not persist an unknown item identifier', async () => {
+    const items = [
+      { id: 'dp-1', category: 'cognitive', moduleId: 'schulte', title: 'Test', reason: 'weak_area', status: 'planned', xpReward: 150 },
+    ];
+    prismaMock.dailyPracticePlan.findUnique.mockResolvedValue({ id: 'plan-1', items });
+
+    const { updateItemStatus } = await import('../server/services/daily-trajectory.ts');
+    await expect(updateItemStatus('user-1', 'unknown', 'completed')).resolves.toBeNull();
+    expect(prismaMock.dailyPracticePlan.update).not.toHaveBeenCalled();
   });
 
   it('computes progress correctly', async () => {

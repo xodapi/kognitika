@@ -80,7 +80,7 @@ router.patch('/item', authenticate, validateBody(updateItemSchema), async (req: 
     const updated = await updateItemStatus(req.user.id, itemId, status, targetDate);
 
     if (!updated) {
-      return res.status(404).json({ error: 'Daily plan not found' });
+      return res.status(404).json({ error: 'Daily plan item not found' });
     }
 
     const progress = computeProgress(updated);

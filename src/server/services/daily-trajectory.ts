@@ -4,33 +4,14 @@ import {
   type DailyPracticeItem,
   type DailyPracticeItemStatus,
   DAILY_PRACTICE_MODULE_TITLES,
-  CATEGORY_LABELS,
 } from '../../lib/daily-practice-types.ts';
+import { NEXT_MODULE, resolvePracticeModuleId } from '../../lib/practice-recommendations.ts';
 
 const logger = createSafeLogger('daily-trajectory');
 
 const COGNITIVE_MODULES = ['schulte', 'stroop', 'nback', 'numerical', 'logical', 'spatial', 'topology', 'collision', 'dispatcher', 'noise', 'typing'];
 const SOMATIC_MODULES = ['silence'];
 const SAFETY_MODULES = ['scanner', 'decryptor', 'reality', 'filter', 'hype', 'reframing', 'rejection'];
-
-const NEXT_MODULE: Record<string, string> = {
-  schulte: 'stroop',
-  stroop: 'nback',
-  nback: 'numerical',
-  numerical: 'logical',
-  logical: 'spatial',
-  spatial: 'topology',
-  topology: 'collision',
-  collision: 'dispatcher',
-  dispatcher: 'noise',
-  noise: 'scanner',
-  scanner: 'decryptor',
-  decryptor: 'reality',
-  reality: 'objective',
-  objective: 'profiling',
-  profiling: 'typing',
-  typing: 'schulte',
-};
 
 function toISOStringDate(d: Date): string {
   return d.toISOString().slice(0, 10);
@@ -45,17 +26,21 @@ function titleFor(moduleId: string): string {
 }
 
 function findWeakestModule(sessions: Array<{ gameType: string; score: number }>): string {
-  const domainMap: Record<string, { games: string[]; sum: number; count: number; defaultGame: string }> = {
-    attention: { games: ['SCHULTE', 'STROOP', 'SPEED_TYPING', 'N_BACK', 'NOISE_REDUCTION'], sum: 0, count: 0, defaultGame: 'schulte' },
-    memory: { games: ['N_BACK', 'SPATIAL_CONCEALMENT', 'TOPOLOGY_MEMORY'], sum: 0, count: 0, defaultGame: 'nback' },
-    logic: { games: ['NUMERICAL_ANALYSIS', 'LOGICAL_SEQUENCE', 'LANGUAGE_SCANNER', 'DECRYPTOR', 'REALITY_CHECK', 'OBJECTIVE_FILTER', 'PROFILING_RICE'], sum: 0, count: 0, defaultGame: 'logical' },
-    speed: { games: ['SPEED_TYPING', 'SCHULTE', 'COLLISION_DETECTOR'], sum: 0, count: 0, defaultGame: 'typing' },
-    resilience: { games: ['ASYNC_DISPATCHER', 'COLLISION_DETECTOR', 'NOISE_REDUCTION'], sum: 0, count: 0, defaultGame: 'dispatcher' },
+  if (sessions.length === 0) return 'nback';
+
+  const domainMap: Record<string, { modules: string[]; sum: number; count: number; defaultModule: string }> = {
+    attention: { modules: ['schulte', 'stroop', 'typing', 'nback', 'noise'], sum: 0, count: 0, defaultModule: 'schulte' },
+    memory: { modules: ['nback', 'spatial', 'topology'], sum: 0, count: 0, defaultModule: 'nback' },
+    logic: { modules: ['numerical', 'logical', 'scanner', 'decryptor', 'reality', 'objective', 'profiling'], sum: 0, count: 0, defaultModule: 'logical' },
+    speed: { modules: ['typing', 'schulte', 'collision'], sum: 0, count: 0, defaultModule: 'typing' },
+    resilience: { modules: ['dispatcher', 'collision', 'noise'], sum: 0, count: 0, defaultModule: 'dispatcher' },
   };
 
   for (const s of sessions) {
+    const moduleId = resolvePracticeModuleId(s.gameType);
+    if (!moduleId) continue;
     for (const domain of Object.values(domainMap)) {
-      if (domain.games.includes(s.gameType)) {
+      if (domain.modules.includes(moduleId)) {
         domain.sum += s.score;
         domain.count += 1;
       }
@@ -73,7 +58,7 @@ function findWeakestModule(sessions: Array<{ gameType: string; score: number }>)
     }
   }
 
-  return domainMap[weakestDomain].defaultGame;
+  return domainMap[weakestDomain].defaultModule;
 }
 
 function findNextVarietyModule(lastModuleId: string): string {
@@ -92,13 +77,17 @@ export async function generateDailyPlan(userId: string, date?: Date): Promise<Da
 
   const sessions = await getDailyTrajectoryRepository().findRecentCompletedSessions(userId, 50);
 
-  const todayStart = new Date(targetDate);
-  todayStart.setHours(0, 0, 0, 0);
-  const todaySessions = sessions.filter((s) => new Date(s.createdAt) >= todayStart);
+  const todayStart = new Date(Date.UTC(targetDate.getUTCFullYear(), targetDate.getUTCMonth(), targetDate.getUTCDate()));
+  const nextDayStart = new Date(todayStart);
+  nextDayStart.setUTCDate(nextDayStart.getUTCDate() + 1);
+  const sessionsBeforeTargetDayEnd = sessions.filter((session) => new Date(session.createdAt) < nextDayStart);
+  const todaySessions = sessionsBeforeTargetDayEnd.filter((session) => new Date(session.createdAt) >= todayStart);
 
-  const playedToday = new Set(todaySessions.map((s) => s.gameType.toLowerCase().replace(/_/g, '-')));
+  const playedToday = new Set(todaySessions
+    .map((session) => resolvePracticeModuleId(session.gameType))
+    .filter((moduleId): moduleId is string => moduleId !== null));
 
-  const weakModule = findWeakestModule(sessions);
+  const weakModule = findWeakestModule(sessionsBeforeTargetDayEnd);
 
   const items: DailyPracticeItem[] = [];
 
@@ -113,8 +102,8 @@ export async function generateDailyPlan(userId: string, date?: Date): Promise<Da
     xpReward: 150,
   });
 
-  const lastModule = sessions.length > 0
-    ? sessions[0].gameType.toLowerCase().replace(/_/g, '-')
+  const lastModule = sessionsBeforeTargetDayEnd.length > 0
+    ? resolvePracticeModuleId(sessionsBeforeTargetDayEnd[0].gameType) || 'schulte'
     : 'schulte';
   const varietyModule = findNextVarietyModule(lastModule);
   if (varietyModule !== weakModule) {
@@ -182,6 +171,7 @@ export async function getOrCreateDailyPlan(userId: string, date?: Date): Promise
     await getDailyTrajectoryRepository().createPlan(userId, new Date(dateStr), items);
   } catch (err) {
     logger.error('Failed to persist daily plan', { error: safeError(err), operation: 'create-plan' });
+    throw err;
   }
 
   return items;
@@ -201,12 +191,13 @@ export async function updateItemStatus(
   if (!plan) return null;
 
   const items = plan.items;
+  if (!items.some((item) => item.id === itemId)) return null;
   const updated = items.map((item) => {
     if (item.id !== itemId) return item;
     return {
       ...item,
       status,
-      completedAt: status === 'completed' ? new Date().toISOString() : item.completedAt,
+      completedAt: status === 'completed' ? new Date().toISOString() : undefined,
     };
   });
 
@@ -214,9 +205,32 @@ export async function updateItemStatus(
     await getDailyTrajectoryRepository().replacePlanItems(plan.id, updated);
   } catch (err) {
     logger.error('Failed to update item status', { error: safeError(err), operation: 'replace-plan-items' });
+    throw err;
   }
 
   return updated;
+}
+
+export async function markDailyPlanItemCompleted(
+  userId: string,
+  gameType: string,
+  completedAt = new Date(),
+): Promise<boolean> {
+  const moduleId = resolvePracticeModuleId(gameType);
+  if (!moduleId) return false;
+
+  const dateStr = toISOStringDate(completedAt);
+  const plan = await getDailyTrajectoryRepository().findPlan(userId, new Date(dateStr));
+  if (!plan) return false;
+
+  const matchingItem = plan.items.find((item) => item.moduleId === moduleId);
+  if (!matchingItem || matchingItem.status === 'completed') return false;
+
+  const updated = plan.items.map((item) => item.id === matchingItem.id
+    ? { ...item, status: 'completed' as const, completedAt: completedAt.toISOString() }
+    : item);
+  await getDailyTrajectoryRepository().replacePlanItems(plan.id, updated);
+  return true;
 }
 
 export function computeProgress(items: DailyPracticeItem[]): { completed: number; total: number; percent: number } {

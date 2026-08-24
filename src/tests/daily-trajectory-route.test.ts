@@ -100,4 +100,32 @@ describe('daily trajectory route validation', () => {
       new Date('2026-07-31T00:00:00.000Z'),
     );
   });
+
+  it('returns 404 when the item identifier is not in the plan', async () => {
+    serviceMock.updateItemStatus.mockResolvedValue(null);
+    const baseUrl = await createHarness();
+
+    const response = await fetch(`${baseUrl}/api/daily-trajectory/item`, {
+      method: 'PATCH',
+      headers: { ...authorization(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ itemId: 'unknown-item', status: 'completed' }),
+    });
+
+    expect(response).toMatchObject({ status: 404 });
+    await expect(response.json()).resolves.toEqual({ error: 'Daily plan item not found' });
+  });
+
+  it('returns a sanitized 500 when item persistence fails', async () => {
+    serviceMock.updateItemStatus.mockRejectedValue(new Error('database unavailable'));
+    const baseUrl = await createHarness();
+
+    const response = await fetch(`${baseUrl}/api/daily-trajectory/item`, {
+      method: 'PATCH',
+      headers: { ...authorization(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ itemId: 'item-1', status: 'completed' }),
+    });
+
+    expect(response.status).toBe(500);
+    await expect(response.json()).resolves.toEqual({ error: 'Failed to update item status' });
+  });
 });
