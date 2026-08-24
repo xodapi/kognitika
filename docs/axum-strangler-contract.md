@@ -112,6 +112,64 @@ Before enabling a nonzero pilot percentage, CI must prove:
 All fixtures must be synthetic and contain no user records, tokens, Brain IDs,
 or private telemetry.
 
+## P1 Rust contract review
+
+The current repository review (2026-08-24) is contract-only. No Axum listener,
+router, proxy rule, database client, or production traffic switch is introduced
+by this review.
+
+### Express/Rust analytics schema parity
+
+The Express analytics core and `crates/kognitika-core` are aligned on the
+following `analyze-session-v1` wire contract:
+
+- input and output `schemaVersion` are the numeric literal `1`;
+- JSON uses camelCase (`tMs`, `reactionTimeMs`, `startedAt`,
+  `completedAt`, `durationMs`, and so on);
+- input enums are `cognitive|somatic|safety` and
+  `click|answer|mistake|checkpoint`;
+- output metrics and recommendation signals use the same names, bounds, and
+  snake_case signal values;
+- unknown fields are rejected on both sides;
+- timestamps are RFC3339/ISO-8601 values with offsets, and sessions are
+  bounded to 24 hours and 10,000 events.
+
+The Rust crate is a pure library/WASM-capable analytics core, not an Axum
+HTTP implementation. Its `Cargo.toml` must therefore not be treated as proof
+that the health pilot exists.
+
+### Error mapping
+
+The current Rust parser exposes `SensitiveField` and
+`InvalidSchema(String)`, while Express returns a parser result and maps route
+failures to HTTP responses. Until a separately reviewed Axum adapter exists,
+the required adapter mapping is:
+
+| Rust parser result | Adapter HTTP status | Stable response code | Privacy rule |
+| --- | ---: | --- | --- |
+| accepted input | 200 | `ok` | response contains aggregate metrics only |
+| `SensitiveField` | 400 | `sensitive_field` | do not echo the field, value, or parser detail |
+| `InvalidSchema(_)` | 400 | `invalid_schema` | do not echo request data or raw parser detail |
+| unavailable/timeout | 503 | `upstream_unavailable` | log only aggregate status/latency |
+
+The mapping is a future adapter contract, not a claim about an existing Axum
+endpoint. The adapter must not expose Rust `Debug` output as a public error
+body.
+
+### Privacy fields and versioning
+
+The denylist is intentionally mirrored between Express and Rust:
+`authorization`, `auth`, `bearer`, `brainid`, `cookie`, `email`, `jwt`,
+`localstorage`, `password`, `rawstorage`, `refresh`, `screenshot`, `secret`,
+`token`, plus the recursive `user` field. Contract fixtures remain synthetic.
+No Brain ID, token, raw IP, request body, or private telemetry may be added to
+fixtures, logs, metrics, or parity reports.
+
+Changes to the analytics payload require a new schema version and an explicit
+parity fixture update. Changes to the health response require a separate
+health-contract review; the health response remains exactly
+`status`, `timestamp`, and `buildId` with no privacy-bearing fields.
+
 ## Promotion gates
 
 The pilot is disabled at deployment. A reviewer may enable a bounded
