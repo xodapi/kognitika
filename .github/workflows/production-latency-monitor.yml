@@ -1,0 +1,59 @@
+name: Production Latency Monitor
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: kognitika-production-latency-monitor
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Restore consecutive latency state
+        uses: actions/cache/restore@v4
+        with:
+          path: .latency-state
+          key: kognitika-latency-state-${{ github.run_id }}
+          restore-keys: |
+            kognitika-latency-state-
+
+      - name: Measure production endpoints
+        id: measure
+        continue-on-error: true
+        env:
+          BASE_URL: https://kognitika.ru
+          LATENCY_STATE_FILE: ${{ github.workspace }}/.latency-state/state.json
+          LATENCY_THRESHOLD_MS: "3000"
+          LATENCY_CONSECUTIVE_LIMIT: "3"
+        run: |
+          set -euo pipefail
+          mkdir -p .latency-state
+          set +e
+          node scripts/production-latency-monitor.mjs
+          status=$?
+          set -e
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+          exit 0
+
+      - name: Save consecutive latency state
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: .latency-state
+          key: kognitika-latency-state-${{ github.run_id }}
+
+      - name: Fail after sustained latency breach
+        if: steps.measure.outputs.status != '0'
+        run: |
+          echo "::error::Production latency monitor reached the sustained breach threshold."
+          exit 1

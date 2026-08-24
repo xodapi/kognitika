@@ -95,7 +95,12 @@ async function readState(stateFile) {
 if (process.argv[1] && import.meta.url.endsWith(path.basename(process.argv[1]))) {
   const baseUrl = process.env.BASE_URL || 'https://kognitika.ru';
   try {
-    const result = await runMonitor({ baseUrl });
+    const result = await runMonitor({
+      baseUrl,
+      thresholdMs: Number(process.env.LATENCY_THRESHOLD_MS || DEFAULT_TOTAL_THRESHOLD_MS),
+      consecutiveLimit: Number(process.env.LATENCY_CONSECUTIVE_LIMIT || DEFAULT_CONSECUTIVE_LIMIT),
+      stateFile: process.env.LATENCY_STATE_FILE || path.join(os.tmpdir(), 'kognitika-production-latency-state.json'),
+    });
     console.log(JSON.stringify(result));
     process.exitCode = result.alert ? 2 : 0;
   } catch (error) {

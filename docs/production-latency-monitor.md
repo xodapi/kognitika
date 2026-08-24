@@ -26,3 +26,8 @@ the script API or wrapper. A single slow check exits successfully; the process
 exits with code `2` only after the consecutive breach threshold is reached.
 Resetting the state is safe because it can only suppress an alert until the
 threshold is reached again.
+
+Repository CI runs the same check every 15 minutes through
+`.github/workflows/production-latency-monitor.yml`. The workflow stores only
+the consecutive counter in a short JSON cache; it does not store response
+bodies, headers, credentials, or user data.

@@ -48,6 +48,18 @@ describe('production database governance contracts', () => {
     expect(retention).toBeLessThan(productionDeploy.indexOf('systemctl restart kognitika'));
   });
 
+  it('keeps the production latency monitor scheduled and state-only', () => {
+    const workflow = read('.github/workflows/production-latency-monitor.yml');
+
+    expect(workflow).toContain('cron: "*/15 * * * *"');
+    expect(workflow).toContain('LATENCY_STATE_FILE:');
+    expect(workflow).toContain('actions/cache/restore@v4');
+    expect(workflow).toContain('actions/cache/save@v4');
+    expect(workflow).toContain('LATENCY_CONSECUTIVE_LIMIT: "3"');
+    expect(workflow).not.toContain('TELEGRAM_BOT_TOKEN');
+    expect(workflow).not.toContain('DATABASE_URL');
+  });
+
   it('requires a manual, externally approved DB-migration workflow with reviewable evidence before DDL', () => {
     const workflow = read('.github/workflows/production-db-migration.yml');
     const preflight = workflow.indexOf('node scripts/check-migration-baseline.mjs');
