@@ -81,8 +81,8 @@ END $$;
   Invoke-LabSql @'
 DO $$
 BEGIN
-  IF (SELECT COUNT(*) FROM "_prisma_migrations") <> 10
-    OR (SELECT COUNT(*) FROM "_prisma_migrations" WHERE "finished_at" IS NOT NULL AND "rolled_back_at" IS NULL) <> 9
+  IF (SELECT COUNT(*) FROM "_prisma_migrations") <> 12
+    OR (SELECT COUNT(*) FROM "_prisma_migrations" WHERE "finished_at" IS NOT NULL AND "rolled_back_at" IS NULL) <> 11
     OR (SELECT COUNT(*) FROM "_prisma_migrations" WHERE "migration_name" = '20260701000000_baseline_schema' AND "rolled_back_at" IS NOT NULL AND "finished_at" IS NULL) <> 1 THEN
     RAISE EXCEPTION 'Expected successful migration sequence plus retained baseline audit record';
   END IF;
@@ -113,7 +113,7 @@ CREATE SCHEMA public;
   Invoke-LabSql @'
 DO $$
 BEGIN
-  IF (SELECT COUNT(*) FROM "_prisma_migrations" WHERE "finished_at" IS NOT NULL AND "rolled_back_at" IS NULL) <> 9
+  IF (SELECT COUNT(*) FROM "_prisma_migrations" WHERE "finished_at" IS NOT NULL AND "rolled_back_at" IS NULL) <> 11
     OR EXISTS (SELECT 1 FROM "_prisma_migrations" WHERE "rolled_back_at" IS NOT NULL OR "finished_at" IS NULL) THEN
     RAISE EXCEPTION 'Fresh Prisma migration history is not a complete successful sequence';
   END IF;

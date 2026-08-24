@@ -123,11 +123,18 @@ describe('approved legacy recovery preflight', () => {
     }) as never)).resolves.toMatchObject({ kind: 'invalid', code: 13 });
   });
 
-  it('accepts the full migrated history while retaining the exact rolled-back baseline audit record', async () => {
+  it('accepts a full migrated history including the production analytics migrations', async () => {
     await expect(inspectMigrationBaseline(fixtureClient({
-      tables: [...CORE_TABLES, ...missingBaselineTables, 'GameAttempt'],
+      tables: [...CORE_TABLES, ...missingBaselineTables, 'GameAttempt', 'analytics_outbox', 'completed_session_analytics_jobs'],
       migrations: [...MIGRATION_ORDER.map(successful), rolledBack(BASELINE_MIGRATION)],
     }) as never)).resolves.toEqual({ kind: 'compatible' });
+  });
+
+  it('rejects a history that stops before the production analytics migrations', async () => {
+    await expect(inspectMigrationBaseline(fixtureClient({
+      tables: [...CORE_TABLES, ...missingBaselineTables, 'GameAttempt', 'analytics_outbox', 'completed_session_analytics_jobs'],
+      migrations: [...MIGRATION_ORDER.slice(0, -2).map(successful), rolledBack(BASELINE_MIGRATION)],
+    }) as never)).resolves.toMatchObject({ kind: 'invalid', code: 15 });
   });
 
   it('accepts a fresh empty database for the normal migration path', async () => {

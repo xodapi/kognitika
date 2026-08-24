@@ -34,7 +34,7 @@ The recorded recovery sequence first encountered a baseline failure because the 
 
 This repository preflight never performs adoption or modifies `_prisma_migrations`. It permits only the exact observed post-adoption fingerprint above. After preflight permits that fingerprint, Prisma applies the committed reconciliation migration. Its `IF NOT EXISTS` DDL creates the two missing baseline tables and indexes. Prisma then applies later committed migrations.
 
-Post-deploy verification requires nine successful migration records plus the retained rolled-back baseline audit record, no unfinished records, the two recovered tables, their expected indexes, and `GameAttempt` from later migrations. The preflight intentionally rejects any other rolled-back record layout.
+Post-deploy verification requires the complete successful migration sequence, including the analytics outbox and completed-session analytics job migrations, plus the retained rolled-back baseline audit record, no unfinished records, the two recovered tables, their expected indexes, and `GameAttempt` from later migrations. The preflight intentionally rejects any other rolled-back record layout.
 
 ## Isolated Recovery Laboratory
 

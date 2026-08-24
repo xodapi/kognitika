@@ -15,6 +15,8 @@ export const MIGRATION_ORDER = [
   '20260731130000_add_game_save_idempotency',
   '20260731140000_add_game_attempt_lifecycle',
   '20260731150000_remove_legacy_email_identity',
+  '20260803022000_add_analytics_outbox',
+  '20260804000000_add_completed_session_analytics_jobs',
 ];
 
 export const CORE_TABLES = [
