@@ -70,7 +70,7 @@ Blockers or dependencies: shared worktree patch must be recreated in assigned wo
 
 Status: [implemented][verified]
 Branch: `agent/220-admin-recovery-contract`
-Commit: `PENDING`
+Commit: `6e0f0f1`
 Files changed: `.github/workflows/production-admin-recovery.yml`, `docs/production-admin-recovery-runbook.md`, `src/tests/production-db-governance.test.ts`, `docs/agent-briefs/issue-220-admin-recovery.md`
 Checks: `& 'C:\Program Files\nodejs\node.exe' .\node_modules\vitest\vitest.mjs run --no-file-parallelism src/tests/production-db-governance.test.ts` - passed, 11 tests; `& 'C:\Program Files\nodejs\node.exe' .\node_modules\typescript\bin\tsc --project tsconfig.tests.json --noEmit` - passed; `git diff --check` - passed
 Production/server touched: no
