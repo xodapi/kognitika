@@ -8,7 +8,7 @@ Use this runbook only to recover administrative access to the **Kognitika** depl
 
 - Required workflow: **Recover Kognitika ADMIN Access**.
 - Required Environment: `production-db-changes`, including its configured external reviewer.
-- Required review: [issue #220](https://github.com/xodapi/kognitika/issues/220), or a linked reviewed PR/issue that records the operational evidence.
+- Required review: [issue #220](https://github.com/xodapi/kognitika/issues/220), or a linked reviewed `https://github.com/xodapi/kognitika/issues/<number>` or `https://github.com/xodapi/kognitika/pull/<number>` URL that records the operational evidence.
 - Required credential source: `/opt/kognitika/.env` on the protected Kognitika host only.
 - Prohibited sources: workflow inputs, repository files, issue/PR text, Actions logs, chat, screenshots, artifacts, and local `.env` files from other applications.
 - The workflow verifies the Kognitika `User` schema before it can generate a recovery credential or open a write transaction.
@@ -16,7 +16,7 @@ Use this runbook only to recover administrative access to the **Kognitika** depl
 ## Preconditions
 
 1. Confirm the target is the Kognitika host and the ordinary repository-first deploy contract is intact.
-2. Record a review URL and a unique `PDD-ADMIN-YYYY-MM-DD-<ID>` recovery identifier in the review. Do not include a raw Brain ID, JWT, password, database URL, user row, IP address, or telemetry.
+2. Record a numeric repository-bound review URL and a unique `PDD-ADMIN-YYYY-MM-DD-<ID>` recovery identifier in the review. Do not include a raw Brain ID, JWT, password, database URL, user row, IP address, or telemetry.
 3. Confirm `production-db-changes` requires the intended reviewer and has only scoped deployment secrets.
 4. Run `dry_run` first. It must report `Kognitika schema guard passed` and `No user or credential was created`.
    - A failed dry run emits only one fixed diagnostic: `database-client-unavailable`, `database-connection-failed`, `schema-function-query-failed`, `information-schema-query-failed`, `kognitika-schema-query-failed`, or `kognitika-schema-mismatch`. It must not expose the DB URL, host, database name, credentials, row contents, or identity material.

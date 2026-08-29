@@ -141,12 +141,21 @@ describe('production database governance contracts', () => {
 
   it('keeps ADMIN recovery dry-run by default and schema-guards the only supported write', () => {
     const workflow = read('.github/workflows/production-admin-recovery.yml');
+    const validation = workflow.indexOf('Validate recovery evidence');
     const schemaGuard = workflow.indexOf("diagnostic_status='kognitika-schema-ok'");
     const credentialGeneration = workflow.indexOf('brain_id="$(cat /proc/sys/kernel/random/uuid)"');
     const write = workflow.indexOf('INSERT INTO "User"');
 
     expect(workflow).toContain('workflow_dispatch:');
     expect(workflow).toContain('environment: production-db-changes');
+    expect(workflow).toContain('concurrency:');
+    expect(workflow).toContain('group: kognitika-production-db');
+    expect(workflow).toContain('cancel-in-progress: false');
+    expect(workflow).toContain('permissions:');
+    expect(workflow).toContain('contents: read');
+    expect(workflow).toContain('review_url:');
+    expect(workflow).toContain("review_url_pattern='^https://github\\.com/xodapi/kognitika/(issues|pull)/[0-9]+/?$'");
+    expect(workflow).toContain('Review URL must be a numeric xodapi/kognitika issue or pull request URL.');
     expect(workflow).toContain('default: dry_run');
     expect(workflow).toContain('CREATE_ONE_RECOVERY_ADMIN');
     expect(workflow).toContain('test -r /opt/kognitika/.env');
@@ -169,8 +178,13 @@ describe('production database governance contracts', () => {
     expect(workflow).toContain('ADMIN recovery dry-run status: $diagnostic_status');
     expect(workflow).not.toContain('unexpected-diagnostic-state');
     expect(workflow).toContain('test ! -e "$recovery_file"');
+    expect(workflow).toContain("echo 'ADMIN recovery write failed.' >&2");
+    expect(workflow).toContain("2>/dev/null <<'SQL'");
     expect(workflow).not.toContain('DROP SCHEMA');
     expect(workflow).not.toContain('actions/upload-artifact');
+    expect(workflow).not.toContain('DATABASE_URL: ${{ secrets');
+    expect(validation).toBeGreaterThanOrEqual(0);
+    expect(validation).toBeLessThan(schemaGuard);
     expect(schemaGuard).toBeGreaterThanOrEqual(0);
     expect(credentialGeneration).toBeGreaterThan(schemaGuard);
     expect(write).toBeGreaterThan(credentialGeneration);
