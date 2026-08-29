@@ -50,13 +50,13 @@ git diff --check
 
 ## Report
 
-Status: [planned]  
-Branch: `agent/158-baseline-verification`  
-Commit: `none`  
-Files changed: none  
-Checks: not run  
-Production/server touched: no  
-Secrets or user data added: no  
+Status: [planned]
+Branch: `agent/158-baseline-verification`
+Commit: `none`
+Files changed: none
+Checks: not run
+Production/server touched: no
+Secrets or user data added: no
 Blockers or dependencies: none
 
 ## Report
