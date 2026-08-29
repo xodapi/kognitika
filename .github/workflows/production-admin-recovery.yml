@@ -49,14 +49,11 @@ jobs:
             PDD-ADMIN-[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]-[A-Z0-9][A-Z0-9-][A-Z0-9-]*) ;;
             *) echo 'Invalid recovery runbook identifier.' >&2; exit 1 ;;
           esac
-          case "$REVIEW_URL" in
-            https://github.com/xodapi/kognitika/issues/[0-9]*|https://github.com/xodapi/kognitika/pull/[0-9]*) ;;
-            *) echo 'Review URL must target a numeric xodapi/kognitika issue or pull request.' >&2; exit 1 ;;
-          esac
-          review_number="${REVIEW_URL##*/}"
-          case "$review_number" in
-            ''|*[!0-9]*) echo 'Review URL must end with a numeric issue or pull request.' >&2; exit 1 ;;
-          esac
+          review_url_pattern='^https://github\.com/xodapi/kognitika/(issues|pull)/[0-9]+/?$'
+          if [[ ! "$REVIEW_URL" =~ $review_url_pattern ]]; then
+            echo 'Review URL must be a numeric xodapi/kognitika issue or pull request URL.' >&2
+            exit 1
+          fi
           case "$OPERATION" in
             dry_run) ;;
             create_recovery_admin)
@@ -182,10 +179,10 @@ jobs:
           pseudonym="Recovery-Admin-${RECOVERY_RUNBOOK_ID##*-}"
           user_id="recovery-admin-${RECOVERY_RUNBOOK_ID,,}"
 
-          creation_status="$(client psql "$DATABASE_URL" --quiet --set ON_ERROR_STOP=1 \
+          if ! creation_status="$(client psql "$DATABASE_URL" --quiet --set ON_ERROR_STOP=1 \
             --set=brain_id="$brain_id" \
             --set=pseudonym="$pseudonym" \
-            --set=user_id="$user_id" --tuples-only --no-align <<'SQL'
+            --set=user_id="$user_id" --tuples-only --no-align 2>/dev/null <<'SQL'
           BEGIN;
           INSERT INTO "User" (id, "brainId", pseudonym, name, role, level, experience, rating, bonuses, "streakDays", "createdAt")
           SELECT :'user_id', :'brain_id', :'pseudonym', :'pseudonym', 'ADMIN', 1, 0, 1000, 0, 0, NOW()
@@ -195,7 +192,10 @@ jobs:
           FROM "User" WHERE id = :'user_id' AND role = 'ADMIN';
           COMMIT;
           SQL
-          )"
+          )"; then
+            echo 'ADMIN recovery write failed.' >&2
+            exit 1
+          fi
           printf '%s\n' "$creation_status" | grep -qx 'recovery-admin-created'
 
           # Keep the recovery credential off workflow output. A configured Environment

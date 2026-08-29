@@ -154,10 +154,8 @@ describe('production database governance contracts', () => {
     expect(workflow).toContain('permissions:');
     expect(workflow).toContain('contents: read');
     expect(workflow).toContain('review_url:');
-    expect(workflow).toContain('https://github.com/xodapi/kognitika/issues/[0-9]*');
-    expect(workflow).toContain('https://github.com/xodapi/kognitika/pull/[0-9]*');
-    expect(workflow).toContain('review_number="${REVIEW_URL##*/}"');
-    expect(workflow).toContain('Review URL must end with a numeric issue or pull request.');
+    expect(workflow).toContain("review_url_pattern='^https://github\\.com/xodapi/kognitika/(issues|pull)/[0-9]+/?$'");
+    expect(workflow).toContain('Review URL must be a numeric xodapi/kognitika issue or pull request URL.');
     expect(workflow).toContain('default: dry_run');
     expect(workflow).toContain('CREATE_ONE_RECOVERY_ADMIN');
     expect(workflow).toContain('test -r /opt/kognitika/.env');
@@ -180,6 +178,8 @@ describe('production database governance contracts', () => {
     expect(workflow).toContain('ADMIN recovery dry-run status: $diagnostic_status');
     expect(workflow).not.toContain('unexpected-diagnostic-state');
     expect(workflow).toContain('test ! -e "$recovery_file"');
+    expect(workflow).toContain("echo 'ADMIN recovery write failed.' >&2");
+    expect(workflow).toContain("2>/dev/null <<'SQL'");
     expect(workflow).not.toContain('DROP SCHEMA');
     expect(workflow).not.toContain('actions/upload-artifact');
     expect(workflow).not.toContain('DATABASE_URL: ${{ secrets');
