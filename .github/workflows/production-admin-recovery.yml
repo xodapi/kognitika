@@ -50,8 +50,12 @@ jobs:
             *) echo 'Invalid recovery runbook identifier.' >&2; exit 1 ;;
           esac
           case "$REVIEW_URL" in
-            https://github.com/xodapi/kognitika/issues/*|https://github.com/xodapi/kognitika/pull/*) ;;
-            *) echo 'Review URL must target xodapi/kognitika.' >&2; exit 1 ;;
+            https://github.com/xodapi/kognitika/issues/[0-9]*|https://github.com/xodapi/kognitika/pull/[0-9]*) ;;
+            *) echo 'Review URL must target a numeric xodapi/kognitika issue or pull request.' >&2; exit 1 ;;
+          esac
+          review_number="${REVIEW_URL##*/}"
+          case "$review_number" in
+            ''|*[!0-9]*) echo 'Review URL must end with a numeric issue or pull request.' >&2; exit 1 ;;
           esac
           case "$OPERATION" in
             dry_run) ;;
