@@ -26,5 +26,9 @@ describe('PrivacyNotice', () => {
       'rel',
       'noopener noreferrer',
     );
+    expect(
+      screen.getByText(/без передачи сторонним аналитическим платформам и третьим лицам/i),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/сырые логи хранятся не более 14 суток/i)).toBeInTheDocument();
   });
 });
